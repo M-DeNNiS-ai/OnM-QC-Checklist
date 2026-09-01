@@ -3,23 +3,23 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Battery QC</title>
+<title>Battery QC Tracker</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
-  --bg:#0f1417;
-  --panel:#161d22;
-  --panel2:#1c252b;
-  --line:#2a343b;
-  --text:#e7edf0;
-  --muted:#8fa2ab;
-  --amp:#3ddc97;
-  --amp-dim:#255c47;
-  --volt:#4fb0e0;
-  --warn:#e0a940;
-  --fail:#e2585a;
-  --iris:#a78bfa;
+  --bg:#f4f6f8;
+  --panel:#ffffff;
+  --panel2:#eef2f5;
+  --line:#d0d7de;
+  --text:#1f2937;
+  --muted:#6b7280;
+  --amp:#10b981;
+  --amp-dim:#d1fae5;
+  --volt:#0284c7;
+  --warn:#d97706;
+  --fail:#ef4444;
+  --iris:#8b5cf6;
   --mono:'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
 }
 *{box-sizing:border-box;}
@@ -42,7 +42,7 @@ body{
   width:34px;height:34px;border-radius:8px;
   background:linear-gradient(160deg,var(--amp),var(--volt));
   display:flex;align-items:center;justify-content:center;
-  font-weight:700;color:#08110d;font-size:15px;flex:none;
+  font-weight:700;color:#ffffff;font-size:15px;flex:none;
 }
 .brand h1{font-size:17px;margin:0;letter-spacing:.2px;}
 .brand p{margin:0;font-size:12px;color:var(--muted);}
@@ -52,33 +52,33 @@ body{
   padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;
   background:var(--panel2);border:1px solid var(--line);color:var(--muted);
 }
-.pill.admin{background:#2a2013;color:var(--warn);border-color:#4a3a1c;}
-.pill.tech{background:#122a24;color:var(--amp);border-color:#1f4a3c;}
-.pill.plant{background:#1c2436;color:var(--volt);border-color:#233052;}
-.pill.quality{background:#241c33;color:var(--iris);border-color:#3a2c52;}
+.pill.admin{background:#fef3c7;color:#b45309;border-color:#fde68a;}
+.pill.tech{background:#d1fae5;color:#047857;border-color:#a7f3d0;}
+.pill.plant{background:#e0f2fe;color:#0369a1;border-color:#bae6fd;}
+.pill.quality{background:#ede9fe;color:#6d28d9;border-color:#ddd6fe;}
 .side-badge{
   display:inline-block;padding:2px 8px;border-radius:6px;font-size:10.5px;font-weight:700;
   letter-spacing:.4px;text-transform:uppercase;margin-bottom:10px;
 }
-.side-badge.om{background:#2a2013;color:var(--warn);}
-.side-badge.plantside{background:#1c2436;color:var(--volt);}
-.side-badge.inv{background:#122a24;color:var(--amp);}
+.side-badge.om{background:#fef3c7;color:#b45309;}
+.side-badge.plantside{background:#e0f2fe;color:#0369a1;}
 button{
   font-family:inherit;cursor:pointer;border:none;border-radius:9px;
   padding:9px 14px;font-size:13.5px;font-weight:600;transition:transform .08s ease, opacity .15s;
 }
 button:active{transform:scale(.97);}
-.btn-primary{background:var(--amp);color:#06130d;}
+.btn-primary{background:var(--amp);color:#ffffff;}
 .btn-primary:hover{opacity:.9;}
 .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--text);}
 .btn-ghost:hover{border-color:var(--muted);}
 .btn-sm{padding:6px 10px;font-size:12.5px;}
-.btn-danger{background:var(--fail);color:#2a0808;}
+.btn-danger{background:var(--fail);color:#ffffff;}
 
 /* Login */
 .gate{
   max-width:420px;margin:12vh auto 0;padding:28px 24px;
   background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  box-shadow:0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 .gate h2{margin-top:0;font-size:19px;}
 .gate p{color:var(--muted);font-size:13.5px;}
@@ -96,9 +96,12 @@ textarea{resize:vertical;min-height:60px;}
 /* Nav */
 .nav{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;}
 .nav button{background:var(--panel);color:var(--muted);border:1px solid var(--line);}
-.nav button.active{background:var(--panel2);color:var(--amp);border-color:var(--amp-dim);}
+.nav button.active{background:var(--panel2);color:var(--amp);border-color:var(--amp);}
 
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;}
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;
+  box-shadow:0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
 .card h3{margin:0 0 4px;font-size:15px;}
 .card .sub{color:var(--muted);font-size:12.5px;margin-bottom:14px;}
 
@@ -107,9 +110,9 @@ textarea{resize:vertical;min-height:60px;}
 
 .banner{
   padding:11px 14px;border-radius:10px;font-size:13.5px;margin-bottom:14px;
-  border:1px solid var(--warn);background:#241d0f;color:#f0c66b;
+  border:1px solid var(--warn);background:#fef3c7;color:#b45309;
 }
-.banner.ok{border-color:var(--amp-dim);background:#0f1f19;color:var(--amp);}
+.banner.ok{border-color:var(--amp);background:#d1fae5;color:#047857;}
 
 .check-row{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -120,9 +123,9 @@ textarea{resize:vertical;min-height:60px;}
 .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex:none;}
 .seg button{border-radius:0;padding:5px 10px;font-size:11.5px;background:var(--panel2);color:var(--muted);border:none;border-right:1px solid var(--line);}
 .seg button:last-child{border-right:none;}
-.seg button.sel-pass{background:var(--amp-dim);color:var(--amp);}
-.seg button.sel-fail{background:#3a1516;color:var(--fail);}
-.seg button.sel-na{background:#2a2a2a;color:var(--muted);}
+.seg button.sel-pass{background:var(--amp-dim);color:#047857;}
+.seg button.sel-fail{background:#fee2e2;color:var(--fail);}
+.seg button.sel-na{background:#e5e7eb;color:var(--muted);}
 
 .bool-row{display:flex;align-items:center;gap:9px;padding:7px 0;}
 .bool-row input{width:auto;accent-color:var(--amp);}
@@ -132,29 +135,35 @@ textarea{resize:vertical;min-height:60px;}
   display:inline-block;padding:4px 10px;border-radius:7px;font-size:12px;font-weight:700;
   letter-spacing:.3px;
 }
-.result-chip.PASS{background:var(--amp-dim);color:var(--amp);}
-.result-chip.FAIL{background:#3a1516;color:var(--fail);}
-.result-chip.INCOMPLETE{background:#2a2a2a;color:var(--muted);}
-.result-chip.NA{background:#2a2a2a;color:var(--muted);}
+.result-chip.PASS{background:var(--amp-dim);color:#047857;}
+.result-chip.FAIL{background:#fee2e2;color:var(--fail);}
+.result-chip.INCOMPLETE{background:#e5e7eb;color:var(--muted);}
+.result-chip.NA{background:#e5e7eb;color:var(--muted);}
 
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px;}
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;}
+.stat{
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;
+  box-shadow:0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
 .stat .n{font-size:24px;font-weight:700;font-family:var(--mono);}
 .stat .l{font-size:11.5px;color:var(--muted);margin-top:2px;}
 
-.chart-wrap{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px;height:280px;}
+.chart-wrap{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px;height:280px;
+  box-shadow:0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
 
 table{width:100%;border-collapse:collapse;font-size:12.5px;}
 th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;}
 th{color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--panel);}
-.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel);}
 tr:hover td{background:var(--panel2);}
 .mono{font-family:var(--mono);}
 .serial-link{color:var(--volt);cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
 
 .period-toggle{display:flex;gap:6px;margin-bottom:14px;}
 .period-toggle button{background:var(--panel2);color:var(--muted);border:1px solid var(--line);}
-.period-toggle button.active{background:var(--amp-dim);color:var(--amp);border-color:var(--amp);}
+.period-toggle button.active{background:var(--amp-dim);color:#047857;border-color:var(--amp);}
 
 .footer-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;position:sticky;bottom:0;background:linear-gradient(to top, var(--bg) 60%, transparent);padding-top:14px;}
 .small-note{font-size:11.5px;color:var(--muted);margin-top:6px;}
@@ -244,28 +253,6 @@ const PLANT_SNAPSHOT_FIELDS = [
   ['totalAvailableBatteries','Total Available Batteries'],
 ];
 
-/* New battery intake & inventory config */
-const PLATFORMS = ['CBAK','Ampace','Unique','Greenway'];
-const BATTERY_CONDITIONS = ['New','Refurbished','Returned - Unopened'];
-// Movement types for stock leaving/being corrected outside a normal intake.
-// 'RECEIVED' (from an intake record) is handled separately and is always +.
-const MOVEMENT_TYPES = [
-  ['ISSUED_TO_PLANT','Issued to Plant'],
-  ['ISSUED_TO_SWAP_STATION','Issued to Swap Station'],
-  ['DAMAGED_ON_ARRIVAL','Damaged on Arrival'],
-  ['RETURNED_TO_SUPPLIER','Returned to Supplier'],
-  ['CORRECTION_ADD','Stock Correction (Add)'],
-  ['CORRECTION_SUB','Stock Correction (Subtract)'],
-];
-function movementLabel(type){
-  if(type==='RECEIVED') return 'Received';
-  const f = MOVEMENT_TYPES.find(([k])=>k===type);
-  return f ? f[1] : type;
-}
-function movementDirection(type){
-  return (type==='RECEIVED' || type==='CORRECTION_ADD') ? 1 : -1;
-}
-
 /* ---------------- Storage helpers ---------------- */
 async function loadRecords(){
   try{
@@ -303,73 +290,18 @@ async function savePlantRecords(list){
   await window.storage.set('plant_records', JSON.stringify(list), true);
 }
 
-/*
- * New Battery Intake + Inventory Adjustments.
- *
- * DATA INTEGRITY POLICY: every store in this app ('records', 'plant_records',
- * 'new_battery_records', 'inventory_adjustments') is append-only from the UI —
- * saving a new entry never edits or deletes a previously saved one. Current
- * inventory is always *computed* on read from the full movement history
- * (see stockByPlatform / allInventoryMovements below), never stored as a
- * mutable running total. That means future changes to this app — new fields,
- * new movement types, new report layouts — only affect how old records are
- * *displayed and aggregated*, never the records themselves. Loaders below
- * fill in safe defaults for any field a future version might expect but an
- * older saved record doesn't have, without rewriting the stored data.
- */
-function normalizeNewBatteryRecord(r){
-  return {
-    id: r.id, schemaVersion: r.schemaVersion || 1, createdAt: r.createdAt || r.date,
-    date: r.date, platform: r.platform || 'Unknown', quantity: parseInt(r.quantity)||0,
-    batchLot: r.batchLot || '', source: r.source || '', condition: r.condition || 'New',
-    serials: Array.isArray(r.serials) ? r.serials : [], notes: r.notes || '', loggedBy: r.loggedBy || '',
-  };
-}
-async function loadNewBatteryRecords(){
-  try{
-    const r = await window.storage.get('new_battery_records', true);
-    const list = r ? JSON.parse(r.value) : [];
-    return list.map(normalizeNewBatteryRecord);
-  }catch(e){ return []; }
-}
-async function saveNewBatteryRecords(list){
-  await window.storage.set('new_battery_records', JSON.stringify(list), true);
-}
-function normalizeInventoryAdjustment(r){
-  return {
-    id: r.id, schemaVersion: r.schemaVersion || 1, createdAt: r.createdAt || r.date,
-    date: r.date, platform: r.platform || 'Unknown',
-    type: MOVEMENT_TYPES.some(([k])=>k===r.type) ? r.type : 'ISSUED_TO_PLANT',
-    quantity: parseInt(r.quantity)||0, reference: r.reference || '', notes: r.notes || '', loggedBy: r.loggedBy || '',
-  };
-}
-async function loadInventoryAdjustments(){
-  try{
-    const r = await window.storage.get('inventory_adjustments', true);
-    const list = r ? JSON.parse(r.value) : [];
-    return list.map(normalizeInventoryAdjustment);
-  }catch(e){ return []; }
-}
-async function saveInventoryAdjustments(list){
-  await window.storage.set('inventory_adjustments', JSON.stringify(list), true);
-}
-
 /* ---------------- State ---------------- */
 let STATE = {
   role: null,          // 'tech' | 'omadmin' | 'plant' | 'quality'
   techName: '',
-  records: [],               // O&M repair records
-  plantRecords: [],          // Plant intake records
-  newBatteryRecords: [],     // New battery shipments received (feeds inventory)
-  inventoryAdjustments: [],  // Manual inventory movements (issued/damaged/returned/correction)
+  records: [],          // O&M repair records
+  plantRecords: [],     // Plant intake records
   settings: null,
-  view: 'entry',        // entry | history | dashboard | settings | om_dashboard | om_history | plant_dashboard | plant_history | battery_intake | inventory
+  view: 'entry',        // entry | history | dashboard | settings | om_dashboard | om_history | plant_dashboard | plant_history
   period: 'daily',
   plantPeriod: 'daily',
   draft: emptyDraft(),
   plantDraft: emptyPlantDraft(),
-  newBatteryDraft: emptyNewBatteryDraft(),
-  adjustmentDraft: emptyAdjustmentDraft(),
   serialWarning: null,
   toast: null,
 };
@@ -387,19 +319,6 @@ function emptyPlantDraft(){
     enteredBy:'',
   };
   return d;
-}
-
-function emptyNewBatteryDraft(){
-  return {
-    date: todayStr(), platform: PLATFORMS[0], quantity:'', batchLot:'', source:'',
-    condition: 'New', serialsRaw:'', notes:'', loggedBy:'',
-  };
-}
-function emptyAdjustmentDraft(){
-  return {
-    date: todayStr(), platform: PLATFORMS[0], type: MOVEMENT_TYPES[0][0],
-    quantity:'', reference:'', notes:'', loggedBy:'',
-  };
 }
 
 function emptyDraft(){
@@ -475,29 +394,6 @@ function fmtDelta(n){
   return n>0 ? ` (+${n})` : ` (${n})`;
 }
 
-/* Inventory: computed on read from the two append-only movement stores.
-   Never persisted as a running total, so it's always consistent with the
-   underlying records and safe to recompute after future code changes. */
-function allInventoryMovements(){
-  const received = STATE.newBatteryRecords.map(r=>({
-    id: r.id, date: r.date, platform: r.platform, qty: r.quantity, type: 'RECEIVED',
-    direction: 1, reference: r.batchLot, note: r.source, loggedBy: r.loggedBy, source: 'intake',
-  }));
-  const adjusted = STATE.inventoryAdjustments.map(r=>({
-    id: r.id, date: r.date, platform: r.platform, qty: r.quantity, type: r.type,
-    direction: movementDirection(r.type), reference: r.reference, note: r.notes, loggedBy: r.loggedBy, source: 'adjustment',
-  }));
-  return [...received, ...adjusted].sort((a,b)=>a.date.localeCompare(b.date));
-}
-function stockByPlatform(){
-  const stock = {};
-  PLATFORMS.forEach(p=>stock[p]=0);
-  allInventoryMovements().forEach(m=>{
-    stock[m.platform] = (stock[m.platform]||0) + m.direction*m.qty;
-  });
-  return stock;
-}
-
 /* ---------------- Render root ---------------- */
 const root = document.getElementById('root');
 function render(){ root.innerHTML=''; root.appendChild(View()); }
@@ -519,26 +415,29 @@ function View(){
     else if(STATE.view==='settings') wrap.appendChild(SettingsView());
     else wrap.appendChild(EntryView());
 
+  } else if(STATE.role==='plant'){
+    wrap.appendChild(Nav(['plant_entry','plant_dashboard','plant_history','settings'], {plant_entry:'Today\'s Intake', plant_dashboard:'Dashboard', plant_history:'All Records', settings:'Settings'}));
+    if(STATE.view==='plant_dashboard') wrap.appendChild(PlantDashboardView());
+    else if(STATE.view==='plant_history') wrap.appendChild(PlantHistoryView());
+    else if(STATE.view==='settings') wrap.appendChild(SettingsView());
+    else wrap.appendChild(PlantEntryView());
+
   } else if(STATE.role==='quality'){
     wrap.appendChild(Nav(
-      ['om_dashboard','om_history','plant_entry','plant_dashboard','plant_history','battery_intake','inventory','settings'],
-      {om_dashboard:'O&M Dashboard', om_history:'O&M Records', plant_entry:'Today\'s Plant Intake', plant_dashboard:'Plant Dashboard', plant_history:'Plant Records', battery_intake:'New Batteries', inventory:'Inventory', settings:'Settings'}
+      ['om_dashboard','om_history','plant_dashboard','plant_history','settings'],
+      {om_dashboard:'O&M Dashboard', om_history:'O&M Records', plant_dashboard:'Plant Dashboard', plant_history:'Plant Records', settings:'Settings'}
     ));
     if(STATE.view==='om_dashboard') wrap.appendChild(withSideBadge('om', DashboardView()));
     else if(STATE.view==='om_history') wrap.appendChild(withSideBadge('om', HistoryView()));
-    else if(STATE.view==='plant_entry') wrap.appendChild(withSideBadge('plantside', PlantEntryView()));
     else if(STATE.view==='plant_history') wrap.appendChild(withSideBadge('plantside', PlantHistoryView()));
-    else if(STATE.view==='battery_intake') wrap.appendChild(withSideBadge('inv', NewBatteryIntakeView()));
-    else if(STATE.view==='inventory') wrap.appendChild(withSideBadge('inv', InventoryView()));
     else if(STATE.view==='settings') wrap.appendChild(SettingsView());
     else wrap.appendChild(withSideBadge('plantside', PlantDashboardView()));
   }
   return wrap;
 }
-const SIDE_BADGE_LABEL = { om:'O&M Quality Checks', plantside:'Plant Battery Intake', inv:'New Batteries & Inventory' };
 function withSideBadge(kind, node){
   const w = el('div');
-  w.appendChild(el('div',{class:'side-badge '+kind}, SIDE_BADGE_LABEL[kind] || kind));
+  w.appendChild(el('div',{class:'side-badge '+kind}, kind==='om' ? 'O&M Quality Checks' : 'Plant Battery Intake'));
   w.appendChild(node);
   return w;
 }
@@ -562,13 +461,14 @@ function Toast(){ return el('div',{class:'banner ok'},[STATE.toast]); }
 /* ---------------- Login ---------------- */
 function LoginView(){
   const gate = el('div',{class:'gate'});
-  gate.appendChild(el('h2',{},'Battery QC'));
-  gate.appendChild(el('p',{},'Battery repair QC, plant intake, and new battery inventory log. Choose how you\'re signing in.'));
+  gate.appendChild(el('h2',{},'Battery QC Tracker'));
+  gate.appendChild(el('p',{},'Battery repair QC and plant intake log. Choose how you\'re signing in.'));
 
   let mode = 'tech';
   const modeSel = el('select',{style:'margin-bottom:16px;'});
   [['tech','Technician (O&M repair entry)'],
    ['omadmin','O&M QC Admin'],
+   ['plant','Plant / Electrical Engineer'],
    ['quality','Quality Engineer (full access)']
   ].forEach(([v,l])=>{ modeSel.appendChild(el('option',{value:v},l)); });
   gate.appendChild(modeSel);
@@ -594,7 +494,7 @@ function LoginView(){
       });
       body.appendChild(go);
     } else {
-      const roleLabel = mode==='omadmin' ? 'O&M QC Admin' : 'Quality Engineer';
+      const roleLabel = mode==='omadmin' ? 'O&M QC Admin' : mode==='plant' ? 'Plant Engineer' : 'Quality Engineer';
       body.appendChild(el('label',{}, roleLabel+' PIN'));
       const inp = el('input',{type:'password',placeholder:'••••'});
       body.appendChild(inp);
@@ -603,16 +503,12 @@ function LoginView(){
       const go = el('button',{class:'btn-primary',style:'margin-top:16px;width:100%'},'Unlock '+roleLabel);
       go.addEventListener('click', async ()=>{
         const s = await loadSettings();
-        const pinField = mode==='omadmin' ? 'omAdminPin' : 'qualityPin';
+        const pinField = mode==='omadmin' ? 'omAdminPin' : mode==='plant' ? 'plantPin' : 'qualityPin';
         if(inp.value === s[pinField]){
           STATE.role = mode; STATE.settings = s;
           if(mode==='omadmin' || mode==='quality') STATE.records = await loadRecords();
-          if(mode==='quality'){
-            STATE.plantRecords = await loadPlantRecords();
-            STATE.newBatteryRecords = await loadNewBatteryRecords();
-            STATE.inventoryAdjustments = await loadInventoryAdjustments();
-          }
-          STATE.view = mode==='quality' ? 'om_dashboard' : 'dashboard';
+          if(mode==='plant' || mode==='quality') STATE.plantRecords = await loadPlantRecords();
+          STATE.view = mode==='plant' ? 'plant_dashboard' : mode==='quality' ? 'om_dashboard' : 'dashboard';
           render();
         } else {
           errBox.textContent = 'Incorrect PIN.';
@@ -627,14 +523,14 @@ function LoginView(){
 }
 
 /* ---------------- TopBar / Nav ---------------- */
-const ROLE_LABEL = { tech:'TECHNICIAN', omadmin:'O&M QC ADMIN', quality:'QUALITY ENGINEER' };
-const ROLE_DISPLAY_NAME = { omadmin:'O&M QC Admin', quality:'Quality Engineer' };
-const ROLE_PILL_CLASS = { tech:'tech', omadmin:'admin', quality:'quality' };
+const ROLE_LABEL = { tech:'TECHNICIAN', omadmin:'O&M QC ADMIN', plant:'PLANT ENGINEER', quality:'QUALITY ENGINEER' };
+const ROLE_DISPLAY_NAME = { omadmin:'O&M QC Admin', plant:'Plant Engineer', quality:'Quality Engineer' };
+const ROLE_PILL_CLASS = { tech:'tech', omadmin:'admin', plant:'plant', quality:'quality' };
 function TopBar(){
   const bar = el('div',{class:'topbar'});
   const brand = el('div',{class:'brand'},[
     el('div',{class:'mark'},'B'),
-    el('div',{},[el('h1',{},'Battery QC'), el('p',{},'Battery repair, plant intake & inventory log')])
+    el('div',{},[el('h1',{},'Battery QC Tracker'), el('p',{},'Battery repair & plant intake log')])
   ]);
   const who = el('div',{class:'who'},[
     el('span',{class:'pill '+ROLE_PILL_CLASS[STATE.role]}, ROLE_LABEL[STATE.role]),
@@ -1059,25 +955,25 @@ function DashboardView(){
     chartInstances.push(new Chart(canvas1, {
       type:'bar',
       data:{ labels:keys, datasets:[
-        {label:'Passed', data:keys.map(k=>buckets[k].pass), backgroundColor:'#3ddc97'},
-        {label:'Failed', data:keys.map(k=>buckets[k].fail), backgroundColor:'#e2585a'},
+        {label:'Passed', data:keys.map(k=>buckets[k].pass), backgroundColor:'#10b981'},
+        {label:'Failed', data:keys.map(k=>buckets[k].fail), backgroundColor:'#ef4444'},
       ]},
-      options:{responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'Volume & QC Result — '+STATE.period, color:'#e7edf0'}, legend:{labels:{color:'#8fa2ab'}}}, scales:{x:{stacked:true,ticks:{color:'#8fa2ab'},grid:{color:'#2a343b'}},y:{stacked:true,ticks:{color:'#8fa2ab'},grid:{color:'#2a343b'}}}}
+      options:{responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'Volume & QC Result — '+STATE.period, color:'#1f2937'}, legend:{labels:{color:'#6b7280'}}}, scales:{x:{stacked:true,ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}},y:{stacked:true,ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}}}}
     }));
     const canvas2 = document.createElement('canvas'); c2.innerHTML=''; c2.appendChild(canvas2);
     chartInstances.push(new Chart(canvas2, {
       type:'line',
       data:{ labels:keys, datasets:[
-        {label:'First-Time Fix Rate %', data:keys.map(k=>buckets[k].count? Math.round(buckets[k].fpy/buckets[k].count*100):0), borderColor:'#4fb0e0', backgroundColor:'rgba(79,176,224,.15)', fill:true, tension:.3},
+        {label:'First-Time Fix Rate %', data:keys.map(k=>buckets[k].count? Math.round(buckets[k].fpy/buckets[k].count*100):0), borderColor:'#0284c7', backgroundColor:'rgba(2,132,199,.15)', fill:true, tension:.3},
       ]},
-      options:{responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'First-Time Fix (FPY) Trend', color:'#e7edf0'}, legend:{labels:{color:'#8fa2ab'}}}, scales:{x:{ticks:{color:'#8fa2ab'},grid:{color:'#2a343b'}},y:{min:0,max:100,ticks:{color:'#8fa2ab'},grid:{color:'#2a343b'}}}}
+      options:{responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'First-Time Fix (FPY) Trend', color:'#1f2937'}, legend:{labels:{color:'#6b7280'}}}, scales:{x:{ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}},y:{min:0,max:100,ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}}}}
     }));
     const canvas3 = document.createElement('canvas'); c3.innerHTML=''; c3.appendChild(canvas3);
     const sortedIssues = Object.entries(issueCounts).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,8);
     chartInstances.push(new Chart(canvas3, {
       type:'bar',
-      data:{ labels: sortedIssues.map(([k])=>k), datasets:[{label:'Occurrences', data: sortedIssues.map(([,v])=>v), backgroundColor:'#e0a940'}]},
-      options:{indexAxis:'y', responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'Top Reported Issues (all time)', color:'#e7edf0'}, legend:{display:false}}, scales:{x:{ticks:{color:'#8fa2ab'},grid:{color:'#2a343b'}},y:{ticks:{color:'#8fa2ab'},grid:{color:'#2a343b'}}}}
+      data:{ labels: sortedIssues.map(([k])=>k), datasets:[{label:'Occurrences', data: sortedIssues.map(([,v])=>v), backgroundColor:'#d97706'}]},
+      options:{indexAxis:'y', responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'Top Reported Issues (all time)', color:'#1f2937'}, legend:{display:false}}, scales:{x:{ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}},y:{ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}}}}
     }));
   }, 0);
 
@@ -1118,14 +1014,21 @@ function SettingsView(){
       el('div',{class:'sub'},'Technicians only ever add new records — nothing here lets them edit or delete history.'),
       el('div',{class:'small-note'}, `${STATE.records.length} O&M repair record(s) currently stored.`),
     ]));
-  } else if(STATE.role==='quality'){
-    wrap.appendChild(el('div',{class:'banner ok'},'You have full access to the O&M QC side, the plant intake side, and new battery inventory.'));
-    wrap.appendChild(pinCard('O&M QC Admin PIN','Used by technicians\' supervisor to reach O&M repair QC data.', 'omAdminPin'));
-    wrap.appendChild(pinCard('Quality Engineer PIN','Your own PIN.', 'qualityPin'));
+  } else if(STATE.role==='plant'){
+    wrap.appendChild(pinCard('Plant Engineer PIN','Change the PIN used to reach the plant intake dashboard.', 'plantPin'));
     wrap.appendChild(el('div',{class:'card'},[
       el('h3',{},'Data'),
-      el('div',{class:'sub'},'Every store in this app is append-only: saving a new entry never edits or deletes a previously stored one, and current inventory is always calculated from the full movement history rather than kept as an editable total. Future changes to this app cannot alter data already logged.'),
-      el('div',{class:'small-note'}, `${STATE.records.length} O&M repair record(s) · ${STATE.plantRecords.length} daily plant record(s) · ${STATE.newBatteryRecords.length} new battery intake entrie(s) · ${STATE.inventoryAdjustments.length} inventory movement(s).`),
+      el('div',{class:'sub'},'One record per calendar date. Saving again for a date you already logged updates that day\'s figures and keeps a change history — it never creates a duplicate day.'),
+      el('div',{class:'small-note'}, `${STATE.plantRecords.length} daily plant record(s) currently stored.`),
+    ]));
+  } else if(STATE.role==='quality'){
+    wrap.appendChild(el('div',{class:'banner ok'},'You have full access to both the O&M QC side and the Plant intake side, including all PINs below.'));
+    wrap.appendChild(pinCard('O&M QC Admin PIN','Used by technicians\' supervisor to reach O&M repair QC data.', 'omAdminPin'));
+    wrap.appendChild(pinCard('Plant Engineer PIN','Used to reach the plant intake / dispatch data.', 'plantPin'));
+    wrap.appendChild(pinCard('Quality Engineer PIN','Your own PIN — the only one with access to both sides.', 'qualityPin'));
+    wrap.appendChild(el('div',{class:'card'},[
+      el('h3',{},'Data'),
+      el('div',{class:'small-note'}, `${STATE.records.length} O&M repair record(s) · ${STATE.plantRecords.length} daily plant record(s).`),
     ]));
   }
   return wrap;
@@ -1354,26 +1257,26 @@ function PlantDashboardView(){
     plantChartInstances.push(new Chart(canvas1, {
       type:'bar',
       data:{ labels:keys, datasets:[
-        {label:'Upgraded', data:keys.map(k=>buckets[k].upgraded), backgroundColor:'#3ddc97'},
-        {label:'Not Upgraded', data:keys.map(k=>buckets[k].notUpgraded), backgroundColor:'#4fb0e0'},
-        {label:'Quality Issues', data:keys.map(k=>buckets[k].quality), backgroundColor:'#e0a940'},
-        {label:'Faulty', data:keys.map(k=>buckets[k].faulty), backgroundColor:'#e2585a'},
+        {label:'Upgraded', data:keys.map(k=>buckets[k].upgraded), backgroundColor:'#10b981'},
+        {label:'Not Upgraded', data:keys.map(k=>buckets[k].notUpgraded), backgroundColor:'#0284c7'},
+        {label:'Quality Issues', data:keys.map(k=>buckets[k].quality), backgroundColor:'#d97706'},
+        {label:'Faulty', data:keys.map(k=>buckets[k].faulty), backgroundColor:'#ef4444'},
       ]},
-      options:{responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'Unboxed Batteries by Outcome — '+STATE.plantPeriod, color:'#e7edf0'}, legend:{labels:{color:'#8fa2ab'}}}, scales:{x:{stacked:true,ticks:{color:'#8fa2ab'},grid:{color:'#2a343b'}},y:{stacked:true,ticks:{color:'#8fa2ab'},grid:{color:'#2a343b'}}}}
+      options:{responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'Unboxed Batteries by Outcome — '+STATE.plantPeriod, color:'#1f2937'}, legend:{labels:{color:'#6b7280'}}}, scales:{x:{stacked:true,ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}},y:{stacked:true,ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}}}}
     }));
     const canvas2 = document.createElement('canvas'); c2.innerHTML=''; c2.appendChild(canvas2);
     const sortedIssues = Object.entries(issueTotals).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
     plantChartInstances.push(new Chart(canvas2, {
       type:'bar',
-      data:{ labels: sortedIssues.map(([k])=>k), datasets:[{label:'Occurrences', data: sortedIssues.map(([,v])=>v), backgroundColor:'#e0a940'}]},
-      options:{indexAxis:'y', responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'Quality Issue Breakdown (all time)', color:'#e7edf0'}, legend:{display:false}}, scales:{x:{ticks:{color:'#8fa2ab'},grid:{color:'#2a343b'}},y:{ticks:{color:'#8fa2ab'},grid:{color:'#2a343b'}}}}
+      data:{ labels: sortedIssues.map(([k])=>k), datasets:[{label:'Occurrences', data: sortedIssues.map(([,v])=>v), backgroundColor:'#d97706'}]},
+      options:{indexAxis:'y', responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'Quality Issue Breakdown (all time)', color:'#1f2937'}, legend:{display:false}}, scales:{x:{ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}},y:{ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}}}}
     }));
     const canvas3 = document.createElement('canvas'); c3.innerHTML=''; c3.appendChild(canvas3);
     const sortedDispatch = Object.entries(dispatchTotals).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
     plantChartInstances.push(new Chart(canvas3, {
       type:'bar',
-      data:{ labels: sortedDispatch.map(([k])=>k), datasets:[{label:'Units dispatched', data: sortedDispatch.map(([,v])=>v), backgroundColor:'#a78bfa'}]},
-      options:{indexAxis:'y', responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'Dispatch Destinations (all time)', color:'#e7edf0'}, legend:{display:false}}, scales:{x:{ticks:{color:'#8fa2ab'},grid:{color:'#2a343b'}},y:{ticks:{color:'#8fa2ab'},grid:{color:'#2a343b'}}}}
+      data:{ labels: sortedDispatch.map(([k])=>k), datasets:[{label:'Units dispatched', data: sortedDispatch.map(([,v])=>v), backgroundColor:'#8b5cf6'}]},
+      options:{indexAxis:'y', responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'Dispatch Destinations (all time)', color:'#1f2937'}, legend:{display:false}}, scales:{x:{ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}},y:{ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}}}}
     }));
   }, 0);
 
@@ -1382,156 +1285,6 @@ function PlantDashboardView(){
   exportBtn.addEventListener('click', ()=>exportPlantToExcel(STATE.plantRecords));
   exportRow.appendChild(exportBtn);
   wrap.appendChild(exportRow);
-
-  return wrap;
-}
-
-/* ---------------- New Battery Intake ---------------- */
-function NewBatteryIntakeView(){
-  const d = STATE.newBatteryDraft;
-  const container = el('div');
-
-  const info = el('div',{class:'card'});
-  info.appendChild(el('h3',{},'Log New Batteries Received'));
-  info.appendChild(el('div',{class:'sub'},'Each shipment is its own entry for a given day — log a second entry if another batch arrives the same day. Entries are never edited or deleted here, only added, so stock figures stay accurate as this app is improved over time.'));
-  const g1 = el('div',{class:'grid narrow'});
-  g1.appendChild(field('Date Received', textInput(d.date, v=>d.date=v, {type:'date'})));
-  const platformSel = el('select',{});
-  PLATFORMS.forEach(p=>{ const o=el('option',{value:p},p); if(d.platform===p) o.setAttribute('selected','true'); platformSel.appendChild(o); });
-  platformSel.addEventListener('change', ()=>d.platform=platformSel.value);
-  g1.appendChild(field('Battery Platform', platformSel));
-  g1.appendChild(field('Quantity Received', textInput(d.quantity, v=>d.quantity=v, {type:'number'})));
-  g1.appendChild(field('Batch / Lot No.', textInput(d.batchLot, v=>d.batchLot=v)));
-  g1.appendChild(field('Source / Supplier', textInput(d.source, v=>d.source=v)));
-  const condSel = el('select',{});
-  BATTERY_CONDITIONS.forEach(c=>{ const o=el('option',{value:c},c); if(d.condition===c) o.setAttribute('selected','true'); condSel.appendChild(o); });
-  condSel.addEventListener('change', ()=>d.condition=condSel.value);
-  g1.appendChild(field('Condition', condSel));
-  g1.appendChild(field('Logged By', textInput(d.loggedBy, v=>d.loggedBy=v)));
-  info.appendChild(g1);
-  info.appendChild(field('Serial / IMEI Numbers (optional — one per line or comma-separated)', textareaInput(d.serialsRaw, v=>d.serialsRaw=v)));
-  info.appendChild(field('Notes', textareaInput(d.notes, v=>d.notes=v)));
-  container.appendChild(info);
-
-  const actions = el('div',{class:'footer-actions'});
-  const clearBtn = el('button',{class:'btn-ghost'},'Clear form');
-  clearBtn.addEventListener('click', ()=>{ STATE.newBatteryDraft = emptyNewBatteryDraft(); render(); });
-  const saveBtn = el('button',{class:'btn-primary'},'Save Intake Record');
-  saveBtn.addEventListener('click', async ()=>{
-    const qty = parseInt(d.quantity);
-    if(!d.date || !qty || qty<=0){ toast('Date and a quantity greater than 0 are required.'); return; }
-    const serials = d.serialsRaw.split(/[\n,]/).map(s=>s.trim()).filter(Boolean);
-    const record = {
-      id: uid(), schemaVersion: 1, createdAt: new Date().toISOString(),
-      date: d.date, platform: d.platform, quantity: qty, batchLot: d.batchLot, source: d.source,
-      condition: d.condition, serials, notes: d.notes, loggedBy: d.loggedBy,
-    };
-    const updated = [...STATE.newBatteryRecords, record];
-    await saveNewBatteryRecords(updated);
-    STATE.newBatteryRecords = updated;
-    const keepBy = d.loggedBy;
-    STATE.newBatteryDraft = emptyNewBatteryDraft();
-    STATE.newBatteryDraft.loggedBy = keepBy;
-    toast(`Logged ${qty} ${record.platform} batteries received on ${record.date}. Inventory updated.`);
-  });
-  actions.appendChild(clearBtn); actions.appendChild(saveBtn);
-  container.appendChild(actions);
-
-  const recent = STATE.newBatteryRecords.slice(-25).reverse();
-  const histCard = el('div',{class:'card'});
-  histCard.appendChild(el('h3',{},'Recent Intake Entries'));
-  histCard.appendChild(el('div',{class:'sub'},'Last 25 shipments logged. Full ledger and current stock are on the Inventory tab.'));
-  if(recent.length){
-    const tw = el('div',{class:'table-wrap'});
-    const t = el('table');
-    t.appendChild(el('tr',{},['Date','Platform','Qty','Batch/Lot','Source','Condition','Logged By'].map(h=>el('th',{},h))));
-    recent.forEach(r=>{
-      t.appendChild(el('tr',{},[
-        el('td',{},r.date), el('td',{},r.platform), el('td',{},String(r.quantity)),
-        el('td',{},r.batchLot||'—'), el('td',{},r.source||'—'), el('td',{},r.condition||'—'), el('td',{},r.loggedBy||'—'),
-      ]));
-    });
-    tw.appendChild(t); histCard.appendChild(tw);
-  } else {
-    histCard.appendChild(el('div',{class:'small-note'},'No intake entries logged yet.'));
-  }
-  container.appendChild(histCard);
-
-  return container;
-}
-
-/* ---------------- Inventory ---------------- */
-function InventoryView(){
-  const wrap = el('div');
-  const stock = stockByPlatform();
-  const totalStock = PLATFORMS.reduce((s,p)=>s+(stock[p]||0),0);
-
-  const stats = el('div',{class:'stat-grid'});
-  const mk = (n,l)=>el('div',{class:'stat'},[el('div',{class:'n'},String(n)), el('div',{class:'l'},l)]);
-  stats.appendChild(mk(totalStock,'Total batteries in stock'));
-  PLATFORMS.forEach(p=>stats.appendChild(mk(stock[p]||0, p+' in stock')));
-  wrap.appendChild(stats);
-
-  const d = STATE.adjustmentDraft;
-  const form = el('div',{class:'card'});
-  form.appendChild(el('h3',{},'Log Inventory Movement'));
-  form.appendChild(el('div',{class:'sub'},'Use this for stock leaving or being corrected outside a normal shipment — issuing to plant, damage found, a return, or a manual correction. New shipments belong on the "New Batteries" tab instead.'));
-  const g = el('div',{class:'grid narrow'});
-  g.appendChild(field('Date', textInput(d.date, v=>d.date=v, {type:'date'})));
-  const pSel = el('select',{});
-  PLATFORMS.forEach(p=>{ const o=el('option',{value:p},p); if(d.platform===p) o.setAttribute('selected','true'); pSel.appendChild(o); });
-  pSel.addEventListener('change', ()=>d.platform=pSel.value);
-  g.appendChild(field('Platform', pSel));
-  const tSel = el('select',{});
-  MOVEMENT_TYPES.forEach(([v,l])=>{ const o=el('option',{value:v},l); if(d.type===v) o.setAttribute('selected','true'); tSel.appendChild(o); });
-  tSel.addEventListener('change', ()=>d.type=tSel.value);
-  g.appendChild(field('Movement Type', tSel));
-  g.appendChild(field('Quantity', textInput(d.quantity, v=>d.quantity=v, {type:'number'})));
-  g.appendChild(field('Reference (work order, dispatch no., etc.)', textInput(d.reference, v=>d.reference=v)));
-  g.appendChild(field('Logged By', textInput(d.loggedBy, v=>d.loggedBy=v)));
-  form.appendChild(g);
-  form.appendChild(field('Notes', textareaInput(d.notes, v=>d.notes=v)));
-  const saveBtn = el('button',{class:'btn-primary btn-sm', style:'margin-top:12px;'},'Save Movement');
-  saveBtn.addEventListener('click', async ()=>{
-    const qty = parseInt(d.quantity);
-    if(!d.date || !qty || qty<=0){ toast('Date and a quantity greater than 0 are required.'); return; }
-    const record = {
-      id: uid(), schemaVersion: 1, createdAt: new Date().toISOString(),
-      date: d.date, platform: d.platform, type: d.type, quantity: qty,
-      reference: d.reference, notes: d.notes, loggedBy: d.loggedBy,
-    };
-    const updated = [...STATE.inventoryAdjustments, record];
-    await saveInventoryAdjustments(updated);
-    STATE.inventoryAdjustments = updated;
-    const keepBy = d.loggedBy;
-    STATE.adjustmentDraft = emptyAdjustmentDraft();
-    STATE.adjustmentDraft.loggedBy = keepBy;
-    toast('Movement logged.');
-  });
-  form.appendChild(saveBtn);
-  wrap.appendChild(form);
-
-  const ledgerCard = el('div',{class:'card'});
-  ledgerCard.appendChild(el('h3',{},'Movement Ledger'));
-  ledgerCard.appendChild(el('div',{class:'sub'},'Every unit received, issued, damaged, returned, or corrected — oldest first below is reversed, so most recent is on top.'));
-  const exportBtn = el('button',{class:'btn-ghost btn-sm', style:'margin-bottom:10px;'},'⬇ Export to Excel');
-  exportBtn.addEventListener('click', ()=>exportInventoryToExcel());
-  ledgerCard.appendChild(exportBtn);
-  const moves = allInventoryMovements().slice().reverse();
-  const tw = el('div',{class:'table-wrap'});
-  const t = el('table');
-  t.appendChild(el('tr',{},['Date','Platform','Movement','Qty','Reference','Logged By'].map(h=>el('th',{},h))));
-  moves.forEach(m=>{
-    t.appendChild(el('tr',{},[
-      el('td',{},m.date), el('td',{},m.platform),
-      el('td',{},(m.direction>0?'+ ':'− ')+movementLabel(m.type)),
-      el('td',{},String(m.qty)),
-      el('td',{},m.reference||'—'),
-      el('td',{},m.loggedBy||'—'),
-    ]));
-  });
-  tw.appendChild(t); ledgerCard.appendChild(tw);
-  wrap.appendChild(ledgerCard);
 
   return wrap;
 }
@@ -1623,26 +1376,9 @@ function exportPlantToExcel(list){
   XLSX.writeFile(wb, `BatteryQC_Plant_Export_${todayStr()}.xlsx`);
 }
 
-function exportInventoryToExcel(){
-  const moves = allInventoryMovements();
-  const rows = moves.map(m=>({
-    Date: m.date, Platform: m.platform, 'Movement Type': movementLabel(m.type),
-    Direction: m.direction>0 ? 'IN' : 'OUT', Quantity: m.qty,
-    Reference: m.reference||'', Note: m.note||'', 'Logged By': m.loggedBy||'',
-  }));
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Movements');
-
-  const stock = stockByPlatform();
-  const stockRows = PLATFORMS.map(p=>({ Platform: p, 'Current Stock': stock[p]||0 }));
-  stockRows.push({ Platform: 'TOTAL', 'Current Stock': PLATFORMS.reduce((s,p)=>s+(stock[p]||0),0) });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stockRows), 'Current Stock');
-
-  XLSX.writeFile(wb, `BatteryQC_Inventory_Export_${todayStr()}.xlsx`);
-}
-
 /* ---------------- Init ---------------- */
 render();
 </script>
 </body>
 </html>
+
