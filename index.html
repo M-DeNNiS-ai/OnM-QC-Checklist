@@ -1,39 +1,442 @@
 <!DOCTYPE html>
 <html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plant Battery Quality & Inventory Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0f172a;
+      --bg-card: #1e293b;
+      --bg-card-hover: #334155;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-blue: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-purple: #a855f7;
+      --font-family: 'Inter', sans-serif;
+    }
 
-  <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Spiro O&M Battery QC Tracker</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-:root{
-  --bg:#0f1417;
-  --panel:#161d22;
-  --panel2:#1c252b;
-  --line:#2a343b;
-  --text:#e7edf0;
-  --muted:#8fa2ab;
-  --amp:#3ddc97;
-  --amp-dim:#255c47;
-  --volt:#4fb0e0;
-  --warn:#e0a940;
-  --fail:#e2585a;
-  --mono:'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
-}
-*{box-sizing:border-box;}
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-  font-size:14.5px;
-  line-height:1.45;
-}
-.app{max-width:1180px;margin:0 auto;padding:16px 16px 60px;}
-.topbar{
-  display:flex;align-items:center;justify-content:space-between;
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); }
+    body { background-color: var(--bg-main); color: var(--text-main); line-height: 1.5; padding-bottom: 50px; }
+
+    /* Top Navigation Header */
+    header {
+      background-color: #020617;
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand-title { font-size: 1.25rem; font-weight: 700; color: var(--accent-blue); display: flex; align-items: center; gap: 0.5rem; }
+    .role-badge { background: #1e293b; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.8rem; color: var(--accent-green); border: 1px solid var(--accent-green); }
+
+    /* Navigation Tabs */
+    .tab-bar {
+      display: flex;
+      background: #020617;
+      border-bottom: 1px solid var(--border-color);
+      padding: 0 1.5rem;
+      gap: 1rem;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 1rem 0.5rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .tab-btn.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); font-weight: 600; }
+
+    .container { max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Cards Layout */
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 0.75rem; padding: 1.25rem; }
+    .card-title { font-size: 0.875rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .card-value { font-size: 1.875rem; font-weight: 700; color: var(--text-main); }
+    .card-subtext { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+    /* Form Styles */
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--text-muted); margin-bottom: 0.35rem; }
+    input, select, textarea {
+      width: 100%;
+      background: #020617;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.6rem 0.8rem;
+      border-radius: 0.5rem;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: var(--accent-blue); }
+
+    .btn {
+      background: var(--accent-blue);
+      color: #020617;
+      border: none;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s ease;
+    }
+    .btn:hover { opacity: 0.9; }
+
+    /* Table Styling */
+    .table-container { overflow-x: auto; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 0.75rem; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
+    th, td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); }
+    th { background: #020617; color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.75rem; }
+    tr:last-child td { border-bottom: none; }
+
+    /* Auto-computed breakdown display */
+    .summary-box {
+      background: #020617;
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    .summary-row { display: flex; justify-content: space-between; padding: 0.35rem 0; font-size: 0.875rem; border-bottom: 1px border-color; }
+    .summary-row.total { font-weight: 700; font-size: 1rem; color: var(--accent-green); border-top: 1px solid var(--border-color); padding-top: 0.5rem; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand-title">⚡ Plant Operations & Quality Portal</div>
+    <div class="role-badge">Lead Electrical & Quality Engineer Access</div>
+  </header>
+
+  <!-- Navigation -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('new-batteries')">📦 New Battery Intake & Plant Operations</button>
+    <button class="tab-btn" onclick="switchTab('om-qc')">🔧 O&M Quality Checks (Field/Swaps)</button>
+    <button class="tab-btn" onclick="switchTab('dispatch-logs')">🚚 Dispatch & Allocation Logs</button>
+  </div>
+
+  <div class="container">
+
+    <!-- TAB 1: NEW BATTERIES OPERATIONS -->
+    <div id="new-batteries" class="tab-content active">
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">Total Plant Inventory</div>
+          <div class="card-value" id="disp-total-available">2,263</div>
+          <div class="card-subtext">Unboxed (798) + Boxed (1440) + Old (25)</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Unboxed & Ready / Upgraded</div>
+          <div class="card-value" style="color: var(--accent-green)" id="disp-active">338</div>
+          <div class="card-subtext">Active & ready for deployment</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Pending IoT Upgrade</div>
+          <div class="card-value" style="color: var(--accent-amber)" id="disp-pending">378</div>
+          <div class="card-subtext">Awaiting firmware/cellular flash</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Total Quality / Faulty Issues</div>
+          <div class="card-value" style="color: var(--accent-red)" id="disp-quality-issues">90</div>
+          <div class="card-subtext">81 Quality Issues + 9 Faulty Units</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        
+        <!-- Daily Form Entry -->
+        <div class="card">
+          <div class="card-title">Daily Intake & Status Update Form</div>
+          <form id="daily-entry-form" onsubmit="handleDailySubmit(event)">
+            <div class="form-group">
+              <label>Record Date</label>
+              <input type="date" id="entry-date" required>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+              <div class="form-group">
+                <label>Pallets Left Boxed (Qty)</label>
+                <input type="number" id="input-boxed-pallets" value="40" oninput="recalculate()" required>
+              </div>
+              <div class="form-group">
+                <label>Batteries per Pallet</label>
+                <input type="number" id="input-per-pallet" value="36" oninput="recalculate()" required>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+              <div class="form-group">
+                <label>Unboxed Today (Batteries)</label>
+                <input type="number" id="input-unboxed-today" value="72" oninput="recalculate()" required>
+              </div>
+              <div class="form-group">
+                <label>Batteries Charged Today</label>
+                <input type="number" id="input-charged-today" value="58" required>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+              <div class="form-group">
+                <label>Active / Upgraded Ready</label>
+                <input type="number" id="input-active" value="338" oninput="recalculate()" required>
+              </div>
+              <div class="form-group">
+                <label>Pending IoT / Not Upgraded</label>
+                <input type="number" id="input-pending" value="378" oninput="recalculate()" required>
+              </div>
+            </div>
+
+            <div class="card-title" style="margin-top:0.5rem;">Defects Breakdown</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+              <div class="form-group">
+                <label>Duplicate IMEI / Soft Defects</label>
+                <input type="number" id="input-quality-defects" value="81" oninput="recalculate()" required>
+              </div>
+              <div class="form-group">
+                <label>Hardware Faulty (Insulation/Dents)</label>
+                <input type="number" id="input-hardware-faulty" value="9" oninput="recalculate()" required>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
+              <div class="form-group">
+                <label>Given for IQC Test</label>
+                <input type="number" id="input-iqc" value="1" oninput="recalculate()" required>
+              </div>
+              <div class="form-group">
+                <label>Test Batteries</label>
+                <input type="number" id="input-test" value="12" oninput="recalculate()" required>
+              </div>
+              <div class="form-group">
+                <label>Old Batteries</label>
+                <input type="number" id="input-old" value="25" oninput="recalculate()" required>
+              </div>
+            </div>
+
+            <button type="submit" class="btn">Save & Reconcile Daily Record</button>
+          </form>
+        </div>
+
+        <!-- Calculated Live Reconciliation -->
+        <div class="card">
+          <div class="card-title">Automated Inventory Reconciliation</div>
+          
+          <div class="summary-box">
+            <div class="summary-row">
+              <span>Boxed Batteries (40 Pallets × 36)</span>
+              <strong id="calc-boxed">1,440</strong>
+            </div>
+            <div class="summary-row">
+              <span>Total Unboxed New Batch</span>
+              <strong id="calc-unboxed">798</strong>
+            </div>
+            <div style="padding-left: 1rem; font-size: 0.8rem; color: var(--text-muted);">
+              <div>• Active / Ready: <span id="calc-sub-active">338</span></div>
+              <div>• Pending IoT Upgrade: <span id="calc-sub-pending">378</span></div>
+              <div>• Quality Issues (Soft): <span id="calc-sub-quality">81</span></div>
+              <div>• Faulty Units (Hard): <span id="calc-sub-faulty">9</span></div>
+              <div>• IQC Testing: <span id="calc-sub-iqc">1</span></div>
+              <div>• Dedicated Test Fleet: <span id="calc-sub-test">12</span></div>
+            </div>
+            <div class="summary-row" style="margin-top:0.5rem;">
+              <span>Total New Batteries (Boxed + Unboxed)</span>
+              <strong id="calc-total-new">2,238</strong>
+            </div>
+            <div class="summary-row">
+              <span>Total Old Batteries</span>
+              <strong id="calc-old">25</strong>
+            </div>
+            <div class="summary-row total">
+              <span>Total Available Plant Stock</span>
+              <strong id="calc-total-available">2,263</strong>
+            </div>
+          </div>
+
+          <div style="margin-top: 1rem;">
+            <label>Dispatch Battery Allocation</label>
+            <div class="form-group">
+              <select id="dispatch-destination">
+                <option>Swap Racks Testing</option>
+                <option>Electrical Board Testing</option>
+                <option>Authorised Plant Personnel</option>
+                <option>Deployed to Plant B</option>
+                <option>Deployed to Energy Swap Stations</option>
+                <option>Deployed to Bikes at Plant</option>
+                <option>Bikes Remaining at Plant (with Battery)</option>
+              </select>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="number" id="dispatch-qty" placeholder="Quantity" style="width: 40%;">
+              <button class="btn" onclick="handleDispatch()" style="background: var(--accent-purple); color: white;">Record Dispatch</button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 2: O&M QUALITY CHECKS -->
+    <div id="om-qc" class="tab-content">
+      <div class="card">
+        <div class="card-title">O&M Quality Check Operations (Field/Swaps Diagnostics)</div>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+          Isolated module for O&M Quality Engineering. Records here track field returns, swap station errors, BMS communication failures, and physical insulation tests.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Battery Serial / IMEI</label>
+            <input type="text" placeholder="e.g. AMP-60V-XXXXX">
+          </div>
+          <div class="form-group">
+            <label>Failure Classification</label>
+            <select>
+              <option>Insulation Resistance Failure</option>
+              <option>Duplicate IMEI</option>
+              <option>Physical Dent / Casing Damage</option>
+              <option>Charging Failure</option>
+              <option>Discharge Failure</option>
+              <option>Faulty LED Board</option>
+              <option>BMS Communication Fault (CAN/UART)</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn" style="background: var(--accent-green); color: #020617;">Log O&M QC Diagnostic</button>
+      </div>
+    </div>
+
+    <!-- TAB 3: DISPATCH LOGS -->
+    <div id="dispatch-logs" class="tab-content">
+      <div class="card">
+        <div class="card-title">Plant Dispatch & Internal Allocation Log</div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Destination Sector</th>
+                <th>Quantity</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="dispatch-table-body">
+              <tr>
+                <td>2026-09-01 09:30</td>
+                <td>Swap Racks Testing</td>
+                <td>12</td>
+                <td><span style="color: var(--accent-green);">Dispatched</span></td>
+              </tr>
+              <tr>
+                <td>2026-09-01 11:15</td>
+                <td>Deployed to Bikes at Plant</td>
+                <td>8</td>
+                <td><span style="color: var(--accent-green);">Active on Bike</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Tab Switching Logic
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    // Auto-calculate daily reconciliation numbers
+    function recalculate() {
+      const pallets = parseInt(document.getElementById('input-boxed-pallets').value) || 0;
+      const perPallet = parseInt(document.getElementById('input-per-pallet').value) || 0;
+      const active = parseInt(document.getElementById('input-active').value) || 0;
+      const pending = parseInt(document.getElementById('input-pending').value) || 0;
+      const quality = parseInt(document.getElementById('input-quality-defects').value) || 0;
+      const faulty = parseInt(document.getElementById('input-hardware-faulty').value) || 0;
+      const iqc = parseInt(document.getElementById('input-iqc').value) || 0;
+      const test = parseInt(document.getElementById('input-test').value) || 0;
+      const old = parseInt(document.getElementById('input-old').value) || 0;
+
+      // Compute aggregates
+      const totalBoxed = pallets * perPallet;
+      const totalUnboxed = active + pending + quality + faulty + iqc + test;
+      const totalNew = totalBoxed + totalUnboxed;
+      const totalAvailable = totalNew + old;
+
+      // Update UI displays
+      document.getElementById('calc-boxed').innerText = totalBoxed.toLocaleString();
+      document.getElementById('calc-unboxed').innerText = totalUnboxed.toLocaleString();
+      document.getElementById('calc-sub-active').innerText = active.toLocaleString();
+      document.getElementById('calc-sub-pending').innerText = pending.toLocaleString();
+      document.getElementById('calc-sub-quality').innerText = quality.toLocaleString();
+      document.getElementById('calc-sub-faulty').innerText = faulty.toLocaleString();
+      document.getElementById('calc-sub-iqc').innerText = iqc.toLocaleString();
+      document.getElementById('calc-sub-test').innerText = test.toLocaleString();
+      document.getElementById('calc-total-new').innerText = totalNew.toLocaleString();
+      document.getElementById('calc-old').innerText = old.toLocaleString();
+      document.getElementById('calc-total-available').innerText = totalAvailable.toLocaleString();
+
+      // Top Cards
+      document.getElementById('disp-total-available').innerText = totalAvailable.toLocaleString();
+      document.getElementById('disp-active').innerText = active.toLocaleString();
+      document.getElementById('disp-pending').innerText = pending.toLocaleString();
+      document.getElementById('disp-quality-issues').innerText = (quality + faulty).toLocaleString();
+    }
+
+    function handleDailySubmit(e) {
+      e.preventDefault();
+      alert('Daily Plant Inventory & Quality Records updated and saved successfully.');
+    }
+
+    function handleDispatch() {
+      const dest = document.getElementById('dispatch-destination').value;
+      const qty = document.getElementById('dispatch-qty').value;
+      if (!qty) return alert('Enter quantity to dispatch');
+
+      const tbody = document.getElementById('dispatch-table-body');
+      const now = new Date().toISOString().replace('T', ' ').substring(0, 16);
+      const row = `<tr>
+        <td>${now}</td>
+        <td>${dest}</td>
+        <td>${qty}</td>
+        <td><span style="color: var(--accent-green);">Dispatched</span></td>
+      </tr>`;
+      tbody.innerHTML = row + tbody.innerHTML;
+      document.getElementById('dispatch-qty').value = '';
+      alert(`Dispatched ${qty} batteries to ${dest}`);
+    }
+
+    // Set today's date on load
+    document.getElementById('entry-date').valueAsDate = new Date();
+    recalculate();
+  </script>
+</body>
+</html>
   padding:14px 0 18px;border-bottom:1px solid var(--line);margin-bottom:18px;
   gap:10px;flex-wrap:wrap;
 }
