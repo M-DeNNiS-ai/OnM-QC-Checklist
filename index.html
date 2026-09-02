@@ -3,74 +3,43 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Spiro Battery Quality Control & Fleet Telemetry System</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<title>Spiro Quality Control & Fleet Telemetry System</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #07090e;
-  --panel: #0d1117;
-  --panel2: #141b24;
-  --panel3: #1c2633;
-  --line: #212e3e;
-  --line-light: #31445b;
-  --text: #e6edf3;
-  --muted: #7d8f9d;
-  --cyan: #00f0ff;
-  --cyan-dim: rgba(0, 240, 255, 0.1);
-  --cyan-border: rgba(0, 240, 255, 0.3);
-  --amp: #10b981;
-  --amp-dim: rgba(16, 185, 129, 0.12);
-  --volt: #38bdf8;
-  --volt-dim: rgba(56, 189, 248, 0.12);
-  --warn: #f59e0b;
-  --fail: #ef4444;
-  --fail-dim: rgba(239, 68, 68, 0.12);
-  --purple: #a855f7;
-  --purple-dim: rgba(168, 85, 247, 0.12);
-  --font-display: 'Chakra Petch', sans-serif;
-  --font-sans: 'Plus Jakarta Sans', sans-serif;
-  --mono: 'JetBrains Mono', monospace;
-}
-
-[data-theme="light"] {
-  --bg: #f4f6f9;
+  --bg: #f8f9fa;
   --panel: #ffffff;
-  --panel2: #eef2f6;
-  --panel3: #e2e8f0;
-  --line: #cbd5e1;
-  --line-light: #94a3b8;
-  --text: #0f172a;
-  --muted: #64748b;
-  --cyan: #0284c7;
-  --cyan-dim: #e0f2fe;
-  --cyan-border: #bae6fd;
-  --amp: #059669;
-  --amp-dim: #d1fae5;
-  --volt: #0284c7;
-  --volt-dim: #e0f2fe;
-  --warn: #d97706;
-  --fail: #dc2626;
-  --fail-dim: #fee2e2;
-  --purple: #7e22ce;
-  --purple-dim: #f3e8ff;
+  --panel2: #f1f3f5;
+  --line: #e9ecef;
+  --line-dark: #ced4da;
+  --text: #111827;
+  --muted: #6b7280;
+  --accent: #0f172a;
+  --pass: #15803d;
+  --pass-bg: #f0fdf4;
+  --fail: #b91c1c;
+  --fail-bg: #fef2f2;
+  --warn: #c2410c;
+  --warn-bg: #fff7ed;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-[data-theme="industrial"] {
-  --bg: #111418;
-  --panel: #1a1f26;
-  --panel2: #222933;
-  --panel3: #2d3644;
-  --line: #3b4759;
-  --line-light: #52637a;
-  --text: #f1f5f9;
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --panel: #1e293b;
+  --panel2: #334155;
+  --line: #334155;
+  --line-dark: #475569;
+  --text: #f8fafc;
   --muted: #94a3b8;
-  --cyan: #eab308;
-  --cyan-dim: rgba(234, 179, 8, 0.12);
-  --cyan-border: rgba(234, 179, 8, 0.3);
+  --accent: #38bdf8;
+  --pass: #4ade80;
+  --pass-bg: rgba(74, 222, 128, 0.1);
+  --fail: #f87171;
+  --fail-bg: rgba(248, 113, 113, 0.1);
+  --warn: #fb923c;
+  --warn-bg: rgba(251, 146, 60, 0.1);
 }
 
 * { box-sizing: border-box; }
@@ -80,165 +49,130 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.4;
   -webkit-font-smoothing: antialiased;
 }
 
-.app { max-width: 1280px; margin: 0 auto; padding: 20px 24px 80px; }
+.app { max-width: 1100px; margin: 0 auto; padding: 16px; }
 
-/* Aerospace Topbar */
-.topbar {
+/* Top Header */
+.header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px; border: 1px solid var(--line); border-radius: 8px;
-  background: var(--panel); margin-bottom: 20px; gap: 16px; flex-wrap: wrap;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  padding: 12px 16px; background: var(--panel); border: 1px solid var(--line-dark);
+  border-radius: 4px; margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
 }
-.brand { display: flex; align-items: center; gap: 16px; }
-.brand .mark {
-  width: 44px; height: 44px; border-radius: 6px;
-  background: linear-gradient(135deg, #090d14, #141f2e);
-  border: 1px solid var(--cyan);
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display); font-weight: 700; color: var(--cyan); font-size: 22px;
-  box-shadow: 0 0 15px var(--cyan-dim);
-}
-.brand h1 { font-family: var(--font-display); font-size: 20px; margin: 0; letter-spacing: 1px; color: var(--text); text-transform: uppercase; }
-.brand p { margin: 0; font-size: 11px; font-family: var(--mono); color: var(--muted); letter-spacing: 0.5px; }
+.brand h1 { font-size: 15px; font-weight: 700; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text); }
+.brand p { margin: 0; font-size: 11px; color: var(--muted); }
 
-.who { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
-.who b { color: var(--text); font-weight: 600; font-family: var(--mono); }
-
-.pill {
-  padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700;
-  font-family: var(--mono); letter-spacing: 0.8px; text-transform: uppercase;
-  background: var(--panel2); border: 1px solid var(--line); color: var(--muted);
+.user-info { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.badge {
+  padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; background: var(--panel2); border: 1px solid var(--line-dark); color: var(--text);
 }
-.pill.admin { background: var(--cyan-dim); color: var(--cyan); border-color: var(--cyan-border); }
-.pill.tech { background: var(--amp-dim); color: var(--amp); border-color: var(--amp); }
-.pill.quality { background: var(--purple-dim); color: var(--purple); border-color: var(--purple); }
-
-.side-badge {
-  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: 700;
-  font-family: var(--mono); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; border: 1px solid transparent;
-}
-.side-badge.om { background: var(--cyan-dim); color: var(--cyan); border-color: var(--cyan-border); }
-.side-badge.plantside { background: var(--volt-dim); color: var(--volt); border-color: var(--line-light); }
-.side-badge.inv { background: var(--amp-dim); color: var(--amp); border-color: var(--amp); }
-.side-badge.warranty { background: var(--purple-dim); color: var(--purple); border-color: var(--purple); }
 
 button {
-  font-family: var(--font-sans); cursor: pointer; border: none; border-radius: 6px;
-  padding: 8px 16px; font-size: 13px; font-weight: 600; transition: all 0.15s ease;
+  font-family: var(--font-sans); cursor: pointer; border: 1px solid var(--line-dark);
+  background: var(--panel); color: var(--text); border-radius: 3px;
+  padding: 6px 12px; font-size: 12px; font-weight: 600; transition: all 0.1s ease;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
 }
-button:active { transform: translateY(1px); }
-.btn-primary { background: var(--cyan); color: #000; font-weight: 700; font-family: var(--font-display); letter-spacing: 0.5px; text-transform: uppercase; }
-.btn-primary:hover { filter: brightness(1.15); box-shadow: 0 0 12px var(--cyan-dim); }
-.btn-ghost { background: var(--panel2); border: 1px solid var(--line); color: var(--text); }
-.btn-ghost:hover { border-color: var(--line-light); background: var(--panel3); }
-.btn-danger { background: var(--fail-dim); border: 1px solid var(--fail); color: var(--fail); }
+button:hover { background: var(--panel2); }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { opacity: 0.9; background: var(--accent); }
+.btn-danger { background: var(--fail-bg); border-color: var(--fail); color: var(--fail); }
 .btn-danger:hover { background: var(--fail); color: #fff; }
-.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-sm { padding: 3px 8px; font-size: 11px; }
 
-.theme-select {
-  display: flex; align-items: center; gap: 6px; margin-left: auto; font-size: 11px; font-family: var(--mono); color: var(--muted);
-}
-.theme-select select {
-  padding: 4px 8px; font-size: 11px; font-family: var(--mono); border-radius: 4px; width: auto; background: var(--panel2); color: var(--text); border: 1px solid var(--line);
+.theme-toggle select {
+  padding: 3px 6px; font-size: 11px; border-radius: 3px; background: var(--panel);
+  color: var(--text); border: 1px solid var(--line-dark); font-family: var(--font-sans);
 }
 
+/* Authentication Gate */
 .gate {
-  max-width: 440px; margin: 12vh auto 0; padding: 32px;
-  background: var(--panel); border: 1px solid var(--line-light); border-radius: 8px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  max-width: 360px; margin: 15vh auto 0; padding: 24px;
+  background: var(--panel); border: 1px solid var(--line-dark); border-radius: 4px;
 }
-.gate h2 { margin-top: 0; font-family: var(--font-display); font-size: 22px; color: var(--cyan); letter-spacing: 1px; text-transform: uppercase; }
-.gate p { color: var(--muted); font-size: 13px; margin-bottom: 24px; font-family: var(--mono); }
+.gate h2 { margin-top: 0; font-size: 16px; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+.gate p { color: var(--muted); font-size: 12px; margin-bottom: 16px; }
 
-label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.8px; font-family: var(--mono); }
+/* Navigation */
+.nav { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--line-dark); padding-bottom: 8px; }
+.nav button { background: transparent; color: var(--muted); border: none; border-radius: 3px; font-size: 12px; font-weight: 600; padding: 6px 12px; }
+.nav button.active { background: var(--panel2); color: var(--text); font-weight: 700; }
+.nav button:hover:not(.active) { color: var(--text); }
+
+/* Layout Cards */
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; margin-bottom: 12px; }
+.card h3 { margin: 0 0 2px; font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--text); }
+.card .sub { color: var(--muted); font-size: 11px; margin-bottom: 12px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 12px; }
+.grid.narrow { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+
+label { display: block; font-size: 10px; font-weight: 700; color: var(--muted); margin: 8px 0 4px; text-transform: uppercase; letter-spacing: 0.3px; }
 input, select, textarea {
-  width: 100%; padding: 10px 12px; background: var(--panel2); color: var(--text);
-  border: 1px solid var(--line); border-radius: 4px; font-size: 13.5px; font-family: var(--font-sans);
-  transition: all 0.15s;
+  width: 100%; padding: 6px 8px; background: var(--panel); color: var(--text);
+  border: 1px solid var(--line-dark); border-radius: 3px; font-size: 12px; font-family: var(--font-sans);
 }
-input:focus, select:focus, textarea:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 8px var(--cyan-dim); }
-textarea { resize: vertical; min-height: 70px; }
-
-.nav { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 10px; align-items: center; }
-.nav button { background: transparent; color: var(--muted); border: 1px solid transparent; border-radius: 4px; font-size: 12.5px; font-family: var(--font-display); letter-spacing: 0.5px; text-transform: uppercase; padding: 7px 14px; }
-.nav button.active { background: var(--panel2); color: var(--cyan); border-color: var(--cyan-border); font-weight: 700; }
-.nav button:hover:not(.active) { color: var(--text); background: var(--panel3); }
-
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
-.card h3 { margin: 0 0 4px; font-family: var(--font-display); font-size: 16px; color: var(--text); letter-spacing: 0.5px; text-transform: uppercase; }
-.card .sub { color: var(--muted); font-size: 12px; margin-bottom: 16px; font-family: var(--mono); }
-
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 16px; }
-.grid.narrow { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--text); }
+textarea { resize: vertical; min-height: 50px; }
 
 .banner {
-  padding: 12px 16px; border-radius: 6px; font-size: 13px; font-family: var(--mono); margin-bottom: 18px;
-  border: 1px solid var(--warn); background: rgba(245, 158, 11, 0.1); color: var(--warn); display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: 3px; font-size: 11px; margin-bottom: 12px;
+  border: 1px solid var(--warn); background: var(--warn-bg); color: var(--warn); font-weight: 600;
 }
-.banner.ok { border-color: var(--amp); background: var(--amp-dim); color: var(--amp); }
+.banner.ok { border-color: var(--pass); background: var(--pass-bg); color: var(--pass); }
 
-.check-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 8px 0; border-bottom: 1px solid var(--line);
-}
+/* Checklists & Forms */
+.check-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
 .check-row:last-child { border-bottom: none; }
-.check-row span { font-size: 13px; }
+.check-row span { font-size: 12px; }
 
-.seg { display: flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; flex: none; }
-.seg button { border-radius: 0; padding: 4px 10px; font-size: 11px; font-family: var(--mono); background: var(--panel2); color: var(--muted); border: none; border-right: 1px solid var(--line); }
+.seg { display: flex; border: 1px solid var(--line-dark); border-radius: 3px; overflow: hidden; }
+.seg button { border-radius: 0; padding: 2px 8px; font-size: 10px; background: var(--panel); color: var(--muted); border: none; border-right: 1px solid var(--line-dark); }
 .seg button:last-child { border-right: none; }
-.seg button.sel-pass { background: var(--amp-dim); color: var(--amp); font-weight: 700; }
-.seg button.sel-fail { background: var(--fail-dim); color: var(--fail); font-weight: 700; }
-.seg button.sel-na { background: var(--panel3); color: var(--text); }
+.seg button.sel-pass { background: var(--pass-bg); color: var(--pass); font-weight: 700; }
+.seg button.sel-fail { background: var(--fail-bg); color: var(--fail); font-weight: 700; }
+.seg button.sel-na { background: var(--panel2); color: var(--text); }
 
-.bool-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
-.bool-row input { width: auto; accent-color: var(--cyan); cursor: pointer; width: 16px; height: 16px; }
-.bool-row label { margin: 0; color: var(--text); font-size: 13px; flex: 1; text-transform: none; font-weight: 400; cursor: pointer; font-family: var(--font-sans); }
+.bool-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.bool-row input { width: 14px; height: 14px; margin: 0; cursor: pointer; accent-color: var(--accent); }
+.bool-row label { margin: 0; color: var(--text); font-size: 12px; text-transform: none; font-weight: 400; cursor: pointer; }
 
-.result-chip {
-  display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10.5px; font-weight: 700;
-  font-family: var(--mono); letter-spacing: 0.8px; text-transform: uppercase;
+.status-chip {
+  display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 700; text-transform: uppercase;
 }
-.result-chip.PASS { background: var(--amp-dim); color: var(--amp); border: 1px solid var(--amp); }
-.result-chip.FAIL { background: var(--fail-dim); color: var(--fail); border: 1px solid var(--fail); }
-.result-chip.INCOMPLETE, .result-chip.NA { background: var(--panel3); color: var(--muted); border: 1px solid var(--line); }
+.status-chip.PASS { background: var(--pass-bg); color: var(--pass); border: 1px solid var(--pass); }
+.status-chip.FAIL { background: var(--fail-bg); color: var(--fail); border: 1px solid var(--fail); }
+.status-chip.INCOMPLETE, .status-chip.NA { background: var(--panel2); color: var(--muted); border: 1px solid var(--line-dark); }
 
-.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 20px; }
-.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
-.stat .n { font-size: 26px; font-weight: 700; font-family: var(--mono); color: var(--cyan); }
-.stat .l { font-size: 10.5px; font-weight: 700; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 4px; }
+/* KPI Stats Grid */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.stat { background: var(--panel); border: 1px solid var(--line-dark); border-radius: 4px; padding: 12px; }
+.stat .n { font-size: 20px; font-weight: 700; color: var(--text); }
+.stat .l { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
 
-.chart-wrap { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; margin-bottom: 20px; height: 300px; }
-
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
-th { color: var(--muted); font-weight: 700; text-transform: uppercase; font-size: 10.5px; font-family: var(--mono); letter-spacing: 0.8px; position: sticky; top: 0; background: var(--panel2); }
-.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+/* Data Tables */
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th, td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 700; text-transform: uppercase; font-size: 10px; background: var(--panel2); position: sticky; top: 0; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line-dark); border-radius: 3px; background: var(--panel); }
 tr:hover td { background: var(--panel2); }
-.mono { font-family: var(--mono); }
+.mono { font-family: var(--font-mono); }
 
-.footer-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; position: sticky; bottom: 0; background: var(--bg); padding: 14px 0 8px; z-index: 10; border-top: 1px solid var(--line); }
-.err { color: var(--fail); font-size: 12px; font-family: var(--mono); margin-top: 8px; }
+.footer-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; position: sticky; bottom: 0; background: var(--bg); padding: 10px 0; border-top: 1px solid var(--line-dark); }
+.err { color: var(--fail); font-size: 11px; margin-top: 6px; }
 
-/* SOP Reference Box */
-.sop-box {
-  background: var(--panel2); border: 1px dashed var(--line-light); padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 12px;
-}
-.sop-box ul { margin: 4px 0 0 18px; padding: 0; color: var(--muted); }
+.sop-box { background: var(--panel2); border: 1px solid var(--line-dark); padding: 8px 12px; border-radius: 3px; margin-bottom: 12px; font-size: 11px; }
 </style>
 </head>
 <body>
 <div id="root"></div>
 
 <script>
-/* Theme Handling */
-let currentTheme = localStorage.getItem('app_theme') || 'dark';
+let currentTheme = localStorage.getItem('app_theme') || 'light';
 document.documentElement.setAttribute('data-theme', currentTheme);
 
 function setTheme(theme) {
@@ -248,30 +182,15 @@ function setTheme(theme) {
   render();
 }
 
-function ThemeSelector() {
-  const container = el('div', { class: 'theme-select' });
-  container.appendChild(el('span', {}, 'STYLE: '));
-  const select = el('select', { onChange: (e) => setTheme(e.target.value) });
-  [['dark', 'NASA/SpaceX Dark'], ['light', 'Laboratory Light'], ['industrial', 'Siemens Industrial']].forEach(([val, label]) => {
-    const opt = el('option', { value: val }, label);
-    if (val === currentTheme) opt.setAttribute('selected', 'true');
-    select.appendChild(opt);
-  });
-  container.appendChild(select);
-  return container;
-}
-
-/* Operational Standard Operating Procedures */
 const STANDARD_SOPS = [
-  "SOP-BAT-01: Disassembly & Housing Opening Protocol",
-  "SOP-BAT-02: Cell Group Voltage Balancing & Module Diagnostics",
-  "SOP-BAT-03: BMS Replacement & Firmware Mismatch Resolution",
-  "SOP-BAT-04: Insulation Resistance & Hi-Pot Safety Testing",
-  "SOP-BAT-05: IoT Harness Rewiring & IMEI Flashing Procedure",
-  "SOP-BAT-06: Charging Port Connector Thermal Servicing"
+  "SOP-BAT-01: Housing Opening Protocol",
+  "SOP-BAT-02: Cell Balancing & Diagnostics",
+  "SOP-BAT-03: BMS Replacement & Firmware Sync",
+  "SOP-BAT-04: Insulation Safety Testing",
+  "SOP-BAT-05: IoT Rewiring & Flashing",
+  "SOP-BAT-06: Charge Port Thermal Servicing"
 ];
 
-/* Model Prefix Mapping (Regex-backed Prefix Rules) */
 const BMS_MODEL_PREFIXES = [
   { prefix: 'C7245AC2AA', model: 'CBAK' },
   { prefix: 'U7245AU1G1', model: 'UNIQUE' },
@@ -286,83 +205,60 @@ function detectModelFromBMS(bmsId) {
   return match ? match.model : '';
 }
 
-/* Checklist Items */
 const CHECK_ITEMS = [
   ['foreignObjects','No Foreign Objects / Cables'],
-  ['looseComponents','No Loose Components / Connectors'],
+  ['looseComponents','No Loose Components'],
   ['wiring','Internal Wiring Intact'],
-  ['cells','All Cells Physically Intact'],
+  ['cells','Cells Intact'],
   ['corrosion','No Moisture / Corrosion'],
-  ['bmsMount','BMS Board Securely Mounted'],
-  ['internalDamage','No Internal Damage / Vandalism'],
+  ['bmsMount','BMS Board Secure'],
+  ['internalDamage','No Internal Damage'],
 ];
 const POST_ITEMS = [
   ['foreignObjects','No Foreign Objects Left Inside'],
-  ['looseComponents','No Loose Components / Connectors'],
+  ['looseComponents','No Loose Components'],
   ['wiring','Wiring Reconnected Properly'],
-  ['cells','All Cells Secure'],
-  ['bmsMount','BMS Board Securely Mounted'],
-  ['seal','Casing Seal / Gasket Intact'],
-  ['fasteners','All Screws / Fasteners Reinstalled'],
+  ['cells','Cells Secure'],
+  ['bmsMount','BMS Board Secure'],
+  ['seal','Casing Seal Intact'],
+  ['fasteners','Fasteners Reinstalled'],
 ];
 const ISSUE_ITEMS = [
-  ['noPower','No Power / Dead Battery (Offline)'],
-  ['lowCapacity','Low Capacity / Poor Range'],
+  ['noPower','No Power / Offline'],
+  ['lowCapacity','Low Capacity / Range'],
   ['cellImbalance','Cell Imbalance'],
-  ['bmsFault','BMS Fault / Error Code (BMS Mismatch)'],
-  ['canFail','CAN Communication Failure'],
-  ['chargeFail','Charging Failure / Port Damage'],
+  ['bmsFault','BMS Fault / Mismatch'],
+  ['canFail','CAN Fail'],
+  ['chargeFail','Charge Failure'],
   ['dischargeFail','Discharge Failure'],
-  ['swelling','Swelling / Physical Damage'],
-  ['irFail','Insulation Resistance Failure'],
-  ['iotFault','IoT / IMEI Fault (IoT Mismatch)'],
-  ['tampered','Vandalism / Foreign Wiring / Water Ingress'],
-  ['connectorDamage','Connector / Wiring Damage'],
-  ['other','Other Issue (see remarks)'],
+  ['swelling','Swelling / Damage'],
+  ['irFail','Insulation Failure'],
+  ['iotFault','IoT / IMEI Mismatch'],
+  ['tampered','Vandalism / Water Ingress'],
+  ['connectorDamage','Connector Damage'],
+  ['other','Other Issue'],
 ];
 const TEST_BOOLS = [
-  ['canEstablished','CAN Communication Established'],
-  ['bmsFaultCleared','BMS Fault Cleared (No Active Fault)'],
-  ['chargeVerified','Charge Function Verified'],
-  ['dischargeVerified','Discharge Function Verified'],
-  ['noAbnormal','No Abnormal Behavior Observed'],
+  ['canEstablished','CAN Established'],
+  ['bmsFaultCleared','BMS Fault Cleared'],
+  ['chargeVerified','Charge Verified'],
+  ['dischargeVerified','Discharge Verified'],
+  ['noAbnormal','No Abnormal Behavior'],
 ];
 
 const DEFAULT_OM_PIN = '1234';
-const DEFAULT_PLANT_PIN = '2345';
 const DEFAULT_QUALITY_PIN = '9999';
 
-const PLATFORMS = ['CBAK','Ampace','Unique','Greenway'];
-const BATTERY_CONDITIONS = ['New','Refurbished','Returned - Unopened'];
-
-/* Asset Baseline (As of 1st Sept 2026 COB) */
-const INVENTORY_BASELINE = {
-  warehouse: { CBAK: 2259, UNIQUE: 8, AMPACE: 1, GREENWAY: 1 },
-  installedInBikes: { CBAK: 22, GREENWAY: 3, AMPACE: 0, UNIQUE: 0 },
-  palletedCbak: 1440
-};
-
-/* Storage Helpers */
 async function loadRecords(){ try { const r = await window.storage.get('records', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
 async function saveRecords(list){ await window.storage.set('records', JSON.stringify(list), true); }
 async function loadWarrantyRecords(){ try { const r = await window.storage.get('warranty_records', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
 async function saveWarrantyRecords(list){ await window.storage.set('warranty_records', JSON.stringify(list), true); }
 
-async function loadSettings(){
-  let s;
-  try{ const r = await window.storage.get('settings', true); s = r ? JSON.parse(r.value) : {}; }catch(e){ s = {}; }
-  if(!s.omAdminPin) s.omAdminPin = DEFAULT_OM_PIN;
-  if(!s.qualityPin) s.qualityPin = DEFAULT_QUALITY_PIN;
-  return s;
-}
-
-/* App State */
 let STATE = {
   role: null,
   techName: '',
   records: [],
   warrantyRecords: [],
-  settings: null,
   view: 'entry',
   draft: emptyDraft(),
   warrantyDraft: emptyWarrantyDraft(),
@@ -374,14 +270,11 @@ function emptyDraft(){
   return {
     dateReceived: todayStr(), timeReceived: nowTime(), serial:'', model:'', bmsId:'', imei:'',
     site:'', receivedBy:'',
-    pre: {}, post: {},
-    issues: {}, otherNote:'',
+    pre: {}, post: {}, issues: {}, otherNote:'',
     sopRef: STANDARD_SOPS[0], repairAction:'', partsReplaced:'', technician:'', repairDate: todayStr(),
     tests: { packVoltage:'', minCell:'', maxCell:'', irMeasured:'', irThreshold:550 },
-    testBools: {},
-    resolved: {},
+    testBools: {}, resolved: {},
     qcPassed:'', handoverDate:'', qcVerifiedBy:'', omReceivedBy:'',
-    observations:'', remarks:'',
   };
 }
 
@@ -389,7 +282,7 @@ function emptyWarrantyDraft(){
   return {
     dateEscalated: todayStr(), bmsId:'', model:'', serial:'',
     failureCategory: 'Charging Port Failure',
-    status: 'Waiting for Spare Parts from Supplier',
+    status: 'Waiting for Spare Parts',
     comments: '', technician: ''
   };
 }
@@ -398,13 +291,8 @@ function todayStr(){ return new Date().toISOString().slice(0,10); }
 function nowTime(){ return new Date().toTimeString().slice(0,5); }
 function uid(){ return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 
-function isImeiRequired(draft) {
-  return !!(draft.issues.noPower || draft.issues.bmsFault || draft.issues.iotFault);
-}
-
-function isSwapStationRequired(draft) {
-  return !!(draft.issues.tampered || draft.issues.swelling || draft.pre.foreignObjects==='FAIL' || d.pre.corrosion==='FAIL');
-}
+function isImeiRequired(draft) { return !!(draft.issues.noPower || draft.issues.bmsFault || draft.issues.iotFault); }
+function isSwapStationRequired(draft) { return !!(draft.issues.tampered || draft.issues.swelling || draft.pre.foreignObjects==='FAIL' || draft.pre.corrosion==='FAIL'); }
 
 function checklistResult(map, items){
   const vals = items.map(([k])=>map[k]);
@@ -425,43 +313,30 @@ function priorAttempts(records, serial){
   return records.filter(r=>r.serial.trim().toUpperCase()===serial.trim().toUpperCase());
 }
 
-/* Render Root */
 const root = document.getElementById('root');
 function render(){ root.innerHTML=''; root.appendChild(View()); }
 
 function View(){
   if(!STATE.role) return LoginView();
   const wrap = el('div',{class:'app'});
-  wrap.appendChild(TopBar());
+  wrap.appendChild(Header());
   if(STATE.toast) wrap.appendChild(Toast());
 
   if(STATE.role==='tech'){
-    wrap.appendChild(Nav(['entry','myrecords'], {entry:'Log Repair Intake', myrecords:'My Logged Work'}));
+    wrap.appendChild(Nav(['entry','myrecords'], {entry:'Log Intake', myrecords:'My Logged Work'}));
     wrap.appendChild(STATE.view==='myrecords' ? MyRecordsView() : EntryView());
   } else if(STATE.role==='omadmin'){
-    wrap.appendChild(Nav(['dashboard','history','entry'], {dashboard:'O&M Dashboard', history:'All Intake Records', entry:'Log Repair Intake'}));
+    wrap.appendChild(Nav(['dashboard','history','entry'], {dashboard:'Dashboard', history:'All Logs', entry:'Log Intake'}));
     if(STATE.view==='dashboard') wrap.appendChild(DashboardView());
     else if(STATE.view==='history') wrap.appendChild(HistoryView());
     else wrap.appendChild(EntryView());
   } else if(STATE.role==='quality'){
-    wrap.appendChild(Nav(
-      ['warranty','om_dashboard','om_history','inventory'],
-      {warranty:'QC Warranty & Escalations', om_dashboard:'O&M Performance Dashboard', om_history:'O&M Master Logs', inventory:'Fleet Inventory Baseline'}
-    ));
-    if(STATE.view==='warranty') wrap.appendChild(withSideBadge('warranty', WarrantyView()));
-    else if(STATE.view==='om_dashboard') wrap.appendChild(withSideBadge('om', DashboardView()));
-    else if(STATE.view==='om_history') wrap.appendChild(withSideBadge('om', HistoryView()));
-    else wrap.appendChild(withSideBadge('inv', InventoryView()));
+    wrap.appendChild(Nav(['warranty','om_dashboard','inventory'], {warranty:'Warranty & Escalations', om_dashboard:'O&M Performance', inventory:'Inventory Baseline'}));
+    if(STATE.view==='warranty') wrap.appendChild(WarrantyView());
+    else if(STATE.view==='om_dashboard') wrap.appendChild(DashboardView());
+    else wrap.appendChild(InventoryView());
   }
   return wrap;
-}
-
-const SIDE_BADGE_LABEL = { om:'O&M Repair Oversight', inv:'Plant & Fleet Inventory', warranty:'QC Data Coordinator Escalations' };
-function withSideBadge(kind, node){
-  const w = el('div');
-  w.appendChild(el('div',{class:'side-badge '+kind}, [el('span',{style:'font-size:14px;'}, '•'), SIDE_BADGE_LABEL[kind] || kind]));
-  w.appendChild(node);
-  return w;
 }
 
 function el(tag, attrs={}, children=[]){
@@ -481,19 +356,16 @@ function el(tag, attrs={}, children=[]){
 function toast(msg){ STATE.toast = msg; render(); setTimeout(()=>{ STATE.toast=null; render(); }, 2800); }
 function Toast(){ return el('div',{class:'banner ok'},[STATE.toast]); }
 
-/* Login */
 function LoginView(){
   const gate = el('div',{class:'gate'});
-  gate.appendChild(el('h2',{},'SPIRO BATTERY TELEMETRY'));
-  gate.appendChild(el('p',{},'Enterprise O&M Repair, Plant Quality Control & Telemetry Suite'));
+  gate.appendChild(el('h2',{},'Spiro Telemetry'));
+  gate.appendChild(el('p',{},'Select user role to access system'));
 
   let mode = 'tech';
-  const modeSel = el('select',{style:'margin-bottom:20px;font-family:var(--mono);'});
-  [
-    ['tech','Technician (O&M Repair Entry)'],
-    ['omadmin','O&M Quality Administrator'],
-    ['quality','QC Data Coordinator (Warranty & Fleet Access)']
-  ].forEach(([v,l])=>{ modeSel.appendChild(el('option',{value:v},l)); });
+  const modeSel = el('select',{style:'margin-bottom:12px;'});
+  [['tech','Technician'], ['omadmin','O&M Administrator'], ['quality','QC Data Coordinator']].forEach(([v,l])=>{
+    modeSel.appendChild(el('option',{value:v},l));
+  });
   gate.appendChild(modeSel);
 
   const body = el('div');
@@ -502,12 +374,12 @@ function LoginView(){
   function renderBody(){
     body.innerHTML='';
     if(mode==='tech'){
-      body.appendChild(el('label',{},'Technician Full Name'));
-      const inp = el('input',{placeholder:'e.g. Mugambwa Dennis'});
+      body.appendChild(el('label',{},'Technician Name'));
+      const inp = el('input',{placeholder:'Name'});
       body.appendChild(inp);
-      const go = el('button',{class:'btn-primary',style:'margin-top:20px;width:100%'},'AUTHENTICATE SESSION');
+      const go = el('button',{class:'btn-primary',style:'margin-top:12px;width:100%'},'Continue');
       go.addEventListener('click', async ()=>{
-        if(!inp.value.trim()){ inp.style.borderColor='var(--fail)'; return; }
+        if(!inp.value.trim()) return;
         STATE.techName = inp.value.trim();
         STATE.role='tech'; STATE.view='entry';
         STATE.records = await loadRecords();
@@ -517,24 +389,22 @@ function LoginView(){
       });
       body.appendChild(go);
     } else {
-      const roleLabel = mode==='omadmin' ? 'O&M Admin' : 'QC Coordinator';
-      body.appendChild(el('label',{}, roleLabel+' Access Security PIN'));
+      body.appendChild(el('label',{},'Access PIN'));
       const inp = el('input',{type:'password',placeholder:'••••'});
       body.appendChild(inp);
       const errBox = el('div',{class:'err'});
       body.appendChild(errBox);
-      const go = el('button',{class:'btn-primary',style:'margin-top:20px;width:100%'},'AUTHORIZE SYSTEM ACCESS');
+      const go = el('button',{class:'btn-primary',style:'margin-top:12px;width:100%'},'Authenticate');
       go.addEventListener('click', async ()=>{
-        const s = await loadSettings();
-        const pinField = mode==='omadmin' ? 'omAdminPin' : 'qualityPin';
-        if(inp.value === s[pinField]){
-          STATE.role = mode; STATE.settings = s;
+        const reqPin = mode==='omadmin' ? DEFAULT_OM_PIN : DEFAULT_QUALITY_PIN;
+        if(inp.value === reqPin){
+          STATE.role = mode;
           STATE.records = await loadRecords();
           STATE.warrantyRecords = await loadWarrantyRecords();
           STATE.view = mode==='quality' ? 'warranty' : 'dashboard';
           render();
         } else {
-          errBox.textContent = 'SECURITY ERROR: Invalid PIN Credential.';
+          errBox.textContent = 'Invalid PIN.';
         }
       });
       body.appendChild(go);
@@ -545,23 +415,30 @@ function LoginView(){
   return gate;
 }
 
-const ROLE_LABEL = { tech:'TECHNICIAN', omadmin:'O&M ADMIN', quality:'QC DATA COORDINATOR' };
-const ROLE_PILL_CLASS = { tech:'tech', omadmin:'admin', quality:'quality' };
-
-function TopBar(){
-  const bar = el('div',{class:'topbar'});
+function Header(){
+  const head = el('div',{class:'header'});
   const brand = el('div',{class:'brand'},[
-    el('div',{class:'mark'},'S'),
-    el('div',{},[el('h1',{},'SPIRO TELEMETRY & QC'), el('p',{},'Lithium Pack Diagnostics & Asset Management')])
+    el('h1',{},'Spiro Battery Telemetry & QC'),
+    el('p',{},'Plant Operations & Quality Logs')
   ]);
-  const who = el('div',{class:'who'},[
-    el('span',{class:'pill '+ROLE_PILL_CLASS[STATE.role]}, ROLE_LABEL[STATE.role]),
-    el('b',{}, STATE.role==='tech' ? STATE.techName : ROLE_LABEL[STATE.role]),
+  const user = el('div',{class:'user-info'},[
+    el('span',{class:'badge'}, STATE.role),
+    el('span',{}, STATE.role==='tech' ? STATE.techName : STATE.role.toUpperCase()),
+    el('button',{class:'btn-sm', onClick:()=>{ STATE.role=null; STATE.view='entry'; render(); }},'Logout')
   ]);
-  const out = el('button',{class:'btn-ghost btn-sm', onClick:()=>{ STATE.role=null; STATE.view='entry'; render(); }},'TERMINATE');
-  const whoWrap = el('div',{style:'display:flex;align-items:center;gap:12px;'},[who,out]);
-  bar.appendChild(brand); bar.appendChild(whoWrap);
-  return bar;
+  
+  const themeWrap = el('div',{class:'theme-toggle'});
+  const themeSel = el('select',{onChange: (e)=>setTheme(e.target.value)});
+  [['light','Light UI'], ['dark','Dark UI']].forEach(([v,l])=>{
+    const opt = el('option',{value:v}, l);
+    if(v===currentTheme) opt.setAttribute('selected','true');
+    themeSel.appendChild(opt);
+  });
+  themeWrap.appendChild(themeSel);
+
+  const right = el('div',{style:'display:flex;align-items:center;gap:12px;'},[user, themeWrap]);
+  head.appendChild(brand); head.appendChild(right);
+  return head;
 }
 
 function Nav(items, labels){
@@ -571,7 +448,6 @@ function Nav(items, labels){
     b.addEventListener('click', ()=>{ STATE.view=k; render(); });
     nav.appendChild(b);
   });
-  nav.appendChild(ThemeSelector());
   return nav;
 }
 
@@ -583,7 +459,7 @@ function field(label, inputEl){
 }
 function textInput(value, onChange, opts={}){
   const i = el('input',{type:opts.type||'text', value: value||''});
-  if(opts.mono) i.style.fontFamily='var(--mono)';
+  if(opts.mono) i.className = 'mono';
   if(opts.placeholder) i.setAttribute('placeholder', opts.placeholder);
   i.addEventListener('input', ()=>onChange(i.value));
   if(value!==undefined) i.value = value;
@@ -596,12 +472,13 @@ function textareaInput(value, onChange){
   return t;
 }
 
-function ChecklistCard(title, sub, map, items, onSet){
+function ChecklistCard(title, map, items, onSet){
   const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},title));
-  const resEl = el('span',{class:'result-chip '+checklistResult(map, items)}, checklistResult(map, items));
-  const subRow = el('div',{class:'sub', style:'display:flex;justify-content:space-between;align-items:center;'},[sub, resEl]);
-  card.appendChild(subRow);
+  const res = checklistResult(map, items);
+  card.appendChild(el('div',{style:'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'},[
+    el('h3',{},title),
+    el('span',{class:'status-chip '+res}, res)
+  ]));
   items.forEach(([key,label])=>{
     const row = el('div',{class:'check-row'});
     row.appendChild(el('span',{},label));
@@ -620,8 +497,8 @@ function ChecklistCard(title, sub, map, items, onSet){
 
 function IssuesCard(d){
   const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Defect Diagnostics & Intake Failure Modes'));
-  card.appendChild(el('div',{class:'sub'},'Check all reported battery pack defects upon incoming station triage.'));
+  card.appendChild(el('h3',{},'Defect Diagnostics'));
+  card.appendChild(el('div',{class:'sub'},'Select all applicable failure modes upon arrival.'));
   ISSUE_ITEMS.forEach(([key,label])=>{
     const row = el('div',{class:'bool-row'});
     const cb = el('input',{type:'checkbox'});
@@ -632,7 +509,7 @@ function IssuesCard(d){
     card.appendChild(row);
   });
   if(d.issues.other){
-    card.appendChild(field('Description of Specific Failure Mode', textareaInput(d.otherNote, v=>d.otherNote=v)));
+    card.appendChild(field('Details of Other Failure Mode', textareaInput(d.otherNote, v=>d.otherNote=v)));
   }
   return card;
 }
@@ -640,18 +517,18 @@ function IssuesCard(d){
 function TestsCard(d){
   const card = el('div',{class:'card'});
   const res = testsResult(d);
-  card.appendChild(el('div',{class:'sub', style:'display:flex;justify-content:space-between;align-items:center;'},[
-    el('h3',{style:'margin:0;'},'Verification & Testing Parameters'),
-    el('span',{class:'result-chip '+res}, res)
+  card.appendChild(el('div',{style:'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'},[
+    el('h3',{},'Verification Tests'),
+    el('span',{class:'status-chip '+res}, res)
   ]));
   const grid = el('div',{class:'grid narrow'});
-  grid.appendChild(field('Pack Voltage (V)', textInput(d.tests.packVoltage, v=>d.tests.packVoltage=v, {type:'number'})));
-  grid.appendChild(field('Min Cell Voltage (V)', textInput(d.tests.minCell, v=>d.tests.minCell=v, {type:'number'})));
-  grid.appendChild(field('Max Cell Voltage (V)', textInput(d.tests.maxCell, v=>d.tests.maxCell=v, {type:'number'})));
-  grid.appendChild(field('Insulation Res. (MΩ)', textInput(d.tests.irMeasured, v=>{d.tests.irMeasured=v; render();}, {type:'number'})));
-  grid.appendChild(field('IR Threshold (MΩ)', textInput(d.tests.irThreshold, v=>{d.tests.irThreshold=v; render();}, {type:'number'})));
+  grid.appendChild(field('Pack Voltage (V)', textInput(d.tests.packVoltage, v=>d.tests.packVoltage=v, {type:'number', mono:true})));
+  grid.appendChild(field('Min Cell (V)', textInput(d.tests.minCell, v=>d.tests.minCell=v, {type:'number', mono:true})));
+  grid.appendChild(field('Max Cell (V)', textInput(d.tests.maxCell, v=>d.tests.maxCell=v, {type:'number', mono:true})));
+  grid.appendChild(field('IR Measured (MΩ)', textInput(d.tests.irMeasured, v=>{d.tests.irMeasured=v; render();}, {type:'number', mono:true})));
+  grid.appendChild(field('IR Threshold (MΩ)', textInput(d.tests.irThreshold, v=>{d.tests.irThreshold=v; render();}, {type:'number', mono:true})));
   card.appendChild(grid);
-  card.appendChild(el('div',{style:'margin-top:10px;'}));
+  card.appendChild(el('div',{style:'margin-top:8px;'}));
   TEST_BOOLS.forEach(([key,label])=>{
     const row = el('div',{class:'bool-row'});
     const cb = el('input',{type:'checkbox'});
@@ -673,66 +550,56 @@ function EntryView(){
   }
 
   const intake = el('div',{class:'card'});
-  intake.appendChild(el('h3',{},'Battery Intake & Telemetry Identification'));
-  intake.appendChild(el('div',{class:'sub'},'Scan BMS ID Barcode/QR Code. System detects platform model automatically.'));
+  intake.appendChild(el('h3',{},'Intake Identification'));
 
   const g1 = el('div',{class:'grid'});
   g1.appendChild(field('Date Received', textInput(d.dateReceived, v=>d.dateReceived=v, {type:'date'})));
   g1.appendChild(field('Time Received', textInput(d.timeReceived, v=>d.timeReceived=v, {type:'time'})));
 
-  // BMS ID Entry with Barcode Scanning Support
   const bmsInput = textInput(d.bmsId, v => {
-    d.bmsId = v;
-    d.serial = v.trim(); 
+    d.bmsId = v; d.serial = v.trim(); 
     const detected = detectModelFromBMS(v);
     if (detected) d.model = detected;
-  }, {mono:true, placeholder:'Scan BMS ID Barcode (e.g. C7245AC...)'});
+  }, {mono:true, placeholder:'Scan BMS Barcode'});
 
   bmsInput.addEventListener('blur', () => {
     const searchSerial = (d.bmsId || d.serial).trim();
     const prior = priorAttempts(STATE.records, searchSerial);
     if(searchSerial && prior.length > 0){
       const last = prior[prior.length-1];
-      STATE.serialWarning = `ALERT: Battery ${searchSerial} has ${prior.length} prior O&M record(s). Last repair date: ${last.dateReceived}. Logging service visit #${prior.length+1}.`;
+      STATE.serialWarning = `Notice: BMS ID ${searchSerial} has ${prior.length} prior service log(s). Last repair: ${last.dateReceived}.`;
     } else {
       STATE.serialWarning = null;
     }
     render();
   });
 
-  g1.appendChild(field('Scan BMS ID (Barcode / QR)', bmsInput));
+  g1.appendChild(field('Scan BMS ID Barcode', bmsInput));
+  g1.appendChild(field('Battery Platform', textInput(d.model, v => d.model = v, { placeholder: 'Auto-detected' })));
 
-  const modelInput = textInput(d.model, v => d.model = v, { placeholder: 'Auto-detected Platform' });
-  g1.appendChild(field('Detected Battery Platform', modelInput));
-
-  // Conditional IMEI input handling
   const imeiRequired = isImeiRequired(d);
-  const imeiLabel = imeiRequired ? 'IMEI Number (Mandatory for Offline/Fault)' : 'IMEI Number (Optional)';
-  const imeiInput = textInput(d.imei, v => d.imei = v, { mono: true, placeholder: imeiRequired ? 'REQUIRED' : 'Optional' });
+  const imeiInput = textInput(d.imei, v => d.imei = v, { mono: true, placeholder: imeiRequired ? 'Required' : 'Optional' });
   if (imeiRequired) imeiInput.style.borderColor = 'var(--warn)';
-  g1.appendChild(field(imeiLabel, imeiInput));
+  g1.appendChild(field(imeiRequired ? 'IMEI Number (Mandatory)' : 'IMEI Number', imeiInput));
 
-  // Conditional Swap Station input handling
   const swapRequired = isSwapStationRequired(d);
-  const swapLabel = swapRequired ? 'Swap Station Origin (Mandatory for Water/Damage)' : 'Swap Station Origin (Optional)';
-  const swapInput = textInput(d.site, v => d.site = v, { placeholder: swapRequired ? 'Station Location Required' : 'Optional location' });
+  const swapInput = textInput(d.site, v => d.site = v, { placeholder: swapRequired ? 'Station Required' : 'Optional' });
   if (swapRequired) swapInput.style.borderColor = 'var(--warn)';
-  g1.appendChild(field(swapLabel, swapInput));
+  g1.appendChild(field(swapRequired ? 'Swap Station (Mandatory)' : 'Swap Station', swapInput));
 
-  g1.appendChild(field('Received By Technician', textInput(d.receivedBy, v=>d.receivedBy=v)));
+  g1.appendChild(field('Received By', textInput(d.receivedBy, v=>d.receivedBy=v)));
   intake.appendChild(g1);
   container.appendChild(intake);
 
-  container.appendChild(ChecklistCard('Pre-Opening Visual Inspection','Physical inspection before casing disassembly.', d.pre, CHECK_ITEMS, (k,v)=>d.pre[k]=v));
+  container.appendChild(ChecklistCard('Pre-Opening Inspection', d.pre, CHECK_ITEMS, (k,v)=>d.pre[k]=v));
   container.appendChild(IssuesCard(d));
 
   const repair = el('div',{class:'card'});
-  repair.appendChild(el('h3',{},'Repair Execution & Work Instructions'));
+  repair.appendChild(el('h3',{},'Repair Execution'));
   
-  // Standard Operating Procedure Quick-Selector
   const sopBox = el('div',{class:'sop-box'});
-  sopBox.appendChild(el('div',{style:'font-weight:700;color:var(--cyan);font-family:var(--mono);margin-bottom:6px;'},'ACTIVE O&M STANDARD OPERATING PROCEDURES (SOP)'));
-  const sopSel = el('select',{style:'font-size:12px;font-family:var(--mono);'});
+  sopBox.appendChild(el('div',{style:'font-weight:700;margin-bottom:4px;'},'Standard Operating Procedure (SOP)'));
+  const sopSel = el('select',{style:'font-size:11px;'});
   STANDARD_SOPS.forEach(sop => {
     const opt = el('option',{value:sop}, sop);
     if(d.sopRef === sop) opt.setAttribute('selected','true');
@@ -743,22 +610,22 @@ function EntryView(){
   repair.appendChild(sopBox);
 
   const g2 = el('div',{class:'grid'});
-  g2.appendChild(field('Components / Parts Replaced', textInput(d.partsReplaced, v=>d.partsReplaced=v, {placeholder:'e.g. BMS, Harness, Connector'})));
-  g2.appendChild(field('Assigned Technician', textInput(d.technician, v=>d.technician=v)));
-  g2.appendChild(field('Date Completed', textInput(d.repairDate, v=>d.repairDate=v, {type:'date'})));
+  g2.appendChild(field('Parts Replaced', textInput(d.partsReplaced, v=>d.partsReplaced=v, {placeholder:'e.g. BMS, Harness'})));
+  g2.appendChild(field('Technician', textInput(d.technician, v=>d.technician=v)));
+  g2.appendChild(field('Completion Date', textInput(d.repairDate, v=>d.repairDate=v, {type:'date'})));
   repair.appendChild(g2);
-  repair.appendChild(field('Summary of Repair Actions Taken', textareaInput(d.repairAction, v=>d.repairAction=v)));
+  repair.appendChild(field('Repair Summary Notes', textareaInput(d.repairAction, v=>d.repairAction=v)));
   container.appendChild(repair);
 
-  container.appendChild(ChecklistCard('Post-Service Housing Assembly','Quality confirmation prior to pack sealing.', d.post, POST_ITEMS, (k,v)=>d.post[k]=v));
+  container.appendChild(ChecklistCard('Post-Service Inspection', d.post, POST_ITEMS, (k,v)=>d.post[k]=v));
   container.appendChild(TestsCard(d));
 
   const disp = el('div',{class:'card'});
-  disp.appendChild(el('h3',{},'QC Sign-Off & Handover Authorization'));
+  disp.appendChild(el('h3',{},'QC Sign-Off & Disposition'));
   const g3 = el('div',{class:'grid'});
   const qcSel = el('select',{});
   ['','PASS','FAIL'].forEach(v=>{
-    const o = el('option',{value:v}, v===''?'— Select Final Disposition —':v);
+    const o = el('option',{value:v}, v===''?'— Select Final QC —':v);
     if(d.qcPassed===v) o.setAttribute('selected','true');
     qcSel.appendChild(o);
   });
@@ -766,12 +633,12 @@ function EntryView(){
   g3.appendChild(field('Final QC Disposition', qcSel));
   g3.appendChild(field('Sign-over Date', textInput(d.handoverDate, v=>d.handoverDate=v, {type:'date'})));
   g3.appendChild(field('QC Verifier', textInput(d.qcVerifiedBy, v=>d.qcVerifiedBy=v)));
-  g3.appendChild(field('O&M Representative', textInput(d.omReceivedBy, v=>d.omReceivedBy=v)));
+  g3.appendChild(field('O&M Rep', textInput(d.omReceivedBy, v=>d.omReceivedBy=v)));
   disp.appendChild(g3);
   container.appendChild(disp);
 
   const actions = el('div',{class:'footer-actions'});
-  const clearBtn = el('button',{class:'btn-ghost'},'Reset Form');
+  const clearBtn = el('button',{},'Reset');
   clearBtn.addEventListener('click', ()=>{
     const keepTech = d.technician;
     STATE.draft = emptyDraft();
@@ -779,19 +646,12 @@ function EntryView(){
     STATE.serialWarning = null;
     render();
   });
-  const saveBtn = el('button',{class:'btn-primary'},'SAVE & LOG REPAIR');
+  const saveBtn = el('button',{class:'btn-primary'},'Save Service Log');
   saveBtn.addEventListener('click', async ()=>{
     const activeSerial = (d.bmsId || d.serial).trim();
-    if(!activeSerial || !d.dateReceived){ toast('ERROR: BMS ID and intake date are required.'); return; }
-
-    if (isImeiRequired(d) && !d.imei.trim()) {
-      toast('ERROR: IMEI is required for Offline, BMS Fault, or IoT Fault issues.');
-      return;
-    }
-    if (isSwapStationRequired(d) && !d.site.trim()) {
-      toast('ERROR: Swap Station Location is required for damaged, tampered, or flooded packs.');
-      return;
-    }
+    if(!activeSerial || !d.dateReceived){ toast('BMS ID and intake date required.'); return; }
+    if (isImeiRequired(d) && !d.imei.trim()) { toast('IMEI is required for selected issue type.'); return; }
+    if (isSwapStationRequired(d) && !d.site.trim()) { toast('Swap Station is required for damaged packs.'); return; }
 
     d.serial = activeSerial;
     const prior = priorAttempts(STATE.records, d.serial);
@@ -813,7 +673,7 @@ function EntryView(){
     STATE.draft = emptyDraft();
     STATE.draft.technician = keepTech;
     STATE.serialWarning = null;
-    toast(`Record Saved: BMS ID ${record.serial} logged (Attempt #${attemptNumber}).`);
+    toast(`Log Saved: BMS ID ${record.serial}`);
   });
   actions.appendChild(clearBtn); actions.appendChild(saveBtn);
   container.appendChild(actions);
@@ -821,22 +681,21 @@ function EntryView(){
   return container;
 }
 
-/* My Records & History Views */
 function MyRecordsView(){
   const list = STATE.records.filter(r=>r.submittedBy===STATE.techName);
-  return RecordsTable(list, 'My Recent Service Log Entries');
+  return RecordsTable(list, 'My Recent Service Entries');
 }
 function HistoryView(){
-  return RecordsTable(STATE.records, 'Master O&M Service Log Records');
+  return RecordsTable(STATE.records, 'All O&M Service Entries');
 }
 
 function RecordsTable(list, title){
   const card = el('div',{class:'card'});
   card.appendChild(el('h3',{},title));
-  card.appendChild(el('div',{class:'sub'},`Total logged packs: ${list.length}`));
+  card.appendChild(el('div',{class:'sub'},`Total records: ${list.length}`));
   
   if(list.length===0){
-    card.appendChild(el('div',{style:'padding:20px;color:var(--muted);font-family:var(--mono);'},'No service records found.'));
+    card.appendChild(el('div',{style:'padding:12px 0;color:var(--muted);'},'No service entries found.'));
     return card;
   }
 
@@ -848,11 +707,10 @@ function RecordsTable(list, title){
         <th>Date</th>
         <th>BMS ID</th>
         <th>Platform</th>
-        <th>Visit #</th>
-        <th>SOP Used</th>
-        <th>Pre Check</th>
+        <th>Visit</th>
+        <th>Pre</th>
         <th>Tests</th>
-        <th>QC Status</th>
+        <th>QC Result</th>
         <th>Technician</th>
       </tr>
     </thead>
@@ -862,14 +720,13 @@ function RecordsTable(list, title){
     const tr = el('tr');
     tr.innerHTML = `
       <td class="mono">${r.dateReceived}</td>
-      <td class="mono" style="font-weight:700;color:var(--cyan);">${r.bmsId || r.serial}</td>
-      <td><span class="pill">${r.model || 'Unknown'}</span></td>
+      <td class="mono" style="font-weight:700;">${r.bmsId || r.serial}</td>
+      <td>${r.model || 'Unknown'}</td>
       <td class="mono">#${r.attemptNumber||1}</td>
-      <td style="font-size:11px;" class="mono">${(r.sopRef||'').slice(0,18)}...</td>
-      <td><span class="result-chip ${r.preResult}">${r.preResult}</span></td>
-      <td><span class="result-chip ${r.testsResult}">${r.testsResult}</span></td>
-      <td><span class="result-chip ${r.qcPassed || 'PENDING'}">${r.qcPassed || 'PENDING'}</span></td>
-      <td class="mono">${r.technician||r.submittedBy}</td>
+      <td><span class="status-chip ${r.preResult}">${r.preResult}</span></td>
+      <td><span class="status-chip ${r.testsResult}">${r.testsResult}</span></td>
+      <td><span class="status-chip ${r.qcPassed || 'PENDING'}">${r.qcPassed || 'PENDING'}</span></td>
+      <td>${r.technician||r.submittedBy}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -879,7 +736,6 @@ function RecordsTable(list, title){
   return card;
 }
 
-/* Dashboard View */
 function DashboardView(){
   const container = el('div');
   const total = STATE.records.length;
@@ -888,10 +744,10 @@ function DashboardView(){
   const passRate = total>0 ? Math.round((passed/total)*100) : 0;
 
   const stats = el('div',{class:'stat-grid'});
-  stats.appendChild(statBox(total, 'Total Packs Serviced'));
-  stats.appendChild(statBox(passed, 'QC Authorized (PASS)'));
-  stats.appendChild(statBox(failed, 'Rejected / Rework'));
-  stats.appendChild(statBox(passRate+'%', 'First-Pass Yield'));
+  stats.appendChild(statBox(total, 'Total Serviced'));
+  stats.appendChild(statBox(passed, 'QC Passed'));
+  stats.appendChild(statBox(failed, 'QC Rejected'));
+  stats.appendChild(statBox(passRate+'%', 'Pass Yield'));
   container.appendChild(stats);
 
   container.appendChild(HistoryView());
@@ -905,17 +761,15 @@ function statBox(num, label){
   return s;
 }
 
-/* Inventory View (Pre-seeded with 1st Sept 2026 COB Baseline) */
 function InventoryView(){
   const container = el('div');
   const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Fleet & Warehouse Inventory Baseline (1st Sept 2026 COB)'));
-  card.appendChild(el('div',{class:'sub'},'Official warehouse distribution & bike installation baseline data.'));
+  card.appendChild(el('h3',{},'Fleet & Warehouse Baseline (1st Sept 2026 COB)'));
 
   const stats = el('div',{class:'stat-grid'});
   stats.appendChild(statBox(2285, 'Total Fleet Stock'));
-  stats.appendChild(statBox(2269, 'Total Warehouse Stock'));
-  stats.appendChild(statBox(25, 'Total Installed in Bikes'));
+  stats.appendChild(statBox(2269, 'Warehouse Stock'));
+  stats.appendChild(statBox(25, 'Installed in Bikes'));
   stats.appendChild(statBox(1440, 'Palleted CBAK Stock'));
   container.appendChild(stats);
 
@@ -924,17 +778,17 @@ function InventoryView(){
   tbl.innerHTML = `
     <thead>
       <tr>
-        <th>Battery Platform</th>
-        <th>In Warehouse (Unboxed/Palleted)</th>
+        <th>Platform</th>
+        <th>Warehouse Stock</th>
         <th>Installed in Bikes</th>
-        <th>Total Platform Fleet</th>
+        <th>Total</th>
       </tr>
     </thead>
     <tbody>
-      <tr><td><b>CBAK</b></td><td class="mono">2,259 (1,440 Palleted)</td><td class="mono">22</td><td class="mono" style="color:var(--cyan);font-weight:700;">2,281</td></tr>
-      <tr><td><b>UNIQUE</b></td><td class="mono">8</td><td class="mono">0</td><td class="mono" style="color:var(--cyan);font-weight:700;">8</td></tr>
-      <tr><td><b>GREENWAY</b></td><td class="mono">1</td><td class="mono">3</td><td class="mono" style="color:var(--cyan);font-weight:700;">4</td></tr>
-      <tr><td><b>AMPACE</b></td><td class="mono">1</td><td class="mono">0</td><td class="mono" style="color:var(--cyan);font-weight:700;">1</td></tr>
+      <tr><td><b>CBAK</b></td><td class="mono">2,259 (1,440 Palleted)</td><td class="mono">22</td><td class="mono" style="font-weight:700;">2,281</td></tr>
+      <tr><td><b>UNIQUE</b></td><td class="mono">8</td><td class="mono">0</td><td class="mono" style="font-weight:700;">8</td></tr>
+      <tr><td><b>GREENWAY</b></td><td class="mono">1</td><td class="mono">3</td><td class="mono" style="font-weight:700;">4</td></tr>
+      <tr><td><b>AMPACE</b></td><td class="mono">1</td><td class="mono">0</td><td class="mono" style="font-weight:700;">1</td></tr>
     </tbody>
   `;
   wrap.appendChild(tbl);
@@ -943,46 +797,40 @@ function InventoryView(){
   return container;
 }
 
-/* Warranty & Quality Escalations Dashboard (For QC Data Coordinator) */
 function WarrantyView(){
   const container = el('div');
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'QC Warranty & Vendor Escalation Management'));
-  card.appendChild(el('div',{class:'sub'},'Escalated packs pending supplier warranty, replacement parts, or scrap authorization.'));
-
   const d = STATE.warrantyDraft;
-  const form = el('div',{class:'card', style:'background:var(--panel2);border-color:var(--purple);'});
-  form.appendChild(el('h3',{style:'color:var(--purple);'},'Escalate Battery to Supplier Warranty'));
+  const form = el('div',{class:'card'});
+  form.appendChild(el('h3',{},'Escalate Pack to Warranty'));
   
   const g = el('div',{class:'grid'});
-  
   const bmsInp = textInput(d.bmsId, v => {
     d.bmsId = v; d.serial = v;
     const detected = detectModelFromBMS(v);
     if(detected) d.model = detected;
-  }, {mono:true, placeholder:'Scan BMS ID Barcode'});
+  }, {mono:true, placeholder:'Scan BMS Barcode'});
   g.appendChild(field('BMS ID', bmsInp));
 
-  g.appendChild(field('Platform Model', textInput(d.model, v=>d.model=v)));
+  g.appendChild(field('Platform', textInput(d.model, v=>d.model=v)));
   
   const failSel = el('select',{});
-  ['Charging Port Failure', 'Cell Degradation / Imbalance', 'BMS Hardware Defect', 'IoT Board Failure', 'Water Ingress / Flooded'].forEach(f => {
+  ['Charging Port Failure', 'Cell Degradation', 'BMS Defect', 'IoT Board Failure', 'Water Ingress'].forEach(f => {
     failSel.appendChild(el('option',{value:f}, f));
   });
   failSel.addEventListener('change', ()=>d.failureCategory=failSel.value);
   g.appendChild(field('Failure Category', failSel));
 
   const statusSel = el('select',{});
-  ['Waiting for Spare Parts from Supplier', 'Under Supplier Review', 'Scrapped by QC', 'Repaired & Returned to Fleet'].forEach(s => {
+  ['Waiting for Spare Parts', 'Under Supplier Review', 'Scrapped by QC', 'Repaired & Returned'].forEach(s => {
     statusSel.appendChild(el('option',{value:s}, s));
   });
   statusSel.addEventListener('change', ()=>d.status=statusSel.value);
   g.appendChild(field('Warranty Status', statusSel));
 
   form.appendChild(g);
-  form.appendChild(field('QC Escalation Comments', textareaInput(d.comments, v=>d.comments=v)));
+  form.appendChild(field('Escalation Comments', textareaInput(d.comments, v=>d.comments=v)));
   
-  const addBtn = el('button',{class:'btn-primary', style:'background:var(--purple);color:#fff;margin-top:10px;'},'LOG WARRANTY ESCALATION');
+  const addBtn = el('button',{class:'btn-primary', style:'margin-top:8px;'},'Log Escalation');
   addBtn.addEventListener('click', async () => {
     if(!d.bmsId.trim()){ toast('BMS ID is required.'); return; }
     const entry = { id: uid(), ...JSON.parse(JSON.stringify(d)), dateEscalated: todayStr() };
@@ -990,17 +838,16 @@ function WarrantyView(){
     await saveWarrantyRecords(updated);
     STATE.warrantyRecords = updated;
     STATE.warrantyDraft = emptyWarrantyDraft();
-    toast(`Warranty Record Logged for ${entry.bmsId}`);
+    toast(`Escalated ${entry.bmsId} to Warranty.`);
   });
   form.appendChild(addBtn);
   container.appendChild(form);
 
-  // Warranty Records Table
   const listCard = el('div',{class:'card'});
-  listCard.appendChild(el('h3',{},'Active Escalated Warranty Tracker'));
+  listCard.appendChild(el('h3',{},'Active Warranty Escalations'));
   
   if(STATE.warrantyRecords.length===0){
-    listCard.appendChild(el('div',{style:'padding:20px;color:var(--muted);font-family:var(--mono);'},'No packs currently escalated to warranty.'));
+    listCard.appendChild(el('div',{style:'padding:12px 0;color:var(--muted);'},'No active warranty escalations.'));
   } else {
     const wrap = el('div',{class:'table-wrap'});
     const tbl = el('table');
@@ -1010,9 +857,9 @@ function WarrantyView(){
           <th>Date</th>
           <th>BMS ID</th>
           <th>Platform</th>
-          <th>Failure Mode</th>
+          <th>Category</th>
           <th>Status</th>
-          <th>QC Action</th>
+          <th>Action</th>
         </tr>
       </thead>
     `;
@@ -1021,23 +868,23 @@ function WarrantyView(){
       const tr = el('tr');
       tr.innerHTML = `
         <td class="mono">${w.dateEscalated}</td>
-        <td class="mono" style="font-weight:700;color:var(--cyan);">${w.bmsId}</td>
-        <td><span class="pill">${w.model}</span></td>
-        <td style="font-size:12px;">${w.failureCategory}</td>
-        <td><span class="pill quality">${w.status}</span></td>
+        <td class="mono" style="font-weight:700;">${w.bmsId}</td>
+        <td>${w.model}</td>
+        <td>${w.failureCategory}</td>
+        <td><span class="badge">${w.status}</span></td>
         <td></td>
       `;
       const actionTd = tr.querySelector('td:last-child');
       if(w.status !== 'Scrapped by QC'){
-        const scrapBtn = el('button',{class:'btn-danger btn-sm'},'SCRAP PACK');
+        const scrapBtn = el('button',{class:'btn-danger btn-sm'},'Scrap Pack');
         scrapBtn.addEventListener('click', async () => {
           w.status = 'Scrapped by QC';
           await saveWarrantyRecords(STATE.warrantyRecords);
-          toast(`Pack ${w.bmsId} officially SCRAPPED.`);
+          toast(`Pack ${w.bmsId} Scrapped.`);
         });
         actionTd.appendChild(scrapBtn);
       } else {
-        actionTd.appendChild(el('span',{class:'result-chip FAIL'},'SCRAPPED'));
+        actionTd.appendChild(el('span',{class:'status-chip FAIL'},'SCRAPPED'));
       }
       tbody.appendChild(tr);
     });
@@ -1050,27 +897,9 @@ function WarrantyView(){
   return container;
 }
 
-/* Settings View */
-function SettingsView(){
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'System Security Pin Settings'));
-  const s = STATE.settings;
-  const g = el('div',{class:'grid'});
-  g.appendChild(field('O&M Admin PIN', textInput(s.omAdminPin, v=>s.omAdminPin=v, {type:'password'})));
-  g.appendChild(field('QC Data Coordinator PIN', textInput(s.qualityPin, v=>s.qualityPin=v, {type:'password'})));
-  card.appendChild(g);
-  const saveBtn = el('button',{class:'btn-primary', style:'margin-top:16px;'},'SAVE SECURITY PINS');
-  saveBtn.addEventListener('click', async () => {
-    await saveSettings(s);
-    toast('Security PINs updated successfully.');
-  });
-  card.appendChild(saveBtn);
-  return card;
-}
-
-/* App Initialization */
 render();
 </script>
 </body>
 </html>
+
 
