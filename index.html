@@ -177,10 +177,15 @@ tr:hover td { background: var(--panel2); }
   text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 12px; border: 1px solid var(--line-dark);
   background: var(--panel2); color: var(--muted);
 }
+.chart-card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; margin-bottom: 12px; }
+.chart-card .chart-wrap { position: relative; height: 260px; }
+.chart-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
 </style>
 </head>
 <body>
 <div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 /* ---------- Theme ---------- */
 let currentTheme = localStorage.getItem('bqc_theme') || 'light';
@@ -380,7 +385,17 @@ let STATE = {
 function toast(msg){ STATE.toast = msg; render(); setTimeout(()=>{ STATE.toast=null; render(); }, 2800); }
 
 const root = document.getElementById('root');
-function render(){ root.innerHTML=''; root.appendChild(View()); }
+let pendingCharts = [];
+function render(){
+  pendingCharts = [];
+  root.innerHTML='';
+  root.appendChild(View());
+  pendingCharts.forEach(({canvas, config})=>{
+    try{ if(typeof Chart!=='undefined') new Chart(canvas.getContext('2d'), config); }
+    catch(e){ console.error('Chart render error', e); }
+  });
+  pendingCharts = [];
+}
 
 function el(tag, attrs={}, children=[]){
   const e = document.createElement(tag);
@@ -640,8 +655,10 @@ function View(){
     else if(STATE.view==='stock') wrap.appendChild(StockView());
     else wrap.appendChild(NewBatteryView());
   } else if(STATE.role==='quality'){
-    wrap.appendChild(Nav(['warranty','overview'], {warranty:'Warranty & Escalations', overview:'Sector Overview'}));
-    wrap.appendChild(STATE.view==='overview' ? QualityOverviewView() : WarrantyView());
+    wrap.appendChild(Nav(['warranty','overview','analytics'], {warranty:'Warranty & Escalations', overview:'Sector Overview', analytics:'Analytics & Reports'}));
+    if(STATE.view==='overview') wrap.appendChild(QualityOverviewView());
+    else if(STATE.view==='analytics') wrap.appendChild(QualityAnalyticsView());
+    else wrap.appendChild(WarrantyView());
   }
   return wrap;
 }
@@ -1333,11 +1350,291 @@ function QualityOverviewView(){
   return container;
 }
 
+/* ==================== QUALITY ANALYTICS — FPY charts, inventory charts, Excel export ==================== */
+
+function monthKey(dateStr){ return (dateStr||'').slice(0,7); }
+function cssVar(name){ return (getComputedStyle(document.documentElement).getPropertyValue(name)||'').trim() || '#888'; }
+
+function fpyStats(){
+  const closed = STATE.omRecords.filter(r=>r.status.startsWith('CLOSED'));
+  const total = closed.length;
+  const firstPass = closed.filter(r=>r.capaCycles===0 && r.finalDisposition==='PASS').length;
+  const overallFPY = total>0 ? (firstPass/total*100) : 0;
+  const byPlatform = {};
+  closed.forEach(r=>{
+    const p = r.model || 'Unknown';
+    if(!byPlatform[p]) byPlatform[p] = {total:0, firstPass:0};
+    byPlatform[p].total++;
+    if(r.capaCycles===0 && r.finalDisposition==='PASS') byPlatform[p].firstPass++;
+  });
+  const byMonth = {};
+  closed.forEach(r=>{
+    const mk = monthKey(r.closedAt ? r.closedAt.slice(0,10) : r.dateReceived);
+    if(!byMonth[mk]) byMonth[mk] = {total:0, firstPass:0};
+    byMonth[mk].total++;
+    if(r.capaCycles===0 && r.finalDisposition==='PASS') byMonth[mk].firstPass++;
+  });
+  return { overallFPY, total, firstPass, byPlatform, byMonth };
+}
+
+/* ---- Chart.js config builders (theme-aware colors pulled from CSS vars) ---- */
+function chartBaseOptions(opts={}){
+  const textColor = cssVar('--muted');
+  const gridColor = cssVar('--line');
+  return {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ display: !!opts.legend, position:'bottom', labels:{color:textColor, font:{size:11}, boxWidth:12} } },
+    scales: opts.noScales ? {} : {
+      x:{ ticks:{color:textColor, font:{size:10}}, grid:{color:gridColor} },
+      y:{ ticks:{color:textColor, font:{size:10}, callback: v=> (opts.suffix ? v+opts.suffix : v)}, grid:{color:gridColor}, suggestedMax: opts.suggestedMax, beginAtZero:true }
+    }
+  };
+}
+function baseBarConfig(labels, datasets, opts={}){
+  return { type:'bar', data:{ labels, datasets: datasets.map(d=>({ label:d.label, data:d.data, backgroundColor:d.color, borderRadius:3, maxBarThickness:46 })) }, options: chartBaseOptions({...opts, legend: datasets.length>1}) };
+}
+function baseLineConfig(labels, datasets, opts={}){
+  return { type:'line', data:{ labels, datasets: datasets.map(d=>({ label:d.label, data:d.data, borderColor:d.color, backgroundColor:d.color, tension:0.3, fill:false, pointRadius:3 })) }, options: chartBaseOptions({...opts, legend: datasets.length>1}) };
+}
+function chartCard(title, config){
+  const card = el('div',{class:'chart-card'});
+  card.appendChild(el('h3',{},title));
+  const wrap = el('div',{class:'chart-wrap'});
+  const canvas = el('canvas');
+  wrap.appendChild(canvas);
+  card.appendChild(wrap);
+  pendingCharts.push({canvas, config});
+  return card;
+}
+
+function fpyTrendConfig(fpy){
+  const months = Object.keys(fpy.byMonth).sort();
+  const data = months.map(m=> fpy.byMonth[m].total ? (fpy.byMonth[m].firstPass/fpy.byMonth[m].total*100) : 0);
+  if(months.length===0) return baseLineConfig(['No data'], [{label:'FPY %', data:[0], color:cssVar('--pass')}], {suggestedMax:100, suffix:'%'});
+  return baseLineConfig(months, [{ label:'FPY %', data, color: cssVar('--pass') }], {suggestedMax:100, suffix:'%'});
+}
+function fpyByPlatformConfig(fpy){
+  const platforms = Object.keys(fpy.byPlatform);
+  if(platforms.length===0) return baseBarConfig(['No data'], [{label:'FPY %', data:[0], color:cssVar('--accent')}], {suggestedMax:100, suffix:'%'});
+  const data = platforms.map(p=>{ const s=fpy.byPlatform[p]; return s.total? (s.firstPass/s.total*100):0; });
+  return baseBarConfig(platforms, [{label:'FPY %', data, color: cssVar('--accent')}], {suggestedMax:100, suffix:'%'});
+}
+function dispositionConfig(){
+  const closed = STATE.omRecords.filter(r=>r.status.startsWith('CLOSED'));
+  const passed = closed.filter(r=>r.finalDisposition==='PASS').length;
+  const scrapped = closed.filter(r=>r.finalDisposition==='SCRAPPED').length;
+  return {
+    type:'doughnut',
+    data:{ labels:['Passed','Scrapped'], datasets:[{ data:[passed,scrapped], backgroundColor:[cssVar('--pass'), cssVar('--fail')] }] },
+    options: chartBaseOptions({legend:true, noScales:true})
+  };
+}
+function capaDistributionConfig(){
+  const buckets = {'0 (First Pass)':0,'1':0,'2':0,'3+':0};
+  STATE.omRecords.forEach(r=>{
+    const c = r.capaCycles;
+    if(c<=0) buckets['0 (First Pass)']++;
+    else if(c===1) buckets['1']++;
+    else if(c===2) buckets['2']++;
+    else buckets['3+']++;
+  });
+  return baseBarConfig(Object.keys(buckets), [{label:'Packs', data:Object.values(buckets), color: cssVar('--capa')}], {});
+}
+function stockByPlatformConfig(){
+  const stock = stockByPlatform();
+  return baseBarConfig(PLATFORMS, [{label:'Units in Stock', data: PLATFORMS.map(p=>stock[p]), color: cssVar('--accent')}], {});
+}
+function movementsByMonthConfig(){
+  const months = new Set();
+  const inByMonth = {}, outByMonth = {};
+  STATE.newBatteryRecords.forEach(r=>{ const m=monthKey(r.date); months.add(m); inByMonth[m]=(inByMonth[m]||0)+(r.quantity||0); });
+  STATE.adjustments.forEach(r=>{
+    const m=monthKey(r.date); months.add(m);
+    const dir=movementDirection(r.type);
+    if(dir>0) inByMonth[m]=(inByMonth[m]||0)+(r.quantity||0);
+    else outByMonth[m]=(outByMonth[m]||0)+(r.quantity||0);
+  });
+  const sortedMonths = [...months].sort();
+  if(sortedMonths.length===0) return baseBarConfig(['No data'], [{label:'Stock In', data:[0], color:cssVar('--pass')}], {});
+  return baseBarConfig(sortedMonths, [
+    {label:'Stock In', data: sortedMonths.map(m=>inByMonth[m]||0), color: cssVar('--pass')},
+    {label:'Stock Out', data: sortedMonths.map(m=>outByMonth[m]||0), color: cssVar('--fail')},
+  ], {});
+}
+function warrantyByCategoryConfig(){
+  const counts = {};
+  STATE.warrantyRecords.forEach(w=>{ counts[w.failureCategory]=(counts[w.failureCategory]||0)+1; });
+  const labels = Object.keys(counts);
+  if(labels.length===0) return baseBarConfig(['No data'], [{label:'Escalations', data:[0], color:cssVar('--warn')}], {});
+  return baseBarConfig(labels, [{label:'Escalations', data:labels.map(l=>counts[l]), color: cssVar('--warn')}], {});
+}
+function warrantyByStatusConfig(){
+  const counts = {};
+  STATE.warrantyRecords.forEach(w=>{ counts[w.status]=(counts[w.status]||0)+1; });
+  const labels = Object.keys(counts);
+  const palette = [cssVar('--warn'), cssVar('--capa'), cssVar('--fail'), cssVar('--pass')];
+  if(labels.length===0) return { type:'pie', data:{labels:['No data'], datasets:[{data:[1], backgroundColor:[cssVar('--line-dark')]}]}, options: chartBaseOptions({legend:true, noScales:true}) };
+  return { type:'pie', data:{ labels, datasets:[{ data: labels.map(l=>counts[l]), backgroundColor: labels.map((_,i)=>palette[i%palette.length]) }] }, options: chartBaseOptions({legend:true, noScales:true}) };
+}
+
+/* ---- Quality Analytics view ---- */
+function QualityAnalyticsView(){
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Quality Analytics — computed live from all sector stores'));
+
+  const fpy = fpyStats();
+
+  const headerCard = el('div',{class:'card'});
+  const headerTop = el('div',{style:'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;'});
+  headerTop.appendChild(el('h3',{},'First Pass Yield (FPY) & Inventory Analytics'));
+  const exportBtn = el('button',{class:'btn-primary'},'⬇ Download Full Excel Report');
+  exportBtn.addEventListener('click', ()=>{ exportAllDataToExcel(); });
+  headerTop.appendChild(exportBtn);
+  headerCard.appendChild(headerTop);
+  headerCard.appendChild(el('div',{class:'sub'},'FPY = packs that passed final QC on the first attempt (zero corrective-action cycles) out of all closed packs. All charts and the export below refresh from live sector data on every visit to this tab.'));
+  const stats = el('div',{class:'stat-grid'});
+  stats.appendChild(statBox(fpy.overallFPY.toFixed(1)+'%', 'Overall FPY'));
+  stats.appendChild(statBox(fpy.total, 'Total Closed Packs'));
+  stats.appendChild(statBox(fpy.firstPass, 'First-Pass Closures'));
+  stats.appendChild(statBox(STATE.omRecords.filter(r=>r.capaCycles>0).length, 'Ever Under CAPA'));
+  stats.appendChild(statBox(STATE.warrantyRecords.length, 'Warranty Escalations'));
+  headerCard.appendChild(stats);
+  container.appendChild(headerCard);
+
+  const row1 = el('div',{class:'chart-row'});
+  row1.appendChild(chartCard('FPY Trend by Month', fpyTrendConfig(fpy)));
+  row1.appendChild(chartCard('FPY by Platform', fpyByPlatformConfig(fpy)));
+  container.appendChild(row1);
+
+  const row2 = el('div',{class:'chart-row'});
+  row2.appendChild(chartCard('Final Disposition Breakdown', dispositionConfig()));
+  row2.appendChild(chartCard('Corrective Action (CAPA) Cycles', capaDistributionConfig()));
+  container.appendChild(row2);
+
+  const row3 = el('div',{class:'chart-row'});
+  row3.appendChild(chartCard('Current Stock by Platform', stockByPlatformConfig()));
+  row3.appendChild(chartCard('Inventory Movements by Month', movementsByMonthConfig()));
+  container.appendChild(row3);
+
+  const row4 = el('div',{class:'chart-row'});
+  row4.appendChild(chartCard('Warranty Escalations by Failure Category', warrantyByCategoryConfig()));
+  row4.appendChild(chartCard('Warranty Escalations by Status', warrantyByStatusConfig()));
+  container.appendChild(row4);
+
+  const exportCard = el('div',{class:'card'});
+  exportCard.appendChild(el('h3',{},'Excel Report Contents'));
+  exportCard.appendChild(el('div',{class:'sub'},'One workbook, nine sheets — every sector\'s raw records plus computed analysis, ready to download.'));
+  const list = el('div');
+  [
+    'OM Chain Records — every intake/repair/QC record across all 3 stages, with technicians, tests, and CAPA cycles',
+    'Plant Logs — full daily plant log history',
+    'New Battery Intake — all warehouse intake entries',
+    'Stock Movements — every issue, correction, and return with direction',
+    'Stock Summary — current computed stock per platform',
+    'Warranty Escalations — all escalated packs with category, status, comments',
+    'FPY Overall — headline first-pass-yield figures',
+    'FPY by Platform — first-pass-yield broken down per battery platform',
+    'FPY by Month — first-pass-yield trended by closing month',
+  ].forEach(t=> list.appendChild(el('div',{class:'check-row'},[el('span',{},t)])));
+  exportCard.appendChild(list);
+  const exportBtn2 = el('button',{class:'btn-primary', style:'margin-top:10px;'},'⬇ Download Full Excel Report');
+  exportBtn2.addEventListener('click', ()=>{ exportAllDataToExcel(); });
+  exportCard.appendChild(exportBtn2);
+  container.appendChild(exportCard);
+
+  return container;
+}
+
+/* ---- Excel export (SheetJS) ---- */
+function rowsOrEmpty(rows){ return rows.length ? rows : [{ Note: 'No data recorded yet' }]; }
+
+function buildOmExportRows(){
+  return rowsOrEmpty(STATE.omRecords.map(r=>({
+    'BMS ID': r.bmsId, 'Platform': r.model||'', 'IMEI': r.imei||'', 'Swap Station': r.site||'',
+    'Date Received': r.dateReceived, 'Time Received': r.timeReceived, 'Visit #': r.visitNumber,
+    'Current Stage': r.stage, 'Status': r.status, 'CAPA Cycles': r.capaCycles,
+    'Stage1 Technician': r.stage1.technician||'', 'Stage1 Received By': r.stage1.receivedBy||'', 'Stage1 Completed At': r.stage1.completedAt||'',
+    'Stage2 Technician': r.stage2.technician||'', 'Stage2 SOP': r.stage2.sopRef||'', 'Stage2 Parts Replaced': r.stage2.partsReplaced||'', 'Stage2 Repair Notes': r.stage2.repairAction||'', 'Stage2 Completed At': r.stage2.completedAt||'',
+    'Stage3 Technician': r.stage3.technician||'', 'Pack Voltage (V)': r.stage3.tests.packVoltage||'', 'Min Cell (V)': r.stage3.tests.minCell||'', 'Max Cell (V)': r.stage3.tests.maxCell||'',
+    'IR Measured (MΩ)': r.stage3.tests.irMeasured||'', 'IR Threshold (MΩ)': r.stage3.tests.irThreshold||'',
+    'QC Disposition': r.finalDisposition||'', 'QC Notes': r.stage3.qcNote||'', 'Closed At': r.closedAt||'',
+  })));
+}
+function buildPlantExportRows(){
+  return rowsOrEmpty(STATE.plantRecords.map(r=>({
+    'Date': r.date, 'Active Batteries': r.activeBatteries||0, 'Charged Today': r.chargedToday||0,
+    'Unboxed Today': r.unboxedToday||0, 'Faulty Flagged': r.faultyBatteries||0, 'Notes': r.notes||'', 'Entered By': r.enteredBy||''
+  })));
+}
+function buildNewBatteryExportRows(){
+  return rowsOrEmpty(STATE.newBatteryRecords.map(r=>({
+    'Date': r.date, 'Platform': r.platform, 'Quantity': r.quantity, 'Batch/Lot': r.batchLot||'',
+    'Source': r.source||'', 'Notes': r.notes||'', 'Logged By': r.loggedBy||''
+  })));
+}
+function buildAdjustmentExportRows(){
+  return rowsOrEmpty(STATE.adjustments.map(r=>({
+    'Date': r.date, 'Platform': r.platform, 'Movement Type': movementLabel(r.type), 'Quantity': r.quantity,
+    'Direction': movementDirection(r.type)>0?'IN':'OUT', 'Reference': r.reference||'', 'Notes': r.notes||'', 'Logged By': r.loggedBy||''
+  })));
+}
+function buildWarrantyExportRows(){
+  return rowsOrEmpty(STATE.warrantyRecords.map(r=>({
+    'Date Escalated': r.dateEscalated, 'BMS ID': r.bmsId, 'Platform': r.model||'', 'Failure Category': r.failureCategory,
+    'Status': r.status, 'Comments': r.comments||''
+  })));
+}
+function buildStockSummaryRows(){
+  const stock = stockByPlatform();
+  return rowsOrEmpty(Object.keys(stock).map(p=>({ Platform:p, 'Current Stock': stock[p] })));
+}
+function buildFpyExportRows(fpy){
+  return [{ 'Overall FPY %': fpy.overallFPY.toFixed(1), 'Total Closed Packs': fpy.total, 'First-Pass Closures': fpy.firstPass }];
+}
+function buildFpyByPlatformRows(fpy){
+  return rowsOrEmpty(Object.keys(fpy.byPlatform).map(p=>{
+    const s = fpy.byPlatform[p];
+    return { Platform:p, 'Total Closed': s.total, 'First-Pass': s.firstPass, 'FPY %': s.total ? (s.firstPass/s.total*100).toFixed(1) : '0.0' };
+  }));
+}
+function buildFpyByMonthRows(fpy){
+  return rowsOrEmpty(Object.keys(fpy.byMonth).sort().map(m=>{
+    const s = fpy.byMonth[m];
+    return { Month:m, 'Total Closed': s.total, 'First-Pass': s.firstPass, 'FPY %': s.total ? (s.firstPass/s.total*100).toFixed(1) : '0.0' };
+  }));
+}
+
+async function exportAllDataToExcel(){
+  if(typeof XLSX === 'undefined'){ toast('Excel library failed to load — check your connection and try again.'); return; }
+  STATE.omRecords = await loadOm();
+  STATE.plantRecords = await loadPlant();
+  STATE.newBatteryRecords = await loadNewBattery();
+  STATE.adjustments = await loadAdjustments();
+  STATE.warrantyRecords = await loadWarranty();
+
+  const fpy = fpyStats();
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildOmExportRows()), 'OM Chain Records');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildPlantExportRows()), 'Plant Logs');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildNewBatteryExportRows()), 'New Battery Intake');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildAdjustmentExportRows()), 'Stock Movements');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildStockSummaryRows()), 'Stock Summary');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildWarrantyExportRows()), 'Warranty Escalations');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildFpyExportRows(fpy)), 'FPY Overall');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildFpyByPlatformRows(fpy)), 'FPY by Platform');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildFpyByMonthRows(fpy)), 'FPY by Month');
+
+  const filename = `battery-qc-report-${todayStr()}.xlsx`;
+  XLSX.writeFile(wb, filename);
+  toast('Excel report downloaded: '+filename);
+}
+
 /* ---------- Boot ---------- */
 render();
 </script>
 </body>
 </html>
+
 
 
 
