@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Battery Quality Control System</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<title>Battery QC</title>
 <style>
 :root {
   --bg: #f8f9fa;
@@ -21,6 +20,8 @@
   --fail-bg: #fef2f2;
   --warn: #c2410c;
   --warn-bg: #fff7ed;
+  --capa: #7c3aed;
+  --capa-bg: #f5f3ff;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
@@ -40,6 +41,8 @@
   --fail-bg: rgba(248, 113, 113, 0.1);
   --warn: #fb923c;
   --warn-bg: rgba(251, 146, 60, 0.1);
+  --capa: #c4b5fd;
+  --capa-bg: rgba(196, 181, 253, 0.12);
 }
 
 * { box-sizing: border-box; }
@@ -56,13 +59,12 @@ body {
 
 .app { max-width: 1100px; margin: 0 auto; padding: 16px; }
 
-/* Top Header */
 .header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 16px; background: var(--panel); border: 1px solid var(--line-dark);
   border-radius: 4px; margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
 }
-.brand h1 { font-size: 15px; font-weight: 700; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text); }
+.brand h1 { font-size: 15px; font-weight: 700; margin: 0; letter-spacing: 0.2px; color: var(--text); }
 .brand p { margin: 0; font-size: 11px; color: var(--muted); }
 
 .user-info { display: flex; align-items: center; gap: 8px; font-size: 12px; }
@@ -82,30 +84,31 @@ button:hover { background: var(--panel2); }
 .btn-primary:hover { opacity: 0.9; background: var(--accent); }
 .btn-danger { background: var(--fail-bg); border-color: var(--fail); color: var(--fail); }
 .btn-danger:hover { background: var(--fail); color: #fff; }
+.btn-capa { background: var(--capa-bg); border-color: var(--capa); color: var(--capa); }
+.btn-capa:hover { background: var(--capa); color: #fff; }
 .btn-sm { padding: 3px 8px; font-size: 11px; }
+.btn-block { width: 100%; }
 
 .theme-toggle select {
   padding: 3px 6px; font-size: 11px; border-radius: 3px; background: var(--panel);
   color: var(--text); border: 1px solid var(--line-dark); font-family: var(--font-sans);
 }
 
-/* Authentication Gate */
 .gate {
-  max-width: 360px; margin: 15vh auto 0; padding: 24px;
+  max-width: 380px; margin: 10vh auto 0; padding: 24px;
   background: var(--panel); border: 1px solid var(--line-dark); border-radius: 4px;
 }
-.gate h2 { margin-top: 0; font-size: 16px; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+.gate h2 { margin-top: 0; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
 .gate p { color: var(--muted); font-size: 12px; margin-bottom: 16px; }
+.pin-hint { font-size: 10px; color: var(--muted); margin-top: 4px; }
 
-/* Navigation */
-.nav { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--line-dark); padding-bottom: 8px; }
+.nav { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--line-dark); padding-bottom: 8px; flex-wrap: wrap; align-items: center; }
 .nav button { background: transparent; color: var(--muted); border: none; border-radius: 3px; font-size: 12px; font-weight: 600; padding: 6px 12px; }
 .nav button.active { background: var(--panel2); color: var(--text); font-weight: 700; }
 .nav button:hover:not(.active) { color: var(--text); }
 
-/* Layout Cards */
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; margin-bottom: 12px; }
-.card h3 { margin: 0 0 2px; font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--text); }
+.card h3 { margin: 0 0 2px; font-size: 13px; font-weight: 700; color: var(--text); }
 .card .sub { color: var(--muted); font-size: 11px; margin-bottom: 12px; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 12px; }
@@ -124,8 +127,8 @@ textarea { resize: vertical; min-height: 50px; }
   border: 1px solid var(--warn); background: var(--warn-bg); color: var(--warn); font-weight: 600;
 }
 .banner.ok { border-color: var(--pass); background: var(--pass-bg); color: var(--pass); }
+.banner.capa { border-color: var(--capa); background: var(--capa-bg); color: var(--capa); }
 
-/* Checklists & Forms */
 .check-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
 .check-row:last-child { border-bottom: none; }
 .check-row span { font-size: 12px; }
@@ -144,17 +147,17 @@ textarea { resize: vertical; min-height: 50px; }
 .status-chip {
   display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 700; text-transform: uppercase;
 }
-.status-chip.PASS { background: var(--pass-bg); color: var(--pass); border: 1px solid var(--pass); }
-.status-chip.FAIL { background: var(--fail-bg); color: var(--fail); border: 1px solid var(--fail); }
-.status-chip.INCOMPLETE, .status-chip.NA { background: var(--panel2); color: var(--muted); border: 1px solid var(--line-dark); }
+.status-chip.PASS, .status-chip.CLOSED_PASS { background: var(--pass-bg); color: var(--pass); border: 1px solid var(--pass); }
+.status-chip.FAIL, .status-chip.CLOSED_SCRAPPED { background: var(--fail-bg); color: var(--fail); border: 1px solid var(--fail); }
+.status-chip.INCOMPLETE, .status-chip.NA, .status-chip.PENDING { background: var(--panel2); color: var(--muted); border: 1px solid var(--line-dark); }
+.status-chip.CAPA { background: var(--capa-bg); color: var(--capa); border: 1px solid var(--capa); }
+.status-chip.OPEN { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn); }
 
-/* KPI Stats Grid */
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px; }
 .stat { background: var(--panel); border: 1px solid var(--line-dark); border-radius: 4px; padding: 12px; }
 .stat .n { font-size: 20px; font-weight: 700; color: var(--text); }
 .stat .l { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
 
-/* Data Tables */
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
 th, td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
 th { color: var(--muted); font-weight: 700; text-transform: uppercase; font-size: 10px; background: var(--panel2); position: sticky; top: 0; }
@@ -164,24 +167,40 @@ tr:hover td { background: var(--panel2); }
 
 .footer-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; position: sticky; bottom: 0; background: var(--bg); padding: 10px 0; border-top: 1px solid var(--line-dark); }
 .err { color: var(--fail); font-size: 11px; margin-top: 6px; }
-
 .sop-box { background: var(--panel2); border: 1px solid var(--line-dark); padding: 8px 12px; border-radius: 3px; margin-bottom: 12px; font-size: 11px; }
+.docket-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.docket-item:last-child { border-bottom: none; }
+.docket-item .meta { font-size: 11px; color: var(--muted); }
+.empty-note { padding: 12px 0; color: var(--muted); font-size: 12px; }
+.sector-tag {
+  display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 12px; border: 1px solid var(--line-dark);
+  background: var(--panel2); color: var(--muted);
+}
 </style>
 </head>
 <body>
 <div id="root"></div>
-
 <script>
-let currentTheme = localStorage.getItem('app_theme') || 'light';
+/* ---------- Theme ---------- */
+let currentTheme = localStorage.getItem('bqc_theme') || 'light';
 document.documentElement.setAttribute('data-theme', currentTheme);
-
 function setTheme(theme) {
   currentTheme = theme;
-  localStorage.setItem('app_theme', theme);
+  localStorage.setItem('bqc_theme', theme);
   document.documentElement.setAttribute('data-theme', theme);
   render();
 }
 
+/* ---------- Credentials ---------- */
+/* 3 O&M technicians run the sequential inspection chain (one PIN per stage). */
+const STAGE_PINS = { '1001': 1, '1002': 2, '1003': 3 };
+const STAGE_LABEL = { 1: 'Stage 1 — Intake & Pre-Check', 2: 'Stage 2 — Repair & Reassembly', 3: 'Stage 3 — Final Test & QC Sign-off' };
+/* 4 sector leads, each with their own PIN, each sector's data kept in its own store. */
+const SECTOR_PINS = { omadmin: '1234', plant: '2345', inventory: '3456', quality: '9999' };
+const SECTOR_LABEL = { omadmin: 'O&M Admin', plant: 'Plant Admin', inventory: 'Inventory Manager', quality: 'Quality Engineer' };
+
+/* ---------- Domain constants ---------- */
 const STANDARD_SOPS = [
   "SOP-BAT-01: Housing Opening Protocol",
   "SOP-BAT-02: Cell Balancing & Diagnostics",
@@ -190,14 +209,12 @@ const STANDARD_SOPS = [
   "SOP-BAT-05: IoT Rewiring & Flashing",
   "SOP-BAT-06: Charge Port Thermal Servicing"
 ];
-
 const BMS_MODEL_PREFIXES = [
   { prefix: 'C7245AC2AA', model: 'CBAK' },
   { prefix: 'U7245AU1G1', model: 'UNIQUE' },
   { prefix: 'A7246AX1A1', model: 'AMPACE' },
   { prefix: 'D72451LWK', model: 'GREENWAY' }
 ];
-
 function detectModelFromBMS(bmsId) {
   if (!bmsId) return '';
   const cleanId = bmsId.trim().toUpperCase();
@@ -245,54 +262,43 @@ const TEST_BOOLS = [
   ['dischargeVerified','Discharge Verified'],
   ['noAbnormal','No Abnormal Behavior'],
 ];
-
-const DEFAULT_OM_PIN = '1234';
-const DEFAULT_QUALITY_PIN = '9999';
-
-async function loadRecords(){ try { const r = await window.storage.get('records', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
-async function saveRecords(list){ await window.storage.set('records', JSON.stringify(list), true); }
-async function loadWarrantyRecords(){ try { const r = await window.storage.get('warranty_records', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
-async function saveWarrantyRecords(list){ await window.storage.set('warranty_records', JSON.stringify(list), true); }
-
-let STATE = {
-  role: null,
-  techName: '',
-  records: [],
-  warrantyRecords: [],
-  view: 'entry',
-  draft: emptyDraft(),
-  warrantyDraft: emptyWarrantyDraft(),
-  serialWarning: null,
-  toast: null,
-};
-
-function emptyDraft(){
-  return {
-    dateReceived: todayStr(), timeReceived: nowTime(), serial:'', model:'', bmsId:'', imei:'',
-    site:'', receivedBy:'',
-    pre: {}, post: {}, issues: {}, otherNote:'',
-    sopRef: STANDARD_SOPS[0], repairAction:'', partsReplaced:'', technician:'', repairDate: todayStr(),
-    tests: { packVoltage:'', minCell:'', maxCell:'', irMeasured:'', irThreshold:550 },
-    testBools: {}, resolved: {},
-    qcPassed:'', handoverDate:'', qcVerifiedBy:'', omReceivedBy:'',
-  };
+const PLATFORMS = ['CBAK','UNIQUE','AMPACE','GREENWAY'];
+const MOVEMENT_TYPES = [
+  ['ISSUED_TO_PLANT','Issued to Plant'],
+  ['ISSUED_TO_SWAP_STATION','Issued to Swap Station'],
+  ['DAMAGED_ON_ARRIVAL','Damaged on Arrival'],
+  ['RETURNED_TO_SUPPLIER','Returned to Supplier'],
+  ['CORRECTION_ADD','Stock Correction (Add)'],
+  ['CORRECTION_SUB','Stock Correction (Subtract)'],
+];
+function movementDirection(type){ return (type==='RECEIVED' || type==='CORRECTION_ADD') ? 1 : -1; }
+function movementLabel(type){
+  if(type==='RECEIVED') return 'Received (New Stock)';
+  const f = MOVEMENT_TYPES.find(([k])=>k===type);
+  return f ? f[1] : type;
 }
 
-function emptyWarrantyDraft(){
-  return {
-    dateEscalated: todayStr(), bmsId:'', model:'', serial:'',
-    failureCategory: 'Charging Port Failure',
-    status: 'Waiting for Spare Parts',
-    comments: '', technician: ''
-  };
-}
+/* ---------- Storage — each sector kept in its own store, never merged ---------- */
+async function loadOm(){ try { const r = await window.storage.get('om_chain_records', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
+async function saveOm(list){ await window.storage.set('om_chain_records', JSON.stringify(list), true); }
 
+async function loadPlant(){ try { const r = await window.storage.get('plant_records', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
+async function savePlant(list){ await window.storage.set('plant_records', JSON.stringify(list), true); }
+
+async function loadNewBattery(){ try { const r = await window.storage.get('new_battery_records', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
+async function saveNewBattery(list){ await window.storage.set('new_battery_records', JSON.stringify(list), true); }
+
+async function loadAdjustments(){ try { const r = await window.storage.get('inventory_adjustments', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
+async function saveAdjustments(list){ await window.storage.set('inventory_adjustments', JSON.stringify(list), true); }
+
+async function loadWarranty(){ try { const r = await window.storage.get('warranty_records', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
+async function saveWarranty(list){ await window.storage.set('warranty_records', JSON.stringify(list), true); }
+
+/* ---------- Utilities ---------- */
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function nowTime(){ return new Date().toTimeString().slice(0,5); }
+function nowIso(){ return new Date().toISOString(); }
 function uid(){ return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
-
-function isImeiRequired(draft) { return !!(draft.issues.noPower || draft.issues.bmsFault || draft.issues.iotFault); }
-function isSwapStationRequired(draft) { return !!(draft.issues.tampered || draft.issues.swelling || draft.pre.foreignObjects==='FAIL' || draft.pre.corrosion==='FAIL'); }
 
 function checklistResult(map, items){
   const vals = items.map(([k])=>map[k]);
@@ -308,36 +314,73 @@ function testsResult(d){
   if(irOk===null) return 'INCOMPLETE';
   return 'PASS';
 }
-function priorAttempts(records, serial){
-  if (!serial) return [];
-  return records.filter(r=>r.serial.trim().toUpperCase()===serial.trim().toUpperCase());
+function isImeiRequired(d){ return !!(d.issues.noPower || d.issues.bmsFault || d.issues.iotFault); }
+function isSwapStationRequired(d){ return !!(d.issues.tampered || d.issues.swelling || d.pre.foreignObjects==='FAIL' || d.pre.corrosion==='FAIL'); }
+
+/* ---------- O&M chain record model ---------- */
+function emptyIntakeDraft(techName){
+  return {
+    dateReceived: todayStr(), timeReceived: nowTime(), bmsId:'', model:'', imei:'', site:'', receivedBy: techName||'',
+    pre:{}, issues:{}, otherNote:'',
+  };
 }
+function newOmRecord(d, visitNumber, techName){
+  return {
+    id: uid(), createdAt: nowIso(),
+    bmsId: d.bmsId.trim(), model: d.model, imei: d.imei, site: d.site,
+    dateReceived: d.dateReceived, timeReceived: d.timeReceived,
+    visitNumber,
+    stage: 2, status: 'STAGE2_OPEN',
+    capaCycles: 0, isCorrectiveAction: false, capaLog: [],
+    stage1: { technician: techName, receivedBy: d.receivedBy, pre: d.pre, issues: d.issues, otherNote: d.otherNote, completedAt: nowIso() },
+    stage2: { technician:'', sopRef: STANDARD_SOPS[0], repairAction:'', partsReplaced:'', post:{}, completedAt:null },
+    stage3: { technician:'', tests:{packVoltage:'',minCell:'',maxCell:'',irMeasured:'',irThreshold:550}, testBools:{}, qcPassed:'', qcNote:'', completedAt:null },
+    finalDisposition: null, closedAt: null,
+  };
+}
+function closedRecordsForBms(records, bmsId){
+  const clean = (bmsId||'').trim().toUpperCase();
+  if(!clean) return [];
+  return records.filter(r => r.bmsId.trim().toUpperCase()===clean && r.status.startsWith('CLOSED'));
+}
+function openRecordForBms(records, bmsId){
+  const clean = (bmsId||'').trim().toUpperCase();
+  if(!clean) return null;
+  return records.find(r => r.bmsId.trim().toUpperCase()===clean && !r.status.startsWith('CLOSED')) || null;
+}
+function stageQueue(records, stage){
+  return records.filter(r => r.stage===stage && !r.status.startsWith('CLOSED')).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
+}
+function findRecord(records, id){ return records.find(r=>r.id===id); }
+
+/* ---------- App state ---------- */
+let STATE = {
+  role: null,          // 'omtech' | 'omadmin' | 'plant' | 'inventory' | 'quality'
+  stage: null,          // 1 | 2 | 3, only for omtech
+  techName: '',
+  view: 'main',
+  toast: null,
+
+  omRecords: [],
+  plantRecords: [],
+  newBatteryRecords: [],
+  adjustments: [],
+  warrantyRecords: [],
+
+  intakeDraft: emptyIntakeDraft(''),
+  openId: null,          // record currently open for stage2/stage3/CAPA-stage1 editing
+  serialWarning: null,
+
+  plantDraft: null,
+  newBatteryDraft: null,
+  adjustmentDraft: null,
+  warrantyDraft: null,
+};
+
+function toast(msg){ STATE.toast = msg; render(); setTimeout(()=>{ STATE.toast=null; render(); }, 2800); }
 
 const root = document.getElementById('root');
 function render(){ root.innerHTML=''; root.appendChild(View()); }
-
-function View(){
-  if(!STATE.role) return LoginView();
-  const wrap = el('div',{class:'app'});
-  wrap.appendChild(Header());
-  if(STATE.toast) wrap.appendChild(Toast());
-
-  if(STATE.role==='tech'){
-    wrap.appendChild(Nav(['entry','myrecords'], {entry:'Log Intake', myrecords:'My Logged Work'}));
-    wrap.appendChild(STATE.view==='myrecords' ? MyRecordsView() : EntryView());
-  } else if(STATE.role==='omadmin'){
-    wrap.appendChild(Nav(['dashboard','history','entry'], {dashboard:'Dashboard', history:'All Logs', entry:'Log Intake'}));
-    if(STATE.view==='dashboard') wrap.appendChild(DashboardView());
-    else if(STATE.view==='history') wrap.appendChild(HistoryView());
-    else wrap.appendChild(EntryView());
-  } else if(STATE.role==='quality'){
-    wrap.appendChild(Nav(['warranty','om_dashboard','inventory'], {warranty:'Warranty & Escalations', om_dashboard:'O&M Performance', inventory:'Inventory Baseline'}));
-    if(STATE.view==='warranty') wrap.appendChild(WarrantyView());
-    else if(STATE.view==='om_dashboard') wrap.appendChild(DashboardView());
-    else wrap.appendChild(InventoryView());
-  }
-  return wrap;
-}
 
 function el(tag, attrs={}, children=[]){
   const e = document.createElement(tag);
@@ -352,105 +395,6 @@ function el(tag, attrs={}, children=[]){
   });
   return e;
 }
-
-function toast(msg){ STATE.toast = msg; render(); setTimeout(()=>{ STATE.toast=null; render(); }, 2800); }
-function Toast(){ return el('div',{class:'banner ok'},[STATE.toast]); }
-
-function LoginView(){
-  const gate = el('div',{class:'gate'});
-  gate.appendChild(el('h2',{},'Spiro Telemetry'));
-  gate.appendChild(el('p',{},'Select user role to access system'));
-
-  let mode = 'tech';
-  const modeSel = el('select',{style:'margin-bottom:12px;'});
-  [['tech','Technician'], ['omadmin','O&M Administrator'], ['quality','QC Data Coordinator']].forEach(([v,l])=>{
-    modeSel.appendChild(el('option',{value:v},l));
-  });
-  gate.appendChild(modeSel);
-
-  const body = el('div');
-  gate.appendChild(body);
-
-  function renderBody(){
-    body.innerHTML='';
-    if(mode==='tech'){
-      body.appendChild(el('label',{},'Technician Name'));
-      const inp = el('input',{placeholder:'Name'});
-      body.appendChild(inp);
-      const go = el('button',{class:'btn-primary',style:'margin-top:12px;width:100%'},'Continue');
-      go.addEventListener('click', async ()=>{
-        if(!inp.value.trim()) return;
-        STATE.techName = inp.value.trim();
-        STATE.role='tech'; STATE.view='entry';
-        STATE.records = await loadRecords();
-        STATE.draft.technician = STATE.techName;
-        STATE.draft.receivedBy = STATE.techName;
-        render();
-      });
-      body.appendChild(go);
-    } else {
-      body.appendChild(el('label',{},'Access PIN'));
-      const inp = el('input',{type:'password',placeholder:'••••'});
-      body.appendChild(inp);
-      const errBox = el('div',{class:'err'});
-      body.appendChild(errBox);
-      const go = el('button',{class:'btn-primary',style:'margin-top:12px;width:100%'},'Authenticate');
-      go.addEventListener('click', async ()=>{
-        const reqPin = mode==='omadmin' ? DEFAULT_OM_PIN : DEFAULT_QUALITY_PIN;
-        if(inp.value === reqPin){
-          STATE.role = mode;
-          STATE.records = await loadRecords();
-          STATE.warrantyRecords = await loadWarrantyRecords();
-          STATE.view = mode==='quality' ? 'warranty' : 'dashboard';
-          render();
-        } else {
-          errBox.textContent = 'Invalid PIN.';
-        }
-      });
-      body.appendChild(go);
-    }
-  }
-  modeSel.addEventListener('change', ()=>{ mode=modeSel.value; renderBody(); });
-  renderBody();
-  return gate;
-}
-
-function Header(){
-  const head = el('div',{class:'header'});
-  const brand = el('div',{class:'brand'},[
-    el('h1',{},'Spiro Battery Telemetry & QC'),
-    el('p',{},'Plant Operations & Quality Logs')
-  ]);
-  const user = el('div',{class:'user-info'},[
-    el('span',{class:'badge'}, STATE.role),
-    el('span',{}, STATE.role==='tech' ? STATE.techName : STATE.role.toUpperCase()),
-    el('button',{class:'btn-sm', onClick:()=>{ STATE.role=null; STATE.view='entry'; render(); }},'Logout')
-  ]);
-  
-  const themeWrap = el('div',{class:'theme-toggle'});
-  const themeSel = el('select',{onChange: (e)=>setTheme(e.target.value)});
-  [['light','Light UI'], ['dark','Dark UI']].forEach(([v,l])=>{
-    const opt = el('option',{value:v}, l);
-    if(v===currentTheme) opt.setAttribute('selected','true');
-    themeSel.appendChild(opt);
-  });
-  themeWrap.appendChild(themeSel);
-
-  const right = el('div',{style:'display:flex;align-items:center;gap:12px;'},[user, themeWrap]);
-  head.appendChild(brand); head.appendChild(right);
-  return head;
-}
-
-function Nav(items, labels){
-  const nav = el('div',{class:'nav'});
-  items.forEach(k=>{
-    const b = el('button',{class: STATE.view===k?'active':''}, labels[k]);
-    b.addEventListener('click', ()=>{ STATE.view=k; render(); });
-    nav.appendChild(b);
-  });
-  return nav;
-}
-
 function field(label, inputEl){
   const w = el('div');
   w.appendChild(el('label',{},label));
@@ -461,6 +405,7 @@ function textInput(value, onChange, opts={}){
   const i = el('input',{type:opts.type||'text', value: value||''});
   if(opts.mono) i.className = 'mono';
   if(opts.placeholder) i.setAttribute('placeholder', opts.placeholder);
+  if(opts.readonly) i.setAttribute('readonly','true');
   i.addEventListener('input', ()=>onChange(i.value));
   if(value!==undefined) i.value = value;
   return i;
@@ -471,6 +416,17 @@ function textareaInput(value, onChange){
   t.addEventListener('input', ()=>onChange(t.value));
   return t;
 }
+function selectInput(value, options, onChange){
+  const s = el('select',{});
+  options.forEach(([v,l])=>{
+    const o = el('option',{value:v}, l);
+    if(v===value) o.setAttribute('selected','true');
+    s.appendChild(o);
+  });
+  s.addEventListener('change', ()=>onChange(s.value));
+  return s;
+}
+function Toast(){ return el('div',{class:'banner ok'},[STATE.toast]); }
 
 function ChecklistCard(title, map, items, onSet){
   const card = el('div',{class:'card'});
@@ -494,11 +450,10 @@ function ChecklistCard(title, map, items, onSet){
   });
   return card;
 }
-
 function IssuesCard(d){
   const card = el('div',{class:'card'});
   card.appendChild(el('h3',{},'Defect Diagnostics'));
-  card.appendChild(el('div',{class:'sub'},'Select all applicable failure modes upon arrival.'));
+  card.appendChild(el('div',{class:'sub'},'Select all applicable failure modes observed on arrival.'));
   ISSUE_ITEMS.forEach(([key,label])=>{
     const row = el('div',{class:'bool-row'});
     const cb = el('input',{type:'checkbox'});
@@ -513,7 +468,6 @@ function IssuesCard(d){
   }
   return card;
 }
-
 function TestsCard(d){
   const card = el('div',{class:'card'});
   const res = testsResult(d);
@@ -540,194 +494,440 @@ function TestsCard(d){
   });
   return card;
 }
+function statBox(num, label){
+  const s = el('div',{class:'stat'});
+  s.appendChild(el('div',{class:'n'}, String(num)));
+  s.appendChild(el('div',{class:'l'}, label));
+  return s;
+}
 
-function EntryView(){
-  const d = STATE.draft;
+/* ---------- Login ---------- */
+function LoginView(){
+  const gate = el('div',{class:'gate'});
+  gate.appendChild(el('h2',{},'Battery QC'));
+  gate.appendChild(el('p',{},'Select your role to sign in.'));
+
+  let mode = 'omtech';
+  const modeSel = el('select',{style:'margin-bottom:12px;'});
+  [['omtech','O&M Technician (chain inspection)'],
+   ['omadmin','O&M Admin'],
+   ['plant','Plant Admin'],
+   ['inventory','Inventory Manager'],
+   ['quality','Quality Engineer']].forEach(([v,l])=>{ modeSel.appendChild(el('option',{value:v},l)); });
+  gate.appendChild(modeSel);
+
+  const body = el('div');
+  gate.appendChild(body);
+
+  function renderBody(){
+    body.innerHTML='';
+    if(mode==='omtech'){
+      body.appendChild(el('label',{},'Your Name'));
+      const nameInp = el('input',{placeholder:'Name'});
+      body.appendChild(nameInp);
+      body.appendChild(el('label',{},'Stage PIN'));
+      const pinInp = el('input',{type:'password',placeholder:'••••'});
+      body.appendChild(pinInp);
+      body.appendChild(el('div',{class:'pin-hint'},'Your PIN determines which stage of the chain you work: intake, repair, or final QC.'));
+      const errBox = el('div',{class:'err'});
+      body.appendChild(errBox);
+      const go = el('button',{class:'btn-primary btn-block',style:'margin-top:12px;'},'Sign In');
+      go.addEventListener('click', async ()=>{
+        const stage = STAGE_PINS[pinInp.value];
+        if(!nameInp.value.trim()){ errBox.textContent='Enter your name.'; return; }
+        if(!stage){ errBox.textContent='Invalid stage PIN.'; return; }
+        STATE.techName = nameInp.value.trim();
+        STATE.role='omtech'; STATE.stage=stage; STATE.view='main';
+        STATE.omRecords = await loadOm();
+        STATE.intakeDraft = emptyIntakeDraft(STATE.techName);
+        render();
+      });
+      body.appendChild(go);
+    } else {
+      body.appendChild(el('label',{}, SECTOR_LABEL[mode]+' PIN'));
+      const inp = el('input',{type:'password',placeholder:'••••'});
+      body.appendChild(inp);
+      const errBox = el('div',{class:'err'});
+      body.appendChild(errBox);
+      const go = el('button',{class:'btn-primary btn-block',style:'margin-top:12px;'},'Authenticate');
+      go.addEventListener('click', async ()=>{
+        if(inp.value !== SECTOR_PINS[mode]){ errBox.textContent='Invalid PIN.'; return; }
+        STATE.role = mode; STATE.view='main';
+        if(mode==='omadmin'){ STATE.omRecords = await loadOm(); STATE.view='dashboard'; }
+        else if(mode==='plant'){ STATE.plantRecords = await loadPlant(); STATE.plantDraft = emptyPlantDraft(); STATE.view='entry'; }
+        else if(mode==='inventory'){
+          STATE.newBatteryRecords = await loadNewBattery();
+          STATE.adjustments = await loadAdjustments();
+          STATE.newBatteryDraft = emptyNewBatteryDraft();
+          STATE.adjustmentDraft = emptyAdjustmentDraft();
+          STATE.view='intake';
+        } else if(mode==='quality'){
+          STATE.warrantyRecords = await loadWarranty();
+          STATE.warrantyDraft = emptyWarrantyDraft();
+          STATE.omRecords = await loadOm();
+          STATE.plantRecords = await loadPlant();
+          STATE.newBatteryRecords = await loadNewBattery();
+          STATE.adjustments = await loadAdjustments();
+          STATE.view='warranty';
+        }
+        render();
+      });
+      body.appendChild(go);
+    }
+  }
+  modeSel.addEventListener('change', ()=>{ mode=modeSel.value; renderBody(); });
+  renderBody();
+  return gate;
+}
+
+/* ---------- Header / Nav ---------- */
+function Header(){
+  const head = el('div',{class:'header'});
+  const brand = el('div',{class:'brand'},[
+    el('h1',{},'Battery QC'),
+    el('p',{}, STATE.role==='omtech' ? STAGE_LABEL[STATE.stage] : (SECTOR_LABEL[STATE.role]||''))
+  ]);
+  const roleTag = STATE.role==='omtech' ? ('TECH · STAGE '+STATE.stage) : STATE.role.toUpperCase();
+  const user = el('div',{class:'user-info'},[
+    el('span',{class:'badge'}, roleTag),
+    el('span',{}, STATE.role==='omtech' ? STATE.techName : SECTOR_LABEL[STATE.role]),
+    el('button',{class:'btn-sm', onClick:()=>{
+      STATE.role=null; STATE.stage=null; STATE.view='main'; STATE.openId=null; STATE.serialWarning=null;
+      render();
+    }},'Sign Out')
+  ]);
+  const themeWrap = el('div',{class:'theme-toggle'});
+  const themeSel = el('select',{onChange: (e)=>setTheme(e.target.value)});
+  [['light','Light UI'], ['dark','Dark UI']].forEach(([v,l])=>{
+    const opt = el('option',{value:v}, l);
+    if(v===currentTheme) opt.setAttribute('selected','true');
+    themeSel.appendChild(opt);
+  });
+  themeWrap.appendChild(themeSel);
+  const right = el('div',{style:'display:flex;align-items:center;gap:12px;'},[user, themeWrap]);
+  head.appendChild(brand); head.appendChild(right);
+  return head;
+}
+function Nav(items, labels){
+  const nav = el('div',{class:'nav'});
+  items.forEach(k=>{
+    const b = el('button',{class: STATE.view===k?'active':''}, labels[k]);
+    b.addEventListener('click', ()=>{ STATE.view=k; STATE.openId=null; render(); });
+    nav.appendChild(b);
+  });
+  return nav;
+}
+
+/* ---------- Top level router ---------- */
+function View(){
+  if(!STATE.role) return LoginView();
+  const wrap = el('div',{class:'app'});
+  wrap.appendChild(Header());
+  if(STATE.toast) wrap.appendChild(Toast());
+
+  if(STATE.role==='omtech'){
+    wrap.appendChild(Nav(['main','myclosed'], {main:'My Docket', myclosed:'My Completed Work'}));
+    wrap.appendChild(STATE.view==='myclosed' ? OmTechClosedView() : OmTechDocketView());
+  } else if(STATE.role==='omadmin'){
+    wrap.appendChild(Nav(['dashboard','history'], {dashboard:'Dashboard', history:'Full Chain History'}));
+    wrap.appendChild(STATE.view==='history' ? OmHistoryView() : OmDashboardView());
+  } else if(STATE.role==='plant'){
+    wrap.appendChild(Nav(['entry','history'], {entry:'Daily Log Entry', history:'Plant Log History'}));
+    wrap.appendChild(STATE.view==='history' ? PlantHistoryView() : PlantEntryView());
+  } else if(STATE.role==='inventory'){
+    wrap.appendChild(Nav(['intake','adjust','stock'], {intake:'New Battery Intake', adjust:'Stock Movement', stock:'Stock Summary'}));
+    if(STATE.view==='adjust') wrap.appendChild(AdjustmentView());
+    else if(STATE.view==='stock') wrap.appendChild(StockView());
+    else wrap.appendChild(NewBatteryView());
+  } else if(STATE.role==='quality'){
+    wrap.appendChild(Nav(['warranty','overview'], {warranty:'Warranty & Escalations', overview:'Sector Overview'}));
+    wrap.appendChild(STATE.view==='overview' ? QualityOverviewView() : WarrantyView());
+  }
+  return wrap;
+}
+
+/* ==================== O&M TECHNICIAN — 3-STAGE CHAIN ==================== */
+
+function OmTechDocketView(){
   const container = el('div');
 
-  if(STATE.serialWarning){
-    container.appendChild(el('div',{class:'banner'}, STATE.serialWarning));
+  if(STATE.openId){
+    const rec = findRecord(STATE.omRecords, STATE.openId);
+    if(rec){
+      const back = el('button',{class:'btn-sm', style:'margin-bottom:10px;'},'← Back to Docket');
+      back.addEventListener('click', ()=>{ STATE.openId=null; STATE.serialWarning=null; render(); });
+      container.appendChild(back);
+      if(rec.capaCycles>0){
+        container.appendChild(el('div',{class:'banner capa'},
+          `Under Corrective Action — Cycle ${rec.capaCycles}. This is not a new repeat failure; it is the same visit returning to O&M for correction.`));
+      }
+      if(STATE.stage===1) container.appendChild(Stage1EditCard(rec));
+      else if(STATE.stage===2) container.appendChild(Stage2Card(rec));
+      else if(STATE.stage===3) container.appendChild(Stage3Card(rec));
+      return container;
+    }
+    STATE.openId = null;
   }
 
-  const intake = el('div',{class:'card'});
-  intake.appendChild(el('h3',{},'Intake Identification'));
+  if(STATE.stage===1){
+    container.appendChild(NewIntakeCard());
+  }
+
+  container.appendChild(DocketListCard());
+  return container;
+}
+
+function NewIntakeCard(){
+  const d = STATE.intakeDraft;
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Receive Battery — New Intake'));
+  card.appendChild(el('div',{class:'sub'},'Log a battery arriving at Stage 1. Once sent, it moves to the Stage 2 repair docket.'));
+
+  if(STATE.serialWarning){
+    container_warn(card);
+  }
 
   const g1 = el('div',{class:'grid'});
   g1.appendChild(field('Date Received', textInput(d.dateReceived, v=>d.dateReceived=v, {type:'date'})));
   g1.appendChild(field('Time Received', textInput(d.timeReceived, v=>d.timeReceived=v, {type:'time'})));
 
-  const bmsInput = textInput(d.bmsId, v => {
-    d.bmsId = v; d.serial = v.trim(); 
+  const bmsInput = textInput(d.bmsId, v=>{
+    d.bmsId=v;
     const detected = detectModelFromBMS(v);
-    if (detected) d.model = detected;
+    if(detected) d.model = detected;
   }, {mono:true, placeholder:'Scan BMS Barcode'});
-
-  bmsInput.addEventListener('blur', () => {
-    const searchSerial = (d.bmsId || d.serial).trim();
-    const prior = priorAttempts(STATE.records, searchSerial);
-    if(searchSerial && prior.length > 0){
-      const last = prior[prior.length-1];
-      STATE.serialWarning = `Notice: BMS ID ${searchSerial} has ${prior.length} prior service log(s). Last repair: ${last.dateReceived}.`;
-    } else {
-      STATE.serialWarning = null;
+  bmsInput.addEventListener('blur', ()=>{
+    const clean = d.bmsId.trim();
+    STATE.serialWarning = null;
+    if(clean){
+      const openRec = openRecordForBms(STATE.omRecords, clean);
+      if(openRec){
+        STATE.serialWarning = `This BMS ID is already in the pipeline (Stage ${openRec.stage}). Use that docket instead of creating a new intake.`;
+      } else {
+        const closed = closedRecordsForBms(STATE.omRecords, clean);
+        if(closed.length>0) STATE.serialWarning = `Notice: BMS ID has ${closed.length} prior closed service visit(s).`;
+      }
     }
     render();
   });
-
   g1.appendChild(field('Scan BMS ID Barcode', bmsInput));
-  g1.appendChild(field('Battery Platform', textInput(d.model, v => d.model = v, { placeholder: 'Auto-detected' })));
+  g1.appendChild(field('Battery Platform', textInput(d.model, v=>d.model=v, {placeholder:'Auto-detected'})));
 
   const imeiRequired = isImeiRequired(d);
-  const imeiInput = textInput(d.imei, v => d.imei = v, { mono: true, placeholder: imeiRequired ? 'Required' : 'Optional' });
-  if (imeiRequired) imeiInput.style.borderColor = 'var(--warn)';
-  g1.appendChild(field(imeiRequired ? 'IMEI Number (Mandatory)' : 'IMEI Number', imeiInput));
+  const imeiInput = textInput(d.imei, v=>d.imei=v, {mono:true, placeholder: imeiRequired?'Required':'Optional'});
+  if(imeiRequired) imeiInput.style.borderColor='var(--warn)';
+  g1.appendChild(field(imeiRequired?'IMEI Number (Mandatory)':'IMEI Number', imeiInput));
 
   const swapRequired = isSwapStationRequired(d);
-  const swapInput = textInput(d.site, v => d.site = v, { placeholder: swapRequired ? 'Station Required' : 'Optional' });
-  if (swapRequired) swapInput.style.borderColor = 'var(--warn)';
-  g1.appendChild(field(swapRequired ? 'Swap Station (Mandatory)' : 'Swap Station', swapInput));
+  const swapInput = textInput(d.site, v=>d.site=v, {placeholder: swapRequired?'Station Required':'Optional'});
+  if(swapRequired) swapInput.style.borderColor='var(--warn)';
+  g1.appendChild(field(swapRequired?'Swap Station (Mandatory)':'Swap Station', swapInput));
 
   g1.appendChild(field('Received By', textInput(d.receivedBy, v=>d.receivedBy=v)));
-  intake.appendChild(g1);
-  container.appendChild(intake);
+  card.appendChild(g1);
 
-  container.appendChild(ChecklistCard('Pre-Opening Inspection', d.pre, CHECK_ITEMS, (k,v)=>d.pre[k]=v));
-  container.appendChild(IssuesCard(d));
+  card.appendChild(ChecklistCard('Pre-Opening Inspection', d.pre, CHECK_ITEMS, (k,v)=>d.pre[k]=v));
+  card.appendChild(IssuesCard(d));
 
-  const repair = el('div',{class:'card'});
-  repair.appendChild(el('h3',{},'Repair Execution'));
-  
-  const sopBox = el('div',{class:'sop-box'});
-  sopBox.appendChild(el('div',{style:'font-weight:700;margin-bottom:4px;'},'Standard Operating Procedure (SOP)'));
-  const sopSel = el('select',{style:'font-size:11px;'});
-  STANDARD_SOPS.forEach(sop => {
-    const opt = el('option',{value:sop}, sop);
-    if(d.sopRef === sop) opt.setAttribute('selected','true');
-    sopSel.appendChild(opt);
-  });
-  sopSel.addEventListener('change', () => d.sopRef = sopSel.value);
-  sopBox.appendChild(sopSel);
-  repair.appendChild(sopBox);
-
-  const g2 = el('div',{class:'grid'});
-  g2.appendChild(field('Parts Replaced', textInput(d.partsReplaced, v=>d.partsReplaced=v, {placeholder:'e.g. BMS, Harness'})));
-  g2.appendChild(field('Technician', textInput(d.technician, v=>d.technician=v)));
-  g2.appendChild(field('Completion Date', textInput(d.repairDate, v=>d.repairDate=v, {type:'date'})));
-  repair.appendChild(g2);
-  repair.appendChild(field('Repair Summary Notes', textareaInput(d.repairAction, v=>d.repairAction=v)));
-  container.appendChild(repair);
-
-  container.appendChild(ChecklistCard('Post-Service Inspection', d.post, POST_ITEMS, (k,v)=>d.post[k]=v));
-  container.appendChild(TestsCard(d));
-
-  const disp = el('div',{class:'card'});
-  disp.appendChild(el('h3',{},'QC Sign-Off & Disposition'));
-  const g3 = el('div',{class:'grid'});
-  const qcSel = el('select',{});
-  ['','PASS','FAIL'].forEach(v=>{
-    const o = el('option',{value:v}, v===''?'— Select Final QC —':v);
-    if(d.qcPassed===v) o.setAttribute('selected','true');
-    qcSel.appendChild(o);
-  });
-  qcSel.addEventListener('change', ()=>d.qcPassed=qcSel.value);
-  g3.appendChild(field('Final QC Disposition', qcSel));
-  g3.appendChild(field('Sign-over Date', textInput(d.handoverDate, v=>d.handoverDate=v, {type:'date'})));
-  g3.appendChild(field('QC Verifier', textInput(d.qcVerifiedBy, v=>d.qcVerifiedBy=v)));
-  g3.appendChild(field('O&M Rep', textInput(d.omReceivedBy, v=>d.omReceivedBy=v)));
-  disp.appendChild(g3);
-  container.appendChild(disp);
-
-  const actions = el('div',{class:'footer-actions'});
+  const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;'});
   const clearBtn = el('button',{},'Reset');
-  clearBtn.addEventListener('click', ()=>{
-    const keepTech = d.technician;
-    STATE.draft = emptyDraft();
-    STATE.draft.technician = keepTech;
+  clearBtn.addEventListener('click', ()=>{ STATE.intakeDraft = emptyIntakeDraft(STATE.techName); STATE.serialWarning=null; render(); });
+  const sendBtn = el('button',{class:'btn-primary'},'Send to Stage 2 Docket');
+  sendBtn.addEventListener('click', async ()=>{
+    const clean = d.bmsId.trim();
+    if(!clean || !d.dateReceived){ toast('BMS ID and intake date are required.'); return; }
+    if(isImeiRequired(d) && !d.imei.trim()){ toast('IMEI is required for the selected issue type.'); return; }
+    if(isSwapStationRequired(d) && !d.site.trim()){ toast('Swap Station is required for this defect type.'); return; }
+    if(openRecordForBms(STATE.omRecords, clean)){ toast('This BMS ID is already open in the pipeline.'); return; }
+    const visitNumber = closedRecordsForBms(STATE.omRecords, clean).length + 1;
+    const rec = newOmRecord(d, visitNumber, STATE.techName);
+    const updated = [...STATE.omRecords, rec];
+    await saveOm(updated);
+    STATE.omRecords = updated;
+    STATE.intakeDraft = emptyIntakeDraft(STATE.techName);
     STATE.serialWarning = null;
-    render();
+    toast(`Intake logged — BMS ${rec.bmsId} sent to Stage 2 docket.`);
   });
-  const saveBtn = el('button',{class:'btn-primary'},'Save Service Log');
-  saveBtn.addEventListener('click', async ()=>{
-    const activeSerial = (d.bmsId || d.serial).trim();
-    if(!activeSerial || !d.dateReceived){ toast('BMS ID and intake date required.'); return; }
-    if (isImeiRequired(d) && !d.imei.trim()) { toast('IMEI is required for selected issue type.'); return; }
-    if (isSwapStationRequired(d) && !d.site.trim()) { toast('Swap Station is required for damaged packs.'); return; }
-
-    d.serial = activeSerial;
-    const prior = priorAttempts(STATE.records, d.serial);
-    const attemptNumber = prior.length + 1;
-    const preResult = checklistResult(d.pre, CHECK_ITEMS);
-    const postResult = checklistResult(d.post, POST_ITEMS);
-    const tResult = testsResult(d);
-
-    const record = {
-      id: uid(), createdAt: new Date().toISOString(),
-      ...JSON.parse(JSON.stringify(d)),
-      attemptNumber, preResult, postResult, testsResult: tResult,
-      submittedBy: STATE.techName || d.technician,
-    };
-    const updated = [...STATE.records, record];
-    await saveRecords(updated);
-    STATE.records = updated;
-    const keepTech = d.technician;
-    STATE.draft = emptyDraft();
-    STATE.draft.technician = keepTech;
-    STATE.serialWarning = null;
-    toast(`Log Saved: BMS ID ${record.serial}`);
-  });
-  actions.appendChild(clearBtn); actions.appendChild(saveBtn);
-  container.appendChild(actions);
-
-  return container;
+  actions.appendChild(clearBtn); actions.appendChild(sendBtn);
+  card.appendChild(actions);
+  return card;
+}
+function container_warn(card){
+  card.appendChild(el('div',{class:'banner'}, STATE.serialWarning));
 }
 
-function MyRecordsView(){
-  const list = STATE.records.filter(r=>r.submittedBy===STATE.techName);
-  return RecordsTable(list, 'My Recent Service Entries');
-}
-function HistoryView(){
-  return RecordsTable(STATE.records, 'All O&M Service Entries');
-}
-
-function RecordsTable(list, title){
+function DocketListCard(){
+  const stage = STATE.stage;
+  const queue = stageQueue(STATE.omRecords, stage);
   const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},title));
-  card.appendChild(el('div',{class:'sub'},`Total records: ${list.length}`));
-  
-  if(list.length===0){
-    card.appendChild(el('div',{style:'padding:12px 0;color:var(--muted);'},'No service entries found.'));
+  card.appendChild(el('h3',{}, `Stage ${stage} Docket`));
+  card.appendChild(el('div',{class:'sub'}, stage===1
+    ? 'Batteries returned for corrective re-inspection appear here.'
+    : `Batteries waiting on your stage. Total: ${queue.length}`));
+
+  if(queue.length===0){
+    card.appendChild(el('div',{class:'empty-note'},'Docket is empty.'));
     return card;
   }
 
+  queue.forEach(rec=>{
+    const row = el('div',{class:'docket-item'});
+    const left = el('div',{},[
+      el('div',{style:'font-weight:700;'}, `${rec.bmsId} — ${rec.model||'Unknown'}`),
+      el('div',{class:'meta'}, `Visit #${rec.visitNumber} · received ${rec.dateReceived}` + (rec.capaCycles>0 ? ` · Corrective Action Cycle ${rec.capaCycles}` : ''))
+    ]);
+    const right = el('div',{style:'display:flex;align-items:center;gap:8px;'});
+    if(rec.capaCycles>0) right.appendChild(el('span',{class:'status-chip CAPA'},'CAPA'));
+    right.appendChild(el('span',{class:'status-chip OPEN'}, 'Stage '+rec.stage));
+    const openBtn = el('button',{class:'btn-sm btn-primary'},'Open');
+    openBtn.addEventListener('click', ()=>{ STATE.openId=rec.id; STATE.serialWarning=null; render(); });
+    right.appendChild(openBtn);
+    row.appendChild(left); row.appendChild(right);
+    card.appendChild(row);
+  });
+  return card;
+}
+
+function Stage1EditCard(rec){
+  const s1 = rec.stage1;
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{}, `Re-Inspection — ${rec.bmsId}`));
+  card.appendChild(el('div',{class:'sub'},'Corrective action: re-check the pack and update diagnostics before resending to Stage 2.'));
+
+  const g1 = el('div',{class:'grid'});
+  g1.appendChild(field('Battery Platform', textInput(rec.model, v=>rec.model=v)));
+  g1.appendChild(field('IMEI Number', textInput(rec.imei, v=>rec.imei=v, {mono:true})));
+  g1.appendChild(field('Swap Station', textInput(rec.site, v=>rec.site=v)));
+  card.appendChild(g1);
+
+  card.appendChild(ChecklistCard('Pre-Opening Inspection', s1.pre, CHECK_ITEMS, (k,v)=>s1.pre[k]=v));
+  card.appendChild(IssuesCard({issues:s1.issues, otherNote:s1.otherNote}));
+
+  const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;'});
+  const sendBtn = el('button',{class:'btn-primary'},'Resend to Stage 2 Docket');
+  sendBtn.addEventListener('click', async ()=>{
+    s1.technician = STATE.techName;
+    s1.completedAt = nowIso();
+    rec.stage = 2; rec.status = 'STAGE2_OPEN';
+    await saveOm(STATE.omRecords);
+    STATE.openId = null;
+    toast(`BMS ${rec.bmsId} resent to Stage 2 docket.`);
+  });
+  actions.appendChild(sendBtn);
+  card.appendChild(actions);
+  return card;
+}
+
+function Stage2Card(rec){
+  const s2 = rec.stage2;
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{}, `Repair Execution — ${rec.bmsId}`));
+  card.appendChild(el('div',{class:'sub'}, `${rec.model||'Unknown'} · visit #${rec.visitNumber} · received ${rec.dateReceived}`));
+
+  if(rec.stage1.issues && Object.values(rec.stage1.issues).some(Boolean)){
+    const flagged = ISSUE_ITEMS.filter(([k])=>rec.stage1.issues[k]).map(([,l])=>l).join(', ');
+    card.appendChild(el('div',{class:'banner'}, 'Reported at intake: '+flagged));
+  }
+
+  const sopBox = el('div',{class:'sop-box'});
+  sopBox.appendChild(el('div',{style:'font-weight:700;margin-bottom:4px;'},'Standard Operating Procedure (SOP)'));
+  sopBox.appendChild(selectInput(s2.sopRef, STANDARD_SOPS.map(s=>[s,s]), v=>s2.sopRef=v));
+  card.appendChild(sopBox);
+
+  const g2 = el('div',{class:'grid'});
+  g2.appendChild(field('Parts Replaced', textInput(s2.partsReplaced, v=>s2.partsReplaced=v, {placeholder:'e.g. BMS, Harness'})));
+  card.appendChild(g2);
+  card.appendChild(field('Repair Summary Notes', textareaInput(s2.repairAction, v=>s2.repairAction=v)));
+
+  card.appendChild(ChecklistCard('Post-Service Inspection', s2.post, POST_ITEMS, (k,v)=>s2.post[k]=v));
+
+  const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;'});
+  const sendBtn = el('button',{class:'btn-primary'},'Send to Stage 3 Docket');
+  sendBtn.addEventListener('click', async ()=>{
+    s2.technician = STATE.techName;
+    s2.completedAt = nowIso();
+    rec.stage = 3; rec.status = 'STAGE3_OPEN';
+    await saveOm(STATE.omRecords);
+    STATE.openId = null;
+    toast(`BMS ${rec.bmsId} sent to Stage 3 docket.`);
+  });
+  actions.appendChild(sendBtn);
+  card.appendChild(actions);
+  return card;
+}
+
+function Stage3Card(rec){
+  const s3 = rec.stage3;
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{}, `Final Test & QC — ${rec.bmsId}`));
+  card.appendChild(el('div',{class:'sub'}, `${rec.model||'Unknown'} · visit #${rec.visitNumber} · repaired by ${rec.stage2.technician||'—'}`));
+
+  card.appendChild(TestsCard(s3));
+
+  const disp = el('div',{class:'card'});
+  disp.style.padding='0'; disp.style.border='none'; disp.style.background='transparent'; disp.style.marginBottom='0';
+  const dispositionSel = selectInput(s3.qcPassed, [['','— Select Disposition —'],['PASS','PASS'],['FAIL','FAIL — Return for Corrective Action'],['SCRAP','SCRAP — Remove from Fleet']], v=>{ s3.qcPassed=v; render(); });
+  card.appendChild(field('Final QC Disposition', dispositionSel));
+  card.appendChild(field('QC Notes', textareaInput(s3.qcNote, v=>s3.qcNote=v)));
+
+  let returnTo = 2;
+  if(s3.qcPassed==='FAIL'){
+    card.appendChild(field('Return Battery To', selectInput('2', [['2','Stage 2 — Repair Again'],['1','Stage 1 — Re-Inspect First']], v=>returnTo=parseInt(v))));
+  }
+
+  const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;'});
+  const finalizeBtn = el('button',{class: s3.qcPassed==='FAIL' ? 'btn-capa' : 'btn-primary'}, s3.qcPassed==='FAIL' ? 'Return for Corrective Action' : 'Finalize');
+  finalizeBtn.addEventListener('click', async ()=>{
+    if(!s3.qcPassed){ toast('Select a final QC disposition first.'); return; }
+    s3.technician = STATE.techName;
+    s3.completedAt = nowIso();
+    if(s3.qcPassed==='PASS'){
+      rec.status='CLOSED_PASS'; rec.finalDisposition='PASS'; rec.closedAt = nowIso();
+      toast(`BMS ${rec.bmsId} passed final QC and is closed out.`);
+    } else if(s3.qcPassed==='SCRAP'){
+      rec.status='CLOSED_SCRAPPED'; rec.finalDisposition='SCRAPPED'; rec.closedAt = nowIso();
+      toast(`BMS ${rec.bmsId} scrapped and removed from the fleet.`);
+    } else {
+      rec.capaCycles += 1;
+      rec.isCorrectiveAction = true;
+      rec.capaLog.push({ cycle: rec.capaCycles, returnedAt: nowIso(), returnedBy: STATE.techName, reason: s3.qcNote, toStage: returnTo });
+      rec.stage = returnTo;
+      rec.status = returnTo===1 ? 'STAGE1_OPEN' : 'STAGE2_OPEN';
+      s3.qcPassed = '';
+      toast(`BMS ${rec.bmsId} returned to Stage ${returnTo} for corrective action (not counted as a new repeat failure).`);
+    }
+    await saveOm(STATE.omRecords);
+    STATE.openId = null;
+  });
+  actions.appendChild(finalizeBtn);
+  disp.appendChild(actions);
+  card.appendChild(disp);
+  return card;
+}
+
+function OmTechClosedView(){
+  const stage = STATE.stage;
+  const key = `stage${stage}`;
+  const list = STATE.omRecords.filter(r => r[key].technician===STATE.techName).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Work Completed By Me'));
+  card.appendChild(el('div',{class:'sub'}, `Records where you completed the Stage ${stage} step. Total: ${list.length}`));
+  if(list.length===0){ card.appendChild(el('div',{class:'empty-note'},'No records yet.')); return card; }
+
   const wrap = el('div',{class:'table-wrap'});
   const tbl = el('table');
-  tbl.innerHTML = `
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>BMS ID</th>
-        <th>Platform</th>
-        <th>Visit</th>
-        <th>Pre</th>
-        <th>Tests</th>
-        <th>QC Result</th>
-        <th>Technician</th>
-      </tr>
-    </thead>
-  `;
+  tbl.appendChild(el('thead',{},[el('tr',{},[
+    el('th',{},'BMS ID'), el('th',{},'Platform'), el('th',{},'Visit'), el('th',{},'CAPA Cycles'), el('th',{},'Current Status')
+  ])]));
   const tbody = el('tbody');
-  [...list].reverse().forEach(r=>{
-    const tr = el('tr');
-    tr.innerHTML = `
-      <td class="mono">${r.dateReceived}</td>
-      <td class="mono" style="font-weight:700;">${r.bmsId || r.serial}</td>
-      <td>${r.model || 'Unknown'}</td>
-      <td class="mono">#${r.attemptNumber||1}</td>
-      <td><span class="status-chip ${r.preResult}">${r.preResult}</span></td>
-      <td><span class="status-chip ${r.testsResult}">${r.testsResult}</span></td>
-      <td><span class="status-chip ${r.qcPassed || 'PENDING'}">${r.qcPassed || 'PENDING'}</span></td>
-      <td>${r.technician||r.submittedBy}</td>
-    `;
+  list.forEach(r=>{
+    const tr = el('tr',{},[
+      el('td',{class:'mono'}, r.bmsId),
+      el('td',{}, r.model||'Unknown'),
+      el('td',{class:'mono'}, '#'+r.visitNumber),
+      el('td',{}, r.capaCycles>0 ? el('span',{class:'status-chip CAPA'},'Cycle '+r.capaCycles) : '—'),
+      el('td',{}, el('span',{class:'status-chip '+r.status}, r.status.replace('_',' ')))
+    ]);
     tbody.appendChild(tr);
   });
   tbl.appendChild(tbody);
@@ -736,106 +936,317 @@ function RecordsTable(list, title){
   return card;
 }
 
-function DashboardView(){
+/* ==================== O&M ADMIN — oversight of the chain ==================== */
+
+function OmDashboardView(){
   const container = el('div');
-  const total = STATE.records.length;
-  const passed = STATE.records.filter(r=>r.qcPassed==='PASS').length;
-  const failed = STATE.records.filter(r=>r.qcPassed==='FAIL').length;
-  const passRate = total>0 ? Math.round((passed/total)*100) : 0;
+  const recs = STATE.omRecords;
+  const total = recs.length;
+  const s1open = recs.filter(r=>r.stage===1 && !r.status.startsWith('CLOSED')).length;
+  const s2open = recs.filter(r=>r.stage===2 && !r.status.startsWith('CLOSED')).length;
+  const s3open = recs.filter(r=>r.stage===3 && !r.status.startsWith('CLOSED')).length;
+  const passed = recs.filter(r=>r.status==='CLOSED_PASS').length;
+  const scrapped = recs.filter(r=>r.status==='CLOSED_SCRAPPED').length;
+  const underCapa = recs.filter(r=>r.capaCycles>0 && !r.status.startsWith('CLOSED')).length;
 
   const stats = el('div',{class:'stat-grid'});
-  stats.appendChild(statBox(total, 'Total Serviced'));
-  stats.appendChild(statBox(passed, 'QC Passed'));
-  stats.appendChild(statBox(failed, 'QC Rejected'));
-  stats.appendChild(statBox(passRate+'%', 'Pass Yield'));
+  stats.appendChild(statBox(total, 'Total Intakes'));
+  stats.appendChild(statBox(s1open, 'Awaiting Stage 1'));
+  stats.appendChild(statBox(s2open, 'Awaiting Stage 2'));
+  stats.appendChild(statBox(s3open, 'Awaiting Stage 3'));
+  stats.appendChild(statBox(underCapa, 'Under Corrective Action'));
+  stats.appendChild(statBox(passed, 'Closed — Passed'));
+  stats.appendChild(statBox(scrapped, 'Closed — Scrapped'));
   container.appendChild(stats);
-
-  container.appendChild(HistoryView());
+  container.appendChild(OmHistoryView());
   return container;
 }
 
-function statBox(num, label){
-  const s = el('div',{class:'stat'});
-  s.appendChild(el('div',{class:'n'}, String(num)));
-  s.appendChild(el('div',{class:'l'}, label));
-  return s;
-}
-
-function InventoryView(){
-  const container = el('div');
+function OmHistoryView(){
   const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Fleet & Warehouse Baseline (1st Sept 2026 COB)'));
-
-  const stats = el('div',{class:'stat-grid'});
-  stats.appendChild(statBox(2285, 'Total Fleet Stock'));
-  stats.appendChild(statBox(2269, 'Warehouse Stock'));
-  stats.appendChild(statBox(25, 'Installed in Bikes'));
-  stats.appendChild(statBox(1440, 'Palleted CBAK Stock'));
-  container.appendChild(stats);
+  card.appendChild(el('h3',{},'Full Chain History'));
+  card.appendChild(el('div',{class:'sub'}, `Total records: ${STATE.omRecords.length}`));
+  if(STATE.omRecords.length===0){ card.appendChild(el('div',{class:'empty-note'},'No service entries found.')); return card; }
 
   const wrap = el('div',{class:'table-wrap'});
   const tbl = el('table');
-  tbl.innerHTML = `
-    <thead>
-      <tr>
-        <th>Platform</th>
-        <th>Warehouse Stock</th>
-        <th>Installed in Bikes</th>
-        <th>Total</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td><b>CBAK</b></td><td class="mono">2,259 (1,440 Palleted)</td><td class="mono">22</td><td class="mono" style="font-weight:700;">2,281</td></tr>
-      <tr><td><b>UNIQUE</b></td><td class="mono">8</td><td class="mono">0</td><td class="mono" style="font-weight:700;">8</td></tr>
-      <tr><td><b>GREENWAY</b></td><td class="mono">1</td><td class="mono">3</td><td class="mono" style="font-weight:700;">4</td></tr>
-      <tr><td><b>AMPACE</b></td><td class="mono">1</td><td class="mono">0</td><td class="mono" style="font-weight:700;">1</td></tr>
-    </tbody>
-  `;
+  tbl.appendChild(el('thead',{},[el('tr',{},[
+    el('th',{},'Received'), el('th',{},'BMS ID'), el('th',{},'Platform'), el('th',{},'Visit'),
+    el('th',{},'Stage 1 By'), el('th',{},'Stage 2 By'), el('th',{},'Stage 3 By'),
+    el('th',{},'CAPA'), el('th',{},'Status')
+  ])]));
+  const tbody = el('tbody');
+  [...STATE.omRecords].reverse().forEach(r=>{
+    const tr = el('tr',{},[
+      el('td',{class:'mono'}, r.dateReceived),
+      el('td',{class:'mono',style:'font-weight:700;'}, r.bmsId),
+      el('td',{}, r.model||'Unknown'),
+      el('td',{class:'mono'}, '#'+r.visitNumber),
+      el('td',{}, r.stage1.technician||'—'),
+      el('td',{}, r.stage2.technician||'—'),
+      el('td',{}, r.stage3.technician||'—'),
+      el('td',{}, r.capaCycles>0 ? el('span',{class:'status-chip CAPA'},'Cycle '+r.capaCycles) : '—'),
+      el('td',{}, el('span',{class:'status-chip '+r.status}, r.status.replace(/_/g,' ')))
+    ]);
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  wrap.appendChild(tbl);
+  card.appendChild(wrap);
+  return card;
+}
+
+/* ==================== PLANT ADMIN — separate sector store ==================== */
+
+function emptyPlantDraft(){
+  return { date: todayStr(), activeBatteries:'', chargedToday:'', unboxedToday:'', faultyBatteries:'', notes:'', enteredBy:'' };
+}
+
+function PlantEntryView(){
+  const d = STATE.plantDraft;
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Plant Sector — stored separately from O&M and Inventory'));
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Daily Plant Log'));
+  card.appendChild(el('div',{class:'sub'},'One entry per day summarizing plant-side battery activity.'));
+
+  const g = el('div',{class:'grid'});
+  g.appendChild(field('Date', textInput(d.date, v=>d.date=v, {type:'date'})));
+  g.appendChild(field('Active Batteries in Field', textInput(d.activeBatteries, v=>d.activeBatteries=v, {type:'number', mono:true})));
+  g.appendChild(field('Charged Today', textInput(d.chargedToday, v=>d.chargedToday=v, {type:'number', mono:true})));
+  g.appendChild(field('Unboxed Today', textInput(d.unboxedToday, v=>d.unboxedToday=v, {type:'number', mono:true})));
+  g.appendChild(field('Faulty Batteries Flagged', textInput(d.faultyBatteries, v=>d.faultyBatteries=v, {type:'number', mono:true})));
+  g.appendChild(field('Entered By', textInput(d.enteredBy, v=>d.enteredBy=v)));
+  card.appendChild(g);
+  card.appendChild(field('Notes', textareaInput(d.notes, v=>d.notes=v)));
+
+  const actions = el('div',{class:'footer-actions'});
+  const clearBtn = el('button',{},'Reset');
+  clearBtn.addEventListener('click', ()=>{ STATE.plantDraft = emptyPlantDraft(); render(); });
+  const saveBtn = el('button',{class:'btn-primary'},'Save Daily Log');
+  saveBtn.addEventListener('click', async ()=>{
+    if(!d.date){ toast('Date is required.'); return; }
+    const entry = { id: uid(), createdAt: nowIso(), ...JSON.parse(JSON.stringify(d)) };
+    const updated = [...STATE.plantRecords, entry];
+    await savePlant(updated);
+    STATE.plantRecords = updated;
+    STATE.plantDraft = emptyPlantDraft();
+    toast('Plant log saved for '+entry.date+'.');
+  });
+  actions.appendChild(clearBtn); actions.appendChild(saveBtn);
+  card.appendChild(actions);
+  container.appendChild(card);
+  return container;
+}
+
+function PlantHistoryView(){
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Plant Sector'));
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Plant Log History'));
+  card.appendChild(el('div',{class:'sub'}, `Total entries: ${STATE.plantRecords.length}`));
+  if(STATE.plantRecords.length===0){ card.appendChild(el('div',{class:'empty-note'},'No plant log entries yet.')); container.appendChild(card); return container; }
+
+  const wrap = el('div',{class:'table-wrap'});
+  const tbl = el('table');
+  tbl.appendChild(el('thead',{},[el('tr',{},[
+    el('th',{},'Date'), el('th',{},'Active'), el('th',{},'Charged'), el('th',{},'Unboxed'), el('th',{},'Faulty'), el('th',{},'By')
+  ])]));
+  const tbody = el('tbody');
+  [...STATE.plantRecords].reverse().forEach(r=>{
+    tbody.appendChild(el('tr',{},[
+      el('td',{class:'mono'}, r.date),
+      el('td',{class:'mono'}, r.activeBatteries||'0'),
+      el('td',{class:'mono'}, r.chargedToday||'0'),
+      el('td',{class:'mono'}, r.unboxedToday||'0'),
+      el('td',{class:'mono'}, r.faultyBatteries||'0'),
+      el('td',{}, r.enteredBy||'—'),
+    ]));
+  });
+  tbl.appendChild(tbody);
   wrap.appendChild(tbl);
   card.appendChild(wrap);
   container.appendChild(card);
   return container;
 }
 
+/* ==================== INVENTORY MANAGER — separate sector store ==================== */
+
+function emptyNewBatteryDraft(){
+  return { date: todayStr(), platform: PLATFORMS[0], quantity:'', batchLot:'', source:'', notes:'', loggedBy:'' };
+}
+function emptyAdjustmentDraft(){
+  return { date: todayStr(), platform: PLATFORMS[0], type: MOVEMENT_TYPES[0][0], quantity:'', reference:'', notes:'', loggedBy:'' };
+}
+
+function NewBatteryView(){
+  const d = STATE.newBatteryDraft;
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Inventory Sector — stored separately from O&M and Plant'));
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'New Battery Intake'));
+  card.appendChild(el('div',{class:'sub'},'Log freshly received stock into the warehouse.'));
+
+  const g = el('div',{class:'grid'});
+  g.appendChild(field('Date', textInput(d.date, v=>d.date=v, {type:'date'})));
+  g.appendChild(field('Platform', selectInput(d.platform, PLATFORMS.map(p=>[p,p]), v=>d.platform=v)));
+  g.appendChild(field('Quantity', textInput(d.quantity, v=>d.quantity=v, {type:'number', mono:true})));
+  g.appendChild(field('Batch / Lot', textInput(d.batchLot, v=>d.batchLot=v, {mono:true})));
+  g.appendChild(field('Source', textInput(d.source, v=>d.source=v)));
+  g.appendChild(field('Logged By', textInput(d.loggedBy, v=>d.loggedBy=v)));
+  card.appendChild(g);
+  card.appendChild(field('Notes', textareaInput(d.notes, v=>d.notes=v)));
+
+  const actions = el('div',{class:'footer-actions'});
+  const saveBtn = el('button',{class:'btn-primary'},'Save Intake');
+  saveBtn.addEventListener('click', async ()=>{
+    if(!d.date || !d.quantity){ toast('Date and quantity are required.'); return; }
+    const entry = { id: uid(), createdAt: nowIso(), ...JSON.parse(JSON.stringify(d)), quantity: parseInt(d.quantity)||0 };
+    const updated = [...STATE.newBatteryRecords, entry];
+    await saveNewBattery(updated);
+    STATE.newBatteryRecords = updated;
+    STATE.newBatteryDraft = emptyNewBatteryDraft();
+    toast(`Logged ${entry.quantity} ${entry.platform} unit(s).`);
+  });
+  actions.appendChild(saveBtn);
+  card.appendChild(actions);
+  container.appendChild(card);
+
+  const listCard = el('div',{class:'card'});
+  listCard.appendChild(el('h3',{},'Recent Intakes'));
+  if(STATE.newBatteryRecords.length===0){
+    listCard.appendChild(el('div',{class:'empty-note'},'No intake entries yet.'));
+  } else {
+    const wrap = el('div',{class:'table-wrap'});
+    const tbl = el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'Platform'),el('th',{},'Qty'),el('th',{},'Batch'),el('th',{},'Source'),el('th',{},'By')])]));
+    const tbody = el('tbody');
+    [...STATE.newBatteryRecords].reverse().forEach(r=>{
+      tbody.appendChild(el('tr',{},[
+        el('td',{class:'mono'}, r.date), el('td',{}, r.platform), el('td',{class:'mono'}, r.quantity),
+        el('td',{class:'mono'}, r.batchLot||'—'), el('td',{}, r.source||'—'), el('td',{}, r.loggedBy||'—')
+      ]));
+    });
+    tbl.appendChild(tbody); wrap.appendChild(tbl); listCard.appendChild(wrap);
+  }
+  container.appendChild(listCard);
+  return container;
+}
+
+function AdjustmentView(){
+  const d = STATE.adjustmentDraft;
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Inventory Sector'));
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Stock Movement'));
+  card.appendChild(el('div',{class:'sub'},'Record stock leaving or being corrected against the warehouse baseline.'));
+
+  const g = el('div',{class:'grid'});
+  g.appendChild(field('Date', textInput(d.date, v=>d.date=v, {type:'date'})));
+  g.appendChild(field('Platform', selectInput(d.platform, PLATFORMS.map(p=>[p,p]), v=>d.platform=v)));
+  g.appendChild(field('Movement Type', selectInput(d.type, MOVEMENT_TYPES, v=>d.type=v)));
+  g.appendChild(field('Quantity', textInput(d.quantity, v=>d.quantity=v, {type:'number', mono:true})));
+  g.appendChild(field('Reference', textInput(d.reference, v=>d.reference=v)));
+  g.appendChild(field('Logged By', textInput(d.loggedBy, v=>d.loggedBy=v)));
+  card.appendChild(g);
+  card.appendChild(field('Notes', textareaInput(d.notes, v=>d.notes=v)));
+
+  const actions = el('div',{class:'footer-actions'});
+  const saveBtn = el('button',{class:'btn-primary'},'Save Movement');
+  saveBtn.addEventListener('click', async ()=>{
+    if(!d.date || !d.quantity){ toast('Date and quantity are required.'); return; }
+    const entry = { id: uid(), createdAt: nowIso(), ...JSON.parse(JSON.stringify(d)), quantity: parseInt(d.quantity)||0 };
+    const updated = [...STATE.adjustments, entry];
+    await saveAdjustments(updated);
+    STATE.adjustments = updated;
+    STATE.adjustmentDraft = emptyAdjustmentDraft();
+    toast('Stock movement recorded.');
+  });
+  actions.appendChild(saveBtn);
+  card.appendChild(actions);
+  container.appendChild(card);
+
+  const listCard = el('div',{class:'card'});
+  listCard.appendChild(el('h3',{},'Recent Movements'));
+  if(STATE.adjustments.length===0){
+    listCard.appendChild(el('div',{class:'empty-note'},'No movements yet.'));
+  } else {
+    const wrap = el('div',{class:'table-wrap'});
+    const tbl = el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'Platform'),el('th',{},'Type'),el('th',{},'Qty'),el('th',{},'Reference'),el('th',{},'By')])]));
+    const tbody = el('tbody');
+    [...STATE.adjustments].reverse().forEach(r=>{
+      tbody.appendChild(el('tr',{},[
+        el('td',{class:'mono'}, r.date), el('td',{}, r.platform), el('td',{}, movementLabel(r.type)),
+        el('td',{class:'mono'}, r.quantity), el('td',{}, r.reference||'—'), el('td',{}, r.loggedBy||'—')
+      ]));
+    });
+    tbl.appendChild(tbody); wrap.appendChild(tbl); listCard.appendChild(wrap);
+  }
+  container.appendChild(listCard);
+  return container;
+}
+
+function allInventoryMovements(){
+  const received = STATE.newBatteryRecords.map(r=>({ date:r.date, platform:r.platform, qty:r.quantity, direction:1 }));
+  const adjusted = STATE.adjustments.map(r=>({ date:r.date, platform:r.platform, qty:r.quantity, direction: movementDirection(r.type) }));
+  return [...received, ...adjusted];
+}
+function stockByPlatform(){
+  const stock = {}; PLATFORMS.forEach(p=>stock[p]=0);
+  allInventoryMovements().forEach(m=>{ stock[m.platform] = (stock[m.platform]||0) + m.direction*m.qty; });
+  return stock;
+}
+
+function StockView(){
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Inventory Sector'));
+  const stock = stockByPlatform();
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Current Stock by Platform'));
+  card.appendChild(el('div',{class:'sub'},'Computed from all intake and movement records logged in this sector.'));
+  const stats = el('div',{class:'stat-grid'});
+  PLATFORMS.forEach(p=> stats.appendChild(statBox(stock[p], p)));
+  stats.appendChild(statBox(Object.values(stock).reduce((a,b)=>a+b,0), 'Total Stock'));
+  card.appendChild(stats);
+  container.appendChild(card);
+  return container;
+}
+
+/* ==================== QUALITY ENGINEER — warranty store + read-only overview ==================== */
+
+function emptyWarrantyDraft(){
+  return { bmsId:'', model:'', failureCategory:'Charging Port Failure', status:'Waiting for Spare Parts', comments:'', };
+}
+
 function WarrantyView(){
   const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Quality Sector — warranty store, kept separate from other sectors'));
   const d = STATE.warrantyDraft;
   const form = el('div',{class:'card'});
   form.appendChild(el('h3',{},'Escalate Pack to Warranty'));
-  
+
   const g = el('div',{class:'grid'});
-  const bmsInp = textInput(d.bmsId, v => {
-    d.bmsId = v; d.serial = v;
+  const bmsInp = textInput(d.bmsId, v=>{
+    d.bmsId=v;
     const detected = detectModelFromBMS(v);
-    if(detected) d.model = detected;
+    if(detected) d.model=detected;
   }, {mono:true, placeholder:'Scan BMS Barcode'});
   g.appendChild(field('BMS ID', bmsInp));
-
   g.appendChild(field('Platform', textInput(d.model, v=>d.model=v)));
-  
-  const failSel = el('select',{});
-  ['Charging Port Failure', 'Cell Degradation', 'BMS Defect', 'IoT Board Failure', 'Water Ingress'].forEach(f => {
-    failSel.appendChild(el('option',{value:f}, f));
-  });
-  failSel.addEventListener('change', ()=>d.failureCategory=failSel.value);
-  g.appendChild(field('Failure Category', failSel));
-
-  const statusSel = el('select',{});
-  ['Waiting for Spare Parts', 'Under Supplier Review', 'Scrapped by QC', 'Repaired & Returned'].forEach(s => {
-    statusSel.appendChild(el('option',{value:s}, s));
-  });
-  statusSel.addEventListener('change', ()=>d.status=statusSel.value);
-  g.appendChild(field('Warranty Status', statusSel));
-
+  g.appendChild(field('Failure Category', selectInput(d.failureCategory,
+    ['Charging Port Failure','Cell Degradation','BMS Defect','IoT Board Failure','Water Ingress'].map(f=>[f,f]), v=>d.failureCategory=v)));
+  g.appendChild(field('Warranty Status', selectInput(d.status,
+    ['Waiting for Spare Parts','Under Supplier Review','Scrapped by QC','Repaired & Returned'].map(s=>[s,s]), v=>d.status=v)));
   form.appendChild(g);
   form.appendChild(field('Escalation Comments', textareaInput(d.comments, v=>d.comments=v)));
-  
+
   const addBtn = el('button',{class:'btn-primary', style:'margin-top:8px;'},'Log Escalation');
-  addBtn.addEventListener('click', async () => {
+  addBtn.addEventListener('click', async ()=>{
     if(!d.bmsId.trim()){ toast('BMS ID is required.'); return; }
     const entry = { id: uid(), ...JSON.parse(JSON.stringify(d)), dateEscalated: todayStr() };
     const updated = [...STATE.warrantyRecords, entry];
-    await saveWarrantyRecords(updated);
+    await saveWarranty(updated);
     STATE.warrantyRecords = updated;
     STATE.warrantyDraft = emptyWarrantyDraft();
     toast(`Escalated ${entry.bmsId} to Warranty.`);
@@ -845,62 +1256,89 @@ function WarrantyView(){
 
   const listCard = el('div',{class:'card'});
   listCard.appendChild(el('h3',{},'Active Warranty Escalations'));
-  
   if(STATE.warrantyRecords.length===0){
-    listCard.appendChild(el('div',{style:'padding:12px 0;color:var(--muted);'},'No active warranty escalations.'));
+    listCard.appendChild(el('div',{class:'empty-note'},'No active warranty escalations.'));
   } else {
     const wrap = el('div',{class:'table-wrap'});
     const tbl = el('table');
-    tbl.innerHTML = `
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>BMS ID</th>
-          <th>Platform</th>
-          <th>Category</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-    `;
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'BMS ID'),el('th',{},'Platform'),el('th',{},'Category'),el('th',{},'Status'),el('th',{},'')])]));
     const tbody = el('tbody');
-    STATE.warrantyRecords.forEach(w => {
-      const tr = el('tr');
-      tr.innerHTML = `
-        <td class="mono">${w.dateEscalated}</td>
-        <td class="mono" style="font-weight:700;">${w.bmsId}</td>
-        <td>${w.model}</td>
-        <td>${w.failureCategory}</td>
-        <td><span class="badge">${w.status}</span></td>
-        <td></td>
-      `;
-      const actionTd = tr.querySelector('td:last-child');
-      if(w.status !== 'Scrapped by QC'){
+    STATE.warrantyRecords.forEach(w=>{
+      const tr = el('tr',{},[
+        el('td',{class:'mono'}, w.dateEscalated),
+        el('td',{class:'mono',style:'font-weight:700;'}, w.bmsId),
+        el('td',{}, w.model||'Unknown'),
+        el('td',{}, w.failureCategory),
+        el('td',{}, el('span',{class:'badge'}, w.status)),
+      ]);
+      const actionTd = el('td',{});
+      if(w.status!=='Scrapped by QC'){
         const scrapBtn = el('button',{class:'btn-danger btn-sm'},'Scrap Pack');
-        scrapBtn.addEventListener('click', async () => {
-          w.status = 'Scrapped by QC';
-          await saveWarrantyRecords(STATE.warrantyRecords);
-          toast(`Pack ${w.bmsId} Scrapped.`);
+        scrapBtn.addEventListener('click', async ()=>{
+          w.status='Scrapped by QC';
+          await saveWarranty(STATE.warrantyRecords);
+          toast(`Pack ${w.bmsId} scrapped.`);
         });
         actionTd.appendChild(scrapBtn);
       } else {
         actionTd.appendChild(el('span',{class:'status-chip FAIL'},'SCRAPPED'));
       }
+      tr.appendChild(actionTd);
       tbody.appendChild(tr);
     });
-    tbl.appendChild(tbody);
-    wrap.appendChild(tbl);
-    listCard.appendChild(wrap);
+    tbl.appendChild(tbody); wrap.appendChild(tbl); listCard.appendChild(wrap);
   }
-
   container.appendChild(listCard);
   return container;
 }
 
+function QualityOverviewView(){
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Read-only summary — each sector\'s data still lives in its own store'));
+
+  const omCard = el('div',{class:'card'});
+  omCard.appendChild(el('h3',{},'O&M Chain'));
+  const recs = STATE.omRecords;
+  const stats1 = el('div',{class:'stat-grid'});
+  stats1.appendChild(statBox(recs.length, 'Total Intakes'));
+  stats1.appendChild(statBox(recs.filter(r=>!r.status.startsWith('CLOSED')).length, 'In Pipeline'));
+  stats1.appendChild(statBox(recs.filter(r=>r.capaCycles>0 && !r.status.startsWith('CLOSED')).length, 'Under Corrective Action'));
+  stats1.appendChild(statBox(recs.filter(r=>r.status==='CLOSED_PASS').length, 'Closed — Passed'));
+  omCard.appendChild(stats1);
+  container.appendChild(omCard);
+
+  const plantCard = el('div',{class:'card'});
+  plantCard.appendChild(el('h3',{},'Plant — Latest Log'));
+  const lastPlant = STATE.plantRecords[STATE.plantRecords.length-1];
+  if(lastPlant){
+    plantCard.appendChild(el('div',{class:'sub'}, `${lastPlant.date} · logged by ${lastPlant.enteredBy||'—'}`));
+    const stats2 = el('div',{class:'stat-grid'});
+    stats2.appendChild(statBox(lastPlant.activeBatteries||'0', 'Active'));
+    stats2.appendChild(statBox(lastPlant.chargedToday||'0', 'Charged Today'));
+    stats2.appendChild(statBox(lastPlant.faultyBatteries||'0', 'Faulty Flagged'));
+    plantCard.appendChild(stats2);
+  } else {
+    plantCard.appendChild(el('div',{class:'empty-note'},'No plant logs yet.'));
+  }
+  container.appendChild(plantCard);
+
+  const invCard = el('div',{class:'card'});
+  invCard.appendChild(el('h3',{},'Inventory — Current Stock'));
+  const stock = stockByPlatform();
+  const stats3 = el('div',{class:'stat-grid'});
+  PLATFORMS.forEach(p=> stats3.appendChild(statBox(stock[p], p)));
+  invCard.appendChild(stats3);
+  container.appendChild(invCard);
+
+  return container;
+}
+
+/* ---------- Boot ---------- */
 render();
 </script>
 </body>
 </html>
+
 
 
 
