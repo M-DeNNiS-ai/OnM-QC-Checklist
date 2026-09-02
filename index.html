@@ -1,1730 +1,483 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Battery QC</title>
-<style>
-:root {
-  --bg: #f8f9fa;
-  --panel: #ffffff;
-  --panel2: #f1f3f5;
-  --line: #e9ecef;
-  --line-dark: #ced4da;
-  --text: #111827;
-  --muted: #6b7280;
-  --accent: #0f172a;
-  --pass: #15803d;
-  --pass-bg: #f0fdf4;
-  --fail: #b91c1c;
-  --fail-bg: #fef2f2;
-  --warn: #c2410c;
-  --warn-bg: #fff7ed;
-  --capa: #7c3aed;
-  --capa-bg: #f5f3ff;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
-
-[data-theme="dark"] {
-  --bg: #0f172a;
-  --panel: #1e293b;
-  --panel2: #334155;
-  --line: #334155;
-  --line-dark: #475569;
-  --text: #f8fafc;
-  --muted: #94a3b8;
-  --accent: #38bdf8;
-  --pass: #4ade80;
-  --pass-bg: rgba(74, 222, 128, 0.1);
-  --fail: #f87171;
-  --fail-bg: rgba(248, 113, 113, 0.1);
-  --warn: #fb923c;
-  --warn-bg: rgba(251, 146, 60, 0.1);
-  --capa: #c4b5fd;
-  --capa-bg: rgba(196, 181, 253, 0.12);
-}
-
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  line-height: 1.4;
-  -webkit-font-smoothing: antialiased;
-}
-
-.app { max-width: 1100px; margin: 0 auto; padding: 16px; }
-
-.header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px; background: var(--panel); border: 1px solid var(--line-dark);
-  border-radius: 4px; margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
-}
-.brand h1 { font-size: 15px; font-weight: 700; margin: 0; letter-spacing: 0.2px; color: var(--text); }
-.brand p { margin: 0; font-size: 11px; color: var(--muted); }
-
-.user-info { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-.badge {
-  padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 700;
-  text-transform: uppercase; background: var(--panel2); border: 1px solid var(--line-dark); color: var(--text);
-}
-
-button {
-  font-family: var(--font-sans); cursor: pointer; border: 1px solid var(--line-dark);
-  background: var(--panel); color: var(--text); border-radius: 3px;
-  padding: 6px 12px; font-size: 12px; font-weight: 600; transition: all 0.1s ease;
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-}
-button:hover { background: var(--panel2); }
-.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-.btn-primary:hover { opacity: 0.9; background: var(--accent); }
-.btn-danger { background: var(--fail-bg); border-color: var(--fail); color: var(--fail); }
-.btn-danger:hover { background: var(--fail); color: #fff; }
-.btn-capa { background: var(--capa-bg); border-color: var(--capa); color: var(--capa); }
-.btn-capa:hover { background: var(--capa); color: #fff; }
-.btn-sm { padding: 3px 8px; font-size: 11px; }
-.btn-block { width: 100%; }
-
-.theme-toggle select {
-  padding: 3px 6px; font-size: 11px; border-radius: 3px; background: var(--panel);
-  color: var(--text); border: 1px solid var(--line-dark); font-family: var(--font-sans);
-}
-
-.gate {
-  max-width: 380px; margin: 10vh auto 0; padding: 24px;
-  background: var(--panel); border: 1px solid var(--line-dark); border-radius: 4px;
-}
-.gate h2 { margin-top: 0; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-.gate p { color: var(--muted); font-size: 12px; margin-bottom: 16px; }
-.pin-hint { font-size: 10px; color: var(--muted); margin-top: 4px; }
-
-.nav { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--line-dark); padding-bottom: 8px; flex-wrap: wrap; align-items: center; }
-.nav button { background: transparent; color: var(--muted); border: none; border-radius: 3px; font-size: 12px; font-weight: 600; padding: 6px 12px; }
-.nav button.active { background: var(--panel2); color: var(--text); font-weight: 700; }
-.nav button:hover:not(.active) { color: var(--text); }
-
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; margin-bottom: 12px; }
-.card h3 { margin: 0 0 2px; font-size: 13px; font-weight: 700; color: var(--text); }
-.card .sub { color: var(--muted); font-size: 11px; margin-bottom: 12px; }
-
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 12px; }
-.grid.narrow { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
-
-label { display: block; font-size: 10px; font-weight: 700; color: var(--muted); margin: 8px 0 4px; text-transform: uppercase; letter-spacing: 0.3px; }
-input, select, textarea {
-  width: 100%; padding: 6px 8px; background: var(--panel); color: var(--text);
-  border: 1px solid var(--line-dark); border-radius: 3px; font-size: 12px; font-family: var(--font-sans);
-}
-input:focus, select:focus, textarea:focus { outline: none; border-color: var(--text); }
-textarea { resize: vertical; min-height: 50px; }
-
-.banner {
-  padding: 8px 12px; border-radius: 3px; font-size: 11px; margin-bottom: 12px;
-  border: 1px solid var(--warn); background: var(--warn-bg); color: var(--warn); font-weight: 600;
-}
-.banner.ok { border-color: var(--pass); background: var(--pass-bg); color: var(--pass); }
-.banner.capa { border-color: var(--capa); background: var(--capa-bg); color: var(--capa); }
-
-.check-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
-.check-row:last-child { border-bottom: none; }
-.check-row span { font-size: 12px; }
-
-.seg { display: flex; border: 1px solid var(--line-dark); border-radius: 3px; overflow: hidden; }
-.seg button { border-radius: 0; padding: 2px 8px; font-size: 10px; background: var(--panel); color: var(--muted); border: none; border-right: 1px solid var(--line-dark); }
-.seg button:last-child { border-right: none; }
-.seg button.sel-pass { background: var(--pass-bg); color: var(--pass); font-weight: 700; }
-.seg button.sel-fail { background: var(--fail-bg); color: var(--fail); font-weight: 700; }
-.seg button.sel-na { background: var(--panel2); color: var(--text); }
-
-.bool-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
-.bool-row input { width: 14px; height: 14px; margin: 0; cursor: pointer; accent-color: var(--accent); }
-.bool-row label { margin: 0; color: var(--text); font-size: 12px; text-transform: none; font-weight: 400; cursor: pointer; }
-
-.status-chip {
-  display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 700; text-transform: uppercase;
-}
-.status-chip.PASS, .status-chip.CLOSED_PASS { background: var(--pass-bg); color: var(--pass); border: 1px solid var(--pass); }
-.status-chip.FAIL, .status-chip.CLOSED_SCRAPPED { background: var(--fail-bg); color: var(--fail); border: 1px solid var(--fail); }
-.status-chip.INCOMPLETE, .status-chip.NA, .status-chip.PENDING { background: var(--panel2); color: var(--muted); border: 1px solid var(--line-dark); }
-.status-chip.CAPA { background: var(--capa-bg); color: var(--capa); border: 1px solid var(--capa); }
-.status-chip.OPEN { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn); }
-
-.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px; }
-.stat { background: var(--panel); border: 1px solid var(--line-dark); border-radius: 4px; padding: 12px; }
-.stat .n { font-size: 20px; font-weight: 700; color: var(--text); }
-.stat .l { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
-
-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-th, td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
-th { color: var(--muted); font-weight: 700; text-transform: uppercase; font-size: 10px; background: var(--panel2); position: sticky; top: 0; }
-.table-wrap { overflow-x: auto; border: 1px solid var(--line-dark); border-radius: 3px; background: var(--panel); }
-tr:hover td { background: var(--panel2); }
-.mono { font-family: var(--font-mono); }
-
-.footer-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; position: sticky; bottom: 0; background: var(--bg); padding: 10px 0; border-top: 1px solid var(--line-dark); }
-.err { color: var(--fail); font-size: 11px; margin-top: 6px; }
-.sop-box { background: var(--panel2); border: 1px solid var(--line-dark); padding: 8px 12px; border-radius: 3px; margin-bottom: 12px; font-size: 11px; }
-.docket-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
-.docket-item:last-child { border-bottom: none; }
-.docket-item .meta { font-size: 11px; color: var(--muted); }
-.empty-note { padding: 12px 0; color: var(--muted); font-size: 12px; }
-.sector-tag {
-  display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 10px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 12px; border: 1px solid var(--line-dark);
-  background: var(--panel2); color: var(--muted);
-}
-.chart-card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; margin-bottom: 12px; }
-.chart-card .chart-wrap { position: relative; height: 260px; }
-.chart-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
-</style>
-</head>
-<body>
-<div id="root"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script>
-/* ---------- Theme ---------- */
-let currentTheme = localStorage.getItem('bqc_theme') || 'light';
-document.documentElement.setAttribute('data-theme', currentTheme);
-function setTheme(theme) {
-  currentTheme = theme;
-  localStorage.setItem('bqc_theme', theme);
-  document.documentElement.setAttribute('data-theme', theme);
-  render();
-}
-
-/* ---------- Credentials ---------- */
-/* 3 O&M technicians run the sequential inspection chain (one PIN per stage). */
-const STAGE_PINS = { '1001': 1, '1002': 2, '1003': 3 };
-const STAGE_LABEL = { 1: 'Stage 1 — Intake & Pre-Check', 2: 'Stage 2 — Repair & Reassembly', 3: 'Stage 3 — Final Test & QC Sign-off' };
-/* 4 sector leads, each with their own PIN, each sector's data kept in its own store. */
-const SECTOR_PINS = { omadmin: '1234', plant: '2345', inventory: '3456', quality: '9999' };
-const SECTOR_LABEL = { omadmin: 'O&M Admin', plant: 'Plant Admin', inventory: 'Inventory Manager', quality: 'Quality Engineer' };
-
-/* ---------- Domain constants ---------- */
-const STANDARD_SOPS = [
-  "SOP-BAT-01: Housing Opening Protocol",
-  "SOP-BAT-02: Cell Balancing & Diagnostics",
-  "SOP-BAT-03: BMS Replacement & Firmware Sync",
-  "SOP-BAT-04: Insulation Safety Testing",
-  "SOP-BAT-05: IoT Rewiring & Flashing",
-  "SOP-BAT-06: Charge Port Thermal Servicing"
-];
-const BMS_MODEL_PREFIXES = [
-  { prefix: 'C7245AC2AA', model: 'CBAK' },
-  { prefix: 'U7245AU1G1', model: 'UNIQUE' },
-  { prefix: 'A7246AX1A1', model: 'AMPACE' },
-  { prefix: 'D72451LWK', model: 'GREENWAY' }
-];
-function detectModelFromBMS(bmsId) {
-  if (!bmsId) return '';
-  const cleanId = bmsId.trim().toUpperCase();
-  const match = BMS_MODEL_PREFIXES.find(p => cleanId.startsWith(p.prefix));
-  return match ? match.model : '';
-}
-
-const CHECK_ITEMS = [
-  ['foreignObjects','No Foreign Objects / Cables'],
-  ['looseComponents','No Loose Components'],
-  ['wiring','Internal Wiring Intact'],
-  ['cells','Cells Intact'],
-  ['corrosion','No Moisture / Corrosion'],
-  ['bmsMount','BMS Board Secure'],
-  ['internalDamage','No Internal Damage'],
-];
-const POST_ITEMS = [
-  ['foreignObjects','No Foreign Objects Left Inside'],
-  ['looseComponents','No Loose Components'],
-  ['wiring','Wiring Reconnected Properly'],
-  ['cells','Cells Secure'],
-  ['bmsMount','BMS Board Secure'],
-  ['seal','Casing Seal Intact'],
-  ['fasteners','Fasteners Reinstalled'],
-];
-const ISSUE_ITEMS = [
-  ['noPower','No Power / Offline'],
-  ['lowCapacity','Low Capacity / Range'],
-  ['cellImbalance','Cell Imbalance'],
-  ['bmsFault','BMS Fault / Mismatch'],
-  ['canFail','CAN Fail'],
-  ['chargeFail','Charge Failure'],
-  ['dischargeFail','Discharge Failure'],
-  ['swelling','Swelling / Damage'],
-  ['irFail','Insulation Failure'],
-  ['iotFault','IoT / IMEI Mismatch'],
-  ['tampered','Vandalism / Water Ingress'],
-  ['connectorDamage','Connector Damage'],
-  ['other','Other Issue'],
-];
-const TEST_BOOLS = [
-  ['canEstablished','CAN Established'],
-  ['bmsFaultCleared','BMS Fault Cleared'],
-  ['chargeVerified','Charge Verified'],
-  ['dischargeVerified','Discharge Verified'],
-  ['noAbnormal','No Abnormal Behavior'],
-];
-const PLATFORMS = ['CBAK','UNIQUE','AMPACE','GREENWAY'];
-const MOVEMENT_TYPES = [
-  ['ISSUED_TO_PLANT','Issued to Plant'],
-  ['ISSUED_TO_SWAP_STATION','Issued to Swap Station'],
-  ['DAMAGED_ON_ARRIVAL','Damaged on Arrival'],
-  ['RETURNED_TO_SUPPLIER','Returned to Supplier'],
-  ['CORRECTION_ADD','Stock Correction (Add)'],
-  ['CORRECTION_SUB','Stock Correction (Subtract)'],
-];
-function movementDirection(type){ return (type==='RECEIVED' || type==='CORRECTION_ADD') ? 1 : -1; }
-function movementLabel(type){
-  if(type==='RECEIVED') return 'Received (New Stock)';
-  const f = MOVEMENT_TYPES.find(([k])=>k===type);
-  return f ? f[1] : type;
-}
-
-/* ---------- Storage — each sector kept in its own store, never merged ---------- */
-async function loadOm(){ try { const r = await window.storage.get('om_chain_records', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
-async function saveOm(list){ await window.storage.set('om_chain_records', JSON.stringify(list), true); }
-
-async function loadPlant(){ try { const r = await window.storage.get('plant_records', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
-async function savePlant(list){ await window.storage.set('plant_records', JSON.stringify(list), true); }
-
-async function loadNewBattery(){ try { const r = await window.storage.get('new_battery_records', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
-async function saveNewBattery(list){ await window.storage.set('new_battery_records', JSON.stringify(list), true); }
-
-async function loadAdjustments(){ try { const r = await window.storage.get('inventory_adjustments', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
-async function saveAdjustments(list){ await window.storage.set('inventory_adjustments', JSON.stringify(list), true); }
-
-async function loadWarranty(){ try { const r = await window.storage.get('warranty_records', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
-async function saveWarranty(list){ await window.storage.set('warranty_records', JSON.stringify(list), true); }
-
-/* ---------- Utilities ---------- */
-function todayStr(){ return new Date().toISOString().slice(0,10); }
-function nowTime(){ return new Date().toTimeString().slice(0,5); }
-function nowIso(){ return new Date().toISOString(); }
-function uid(){ return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
-
-function checklistResult(map, items){
-  const vals = items.map(([k])=>map[k]);
-  if(vals.some(v=>v==='FAIL')) return 'FAIL';
-  if(vals.some(v=>!v)) return 'INCOMPLETE';
-  return 'PASS';
-}
-function testsResult(d){
-  const boolsOk = TEST_BOOLS.every(([k])=>d.testBools[k]===true);
-  const ir = parseFloat(d.tests.irMeasured), thr = parseFloat(d.tests.irThreshold);
-  const irOk = !isNaN(ir) && !isNaN(thr) ? ir>=thr : null;
-  if(!boolsOk || irOk===false) return 'FAIL';
-  if(irOk===null) return 'INCOMPLETE';
-  return 'PASS';
-}
-function isImeiRequired(d){ return !!(d.issues.noPower || d.issues.bmsFault || d.issues.iotFault); }
-function isSwapStationRequired(d){ return !!(d.issues.tampered || d.issues.swelling || d.pre.foreignObjects==='FAIL' || d.pre.corrosion==='FAIL'); }
-
-/* ---------- O&M chain record model ---------- */
-function emptyIntakeDraft(techName){
-  return {
-    dateReceived: todayStr(), timeReceived: nowTime(), bmsId:'', model:'', imei:'', site:'', receivedBy: techName||'',
-    pre:{}, issues:{}, otherNote:'',
-  };
-}
-function newOmRecord(d, visitNumber, techName){
-  return {
-    id: uid(), createdAt: nowIso(),
-    bmsId: d.bmsId.trim(), model: d.model, imei: d.imei, site: d.site,
-    dateReceived: d.dateReceived, timeReceived: d.timeReceived,
-    visitNumber,
-    stage: 2, status: 'STAGE2_OPEN',
-    capaCycles: 0, isCorrectiveAction: false, capaLog: [],
-    stage1: { technician: techName, receivedBy: d.receivedBy, pre: d.pre, issues: d.issues, otherNote: d.otherNote, completedAt: nowIso() },
-    stage2: { technician:'', sopRef: STANDARD_SOPS[0], repairAction:'', partsReplaced:'', post:{}, completedAt:null },
-    stage3: { technician:'', tests:{packVoltage:'',minCell:'',maxCell:'',irMeasured:'',irThreshold:550}, testBools:{}, qcPassed:'', qcNote:'', completedAt:null },
-    finalDisposition: null, closedAt: null,
-  };
-}
-function closedRecordsForBms(records, bmsId){
-  const clean = (bmsId||'').trim().toUpperCase();
-  if(!clean) return [];
-  return records.filter(r => r.bmsId.trim().toUpperCase()===clean && r.status.startsWith('CLOSED'));
-}
-function openRecordForBms(records, bmsId){
-  const clean = (bmsId||'').trim().toUpperCase();
-  if(!clean) return null;
-  return records.find(r => r.bmsId.trim().toUpperCase()===clean && !r.status.startsWith('CLOSED')) || null;
-}
-function stageQueue(records, stage){
-  return records.filter(r => r.stage===stage && !r.status.startsWith('CLOSED')).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
-}
-function findRecord(records, id){ return records.find(r=>r.id===id); }
-
-/* ---------- App state ---------- */
-let STATE = {
-  role: null,          // 'omtech' | 'omadmin' | 'plant' | 'inventory' | 'quality'
-  stage: null,          // 1 | 2 | 3, only for omtech
-  techName: '',
-  view: 'main',
-  toast: null,
-
-  omRecords: [],
-  plantRecords: [],
-  newBatteryRecords: [],
-  adjustments: [],
-  warrantyRecords: [],
-
-  intakeDraft: emptyIntakeDraft(''),
-  openId: null,          // record currently open for stage2/stage3/CAPA-stage1 editing
-  serialWarning: null,
-  intakeError: null,     // persistent (non-fading) validation error shown on the intake/re-inspection form
-  omLastRefreshed: null, // human-readable HH:MM of the last successful background/manual docket refresh
-
-  plantDraft: null,
-  newBatteryDraft: null,
-  adjustmentDraft: null,
-  warrantyDraft: null,
-};
-
-function toast(msg){ STATE.toast = msg; render(); setTimeout(()=>{ STATE.toast=null; render(); }, 2800); }
-
-const root = document.getElementById('root');
-let pendingCharts = [];
-function render(){
-  pendingCharts = [];
-  root.innerHTML='';
-  root.appendChild(View());
-  pendingCharts.forEach(({canvas, config})=>{
-    try{ if(typeof Chart!=='undefined') new Chart(canvas.getContext('2d'), config); }
-    catch(e){ console.error('Chart render error', e); }
-  });
-  pendingCharts = [];
-}
-
-function el(tag, attrs={}, children=[]){
-  const e = document.createElement(tag);
-  for(const k in attrs){
-    if(k==='class') e.className = attrs[k];
-    else if(k.startsWith('on')) e.addEventListener(k.slice(2).toLowerCase(), attrs[k]);
-    else e.setAttribute(k, attrs[k]);
-  }
-  (Array.isArray(children)?children:[children]).forEach(c=>{
-    if(c==null) return;
-    e.appendChild(typeof c==='string' ? document.createTextNode(c) : c);
-  });
-  return e;
-}
-function field(label, inputEl){
-  const w = el('div');
-  w.appendChild(el('label',{},label));
-  w.appendChild(inputEl);
-  return w;
-}
-function textInput(value, onChange, opts={}){
-  const i = el('input',{type:opts.type||'text', value: value||''});
-  if(opts.mono) i.className = 'mono';
-  if(opts.placeholder) i.setAttribute('placeholder', opts.placeholder);
-  if(opts.readonly) i.setAttribute('readonly','true');
-  i.addEventListener('input', ()=>onChange(i.value));
-  if(value!==undefined) i.value = value;
-  return i;
-}
-function textareaInput(value, onChange){
-  const t = el('textarea',{});
-  t.value = value||'';
-  t.addEventListener('input', ()=>onChange(t.value));
-  return t;
-}
-function selectInput(value, options, onChange){
-  const s = el('select',{});
-  options.forEach(([v,l])=>{
-    const o = el('option',{value:v}, l);
-    if(v===value) o.setAttribute('selected','true');
-    s.appendChild(o);
-  });
-  s.addEventListener('change', ()=>onChange(s.value));
-  return s;
-}
-function Toast(){ return el('div',{class:'banner ok'},[STATE.toast]); }
-
-function ChecklistCard(title, map, items, onSet){
-  const card = el('div',{class:'card'});
-  const res = checklistResult(map, items);
-  card.appendChild(el('div',{style:'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'},[
-    el('h3',{},title),
-    el('span',{class:'status-chip '+res}, res)
-  ]));
-  items.forEach(([key,label])=>{
-    const row = el('div',{class:'check-row'});
-    row.appendChild(el('span',{},label));
-    const seg = el('div',{class:'seg'});
-    ['PASS','FAIL','NA'].forEach(v=>{
-      const cur = map[key];
-      const b = el('button',{class: cur===v ? 'sel-'+v.toLowerCase() : ''}, v==='NA'?'N/A':v);
-      b.addEventListener('click', ()=>{ onSet(key, cur===v ? undefined : v); render(); });
-      seg.appendChild(b);
-    });
-    row.appendChild(seg);
-    card.appendChild(row);
-  });
-  return card;
-}
-function IssuesCard(d){
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Defect Diagnostics'));
-  card.appendChild(el('div',{class:'sub'},'Select all applicable failure modes observed on arrival.'));
-  ISSUE_ITEMS.forEach(([key,label])=>{
-    const row = el('div',{class:'bool-row'});
-    const cb = el('input',{type:'checkbox'});
-    cb.checked = !!d.issues[key];
-    cb.addEventListener('change', ()=>{ d.issues[key]=cb.checked; render(); });
-    row.appendChild(cb);
-    row.appendChild(el('label',{},label));
-    card.appendChild(row);
-  });
-  if(d.issues.other){
-    card.appendChild(field('Details of Other Failure Mode', textareaInput(d.otherNote, v=>d.otherNote=v)));
-  }
-  return card;
-}
-function TestsCard(d){
-  const card = el('div',{class:'card'});
-  const res = testsResult(d);
-  card.appendChild(el('div',{style:'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'},[
-    el('h3',{},'Verification Tests'),
-    el('span',{class:'status-chip '+res}, res)
-  ]));
-  const grid = el('div',{class:'grid narrow'});
-  grid.appendChild(field('Pack Voltage (V)', textInput(d.tests.packVoltage, v=>d.tests.packVoltage=v, {type:'number', mono:true})));
-  grid.appendChild(field('Min Cell (V)', textInput(d.tests.minCell, v=>d.tests.minCell=v, {type:'number', mono:true})));
-  grid.appendChild(field('Max Cell (V)', textInput(d.tests.maxCell, v=>d.tests.maxCell=v, {type:'number', mono:true})));
-  grid.appendChild(field('IR Measured (MΩ)', textInput(d.tests.irMeasured, v=>{d.tests.irMeasured=v; render();}, {type:'number', mono:true})));
-  grid.appendChild(field('IR Threshold (MΩ)', textInput(d.tests.irThreshold, v=>{d.tests.irThreshold=v; render();}, {type:'number', mono:true})));
-  card.appendChild(grid);
-  card.appendChild(el('div',{style:'margin-top:8px;'}));
-  TEST_BOOLS.forEach(([key,label])=>{
-    const row = el('div',{class:'bool-row'});
-    const cb = el('input',{type:'checkbox'});
-    cb.checked = !!d.testBools[key];
-    cb.addEventListener('change', ()=>{ d.testBools[key]=cb.checked; render(); });
-    row.appendChild(cb);
-    row.appendChild(el('label',{},label));
-    card.appendChild(row);
-  });
-  return card;
-}
-function statBox(num, label){
-  const s = el('div',{class:'stat'});
-  s.appendChild(el('div',{class:'n'}, String(num)));
-  s.appendChild(el('div',{class:'l'}, label));
-  return s;
-}
-
-/* ---------- Login ---------- */
-function LoginView(){
-  const gate = el('div',{class:'gate'});
-  gate.appendChild(el('h2',{},'Battery QC'));
-  gate.appendChild(el('p',{},'Select your role to sign in.'));
-
-  let mode = 'omtech';
-  const modeSel = el('select',{style:'margin-bottom:12px;'});
-  [['omtech','O&M Technician (chain inspection)'],
-   ['omadmin','O&M Admin'],
-   ['plant','Plant Admin'],
-   ['inventory','Inventory Manager'],
-   ['quality','Quality Engineer']].forEach(([v,l])=>{ modeSel.appendChild(el('option',{value:v},l)); });
-  gate.appendChild(modeSel);
-
-  const body = el('div');
-  gate.appendChild(body);
-
-  function renderBody(){
-    body.innerHTML='';
-    if(mode==='omtech'){
-      body.appendChild(el('label',{},'Your Name'));
-      const nameInp = el('input',{placeholder:'Name'});
-      body.appendChild(nameInp);
-      body.appendChild(el('label',{},'Stage PIN'));
-      const pinInp = el('input',{type:'password',placeholder:'••••'});
-      body.appendChild(pinInp);
-      body.appendChild(el('div',{class:'pin-hint'},'Your PIN determines which stage of the chain you work: intake, repair, or final QC.'));
-      const errBox = el('div',{class:'err'});
-      body.appendChild(errBox);
-      const go = el('button',{class:'btn-primary btn-block',style:'margin-top:12px;'},'Sign In');
-      go.addEventListener('click', async ()=>{
-        const stage = STAGE_PINS[pinInp.value];
-        if(!nameInp.value.trim()){ errBox.textContent='Enter your name.'; return; }
-        if(!stage){ errBox.textContent='Invalid stage PIN.'; return; }
-        STATE.techName = nameInp.value.trim();
-        STATE.role='omtech'; STATE.stage=stage; STATE.view='main';
-        STATE.omRecords = await loadOm();
-        STATE.intakeDraft = emptyIntakeDraft(STATE.techName);
-        render();
-      });
-      body.appendChild(go);
-    } else {
-      body.appendChild(el('label',{}, SECTOR_LABEL[mode]+' PIN'));
-      const inp = el('input',{type:'password',placeholder:'••••'});
-      body.appendChild(inp);
-      const errBox = el('div',{class:'err'});
-      body.appendChild(errBox);
-      const go = el('button',{class:'btn-primary btn-block',style:'margin-top:12px;'},'Authenticate');
-      go.addEventListener('click', async ()=>{
-        if(inp.value !== SECTOR_PINS[mode]){ errBox.textContent='Invalid PIN.'; return; }
-        STATE.role = mode; STATE.view='main';
-        if(mode==='omadmin'){ STATE.omRecords = await loadOm(); STATE.view='dashboard'; }
-        else if(mode==='plant'){ STATE.plantRecords = await loadPlant(); STATE.plantDraft = emptyPlantDraft(); STATE.view='entry'; }
-        else if(mode==='inventory'){
-          STATE.newBatteryRecords = await loadNewBattery();
-          STATE.adjustments = await loadAdjustments();
-          STATE.newBatteryDraft = emptyNewBatteryDraft();
-          STATE.adjustmentDraft = emptyAdjustmentDraft();
-          STATE.view='intake';
-        } else if(mode==='quality'){
-          STATE.warrantyRecords = await loadWarranty();
-          STATE.warrantyDraft = emptyWarrantyDraft();
-          STATE.omRecords = await loadOm();
-          STATE.plantRecords = await loadPlant();
-          STATE.newBatteryRecords = await loadNewBattery();
-          STATE.adjustments = await loadAdjustments();
-          STATE.view='warranty';
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spiro Battery O&M Operational Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .nav-active {
+            border-bottom: 2px solid #2563eb;
+            color: #2563eb;
+            font-weight: 600;
         }
-        render();
-      });
-      body.appendChild(go);
-    }
-  }
-  modeSel.addEventListener('change', ()=>{ mode=modeSel.value; renderBody(); });
-  renderBody();
-  return gate;
-}
-
-/* ---------- Header / Nav ---------- */
-function Header(){
-  const head = el('div',{class:'header'});
-  const brand = el('div',{class:'brand'},[
-    el('h1',{},'Battery QC'),
-    el('p',{}, STATE.role==='omtech' ? STAGE_LABEL[STATE.stage] : (SECTOR_LABEL[STATE.role]||''))
-  ]);
-  const roleTag = STATE.role==='omtech' ? ('TECH · STAGE '+STATE.stage) : STATE.role.toUpperCase();
-  const user = el('div',{class:'user-info'},[
-    el('span',{class:'badge'}, roleTag),
-    el('span',{}, STATE.role==='omtech' ? STATE.techName : SECTOR_LABEL[STATE.role]),
-    el('button',{class:'btn-sm', onClick:()=>{
-      STATE.role=null; STATE.stage=null; STATE.view='main'; STATE.openId=null; STATE.serialWarning=null;
-      render();
-    }},'Sign Out')
-  ]);
-  const themeWrap = el('div',{class:'theme-toggle'});
-  const themeSel = el('select',{onChange: (e)=>setTheme(e.target.value)});
-  [['light','Light UI'], ['dark','Dark UI']].forEach(([v,l])=>{
-    const opt = el('option',{value:v}, l);
-    if(v===currentTheme) opt.setAttribute('selected','true');
-    themeSel.appendChild(opt);
-  });
-  themeWrap.appendChild(themeSel);
-  const right = el('div',{style:'display:flex;align-items:center;gap:12px;'},[user, themeWrap]);
-  head.appendChild(brand); head.appendChild(right);
-  return head;
-}
-function Nav(items, labels){
-  const nav = el('div',{class:'nav'});
-  items.forEach(k=>{
-    const b = el('button',{class: STATE.view===k?'active':''}, labels[k]);
-    b.addEventListener('click', ()=>{ STATE.view=k; STATE.openId=null; render(); });
-    nav.appendChild(b);
-  });
-  return nav;
-}
-
-/* ---------- Top level router ---------- */
-function View(){
-  if(!STATE.role) return LoginView();
-  const wrap = el('div',{class:'app'});
-  wrap.appendChild(Header());
-  if(STATE.toast) wrap.appendChild(Toast());
-
-  if(STATE.role==='omtech'){
-    wrap.appendChild(Nav(['main','myclosed'], {main:'My Docket', myclosed:'My Completed Work'}));
-    wrap.appendChild(STATE.view==='myclosed' ? OmTechClosedView() : OmTechDocketView());
-  } else if(STATE.role==='omadmin'){
-    wrap.appendChild(Nav(['dashboard','history'], {dashboard:'Dashboard', history:'Full Chain History'}));
-    wrap.appendChild(STATE.view==='history' ? OmHistoryView() : OmDashboardView());
-  } else if(STATE.role==='plant'){
-    wrap.appendChild(Nav(['entry','history'], {entry:'Daily Log Entry', history:'Plant Log History'}));
-    wrap.appendChild(STATE.view==='history' ? PlantHistoryView() : PlantEntryView());
-  } else if(STATE.role==='inventory'){
-    wrap.appendChild(Nav(['intake','adjust','stock'], {intake:'New Battery Intake', adjust:'Stock Movement', stock:'Stock Summary'}));
-    if(STATE.view==='adjust') wrap.appendChild(AdjustmentView());
-    else if(STATE.view==='stock') wrap.appendChild(StockView());
-    else wrap.appendChild(NewBatteryView());
-  } else if(STATE.role==='quality'){
-    wrap.appendChild(Nav(['warranty','overview','analytics'], {warranty:'Warranty & Escalations', overview:'Sector Overview', analytics:'Analytics & Reports'}));
-    if(STATE.view==='overview') wrap.appendChild(QualityOverviewView());
-    else if(STATE.view==='analytics') wrap.appendChild(QualityAnalyticsView());
-    else wrap.appendChild(WarrantyView());
-  }
-  return wrap;
-}
-
-/* ==================== O&M TECHNICIAN — 3-STAGE CHAIN ==================== */
-
-function OmTechDocketView(){
-  const container = el('div');
-
-  if(STATE.openId){
-    const rec = findRecord(STATE.omRecords, STATE.openId);
-    if(rec){
-      const back = el('button',{class:'btn-sm', style:'margin-bottom:10px;'},'← Back to Docket');
-      back.addEventListener('click', ()=>{ STATE.openId=null; STATE.serialWarning=null; STATE.intakeError=null; render(); });
-      container.appendChild(back);
-      if(rec.capaCycles>0){
-        container.appendChild(el('div',{class:'banner capa'},
-          `Under Corrective Action — Cycle ${rec.capaCycles}. This is not a new repeat failure; it is the same visit returning to O&M for correction.`));
-      }
-      if(STATE.stage===1) container.appendChild(Stage1EditCard(rec));
-      else if(STATE.stage===2) container.appendChild(Stage2Card(rec));
-      else if(STATE.stage===3) container.appendChild(Stage3Card(rec));
-      return container;
-    }
-    STATE.openId = null;
-  }
-
-  if(STATE.stage===1){
-    container.appendChild(NewIntakeCard());
-  }
-
-  container.appendChild(DocketListCard());
-  return container;
-}
-
-function NewIntakeCard(){
-  const d = STATE.intakeDraft;
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Receive Battery — New Intake'));
-  card.appendChild(el('div',{class:'sub'},'Log a battery arriving at Stage 1. Once sent, it moves to the Stage 2 repair docket.'));
-
-  if(STATE.serialWarning){
-    container_warn(card);
-  }
-  if(STATE.intakeError){
-    card.appendChild(el('div',{class:'banner'}, '⚠ '+STATE.intakeError));
-  }
-
-  const g1 = el('div',{class:'grid'});
-  g1.appendChild(field('Date Received', textInput(d.dateReceived, v=>d.dateReceived=v, {type:'date'})));
-  g1.appendChild(field('Time Received', textInput(d.timeReceived, v=>d.timeReceived=v, {type:'time'})));
-
-  const bmsInput = textInput(d.bmsId, v=>{
-    d.bmsId=v;
-    const detected = detectModelFromBMS(v);
-    if(detected) d.model = detected;
-  }, {mono:true, placeholder:'Scan BMS Barcode'});
-  bmsInput.addEventListener('blur', ()=>{
-    const clean = d.bmsId.trim();
-    STATE.serialWarning = null;
-    if(clean){
-      const openRec = openRecordForBms(STATE.omRecords, clean);
-      if(openRec){
-        STATE.serialWarning = `This BMS ID is already in the pipeline (Stage ${openRec.stage}). Use that docket instead of creating a new intake.`;
-      } else {
-        const closed = closedRecordsForBms(STATE.omRecords, clean);
-        if(closed.length>0) STATE.serialWarning = `Notice: BMS ID has ${closed.length} prior closed service visit(s).`;
-      }
-    }
-    render();
-  });
-  g1.appendChild(field('Scan BMS ID Barcode', bmsInput));
-  g1.appendChild(field('Battery Platform', textInput(d.model, v=>d.model=v, {placeholder:'Auto-detected'})));
-
-  const imeiRequired = isImeiRequired(d);
-  const imeiInput = textInput(d.imei, v=>d.imei=v, {mono:true, placeholder: imeiRequired?'Required':'Optional'});
-  if(imeiRequired) imeiInput.style.borderColor='var(--warn)';
-  g1.appendChild(field(imeiRequired?'IMEI Number (Mandatory)':'IMEI Number', imeiInput));
-
-  const swapRequired = isSwapStationRequired(d);
-  const swapInput = textInput(d.site, v=>d.site=v, {placeholder: swapRequired?'Station Required':'Optional'});
-  if(swapRequired) swapInput.style.borderColor='var(--warn)';
-  g1.appendChild(field(swapRequired?'Swap Station (Mandatory)':'Swap Station', swapInput));
-
-  g1.appendChild(field('Received By', textInput(d.receivedBy, v=>d.receivedBy=v)));
-  card.appendChild(g1);
-
-  card.appendChild(ChecklistCard('Pre-Opening Inspection', d.pre, CHECK_ITEMS, (k,v)=>d.pre[k]=v));
-  card.appendChild(IssuesCard(d));
-
-  const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;'});
-  const clearBtn = el('button',{},'Reset');
-  clearBtn.addEventListener('click', ()=>{ STATE.intakeDraft = emptyIntakeDraft(STATE.techName); STATE.serialWarning=null; STATE.intakeError=null; render(); });
-  const sendBtn = el('button',{class:'btn-primary'},'Send to Stage 2 Docket');
-  sendBtn.addEventListener('click', async ()=>{
-    const clean = d.bmsId.trim();
-    STATE.intakeError = null;
-    // Re-check against the freshest shared data, not a possibly-stale local copy, so two
-    // technicians racing on the same BMS ID (or a record another tech just moved) can't collide.
-    STATE.omRecords = await loadOm();
-    if(!clean || !d.dateReceived){ STATE.intakeError='BMS ID and intake date are required.'; render(); return; }
-    if(isImeiRequired(d) && !d.imei.trim()){ STATE.intakeError='IMEI is required for the selected issue type.'; render(); return; }
-    if(isSwapStationRequired(d) && !d.site.trim()){ STATE.intakeError='Swap Station is required for this defect type.'; render(); return; }
-    if(openRecordForBms(STATE.omRecords, clean)){ STATE.intakeError='This BMS ID is already open in the pipeline. Use that docket instead of creating a new intake.'; render(); return; }
-    const visitNumber = closedRecordsForBms(STATE.omRecords, clean).length + 1;
-    const rec = newOmRecord(d, visitNumber, STATE.techName);
-    const updated = [...STATE.omRecords, rec];
-    await saveOm(updated);
-    STATE.omRecords = updated;
-    STATE.intakeDraft = emptyIntakeDraft(STATE.techName);
-    STATE.serialWarning = null;
-    STATE.intakeError = null;
-    toast(`Intake logged — BMS ${rec.bmsId} sent to Stage 2 docket.`);
-  });
-  actions.appendChild(clearBtn); actions.appendChild(sendBtn);
-  card.appendChild(actions);
-  return card;
-}
-function container_warn(card){
-  card.appendChild(el('div',{class:'banner'}, STATE.serialWarning));
-}
-
-function DocketListCard(){
-  const stage = STATE.stage;
-  const queue = stageQueue(STATE.omRecords, stage);
-  const card = el('div',{class:'card'});
-  const titleRow = el('div',{style:'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;'});
-  titleRow.appendChild(el('h3',{}, `Stage ${stage} Docket`));
-  const refreshWrap = el('div',{style:'display:flex;align-items:center;gap:8px;'});
-  if(STATE.omLastRefreshed) refreshWrap.appendChild(el('span',{class:'meta'}, 'Updated '+STATE.omLastRefreshed));
-  const refreshBtn = el('button',{class:'btn-sm'},'🔄 Refresh Docket');
-  refreshBtn.addEventListener('click', async ()=>{
-    STATE.omRecords = await loadOm();
-    STATE.omLastRefreshed = nowTime();
-    toast('Docket refreshed from the shared record.');
-  });
-  refreshWrap.appendChild(refreshBtn);
-  titleRow.appendChild(refreshWrap);
-  card.appendChild(titleRow);
-  card.appendChild(el('div',{class:'sub'}, (stage===1
-    ? 'Batteries returned for corrective re-inspection appear here. '
-    : `Batteries waiting on your stage. Total: ${queue.length}. `)
-    + 'This list updates automatically every few seconds, or tap Refresh Docket for an immediate check.'));
-
-  if(queue.length===0){
-    card.appendChild(el('div',{class:'empty-note'},'Docket is empty.'));
-    return card;
-  }
-
-  queue.forEach(rec=>{
-    const row = el('div',{class:'docket-item'});
-    const left = el('div',{},[
-      el('div',{style:'font-weight:700;'}, `${rec.bmsId} — ${rec.model||'Unknown'}`),
-      el('div',{class:'meta'}, `Visit #${rec.visitNumber} · received ${rec.dateReceived}` + (rec.capaCycles>0 ? ` · Corrective Action Cycle ${rec.capaCycles}` : ''))
-    ]);
-    const right = el('div',{style:'display:flex;align-items:center;gap:8px;'});
-    if(rec.capaCycles>0) right.appendChild(el('span',{class:'status-chip CAPA'},'CAPA'));
-    right.appendChild(el('span',{class:'status-chip OPEN'}, 'Stage '+rec.stage));
-    const openBtn = el('button',{class:'btn-sm btn-primary'},'Open');
-    openBtn.addEventListener('click', ()=>{ STATE.openId=rec.id; STATE.serialWarning=null; STATE.intakeError=null; render(); });
-    right.appendChild(openBtn);
-    row.appendChild(left); row.appendChild(right);
-    card.appendChild(row);
-  });
-  return card;
-}
-
-function Stage1EditCard(rec){
-  const s1 = rec.stage1;
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{}, `Re-Inspection — ${rec.bmsId}`));
-  card.appendChild(el('div',{class:'sub'},'Corrective action: re-check the pack and update diagnostics before resending to Stage 2.'));
-
-  const g1 = el('div',{class:'grid'});
-  g1.appendChild(field('Battery Platform', textInput(rec.model, v=>rec.model=v)));
-  g1.appendChild(field('IMEI Number', textInput(rec.imei, v=>rec.imei=v, {mono:true})));
-  g1.appendChild(field('Swap Station', textInput(rec.site, v=>rec.site=v)));
-  card.appendChild(g1);
-
-  card.appendChild(ChecklistCard('Pre-Opening Inspection', s1.pre, CHECK_ITEMS, (k,v)=>s1.pre[k]=v));
-  const issuesProxy = { issues: s1.issues, get otherNote(){ return s1.otherNote; }, set otherNote(v){ s1.otherNote = v; } };
-  card.appendChild(IssuesCard(issuesProxy));
-
-  if(STATE.intakeError){
-    card.appendChild(el('div',{class:'banner'}, '⚠ '+STATE.intakeError));
-  }
-
-  const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;'});
-  const sendBtn = el('button',{class:'btn-primary'},'Resend to Stage 2 Docket');
-  sendBtn.addEventListener('click', async ()=>{
-    STATE.intakeError = null;
-    s1.technician = STATE.techName;
-    s1.completedAt = nowIso();
-    rec.stage = 2; rec.status = 'STAGE2_OPEN';
-    // Save against the freshest shared record set so this update can't clobber changes
-    // another technician made to a different record in the meantime.
-    const fresh = await loadOm();
-    const idx = fresh.findIndex(r=>r.id===rec.id);
-    if(idx===-1){ STATE.intakeError = 'This record no longer exists in the shared docket — it may have been edited elsewhere. Refreshing.'; STATE.omRecords = fresh; render(); return; }
-    fresh[idx] = rec;
-    await saveOm(fresh);
-    STATE.omRecords = fresh;
-    STATE.openId = null;
-    toast(`BMS ${rec.bmsId} resent to Stage 2 docket.`);
-  });
-  actions.appendChild(sendBtn);
-  card.appendChild(actions);
-  return card;
-}
-
-function Stage2Card(rec){
-  const s2 = rec.stage2;
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{}, `Repair Execution — ${rec.bmsId}`));
-  card.appendChild(el('div',{class:'sub'}, `${rec.model||'Unknown'} · visit #${rec.visitNumber} · received ${rec.dateReceived}`));
-
-  if(rec.stage1.issues && Object.values(rec.stage1.issues).some(Boolean)){
-    const flagged = ISSUE_ITEMS.filter(([k])=>rec.stage1.issues[k]).map(([,l])=>l).join(', ');
-    card.appendChild(el('div',{class:'banner'}, 'Reported at intake: '+flagged));
-  }
-
-  const sopBox = el('div',{class:'sop-box'});
-  sopBox.appendChild(el('div',{style:'font-weight:700;margin-bottom:4px;'},'Standard Operating Procedure (SOP)'));
-  sopBox.appendChild(selectInput(s2.sopRef, STANDARD_SOPS.map(s=>[s,s]), v=>s2.sopRef=v));
-  card.appendChild(sopBox);
-
-  const g2 = el('div',{class:'grid'});
-  g2.appendChild(field('Parts Replaced', textInput(s2.partsReplaced, v=>s2.partsReplaced=v, {placeholder:'e.g. BMS, Harness'})));
-  card.appendChild(g2);
-  card.appendChild(field('Repair Summary Notes', textareaInput(s2.repairAction, v=>s2.repairAction=v)));
-
-  card.appendChild(ChecklistCard('Post-Service Inspection', s2.post, POST_ITEMS, (k,v)=>s2.post[k]=v));
-
-  if(STATE.intakeError){
-    card.appendChild(el('div',{class:'banner'}, '⚠ '+STATE.intakeError));
-  }
-
-  const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;'});
-  const sendBtn = el('button',{class:'btn-primary'},'Send to Stage 3 Docket');
-  sendBtn.addEventListener('click', async ()=>{
-    STATE.intakeError = null;
-    s2.technician = STATE.techName;
-    s2.completedAt = nowIso();
-    rec.stage = 3; rec.status = 'STAGE3_OPEN';
-    // Save against the freshest shared record set — never overwrite STATE.omRecords wholesale,
-    // since it can be stale while this form was open (auto-refresh pauses while a record is open).
-    const fresh = await loadOm();
-    const idx = fresh.findIndex(r=>r.id===rec.id);
-    if(idx===-1){ STATE.intakeError = 'This record no longer exists in the shared docket — it may have been edited elsewhere. Refreshing.'; STATE.omRecords = fresh; render(); return; }
-    fresh[idx] = rec;
-    await saveOm(fresh);
-    STATE.omRecords = fresh;
-    STATE.openId = null;
-    toast(`BMS ${rec.bmsId} sent to Stage 3 docket.`);
-  });
-  actions.appendChild(sendBtn);
-  card.appendChild(actions);
-  return card;
-}
-
-function Stage3Card(rec){
-  const s3 = rec.stage3;
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{}, `Final Test & QC — ${rec.bmsId}`));
-  card.appendChild(el('div',{class:'sub'}, `${rec.model||'Unknown'} · visit #${rec.visitNumber} · repaired by ${rec.stage2.technician||'—'}`));
-
-  card.appendChild(TestsCard(s3));
-
-  const disp = el('div',{class:'card'});
-  disp.style.padding='0'; disp.style.border='none'; disp.style.background='transparent'; disp.style.marginBottom='0';
-  const dispositionSel = selectInput(s3.qcPassed, [['','— Select Disposition —'],['PASS','PASS'],['FAIL','FAIL — Return for Corrective Action'],['SCRAP','SCRAP — Remove from Fleet']], v=>{ s3.qcPassed=v; render(); });
-  card.appendChild(field('Final QC Disposition', dispositionSel));
-  card.appendChild(field('QC Notes', textareaInput(s3.qcNote, v=>s3.qcNote=v)));
-
-  let returnTo = 2;
-  if(s3.qcPassed==='FAIL'){
-    card.appendChild(field('Return Battery To', selectInput('2', [['2','Stage 2 — Repair Again'],['1','Stage 1 — Re-Inspect First']], v=>returnTo=parseInt(v))));
-  }
-
-  if(STATE.intakeError){
-    card.appendChild(el('div',{class:'banner'}, '⚠ '+STATE.intakeError));
-  }
-
-  const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;'});
-  const finalizeBtn = el('button',{class: s3.qcPassed==='FAIL' ? 'btn-capa' : 'btn-primary'}, s3.qcPassed==='FAIL' ? 'Return for Corrective Action' : 'Finalize');
-  finalizeBtn.addEventListener('click', async ()=>{
-    if(!s3.qcPassed){ toast('Select a final QC disposition first.'); return; }
-    STATE.intakeError = null;
-    s3.technician = STATE.techName;
-    s3.completedAt = nowIso();
-    if(s3.qcPassed==='PASS'){
-      rec.status='CLOSED_PASS'; rec.finalDisposition='PASS'; rec.closedAt = nowIso();
-    } else if(s3.qcPassed==='SCRAP'){
-      rec.status='CLOSED_SCRAPPED'; rec.finalDisposition='SCRAPPED'; rec.closedAt = nowIso();
-    } else {
-      rec.capaCycles += 1;
-      rec.isCorrectiveAction = true;
-      rec.capaLog.push({ cycle: rec.capaCycles, returnedAt: nowIso(), returnedBy: STATE.techName, reason: s3.qcNote, toStage: returnTo });
-      rec.stage = returnTo;
-      rec.status = returnTo===1 ? 'STAGE1_OPEN' : 'STAGE2_OPEN';
-      s3.qcPassed = '';
-    }
-    // Save against the freshest shared record set so this finalize step can't clobber
-    // other technicians' concurrent changes (new intakes, other stage transitions, etc.).
-    const fresh = await loadOm();
-    const idx = fresh.findIndex(r=>r.id===rec.id);
-    if(idx===-1){ STATE.intakeError = 'This record no longer exists in the shared docket — it may have been edited elsewhere. Refreshing.'; STATE.omRecords = fresh; render(); return; }
-    fresh[idx] = rec;
-    await saveOm(fresh);
-    STATE.omRecords = fresh;
-    STATE.openId = null;
-    if(rec.status==='CLOSED_PASS') toast(`BMS ${rec.bmsId} passed final QC and is closed out.`);
-    else if(rec.status==='CLOSED_SCRAPPED') toast(`BMS ${rec.bmsId} scrapped and removed from the fleet.`);
-    else toast(`BMS ${rec.bmsId} returned to Stage ${returnTo} for corrective action (not counted as a new repeat failure).`);
-  });
-  actions.appendChild(finalizeBtn);
-  disp.appendChild(actions);
-  card.appendChild(disp);
-  return card;
-}
-
-function OmTechClosedView(){
-  const stage = STATE.stage;
-  const key = `stage${stage}`;
-  const list = STATE.omRecords.filter(r => r[key].technician===STATE.techName).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Work Completed By Me'));
-  card.appendChild(el('div',{class:'sub'}, `Records where you completed the Stage ${stage} step. Total: ${list.length}`));
-  if(list.length===0){ card.appendChild(el('div',{class:'empty-note'},'No records yet.')); return card; }
-
-  const wrap = el('div',{class:'table-wrap'});
-  const tbl = el('table');
-  tbl.appendChild(el('thead',{},[el('tr',{},[
-    el('th',{},'BMS ID'), el('th',{},'Platform'), el('th',{},'Visit'), el('th',{},'CAPA Cycles'), el('th',{},'Current Status')
-  ])]));
-  const tbody = el('tbody');
-  list.forEach(r=>{
-    const tr = el('tr',{},[
-      el('td',{class:'mono'}, r.bmsId),
-      el('td',{}, r.model||'Unknown'),
-      el('td',{class:'mono'}, '#'+r.visitNumber),
-      el('td',{}, r.capaCycles>0 ? el('span',{class:'status-chip CAPA'},'Cycle '+r.capaCycles) : '—'),
-      el('td',{}, el('span',{class:'status-chip '+r.status}, r.status.replace('_',' ')))
-    ]);
-    tbody.appendChild(tr);
-  });
-  tbl.appendChild(tbody);
-  wrap.appendChild(tbl);
-  card.appendChild(wrap);
-  return card;
-}
-
-/* ==================== O&M ADMIN — oversight of the chain ==================== */
-
-function OmDashboardView(){
-  const container = el('div');
-  const recs = STATE.omRecords;
-  const total = recs.length;
-  const s1open = recs.filter(r=>r.stage===1 && !r.status.startsWith('CLOSED')).length;
-  const s2open = recs.filter(r=>r.stage===2 && !r.status.startsWith('CLOSED')).length;
-  const s3open = recs.filter(r=>r.stage===3 && !r.status.startsWith('CLOSED')).length;
-  const passed = recs.filter(r=>r.status==='CLOSED_PASS').length;
-  const scrapped = recs.filter(r=>r.status==='CLOSED_SCRAPPED').length;
-  const underCapa = recs.filter(r=>r.capaCycles>0 && !r.status.startsWith('CLOSED')).length;
-
-  const stats = el('div',{class:'stat-grid'});
-  stats.appendChild(statBox(total, 'Total Intakes'));
-  stats.appendChild(statBox(s1open, 'Awaiting Stage 1'));
-  stats.appendChild(statBox(s2open, 'Awaiting Stage 2'));
-  stats.appendChild(statBox(s3open, 'Awaiting Stage 3'));
-  stats.appendChild(statBox(underCapa, 'Under Corrective Action'));
-  stats.appendChild(statBox(passed, 'Closed — Passed'));
-  stats.appendChild(statBox(scrapped, 'Closed — Scrapped'));
-  container.appendChild(stats);
-  container.appendChild(OmHistoryView());
-  return container;
-}
-
-function OmHistoryView(){
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Full Chain History'));
-  card.appendChild(el('div',{class:'sub'}, `Total records: ${STATE.omRecords.length}`));
-  if(STATE.omRecords.length===0){ card.appendChild(el('div',{class:'empty-note'},'No service entries found.')); return card; }
-
-  const wrap = el('div',{class:'table-wrap'});
-  const tbl = el('table');
-  tbl.appendChild(el('thead',{},[el('tr',{},[
-    el('th',{},'Received'), el('th',{},'BMS ID'), el('th',{},'Platform'), el('th',{},'Visit'),
-    el('th',{},'Stage 1 By'), el('th',{},'Stage 2 By'), el('th',{},'Stage 3 By'),
-    el('th',{},'CAPA'), el('th',{},'Status')
-  ])]));
-  const tbody = el('tbody');
-  [...STATE.omRecords].reverse().forEach(r=>{
-    const tr = el('tr',{},[
-      el('td',{class:'mono'}, r.dateReceived),
-      el('td',{class:'mono',style:'font-weight:700;'}, r.bmsId),
-      el('td',{}, r.model||'Unknown'),
-      el('td',{class:'mono'}, '#'+r.visitNumber),
-      el('td',{}, r.stage1.technician||'—'),
-      el('td',{}, r.stage2.technician||'—'),
-      el('td',{}, r.stage3.technician||'—'),
-      el('td',{}, r.capaCycles>0 ? el('span',{class:'status-chip CAPA'},'Cycle '+r.capaCycles) : '—'),
-      el('td',{}, el('span',{class:'status-chip '+r.status}, r.status.replace(/_/g,' ')))
-    ]);
-    tbody.appendChild(tr);
-  });
-  tbl.appendChild(tbody);
-  wrap.appendChild(tbl);
-  card.appendChild(wrap);
-  return card;
-}
-
-/* ==================== PLANT ADMIN — separate sector store ==================== */
-
-function emptyPlantDraft(){
-  return { date: todayStr(), activeBatteries:'', chargedToday:'', unboxedToday:'', faultyBatteries:'', notes:'', enteredBy:'' };
-}
-
-function PlantEntryView(){
-  const d = STATE.plantDraft;
-  const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Plant Sector — stored separately from O&M and Inventory'));
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Daily Plant Log'));
-  card.appendChild(el('div',{class:'sub'},'One entry per day summarizing plant-side battery activity.'));
-
-  const g = el('div',{class:'grid'});
-  g.appendChild(field('Date', textInput(d.date, v=>d.date=v, {type:'date'})));
-  g.appendChild(field('Active Batteries in Field', textInput(d.activeBatteries, v=>d.activeBatteries=v, {type:'number', mono:true})));
-  g.appendChild(field('Charged Today', textInput(d.chargedToday, v=>d.chargedToday=v, {type:'number', mono:true})));
-  g.appendChild(field('Unboxed Today', textInput(d.unboxedToday, v=>d.unboxedToday=v, {type:'number', mono:true})));
-  g.appendChild(field('Faulty Batteries Flagged', textInput(d.faultyBatteries, v=>d.faultyBatteries=v, {type:'number', mono:true})));
-  g.appendChild(field('Entered By', textInput(d.enteredBy, v=>d.enteredBy=v)));
-  card.appendChild(g);
-  card.appendChild(field('Notes', textareaInput(d.notes, v=>d.notes=v)));
-
-  const actions = el('div',{class:'footer-actions'});
-  const clearBtn = el('button',{},'Reset');
-  clearBtn.addEventListener('click', ()=>{ STATE.plantDraft = emptyPlantDraft(); render(); });
-  const saveBtn = el('button',{class:'btn-primary'},'Save Daily Log');
-  saveBtn.addEventListener('click', async ()=>{
-    if(!d.date){ toast('Date is required.'); return; }
-    const entry = { id: uid(), createdAt: nowIso(), ...JSON.parse(JSON.stringify(d)) };
-    const updated = [...STATE.plantRecords, entry];
-    await savePlant(updated);
-    STATE.plantRecords = updated;
-    STATE.plantDraft = emptyPlantDraft();
-    toast('Plant log saved for '+entry.date+'.');
-  });
-  actions.appendChild(clearBtn); actions.appendChild(saveBtn);
-  card.appendChild(actions);
-  container.appendChild(card);
-  return container;
-}
-
-function PlantHistoryView(){
-  const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Plant Sector'));
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Plant Log History'));
-  card.appendChild(el('div',{class:'sub'}, `Total entries: ${STATE.plantRecords.length}`));
-  if(STATE.plantRecords.length===0){ card.appendChild(el('div',{class:'empty-note'},'No plant log entries yet.')); container.appendChild(card); return container; }
-
-  const wrap = el('div',{class:'table-wrap'});
-  const tbl = el('table');
-  tbl.appendChild(el('thead',{},[el('tr',{},[
-    el('th',{},'Date'), el('th',{},'Active'), el('th',{},'Charged'), el('th',{},'Unboxed'), el('th',{},'Faulty'), el('th',{},'By')
-  ])]));
-  const tbody = el('tbody');
-  [...STATE.plantRecords].reverse().forEach(r=>{
-    tbody.appendChild(el('tr',{},[
-      el('td',{class:'mono'}, r.date),
-      el('td',{class:'mono'}, r.activeBatteries||'0'),
-      el('td',{class:'mono'}, r.chargedToday||'0'),
-      el('td',{class:'mono'}, r.unboxedToday||'0'),
-      el('td',{class:'mono'}, r.faultyBatteries||'0'),
-      el('td',{}, r.enteredBy||'—'),
-    ]));
-  });
-  tbl.appendChild(tbody);
-  wrap.appendChild(tbl);
-  card.appendChild(wrap);
-  container.appendChild(card);
-  return container;
-}
-
-/* ==================== INVENTORY MANAGER — separate sector store ==================== */
-
-function emptyNewBatteryDraft(){
-  return { date: todayStr(), platform: PLATFORMS[0], quantity:'', batchLot:'', source:'', notes:'', loggedBy:'' };
-}
-function emptyAdjustmentDraft(){
-  return { date: todayStr(), platform: PLATFORMS[0], type: MOVEMENT_TYPES[0][0], quantity:'', reference:'', notes:'', loggedBy:'' };
-}
-
-function NewBatteryView(){
-  const d = STATE.newBatteryDraft;
-  const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Inventory Sector — stored separately from O&M and Plant'));
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'New Battery Intake'));
-  card.appendChild(el('div',{class:'sub'},'Log freshly received stock into the warehouse.'));
-
-  const g = el('div',{class:'grid'});
-  g.appendChild(field('Date', textInput(d.date, v=>d.date=v, {type:'date'})));
-  g.appendChild(field('Platform', selectInput(d.platform, PLATFORMS.map(p=>[p,p]), v=>d.platform=v)));
-  g.appendChild(field('Quantity', textInput(d.quantity, v=>d.quantity=v, {type:'number', mono:true})));
-  g.appendChild(field('Batch / Lot', textInput(d.batchLot, v=>d.batchLot=v, {mono:true})));
-  g.appendChild(field('Source', textInput(d.source, v=>d.source=v)));
-  g.appendChild(field('Logged By', textInput(d.loggedBy, v=>d.loggedBy=v)));
-  card.appendChild(g);
-  card.appendChild(field('Notes', textareaInput(d.notes, v=>d.notes=v)));
-
-  const actions = el('div',{class:'footer-actions'});
-  const saveBtn = el('button',{class:'btn-primary'},'Save Intake');
-  saveBtn.addEventListener('click', async ()=>{
-    if(!d.date || !d.quantity){ toast('Date and quantity are required.'); return; }
-    const entry = { id: uid(), createdAt: nowIso(), ...JSON.parse(JSON.stringify(d)), quantity: parseInt(d.quantity)||0 };
-    const updated = [...STATE.newBatteryRecords, entry];
-    await saveNewBattery(updated);
-    STATE.newBatteryRecords = updated;
-    STATE.newBatteryDraft = emptyNewBatteryDraft();
-    toast(`Logged ${entry.quantity} ${entry.platform} unit(s).`);
-  });
-  actions.appendChild(saveBtn);
-  card.appendChild(actions);
-  container.appendChild(card);
-
-  const listCard = el('div',{class:'card'});
-  listCard.appendChild(el('h3',{},'Recent Intakes'));
-  if(STATE.newBatteryRecords.length===0){
-    listCard.appendChild(el('div',{class:'empty-note'},'No intake entries yet.'));
-  } else {
-    const wrap = el('div',{class:'table-wrap'});
-    const tbl = el('table');
-    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'Platform'),el('th',{},'Qty'),el('th',{},'Batch'),el('th',{},'Source'),el('th',{},'By')])]));
-    const tbody = el('tbody');
-    [...STATE.newBatteryRecords].reverse().forEach(r=>{
-      tbody.appendChild(el('tr',{},[
-        el('td',{class:'mono'}, r.date), el('td',{}, r.platform), el('td',{class:'mono'}, r.quantity),
-        el('td',{class:'mono'}, r.batchLot||'—'), el('td',{}, r.source||'—'), el('td',{}, r.loggedBy||'—')
-      ]));
-    });
-    tbl.appendChild(tbody); wrap.appendChild(tbl); listCard.appendChild(wrap);
-  }
-  container.appendChild(listCard);
-  return container;
-}
-
-function AdjustmentView(){
-  const d = STATE.adjustmentDraft;
-  const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Inventory Sector'));
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Stock Movement'));
-  card.appendChild(el('div',{class:'sub'},'Record stock leaving or being corrected against the warehouse baseline.'));
-
-  const g = el('div',{class:'grid'});
-  g.appendChild(field('Date', textInput(d.date, v=>d.date=v, {type:'date'})));
-  g.appendChild(field('Platform', selectInput(d.platform, PLATFORMS.map(p=>[p,p]), v=>d.platform=v)));
-  g.appendChild(field('Movement Type', selectInput(d.type, MOVEMENT_TYPES, v=>d.type=v)));
-  g.appendChild(field('Quantity', textInput(d.quantity, v=>d.quantity=v, {type:'number', mono:true})));
-  g.appendChild(field('Reference', textInput(d.reference, v=>d.reference=v)));
-  g.appendChild(field('Logged By', textInput(d.loggedBy, v=>d.loggedBy=v)));
-  card.appendChild(g);
-  card.appendChild(field('Notes', textareaInput(d.notes, v=>d.notes=v)));
-
-  const actions = el('div',{class:'footer-actions'});
-  const saveBtn = el('button',{class:'btn-primary'},'Save Movement');
-  saveBtn.addEventListener('click', async ()=>{
-    if(!d.date || !d.quantity){ toast('Date and quantity are required.'); return; }
-    const entry = { id: uid(), createdAt: nowIso(), ...JSON.parse(JSON.stringify(d)), quantity: parseInt(d.quantity)||0 };
-    const updated = [...STATE.adjustments, entry];
-    await saveAdjustments(updated);
-    STATE.adjustments = updated;
-    STATE.adjustmentDraft = emptyAdjustmentDraft();
-    toast('Stock movement recorded.');
-  });
-  actions.appendChild(saveBtn);
-  card.appendChild(actions);
-  container.appendChild(card);
-
-  const listCard = el('div',{class:'card'});
-  listCard.appendChild(el('h3',{},'Recent Movements'));
-  if(STATE.adjustments.length===0){
-    listCard.appendChild(el('div',{class:'empty-note'},'No movements yet.'));
-  } else {
-    const wrap = el('div',{class:'table-wrap'});
-    const tbl = el('table');
-    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'Platform'),el('th',{},'Type'),el('th',{},'Qty'),el('th',{},'Reference'),el('th',{},'By')])]));
-    const tbody = el('tbody');
-    [...STATE.adjustments].reverse().forEach(r=>{
-      tbody.appendChild(el('tr',{},[
-        el('td',{class:'mono'}, r.date), el('td',{}, r.platform), el('td',{}, movementLabel(r.type)),
-        el('td',{class:'mono'}, r.quantity), el('td',{}, r.reference||'—'), el('td',{}, r.loggedBy||'—')
-      ]));
-    });
-    tbl.appendChild(tbody); wrap.appendChild(tbl); listCard.appendChild(wrap);
-  }
-  container.appendChild(listCard);
-  return container;
-}
-
-function allInventoryMovements(){
-  const received = STATE.newBatteryRecords.map(r=>({ date:r.date, platform:r.platform, qty:r.quantity, direction:1 }));
-  const adjusted = STATE.adjustments.map(r=>({ date:r.date, platform:r.platform, qty:r.quantity, direction: movementDirection(r.type) }));
-  return [...received, ...adjusted];
-}
-function stockByPlatform(){
-  const stock = {}; PLATFORMS.forEach(p=>stock[p]=0);
-  allInventoryMovements().forEach(m=>{ stock[m.platform] = (stock[m.platform]||0) + m.direction*m.qty; });
-  return stock;
-}
-
-function StockView(){
-  const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Inventory Sector'));
-  const stock = stockByPlatform();
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Current Stock by Platform'));
-  card.appendChild(el('div',{class:'sub'},'Computed from all intake and movement records logged in this sector.'));
-  const stats = el('div',{class:'stat-grid'});
-  PLATFORMS.forEach(p=> stats.appendChild(statBox(stock[p], p)));
-  stats.appendChild(statBox(Object.values(stock).reduce((a,b)=>a+b,0), 'Total Stock'));
-  card.appendChild(stats);
-  container.appendChild(card);
-  return container;
-}
-
-/* ==================== QUALITY ENGINEER — warranty store + read-only overview ==================== */
-
-function emptyWarrantyDraft(){
-  return { bmsId:'', model:'', failureCategory:'Charging Port Failure', status:'Waiting for Spare Parts', comments:'', };
-}
-
-function WarrantyView(){
-  const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Quality Sector — warranty store, kept separate from other sectors'));
-  const d = STATE.warrantyDraft;
-  const form = el('div',{class:'card'});
-  form.appendChild(el('h3',{},'Escalate Pack to Warranty'));
-
-  const g = el('div',{class:'grid'});
-  const bmsInp = textInput(d.bmsId, v=>{
-    d.bmsId=v;
-    const detected = detectModelFromBMS(v);
-    if(detected) d.model=detected;
-  }, {mono:true, placeholder:'Scan BMS Barcode'});
-  g.appendChild(field('BMS ID', bmsInp));
-  g.appendChild(field('Platform', textInput(d.model, v=>d.model=v)));
-  g.appendChild(field('Failure Category', selectInput(d.failureCategory,
-    ['Charging Port Failure','Cell Degradation','BMS Defect','IoT Board Failure','Water Ingress'].map(f=>[f,f]), v=>d.failureCategory=v)));
-  g.appendChild(field('Warranty Status', selectInput(d.status,
-    ['Waiting for Spare Parts','Under Supplier Review','Scrapped by QC','Repaired & Returned'].map(s=>[s,s]), v=>d.status=v)));
-  form.appendChild(g);
-  form.appendChild(field('Escalation Comments', textareaInput(d.comments, v=>d.comments=v)));
-
-  const addBtn = el('button',{class:'btn-primary', style:'margin-top:8px;'},'Log Escalation');
-  addBtn.addEventListener('click', async ()=>{
-    if(!d.bmsId.trim()){ toast('BMS ID is required.'); return; }
-    const entry = { id: uid(), ...JSON.parse(JSON.stringify(d)), dateEscalated: todayStr() };
-    const updated = [...STATE.warrantyRecords, entry];
-    await saveWarranty(updated);
-    STATE.warrantyRecords = updated;
-    STATE.warrantyDraft = emptyWarrantyDraft();
-    toast(`Escalated ${entry.bmsId} to Warranty.`);
-  });
-  form.appendChild(addBtn);
-  container.appendChild(form);
-
-  const listCard = el('div',{class:'card'});
-  listCard.appendChild(el('h3',{},'Active Warranty Escalations'));
-  if(STATE.warrantyRecords.length===0){
-    listCard.appendChild(el('div',{class:'empty-note'},'No active warranty escalations.'));
-  } else {
-    const wrap = el('div',{class:'table-wrap'});
-    const tbl = el('table');
-    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'BMS ID'),el('th',{},'Platform'),el('th',{},'Category'),el('th',{},'Status'),el('th',{},'')])]));
-    const tbody = el('tbody');
-    STATE.warrantyRecords.forEach(w=>{
-      const tr = el('tr',{},[
-        el('td',{class:'mono'}, w.dateEscalated),
-        el('td',{class:'mono',style:'font-weight:700;'}, w.bmsId),
-        el('td',{}, w.model||'Unknown'),
-        el('td',{}, w.failureCategory),
-        el('td',{}, el('span',{class:'badge'}, w.status)),
-      ]);
-      const actionTd = el('td',{});
-      if(w.status!=='Scrapped by QC'){
-        const scrapBtn = el('button',{class:'btn-danger btn-sm'},'Scrap Pack');
-        scrapBtn.addEventListener('click', async ()=>{
-          w.status='Scrapped by QC';
-          await saveWarranty(STATE.warrantyRecords);
-          toast(`Pack ${w.bmsId} scrapped.`);
+        .badge-stage1 { background-color: #dbeafe; color: #1e40af; }
+        .badge-stage2 { background-color: #fef3c7; color: #92400e; }
+        .badge-stage3 { background-color: #e0e7ff; color: #3730a3; }
+        .badge-pass { background-color: #d1fae5; color: #065f46; }
+        .badge-fail { background-color: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+
+    <!-- Top Header Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-blue-600 text-white p-2 rounded-lg font-bold text-xl">S</div>
+                    <div>
+                        <h1 class="text-lg font-bold leading-tight">Spiro Battery O&M Portal</h1>
+                        <p class="text-xs text-slate-500">Fleet Quality, Maintenance & Inventory Management</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                        <span class="w-2 h-2 mr-1.5 bg-emerald-500 rounded-full"></span> Online / System Ready
+                    </span>
+                    <button onclick="exportAllData()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded border border-slate-300 transition flex items-center gap-1">
+                        <i class="fa-solid fa-download"></i> Export Data
+                    </button>
+                </div>
+            </div>
+            <!-- Navigation Tabs -->
+            <nav class="flex space-x-8 text-sm border-t border-slate-100 pt-2 pb-1">
+                <button onclick="switchTab('om-chain')" id="tab-om-chain" class="nav-active py-2 px-1 text-slate-600 hover:text-blue-600 transition flex items-center gap-2">
+                    <i class="fa-solid fa-screwdriver-wrench"></i> O&M Maintenance Chain
+                </button>
+                <button onclick="switchTab('plant')" id="tab-plant" class="py-2 px-1 text-slate-600 hover:text-blue-600 transition flex items-center gap-2">
+                    <i class="fa-solid fa-industry"></i> Plant Operations
+                </button>
+                <button onclick="switchTab('inventory')" id="tab-inventory" class="py-2 px-1 text-slate-600 hover:text-blue-600 transition flex items-center gap-2">
+                    <i class="fa-solid fa-boxes-stacked"></i> Warehouse & Inventory
+                </button>
+                <button onclick="switchTab('quality')" id="tab-quality" class="py-2 px-1 text-slate-600 hover:text-blue-600 transition flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved"></i> Quality & Warranty (CAPA)
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- SECTION 1: O&M MAINTENANCE CHAIN -->
+        <section id="sec-om-chain" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-xs text-slate-500 font-medium">Stage 1: Intake Active</p>
+                    <p id="stat-stage1" class="text-2xl font-bold text-slate-800">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-xs text-slate-500 font-medium">Stage 2: In Repair</p>
+                    <p id="stat-stage2" class="text-2xl font-bold text-slate-800">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-xs text-slate-500 font-medium">Stage 3: Testing / QC</p>
+                    <p id="stat-stage3" class="text-2xl font-bold text-slate-800">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-xs text-slate-500 font-medium">Active CAPA / Repeat Failures</p>
+                    <p id="stat-capa" class="text-2xl font-bold text-amber-600">0</p>
+                </div>
+            </div>
+
+            <!-- Form: Stage 1 Intake -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                    <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                        <i class="fa-solid fa-barcode text-blue-600"></i> Stage 1: Technician Intake & Pre-Check
+                    </h2>
+                    <span id="intake-status-msg" class="text-xs text-slate-500"></span>
+                </div>
+
+                <form id="form-intake" onsubmit="handleIntakeSubmit(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">BMS / Battery Barcode ID *</label>
+                        <input type="text" id="intake-barcode" required placeholder="e.g. C7245..., U7245..., A7246..." oninput="autoDetectModel(this.value)" class="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Battery Fleet Model</label>
+                        <input type="text" id="intake-model" readonly placeholder="Auto-detected" class="w-full border border-slate-200 bg-slate-50 rounded px-3 py-2 text-slate-500 font-semibold">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Intake Technician Name *</label>
+                        <input type="text" id="intake-tech" required placeholder="Technician Name" class="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Reported Issue Category *</label>
+                        <select id="intake-issue" required class="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="">Select Category...</option>
+                            <option value="NO_COMMUNICATION">No Communication / CAN Error</option>
+                            <option value="UNDER_VOLTAGE">Deep Discharge / UV Protection</option>
+                            <option value="HIGH_DELTA">High Cell Delta Voltage</option>
+                            <option value="PHYSICAL_DAMAGE">Physical / Shell / Connector Damage</option>
+                            <option value="THERMAL_EVENT">Thermal Sensor / Overheat Alarm</option>
+                            <option value="BMS_FAULT">BMS Board Failure</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Associated Station / Swap Location</label>
+                        <input type="text" id="intake-station" placeholder="e.g. Ntinda Station 02" class="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Initial Measured Pack Voltage (V)</label>
+                        <input type="number" step="0.1" id="intake-voltage" placeholder="0.0" class="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div class="md:col-span-3 flex justify-end gap-2 mt-2">
+                        <button type="reset" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded transition font-medium">Reset</button>
+                        <button type="submit" id="btn-intake-submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> Send to Stage 2 Docket
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Active Records Table -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800 text-sm">O&M Active Workflow Docket</h3>
+                    <input type="text" id="table-search" oninput="renderOMTable()" placeholder="Search Barcode or Tech..." class="border border-slate-300 rounded px-3 py-1 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none w-64">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 uppercase font-semibold">
+                            <tr>
+                                <th class="p-3">Barcode ID</th>
+                                <th class="p-3">Model</th>
+                                <th class="p-3">Current Stage</th>
+                                <th class="p-3">Intake Issue</th>
+                                <th class="p-3">Tech</th>
+                                <th class="p-3">CAPA Cycles</th>
+                                <th class="p-3">Action / Advance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-om-records" class="divide-y divide-slate-100">
+                            <!-- Rows injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: PLANT OPERATIONS -->
+        <section id="sec-plant" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="font-bold text-slate-800 text-base mb-2">Plant Daily Operational Tracking</h2>
+                <p class="text-xs text-slate-500 mb-4">Track daily active battery throughput, charging bay metrics, and unboxed units across operational plants.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <p class="font-bold text-slate-700 mb-1">Active Plant Inventory</p>
+                        <p class="text-3xl font-extrabold text-blue-600" id="plant-total-active">0</p>
+                        <p class="text-slate-400 mt-1">Batteries currently on charging bays or ready for dispatch.</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <p class="font-bold text-slate-700 mb-1">Daily Unboxed / Commissioned</p>
+                        <p class="text-3xl font-extrabold text-emerald-600" id="plant-daily-unboxed">0</p>
+                        <p class="text-slate-400 mt-1">New packs processed today into the fleet.</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <p class="font-bold text-slate-700 mb-1">Plant Isolation / Hold</p>
+                        <p class="text-3xl font-extrabold text-amber-600" id="plant-hold-count">0</p>
+                        <p class="text-slate-400 mt-1">Units flagged during plant charging tests.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: WAREHOUSE & INVENTORY -->
+        <section id="sec-inventory" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="font-bold text-slate-800 text-base mb-2">Warehouse Stock & Batch Lot Baseline</h2>
+                <p class="text-xs text-slate-500 mb-4">Monitor stock levels, incoming batch shipments, and location transfers across warehouses.</p>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600 border border-slate-200 rounded-lg">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 uppercase font-semibold">
+                            <tr>
+                                <th class="p-3">Fleet Model</th>
+                                <th class="p-3">Manufacturer</th>
+                                <th class="p-3">In Stock (Good)</th>
+                                <th class="p-3">Pending Quarantine</th>
+                                <th class="p-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr>
+                                <td class="p-3 font-semibold">CBAK 72V 45Ah</td>
+                                <td class="p-3">CBAK Energy</td>
+                                <td class="p-3 font-bold text-slate-800">142</td>
+                                <td class="p-3 text-amber-600 font-semibold">5</td>
+                                <td class="p-3"><span class="px-2 py-0.5 rounded text-emerald-800 bg-emerald-100 font-medium">Optimal</span></td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold">UNIQUE 72V 45Ah</td>
+                                <td class="p-3">Unique Power</td>
+                                <td class="p-3 font-bold text-slate-800">89</td>
+                                <td class="p-3 text-amber-600 font-semibold">12</td>
+                                <td class="p-3"><span class="px-2 py-0.5 rounded text-emerald-800 bg-emerald-100 font-medium">Optimal</span></td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold">AMPACE 72V 46Ah</td>
+                                <td class="p-3">Ampace</td>
+                                <td class="p-3 font-bold text-slate-800">210</td>
+                                <td class="p-3 text-amber-600 font-semibold">2</td>
+                                <td class="p-3"><span class="px-2 py-0.5 rounded text-emerald-800 bg-emerald-100 font-medium">Optimal</span></td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold">GREENWAY 72V 45Ah</td>
+                                <td class="p-3">Greenway</td>
+                                <td class="p-3 font-bold text-slate-800">34</td>
+                                <td class="p-3 text-amber-600 font-semibold">8</td>
+                                <td class="p-3"><span class="px-2 py-0.5 rounded text-amber-800 bg-amber-100 font-medium">Low Stock</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: QUALITY & WARRANTY (CAPA) -->
+        <section id="sec-quality" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="font-bold text-slate-800 text-base mb-2">Quality Assurance & CAPA Analytics</h2>
+                <p class="text-xs text-slate-500 mb-4">Manufacturer warranty claims, root-cause failure breakdown, and repeat cycle containment.</p>
+                
+                <div id="quality-capa-list" class="space-y-3">
+                    <!-- Dynamic CAPA alerts injected here -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Application Script Logic -->
+    <script>
+        // State store
+        let omRecords = [];
+        let intakeSaving = false;
+
+        // Model prefix rules
+        function autoDetectModel(barcode) {
+            const val = barcode.trim().toUpperCase();
+            const modelInput = document.getElementById('intake-model');
+            if (val.startsWith('C7245')) {
+                modelInput.value = 'CBAK 72V 45Ah';
+            } else if (val.startsWith('U7245')) {
+                modelInput.value = 'UNIQUE 72V 45Ah';
+            } else if (val.startsWith('A7246')) {
+                modelInput.value = 'AMPACE 72V 46Ah';
+            } else if (val.startsWith('D7245')) {
+                modelInput.value = 'GREENWAY 72V 45Ah';
+            } else if (val.length > 3) {
+                modelInput.value = 'GENERIC / UNKNOWN';
+            } else {
+                modelInput.value = '';
+            }
+        }
+
+        // Tab Switching
+        function switchTab(tabId) {
+            ['om-chain', 'plant', 'inventory', 'quality'].forEach(t => {
+                document.getElementById(`sec-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.remove('nav-active');
+            });
+            document.getElementById(`sec-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).classList.add('nav-active');
+        }
+
+        // Handle Stage 1 Intake Form Submit
+        function handleIntakeSubmit(e) {
+            e.preventDefault();
+            if (intakeSaving) return;
+
+            const barcode = document.getElementById('intake-barcode').value.trim().toUpperCase();
+            const model = document.getElementById('intake-model').value || 'GENERIC';
+            const tech = document.getElementById('intake-tech').value.trim();
+            const issue = document.getElementById('intake-issue').value;
+            const station = document.getElementById('intake-station').value.trim();
+            const voltage = document.getElementById('intake-voltage').value;
+
+            // Check if pack already active in records
+            let existingIndex = omRecords.findIndex(r => r.barcode === barcode);
+            
+            if (existingIndex >= 0) {
+                alert(`Battery ${barcode} is already active in the O&M Docket. Advancing its repair log.`);
+            } else {
+                intakeSaving = true;
+                document.getElementById('btn-intake-submit').disabled = true;
+
+                const newRecord = {
+                    barcode: barcode,
+                    model: model,
+                    stage: 1, // Stage 1 Intake
+                    issue: issue,
+                    tech: tech,
+                    station: station,
+                    voltage: voltage,
+                    capaCycles: 0,
+                    timestamp: new Date().toLocaleString()
+                };
+
+                omRecords.unshift(newRecord);
+                
+                setTimeout(() => {
+                    intakeSaving = false;
+                    document.getElementById('btn-intake-submit').disabled = false;
+                    document.getElementById('form-intake').reset();
+                    document.getElementById('intake-status-msg').innerText = "Record logged successfully!";
+                    setTimeout(() => document.getElementById('intake-status-msg').innerText = "", 3000);
+                    renderOMTable();
+                    updateStats();
+                }, 300);
+            }
+        }
+
+        // Advance Record Stage
+        function advanceStage(barcode) {
+            const rec = omRecords.find(r => r.barcode === barcode);
+            if (!rec) return;
+
+            if (rec.stage === 1) {
+                rec.stage = 2; // Move to Stage 2 Repair
+            } else if (rec.stage === 2) {
+                rec.stage = 3; // Move to Stage 3 Final QC
+            } else if (rec.stage === 3) {
+                // Pass QC -> Dispatched
+                rec.stage = 'DISPATCHED';
+            }
+            renderOMTable();
+            updateStats();
+        }
+
+        // Fail QC -> Trigger CAPA Loop
+        function failQC(barcode) {
+            const rec = omRecords.find(r => r.barcode === barcode);
+            if (!rec) return;
+
+            rec.capaCycles += 1;
+            rec.stage = 1; // Send back to Stage 1 for re-evaluation
+            alert(`Battery ${barcode} marked as FAIL. Incremented CAPA cycles to ${rec.capaCycles}. Returned to Stage 1.`);
+            renderOMTable();
+            updateStats();
+        }
+
+        // Render O&M Active Workflow Table
+        function renderOMTable() {
+            const tbody = document.getElementById('tbody-om-records');
+            const search = document.getElementById('table-search').value.toLowerCase();
+            tbody.innerHTML = '';
+
+            const filtered = omRecords.filter(r => 
+                r.barcode.toLowerCase().includes(search) || 
+                r.tech.toLowerCase().includes(search)
+            );
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No active O&M records found.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(r => {
+                let stageBadge = '';
+                if (r.stage === 1) stageBadge = `<span class="px-2 py-0.5 rounded badge-stage1 font-medium">Stage 1: Intake</span>`;
+                else if (r.stage === 2) stageBadge = `<span class="px-2 py-0.5 rounded badge-stage2 font-medium">Stage 2: Repair</span>`;
+                else if (r.stage === 3) stageBadge = `<span class="px-2 py-0.5 rounded badge-stage3 font-medium">Stage 3: Testing</span>`;
+                else if (r.stage === 'DISPATCHED') stageBadge = `<span class="px-2 py-0.5 rounded badge-pass font-medium">Ready / Dispatched</span>`;
+
+                let actionBtn = '';
+                if (r.stage === 1) {
+                    actionBtn = `<button onclick="advanceStage('${r.barcode}')" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded font-medium">Start Repair (Stage 2)</button>`;
+                } else if (r.stage === 2) {
+                    actionBtn = `<button onclick="advanceStage('${r.barcode}')" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded font-medium">Send to QC (Stage 3)</button>`;
+                } else if (r.stage === 3) {
+                    actionBtn = `
+                        <div class="flex gap-1">
+                            <button onclick="advanceStage('${r.barcode}')" class="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-2 py-1 rounded font-medium">PASS</button>
+                            <button onclick="failQC('${r.barcode}')" class="bg-rose-50 text-rose-600 hover:bg-rose-100 px-2 py-1 rounded font-medium">FAIL (CAPA)</button>
+                        </div>
+                    `;
+                } else {
+                    actionBtn = `<span class="text-slate-400">Complete</span>`;
+                }
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="p-3 font-bold text-slate-800">${r.barcode}</td>
+                    <td class="p-3">${r.model}</td>
+                    <td class="p-3">${stageBadge}</td>
+                    <td class="p-3">${r.issue}</td>
+                    <td class="p-3">${r.tech}</td>
+                    <td class="p-3"><span class="font-bold ${r.capaCycles > 0 ? 'text-amber-600' : 'text-slate-500'}">${r.capaCycles}</span></td>
+                    <td class="p-3">${actionBtn}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Update Dashboard Summary Stats
+        function updateStats() {
+            const s1 = omRecords.filter(r => r.stage === 1).length;
+            const s2 = omRecords.filter(r => r.stage === 2).length;
+            const s3 = omRecords.filter(r => r.stage === 3).length;
+            const capa = omRecords.filter(r => r.capaCycles > 0).length;
+
+            document.getElementById('stat-stage1').innerText = s1;
+            document.getElementById('stat-stage2').innerText = s2;
+            document.getElementById('stat-stage3').innerText = s3;
+            document.getElementById('stat-capa').innerText = capa;
+
+            // Render Quality CAPA list
+            const capaContainer = document.getElementById('quality-capa-list');
+            capaContainer.innerHTML = '';
+            const capaRecords = omRecords.filter(r => r.capaCycles > 0);
+            
+            if (capaRecords.length === 0) {
+                capaContainer.innerHTML = `<p class="text-xs text-slate-400">No repeat failure units flagged for CAPA.</p>`;
+            } else {
+                capaRecords.forEach(r => {
+                    const item = document.createElement('div');
+                    item.className = 'p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs flex justify-between items-center';
+                    item.innerHTML = `
+                        <div>
+                            <span class="font-bold text-amber-900">${r.barcode} (${r.model})</span>
+                            <p class="text-amber-700">Issue: ${r.issue} | Repeat Failures: ${r.capaCycles}</p>
+                        </div>
+                        <span class="px-2 py-1 bg-amber-200 text-amber-800 font-bold rounded">Flagged for Engineering Review</span>
+                    `;
+                    capaContainer.appendChild(item);
+                });
+            }
+        }
+
+        // Export Data to JSON
+        function exportAllData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(omRecords, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `Spiro_OM_Fleet_Export_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        // Initialize with sample records
+        window.addEventListener('DOMContentLoaded', () => {
+            omRecords = [
+                { barcode: 'C724590123', model: 'CBAK 72V 45Ah', stage: 1, issue: 'NO_COMMUNICATION', tech: 'Mugambwa Dennis', station: 'Ntinda Station 01', voltage: '71.2', capaCycles: 0, timestamp: new Date().toLocaleString() },
+                { barcode: 'U724511044', model: 'UNIQUE 72V 45Ah', stage: 2, issue: 'HIGH_DELTA', tech: 'Okiria Moses', station: 'Kibuli Hub', voltage: '68.4', capaCycles: 1, timestamp: new Date().toLocaleString() }
+            ];
+            renderOMTable();
+            updateStats();
         });
-        actionTd.appendChild(scrapBtn);
-      } else {
-        actionTd.appendChild(el('span',{class:'status-chip FAIL'},'SCRAPPED'));
-      }
-      tr.appendChild(actionTd);
-      tbody.appendChild(tr);
-    });
-    tbl.appendChild(tbody); wrap.appendChild(tbl); listCard.appendChild(wrap);
-  }
-  container.appendChild(listCard);
-  return container;
-}
-
-function QualityOverviewView(){
-  const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Read-only summary — each sector\'s data still lives in its own store'));
-
-  const omCard = el('div',{class:'card'});
-  omCard.appendChild(el('h3',{},'O&M Chain'));
-  const recs = STATE.omRecords;
-  const stats1 = el('div',{class:'stat-grid'});
-  stats1.appendChild(statBox(recs.length, 'Total Intakes'));
-  stats1.appendChild(statBox(recs.filter(r=>!r.status.startsWith('CLOSED')).length, 'In Pipeline'));
-  stats1.appendChild(statBox(recs.filter(r=>r.capaCycles>0 && !r.status.startsWith('CLOSED')).length, 'Under Corrective Action'));
-  stats1.appendChild(statBox(recs.filter(r=>r.status==='CLOSED_PASS').length, 'Closed — Passed'));
-  omCard.appendChild(stats1);
-  container.appendChild(omCard);
-
-  const plantCard = el('div',{class:'card'});
-  plantCard.appendChild(el('h3',{},'Plant — Latest Log'));
-  const lastPlant = STATE.plantRecords[STATE.plantRecords.length-1];
-  if(lastPlant){
-    plantCard.appendChild(el('div',{class:'sub'}, `${lastPlant.date} · logged by ${lastPlant.enteredBy||'—'}`));
-    const stats2 = el('div',{class:'stat-grid'});
-    stats2.appendChild(statBox(lastPlant.activeBatteries||'0', 'Active'));
-    stats2.appendChild(statBox(lastPlant.chargedToday||'0', 'Charged Today'));
-    stats2.appendChild(statBox(lastPlant.faultyBatteries||'0', 'Faulty Flagged'));
-    plantCard.appendChild(stats2);
-  } else {
-    plantCard.appendChild(el('div',{class:'empty-note'},'No plant logs yet.'));
-  }
-  container.appendChild(plantCard);
-
-  const invCard = el('div',{class:'card'});
-  invCard.appendChild(el('h3',{},'Inventory — Current Stock'));
-  const stock = stockByPlatform();
-  const stats3 = el('div',{class:'stat-grid'});
-  PLATFORMS.forEach(p=> stats3.appendChild(statBox(stock[p], p)));
-  invCard.appendChild(stats3);
-  container.appendChild(invCard);
-
-  return container;
-}
-
-/* ==================== QUALITY ANALYTICS — FPY charts, inventory charts, Excel export ==================== */
-
-function monthKey(dateStr){ return (dateStr||'').slice(0,7); }
-function cssVar(name){ return (getComputedStyle(document.documentElement).getPropertyValue(name)||'').trim() || '#888'; }
-
-function fpyStats(){
-  const closed = STATE.omRecords.filter(r=>r.status.startsWith('CLOSED'));
-  const total = closed.length;
-  const firstPass = closed.filter(r=>r.capaCycles===0 && r.finalDisposition==='PASS').length;
-  const overallFPY = total>0 ? (firstPass/total*100) : 0;
-  const byPlatform = {};
-  closed.forEach(r=>{
-    const p = r.model || 'Unknown';
-    if(!byPlatform[p]) byPlatform[p] = {total:0, firstPass:0};
-    byPlatform[p].total++;
-    if(r.capaCycles===0 && r.finalDisposition==='PASS') byPlatform[p].firstPass++;
-  });
-  const byMonth = {};
-  closed.forEach(r=>{
-    const mk = monthKey(r.closedAt ? r.closedAt.slice(0,10) : r.dateReceived);
-    if(!byMonth[mk]) byMonth[mk] = {total:0, firstPass:0};
-    byMonth[mk].total++;
-    if(r.capaCycles===0 && r.finalDisposition==='PASS') byMonth[mk].firstPass++;
-  });
-  return { overallFPY, total, firstPass, byPlatform, byMonth };
-}
-
-/* ---- Chart.js config builders (theme-aware colors pulled from CSS vars) ---- */
-function chartBaseOptions(opts={}){
-  const textColor = cssVar('--muted');
-  const gridColor = cssVar('--line');
-  return {
-    responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{ display: !!opts.legend, position:'bottom', labels:{color:textColor, font:{size:11}, boxWidth:12} } },
-    scales: opts.noScales ? {} : {
-      x:{ ticks:{color:textColor, font:{size:10}}, grid:{color:gridColor} },
-      y:{ ticks:{color:textColor, font:{size:10}, callback: v=> (opts.suffix ? v+opts.suffix : v)}, grid:{color:gridColor}, suggestedMax: opts.suggestedMax, beginAtZero:true }
-    }
-  };
-}
-function baseBarConfig(labels, datasets, opts={}){
-  return { type:'bar', data:{ labels, datasets: datasets.map(d=>({ label:d.label, data:d.data, backgroundColor:d.color, borderRadius:3, maxBarThickness:46 })) }, options: chartBaseOptions({...opts, legend: datasets.length>1}) };
-}
-function baseLineConfig(labels, datasets, opts={}){
-  return { type:'line', data:{ labels, datasets: datasets.map(d=>({ label:d.label, data:d.data, borderColor:d.color, backgroundColor:d.color, tension:0.3, fill:false, pointRadius:3 })) }, options: chartBaseOptions({...opts, legend: datasets.length>1}) };
-}
-function chartCard(title, config){
-  const card = el('div',{class:'chart-card'});
-  card.appendChild(el('h3',{},title));
-  const wrap = el('div',{class:'chart-wrap'});
-  const canvas = el('canvas');
-  wrap.appendChild(canvas);
-  card.appendChild(wrap);
-  pendingCharts.push({canvas, config});
-  return card;
-}
-
-function fpyTrendConfig(fpy){
-  const months = Object.keys(fpy.byMonth).sort();
-  const data = months.map(m=> fpy.byMonth[m].total ? (fpy.byMonth[m].firstPass/fpy.byMonth[m].total*100) : 0);
-  if(months.length===0) return baseLineConfig(['No data'], [{label:'FPY %', data:[0], color:cssVar('--pass')}], {suggestedMax:100, suffix:'%'});
-  return baseLineConfig(months, [{ label:'FPY %', data, color: cssVar('--pass') }], {suggestedMax:100, suffix:'%'});
-}
-function fpyByPlatformConfig(fpy){
-  const platforms = Object.keys(fpy.byPlatform);
-  if(platforms.length===0) return baseBarConfig(['No data'], [{label:'FPY %', data:[0], color:cssVar('--accent')}], {suggestedMax:100, suffix:'%'});
-  const data = platforms.map(p=>{ const s=fpy.byPlatform[p]; return s.total? (s.firstPass/s.total*100):0; });
-  return baseBarConfig(platforms, [{label:'FPY %', data, color: cssVar('--accent')}], {suggestedMax:100, suffix:'%'});
-}
-function dispositionConfig(){
-  const closed = STATE.omRecords.filter(r=>r.status.startsWith('CLOSED'));
-  const passed = closed.filter(r=>r.finalDisposition==='PASS').length;
-  const scrapped = closed.filter(r=>r.finalDisposition==='SCRAPPED').length;
-  return {
-    type:'doughnut',
-    data:{ labels:['Passed','Scrapped'], datasets:[{ data:[passed,scrapped], backgroundColor:[cssVar('--pass'), cssVar('--fail')] }] },
-    options: chartBaseOptions({legend:true, noScales:true})
-  };
-}
-function capaDistributionConfig(){
-  const buckets = {'0 (First Pass)':0,'1':0,'2':0,'3+':0};
-  STATE.omRecords.forEach(r=>{
-    const c = r.capaCycles;
-    if(c<=0) buckets['0 (First Pass)']++;
-    else if(c===1) buckets['1']++;
-    else if(c===2) buckets['2']++;
-    else buckets['3+']++;
-  });
-  return baseBarConfig(Object.keys(buckets), [{label:'Packs', data:Object.values(buckets), color: cssVar('--capa')}], {});
-}
-function stockByPlatformConfig(){
-  const stock = stockByPlatform();
-  return baseBarConfig(PLATFORMS, [{label:'Units in Stock', data: PLATFORMS.map(p=>stock[p]), color: cssVar('--accent')}], {});
-}
-function movementsByMonthConfig(){
-  const months = new Set();
-  const inByMonth = {}, outByMonth = {};
-  STATE.newBatteryRecords.forEach(r=>{ const m=monthKey(r.date); months.add(m); inByMonth[m]=(inByMonth[m]||0)+(r.quantity||0); });
-  STATE.adjustments.forEach(r=>{
-    const m=monthKey(r.date); months.add(m);
-    const dir=movementDirection(r.type);
-    if(dir>0) inByMonth[m]=(inByMonth[m]||0)+(r.quantity||0);
-    else outByMonth[m]=(outByMonth[m]||0)+(r.quantity||0);
-  });
-  const sortedMonths = [...months].sort();
-  if(sortedMonths.length===0) return baseBarConfig(['No data'], [{label:'Stock In', data:[0], color:cssVar('--pass')}], {});
-  return baseBarConfig(sortedMonths, [
-    {label:'Stock In', data: sortedMonths.map(m=>inByMonth[m]||0), color: cssVar('--pass')},
-    {label:'Stock Out', data: sortedMonths.map(m=>outByMonth[m]||0), color: cssVar('--fail')},
-  ], {});
-}
-function warrantyByCategoryConfig(){
-  const counts = {};
-  STATE.warrantyRecords.forEach(w=>{ counts[w.failureCategory]=(counts[w.failureCategory]||0)+1; });
-  const labels = Object.keys(counts);
-  if(labels.length===0) return baseBarConfig(['No data'], [{label:'Escalations', data:[0], color:cssVar('--warn')}], {});
-  return baseBarConfig(labels, [{label:'Escalations', data:labels.map(l=>counts[l]), color: cssVar('--warn')}], {});
-}
-function warrantyByStatusConfig(){
-  const counts = {};
-  STATE.warrantyRecords.forEach(w=>{ counts[w.status]=(counts[w.status]||0)+1; });
-  const labels = Object.keys(counts);
-  const palette = [cssVar('--warn'), cssVar('--capa'), cssVar('--fail'), cssVar('--pass')];
-  if(labels.length===0) return { type:'pie', data:{labels:['No data'], datasets:[{data:[1], backgroundColor:[cssVar('--line-dark')]}]}, options: chartBaseOptions({legend:true, noScales:true}) };
-  return { type:'pie', data:{ labels, datasets:[{ data: labels.map(l=>counts[l]), backgroundColor: labels.map((_,i)=>palette[i%palette.length]) }] }, options: chartBaseOptions({legend:true, noScales:true}) };
-}
-
-/* ---- Quality Analytics view ---- */
-function QualityAnalyticsView(){
-  const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Quality Analytics — computed live from all sector stores'));
-
-  const fpy = fpyStats();
-
-  const headerCard = el('div',{class:'card'});
-  const headerTop = el('div',{style:'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;'});
-  headerTop.appendChild(el('h3',{},'First Pass Yield (FPY) & Inventory Analytics'));
-  const exportBtn = el('button',{class:'btn-primary'},'⬇ Download Full Excel Report');
-  exportBtn.addEventListener('click', ()=>{ exportAllDataToExcel(); });
-  headerTop.appendChild(exportBtn);
-  headerCard.appendChild(headerTop);
-  headerCard.appendChild(el('div',{class:'sub'},'FPY = packs that passed final QC on the first attempt (zero corrective-action cycles) out of all closed packs. All charts and the export below refresh from live sector data on every visit to this tab.'));
-  const stats = el('div',{class:'stat-grid'});
-  stats.appendChild(statBox(fpy.overallFPY.toFixed(1)+'%', 'Overall FPY'));
-  stats.appendChild(statBox(fpy.total, 'Total Closed Packs'));
-  stats.appendChild(statBox(fpy.firstPass, 'First-Pass Closures'));
-  stats.appendChild(statBox(STATE.omRecords.filter(r=>r.capaCycles>0).length, 'Ever Under CAPA'));
-  stats.appendChild(statBox(STATE.warrantyRecords.length, 'Warranty Escalations'));
-  headerCard.appendChild(stats);
-  container.appendChild(headerCard);
-
-  const row1 = el('div',{class:'chart-row'});
-  row1.appendChild(chartCard('FPY Trend by Month', fpyTrendConfig(fpy)));
-  row1.appendChild(chartCard('FPY by Platform', fpyByPlatformConfig(fpy)));
-  container.appendChild(row1);
-
-  const row2 = el('div',{class:'chart-row'});
-  row2.appendChild(chartCard('Final Disposition Breakdown', dispositionConfig()));
-  row2.appendChild(chartCard('Corrective Action (CAPA) Cycles', capaDistributionConfig()));
-  container.appendChild(row2);
-
-  const row3 = el('div',{class:'chart-row'});
-  row3.appendChild(chartCard('Current Stock by Platform', stockByPlatformConfig()));
-  row3.appendChild(chartCard('Inventory Movements by Month', movementsByMonthConfig()));
-  container.appendChild(row3);
-
-  const row4 = el('div',{class:'chart-row'});
-  row4.appendChild(chartCard('Warranty Escalations by Failure Category', warrantyByCategoryConfig()));
-  row4.appendChild(chartCard('Warranty Escalations by Status', warrantyByStatusConfig()));
-  container.appendChild(row4);
-
-  const exportCard = el('div',{class:'card'});
-  exportCard.appendChild(el('h3',{},'Excel Report Contents'));
-  exportCard.appendChild(el('div',{class:'sub'},'One workbook, nine sheets — every sector\'s raw records plus computed analysis, ready to download.'));
-  const list = el('div');
-  [
-    'OM Chain Records — every intake/repair/QC record across all 3 stages, with technicians, tests, and CAPA cycles',
-    'Plant Logs — full daily plant log history',
-    'New Battery Intake — all warehouse intake entries',
-    'Stock Movements — every issue, correction, and return with direction',
-    'Stock Summary — current computed stock per platform',
-    'Warranty Escalations — all escalated packs with category, status, comments',
-    'FPY Overall — headline first-pass-yield figures',
-    'FPY by Platform — first-pass-yield broken down per battery platform',
-    'FPY by Month — first-pass-yield trended by closing month',
-  ].forEach(t=> list.appendChild(el('div',{class:'check-row'},[el('span',{},t)])));
-  exportCard.appendChild(list);
-  const exportBtn2 = el('button',{class:'btn-primary', style:'margin-top:10px;'},'⬇ Download Full Excel Report');
-  exportBtn2.addEventListener('click', ()=>{ exportAllDataToExcel(); });
-  exportCard.appendChild(exportBtn2);
-  container.appendChild(exportCard);
-
-  return container;
-}
-
-/* ---- Excel export (SheetJS) ---- */
-function rowsOrEmpty(rows){ return rows.length ? rows : [{ Note: 'No data recorded yet' }]; }
-
-function buildOmExportRows(){
-  return rowsOrEmpty(STATE.omRecords.map(r=>({
-    'BMS ID': r.bmsId, 'Platform': r.model||'', 'IMEI': r.imei||'', 'Swap Station': r.site||'',
-    'Date Received': r.dateReceived, 'Time Received': r.timeReceived, 'Visit #': r.visitNumber,
-    'Current Stage': r.stage, 'Status': r.status, 'CAPA Cycles': r.capaCycles,
-    'Stage1 Technician': r.stage1.technician||'', 'Stage1 Received By': r.stage1.receivedBy||'', 'Stage1 Completed At': r.stage1.completedAt||'',
-    'Stage2 Technician': r.stage2.technician||'', 'Stage2 SOP': r.stage2.sopRef||'', 'Stage2 Parts Replaced': r.stage2.partsReplaced||'', 'Stage2 Repair Notes': r.stage2.repairAction||'', 'Stage2 Completed At': r.stage2.completedAt||'',
-    'Stage3 Technician': r.stage3.technician||'', 'Pack Voltage (V)': r.stage3.tests.packVoltage||'', 'Min Cell (V)': r.stage3.tests.minCell||'', 'Max Cell (V)': r.stage3.tests.maxCell||'',
-    'IR Measured (MΩ)': r.stage3.tests.irMeasured||'', 'IR Threshold (MΩ)': r.stage3.tests.irThreshold||'',
-    'QC Disposition': r.finalDisposition||'', 'QC Notes': r.stage3.qcNote||'', 'Closed At': r.closedAt||'',
-  })));
-}
-function buildPlantExportRows(){
-  return rowsOrEmpty(STATE.plantRecords.map(r=>({
-    'Date': r.date, 'Active Batteries': r.activeBatteries||0, 'Charged Today': r.chargedToday||0,
-    'Unboxed Today': r.unboxedToday||0, 'Faulty Flagged': r.faultyBatteries||0, 'Notes': r.notes||'', 'Entered By': r.enteredBy||''
-  })));
-}
-function buildNewBatteryExportRows(){
-  return rowsOrEmpty(STATE.newBatteryRecords.map(r=>({
-    'Date': r.date, 'Platform': r.platform, 'Quantity': r.quantity, 'Batch/Lot': r.batchLot||'',
-    'Source': r.source||'', 'Notes': r.notes||'', 'Logged By': r.loggedBy||''
-  })));
-}
-function buildAdjustmentExportRows(){
-  return rowsOrEmpty(STATE.adjustments.map(r=>({
-    'Date': r.date, 'Platform': r.platform, 'Movement Type': movementLabel(r.type), 'Quantity': r.quantity,
-    'Direction': movementDirection(r.type)>0?'IN':'OUT', 'Reference': r.reference||'', 'Notes': r.notes||'', 'Logged By': r.loggedBy||''
-  })));
-}
-function buildWarrantyExportRows(){
-  return rowsOrEmpty(STATE.warrantyRecords.map(r=>({
-    'Date Escalated': r.dateEscalated, 'BMS ID': r.bmsId, 'Platform': r.model||'', 'Failure Category': r.failureCategory,
-    'Status': r.status, 'Comments': r.comments||''
-  })));
-}
-function buildStockSummaryRows(){
-  const stock = stockByPlatform();
-  return rowsOrEmpty(Object.keys(stock).map(p=>({ Platform:p, 'Current Stock': stock[p] })));
-}
-function buildFpyExportRows(fpy){
-  return [{ 'Overall FPY %': fpy.overallFPY.toFixed(1), 'Total Closed Packs': fpy.total, 'First-Pass Closures': fpy.firstPass }];
-}
-function buildFpyByPlatformRows(fpy){
-  return rowsOrEmpty(Object.keys(fpy.byPlatform).map(p=>{
-    const s = fpy.byPlatform[p];
-    return { Platform:p, 'Total Closed': s.total, 'First-Pass': s.firstPass, 'FPY %': s.total ? (s.firstPass/s.total*100).toFixed(1) : '0.0' };
-  }));
-}
-function buildFpyByMonthRows(fpy){
-  return rowsOrEmpty(Object.keys(fpy.byMonth).sort().map(m=>{
-    const s = fpy.byMonth[m];
-    return { Month:m, 'Total Closed': s.total, 'First-Pass': s.firstPass, 'FPY %': s.total ? (s.firstPass/s.total*100).toFixed(1) : '0.0' };
-  }));
-}
-
-async function exportAllDataToExcel(){
-  if(typeof XLSX === 'undefined'){ toast('Excel library failed to load — check your connection and try again.'); return; }
-  STATE.omRecords = await loadOm();
-  STATE.plantRecords = await loadPlant();
-  STATE.newBatteryRecords = await loadNewBattery();
-  STATE.adjustments = await loadAdjustments();
-  STATE.warrantyRecords = await loadWarranty();
-
-  const fpy = fpyStats();
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildOmExportRows()), 'OM Chain Records');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildPlantExportRows()), 'Plant Logs');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildNewBatteryExportRows()), 'New Battery Intake');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildAdjustmentExportRows()), 'Stock Movements');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildStockSummaryRows()), 'Stock Summary');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildWarrantyExportRows()), 'Warranty Escalations');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildFpyExportRows(fpy)), 'FPY Overall');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildFpyByPlatformRows(fpy)), 'FPY by Platform');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildFpyByMonthRows(fpy)), 'FPY by Month');
-
-  const filename = `battery-qc-report-${todayStr()}.xlsx`;
-  XLSX.writeFile(wb, filename);
-  toast('Excel report downloaded: '+filename);
-}
-
-/* ---------- Live docket refresh ----------
-   Each session used to load the shared O&M records once at sign-in and never again, so a
-   battery sent from Stage 1 wouldn't appear on a Stage 2 technician's screen until they signed
-   out and back in. This polls the shared store in the background and re-renders the docket
-   list — but only when nobody is actively filling out a form, so typing is never interrupted. */
-function userIsTypingInForm(){
-  const active = document.activeElement;
-  if(!active || !root.contains(active)) return false;
-  const tag = active.tagName;
-  return tag==='INPUT' || tag==='TEXTAREA' || tag==='SELECT';
-}
-async function autoRefreshDocket(){
-  try{
-    // Never blow away the DOM (and the user's focus/cursor position) while they're mid-input —
-    // this previously fired every 7s regardless, yanking focus out of whatever field the tech
-    // was typing in on the Stage 1 intake form.
-    if(userIsTypingInForm()) return;
-    if(STATE.role==='omtech' && STATE.openId===null && STATE.view==='main'){
-      STATE.omRecords = await loadOm();
-      STATE.omLastRefreshed = nowTime();
-      render();
-    } else if(STATE.role==='omadmin' && (STATE.view==='dashboard' || STATE.view==='history')){
-      STATE.omRecords = await loadOm();
-      STATE.omLastRefreshed = nowTime();
-      render();
-    }
-  }catch(e){ console.error('Auto-refresh failed', e); }
-}
-setInterval(autoRefreshDocket, 7000);
-document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && !userIsTypingInForm()) autoRefreshDocket(); });
-
-/* ---------- Boot ---------- */
-render();
-</script>
+    </script>
 </body>
 </html>
+
 
 
 
