@@ -31,11 +31,14 @@
   --fail-dim: #3a1516;
   --iris: #a855f7;
   --iris-dim: #2b173e;
+  --rose: #fb7185;
+  --rose-dim: #3a1220;
   --font-serif: 'Cinzel', Georgia, serif;
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --mono: 'JetBrains Mono', Consolas, monospace;
 }
 
+/* Light Mode Overrides */
 [data-theme="light"] {
   --bg: #f8fafc;
   --panel: #ffffff;
@@ -57,8 +60,11 @@
   --fail-dim: #fee2e2;
   --iris: #7e22ce;
   --iris-dim: #f3e8ff;
+  --rose: #be123c;
+  --rose-dim: #ffe4e6;
 }
 
+/* Grayscale Mode Overrides */
 [data-theme="grayscale"] {
   --bg: #121212;
   --panel: #1e1e1e;
@@ -80,6 +86,8 @@
   --fail-dim: #222222;
   --iris: #dddddd;
   --iris-dim: #303030;
+  --rose: #cccccc;
+  --rose-dim: #2a2a2a;
 }
 
 * { box-sizing: border-box; }
@@ -96,6 +104,7 @@ body {
 
 .app { max-width: 1180px; margin: 0 auto; padding: 24px 20px 80px; }
 
+/* Classic Topbar */
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 0 22px; border-bottom: 1px solid var(--line); margin-bottom: 24px;
@@ -123,7 +132,9 @@ body {
 }
 .pill.admin { background: var(--gold-dim); color: var(--gold); border-color: var(--gold-border); }
 .pill.tech { background: var(--amp-dim); color: var(--amp); border-color: var(--line); }
+.pill.plant { background: var(--volt-dim); color: var(--volt); border-color: var(--line); }
 .pill.quality { background: var(--iris-dim); color: var(--iris); border-color: var(--line); }
+.pill.coord { background: var(--rose-dim); color: var(--rose); border-color: var(--line); }
 
 .side-badge {
   display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700;
@@ -132,7 +143,9 @@ body {
 .side-badge.om { background: var(--gold-dim); color: var(--gold); border-color: var(--gold-border); }
 .side-badge.plantside { background: var(--volt-dim); color: var(--volt); border-color: var(--line); }
 .side-badge.inv { background: var(--amp-dim); color: var(--amp); border-color: var(--line); }
+.side-badge.warranty { background: var(--rose-dim); color: var(--rose); border-color: var(--line); }
 
+/* Buttons */
 button {
   font-family: var(--font-sans); cursor: pointer; border: none; border-radius: 6px;
   padding: 9px 16px; font-size: 13px; font-weight: 600; transition: all 0.15s ease;
@@ -144,7 +157,11 @@ button:active { transform: translateY(1px); }
 .btn-ghost { background: var(--panel2); border: 1px solid var(--line); color: var(--text); }
 .btn-ghost:hover { border-color: var(--muted); background: var(--panel3); }
 .btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-danger { background: var(--fail); color: #fff; }
+.btn-scan { background: var(--volt-dim); color: var(--volt); border: 1px solid var(--line); }
+.btn-scan:hover { border-color: var(--volt); }
 
+/* Theme Selector Control */
 .theme-select {
   display: flex; align-items: center; gap: 6px; margin-left: auto; font-size: 12px; color: var(--muted);
 }
@@ -152,6 +169,7 @@ button:active { transform: translateY(1px); }
   padding: 4px 8px; font-size: 12px; border-radius: 4px; width: auto;
 }
 
+/* Login */
 .gate {
   max-width: 440px; margin: 10vh auto 0; padding: 32px 28px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
@@ -161,6 +179,7 @@ button:active { transform: translateY(1px); }
 .gate p { color: var(--muted); font-size: 13.5px; margin-bottom: 20px; }
 
 label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+label.req { color: var(--rose); }
 input, select, textarea {
   width: 100%; padding: 10px 12px; background: var(--panel2); color: var(--text);
   border: 1px solid var(--line); border-radius: 6px; font-size: 14px; font-family: var(--font-sans);
@@ -168,12 +187,15 @@ input, select, textarea {
 }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); }
 textarea { resize: vertical; min-height: 70px; }
+input.req-field, select.req-field { border-color: var(--rose); }
 
+/* Navigation */
 .nav { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 12px; align-items: center; }
 .nav button { background: transparent; color: var(--muted); border: 1px solid transparent; border-radius: 6px; font-size: 13px; padding: 8px 14px; }
 .nav button.active { background: var(--panel2); color: var(--gold); border-color: var(--gold-border); font-weight: 600; }
 .nav button:hover:not(.active) { color: var(--text); background: var(--panel3); }
 
+/* Card System */
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
 .card h3 { margin: 0 0 4px; font-family: var(--font-serif); font-size: 16px; color: var(--text); letter-spacing: 0.3px; }
 .card .sub { color: var(--muted); font-size: 12.5px; margin-bottom: 16px; }
@@ -186,6 +208,7 @@ textarea { resize: vertical; min-height: 70px; }
   border: 1px solid var(--warn); background: var(--gold-dim); color: var(--gold); display: flex; align-items: center; gap: 10px;
 }
 .banner.ok { border-color: var(--amp); background: var(--amp-dim); color: var(--amp); }
+.banner.alert { border-color: var(--rose); background: var(--rose-dim); color: var(--rose); }
 
 .check-row {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -212,6 +235,9 @@ textarea { resize: vertical; min-height: 70px; }
 .result-chip.PASS { background: var(--amp-dim); color: var(--amp); border: 1px solid var(--amp); }
 .result-chip.FAIL { background: var(--fail-dim); color: var(--fail); border: 1px solid var(--fail); }
 .result-chip.INCOMPLETE, .result-chip.NA { background: var(--panel3); color: var(--muted); border: 1px solid var(--line); }
+.result-chip.SCRAPPED { background: var(--fail-dim); color: var(--fail); border: 1px solid var(--fail); }
+.result-chip.STILLWARR { background: var(--gold-dim); color: var(--gold); border: 1px solid var(--gold-border); }
+.result-chip.WIP { background: var(--volt-dim); color: var(--volt); border: 1px solid var(--line); }
 
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 20px; }
 .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
@@ -236,13 +262,29 @@ tr:hover td { background: var(--panel2); }
 .locked { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; color: var(--muted); text-align: center; }
 .locked .lock-icon { font-size: 36px; margin-bottom: 12px; }
 .err { color: var(--fail); font-size: 12.5px; margin-top: 8px; }
+
+.id-row { display: flex; gap: 8px; align-items: flex-end; }
+.id-row > div:first-child { flex: 1; }
+.chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.mini-chip {
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; background: var(--panel3); border: 1px solid var(--line); color: var(--muted);
+}
+.mini-chip.hit { background: var(--amp-dim); color: var(--amp); border-color: var(--amp); }
+.mini-chip.miss { background: var(--fail-dim); color: var(--fail); border-color: var(--fail); }
+.scanner-overlay {
+  position: fixed; inset: 0; background: rgba(4,6,8,0.94); z-index: 999;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; gap: 14px;
+}
+.scanner-overlay video { width: 100%; max-width: 420px; border-radius: 10px; border: 2px solid var(--gold); background: #000; }
+.scanner-overlay .status { color: #fff; font-size: 13px; text-align: center; max-width: 380px; }
 </style>
 </head>
 <body>
 <div id="root"></div>
 
 <script>
-/* Theme Handling */
+/* ---------------- Theme Handling ---------------- */
 let currentTheme = localStorage.getItem('app_theme') || 'dark';
 document.documentElement.setAttribute('data-theme', currentTheme);
 
@@ -259,7 +301,7 @@ function ThemeSelector() {
   const select = el('select', {
     onChange: (e) => setTheme(e.target.value)
   });
-  
+
   [
     ['dark', 'Dark'],
     ['light', 'Light'],
@@ -269,12 +311,12 @@ function ThemeSelector() {
     if (val === currentTheme) opt.setAttribute('selected', 'true');
     select.appendChild(opt);
   });
-  
+
   container.appendChild(select);
   return container;
 }
 
-/* Config */
+/* ---------------- Config ---------------- */
 const CHECK_ITEMS = [
   ['foreignObjects','No Foreign Objects'],
   ['looseComponents','No Loose Components / Connectors'],
@@ -294,18 +336,21 @@ const POST_ITEMS = [
   ['fasteners','All Screws / Fasteners Reinstalled'],
 ];
 const ISSUE_ITEMS = [
-  ['noPower','No Power / Dead Battery (Offline)'],
+  ['noPower','No Power / Dead Battery'],
   ['lowCapacity','Low Capacity / Poor Range'],
   ['cellImbalance','Cell Imbalance'],
-  ['bmsFault','BMS Fault / Error Code (BMS Mismatch)'],
+  ['bmsFault','BMS Fault / Error Code'],
   ['canFail','CAN Communication Failure'],
   ['chargeFail','Charging Failure'],
   ['dischargeFail','Discharge Failure'],
   ['swelling','Swelling / Physical Damage'],
   ['irFail','Insulation Resistance Failure'],
-  ['iotFault','IoT / IMEI Fault (IoT Mismatch)'],
+  ['iotFault','IoT / IMEI Fault'],
+  ['offlineBattery','Battery Reported Offline (No Telemetry)'],
+  ['bmsMismatch','BMS ID / Serial Mismatch'],
   ['overheat','Overheating'],
   ['connectorDamage','Connector / Wiring Damage'],
+  ['vandalism','Vandalism / Tampering (theft, foreign cables, water ingress, tamper evidence)'],
   ['other','Other Issue (see remarks)'],
 ];
 const TEST_BOOLS = [
@@ -318,23 +363,17 @@ const TEST_BOOLS = [
 const DEFAULT_OM_PIN = '1234';
 const DEFAULT_PLANT_PIN = '2345';
 const DEFAULT_QUALITY_PIN = '9999';
+const DEFAULT_COORD_PIN = '5678';
 
-/* Model Detection Constants */
-const BMS_MODEL_PREFIXES = [
-  { prefix: 'C7245AC2AA', model: 'CBAK' },
-  { prefix: 'U7245AU1G1', model: 'UNIQUE' },
-  { prefix: 'A7246AX1A1', model: 'AMPACE' },
-  { prefix: 'D72451LWK', model: 'GREENWAY' }
+const SOP_OPTIONS = [
+  'C-BACK SOP',
+  'Error Codes for CBAK and Their Meanings',
+  'MOSFET Matrix',
+  'Spiro Issue Troubleshooting SOP',
+  'UNIQUE Battery Repair Flow',
+  'Other / Not Listed',
 ];
 
-function detectModelFromBMS(bmsId) {
-  if (!bmsId) return '';
-  const cleanId = bmsId.trim().toUpperCase();
-  const match = BMS_MODEL_PREFIXES.find(p => cleanId.startsWith(p.prefix));
-  return match ? match.model : '';
-}
-
-/* Plant intake config */
 const QUALITY_ISSUE_ITEMS = [
   ['duplicateImei','Duplicate IMEI'],
   ['irFailure','Insulation Resistance Failure'],
@@ -355,98 +394,88 @@ const DISPATCH_ITEMS = [
 ];
 
 const PLATFORMS = ['CBAK','Ampace','Unique','Greenway'];
-const BATTERY_CONDITIONS = ['New','Refurbished','Returned - Unopened'];
+
+const PLATFORM_PREFIXES = {
+  CBAK: 'C7245AC2AA',
+  Unique: 'U7245AU1G1',
+  Ampace: 'A7246AX1A1',
+  Greenway: 'D72451LWK',
+};
+function detectPlatformFromBms(bmsId){
+  const v = (bmsId||'').trim().toUpperCase();
+  if(!v) return null;
+  for(const plat of PLATFORMS){
+    if(v.startsWith(PLATFORM_PREFIXES[plat])) return plat;
+  }
+  return null;
+}
+
+const AUTHORIZED_PERSONNEL = ['Odong James','Aroma Simon','Odong Isaac','Ahumuza Mark'];
+
 const MOVEMENT_TYPES = [
-  ['ISSUED_TO_PLANT','Issued to Plant'],
-  ['ISSUED_TO_SWAP_STATION','Issued to Swap Station'],
-  ['DAMAGED_ON_ARRIVAL','Damaged on Arrival'],
+  ['DISPATCH_BIKES_A','Dispatched to Bikes — Plant A'],
+  ['DISPATCH_BIKES_B','Dispatched to Bikes — Plant B'],
+  ['DISPATCH_TEST_SWAPRACK','Dispatched to Testing — Integrated Swap Rack'],
+  ['DISPATCH_TEST_IQC','Dispatched to Testing — Incoming Quality Check'],
+  ['DISPATCH_PERSONNEL','Given to Authorized Plant Personnel'],
+  ['PALLET_UNBOX','Unboxed From Pallet (stays in Warehouse)'],
+  ['DAMAGED_ON_ARRIVAL','Damaged on Arrival (loss)'],
   ['RETURNED_TO_SUPPLIER','Returned to Supplier'],
   ['CORRECTION_ADD','Stock Correction (Add)'],
   ['CORRECTION_SUB','Stock Correction (Subtract)'],
 ];
 function movementLabel(type){
-  if(type==='RECEIVED') return 'Received';
+  if(type==='RECEIVED') return 'Received (New Shipment)';
   const f = MOVEMENT_TYPES.find(([k])=>k===type);
   return f ? f[1] : type;
 }
-function movementDirection(type){
-  return (type==='RECEIVED' || type==='CORRECTION_ADD') ? 1 : -1;
-}
 
-/* Storage helpers */
+const BASELINE_WAREHOUSE = { CBAK: 2259, Ampace: 1, Unique: 8, Greenway: 1 };
+const BASELINE_BIKES      = { CBAK: 22,   Ampace: 0, Unique: 0, Greenway: 3 };
+const BASELINE_PALLETIZED = { CBAK: 1440, Ampace: 0, Unique: 0, Greenway: 0 };
+
+function zeroPlatformMap(){ const m={}; PLATFORMS.forEach(p=>m[p]=0); return m; }
+
+const WARRANTY_STATUS = ['Still In Warranty','Work In Progress','Resolved','Failed To Resolve','Scrapped'];
+
+/* ---------------- Mock / Storage Layer ---------------- */
+const memoryStore = {};
+window.storage = window.storage || {
+  get: async (k) => memoryStore[k] ? { value: memoryStore[k] } : null,
+  set: async (k, v) => { memoryStore[k] = v; }
+};
+
 async function loadRecords(){
-  try{
-    const r = await window.storage.get('records', true);
-    return r ? JSON.parse(r.value) : [];
-  }catch(e){ return []; }
+  try{ const r = await window.storage.get('records'); return r ? JSON.parse(r.value) : []; }catch(e){ return []; }
 }
-async function saveRecords(list){
-  await window.storage.set('records', JSON.stringify(list), true);
-}
+async function saveRecords(list){ await window.storage.set('records', JSON.stringify(list)); }
 async function loadSettings(){
   let s;
-  try{
-    const r = await window.storage.get('settings', true);
-    s = r ? JSON.parse(r.value) : {};
-  }catch(e){ s = {}; }
-  if(s.adminPin && !s.omAdminPin) s.omAdminPin = s.adminPin;
+  try{ const r = await window.storage.get('settings'); s = r ? JSON.parse(r.value) : {}; }catch(e){ s = {}; }
   if(!s.omAdminPin) s.omAdminPin = DEFAULT_OM_PIN;
-  if(!s.plantPin) s.plantPin = DEFAULT_PLANT_PIN;
   if(!s.qualityPin) s.qualityPin = DEFAULT_QUALITY_PIN;
-  delete s.adminPin;
+  if(!s.coordinatorPin) s.coordinatorPin = DEFAULT_COORD_PIN;
   return s;
 }
-async function saveSettings(s){
-  await window.storage.set('settings', JSON.stringify(s), true);
-}
+async function saveSettings(s){ await window.storage.set('settings', JSON.stringify(s)); }
 async function loadPlantRecords(){
-  try{
-    const r = await window.storage.get('plant_records', true);
-    return r ? JSON.parse(r.value) : [];
-  }catch(e){ return []; }
+  try{ const r = await window.storage.get('plant_records'); return r ? JSON.parse(r.value) : []; }catch(e){ return []; }
 }
-async function savePlantRecords(list){
-  await window.storage.set('plant_records', JSON.stringify(list), true);
-}
-
-function normalizeNewBatteryRecord(r){
-  return {
-    id: r.id, schemaVersion: r.schemaVersion || 1, createdAt: r.createdAt || r.date,
-    date: r.date, platform: r.platform || 'Unknown', quantity: parseInt(r.quantity)||0,
-    batchLot: r.batchLot || '', source: r.source || '', condition: r.condition || 'New',
-    serials: Array.isArray(r.serials) ? r.serials : [], notes: r.notes || '', loggedBy: r.loggedBy || '',
-  };
-}
+async function savePlantRecords(list){ await window.storage.set('plant_records', JSON.stringify(list)); }
 async function loadNewBatteryRecords(){
-  try{
-    const r = await window.storage.get('new_battery_records', true);
-    const list = r ? JSON.parse(r.value) : [];
-    return list.map(normalizeNewBatteryRecord);
-  }catch(e){ return []; }
+  try{ const r = await window.storage.get('new_battery_records'); return r ? JSON.parse(r.value) : []; }catch(e){ return []; }
 }
-async function saveNewBatteryRecords(list){
-  await window.storage.set('new_battery_records', JSON.stringify(list), true);
-}
-function normalizeInventoryAdjustment(r){
-  return {
-    id: r.id, schemaVersion: r.schemaVersion || 1, createdAt: r.createdAt || r.date,
-    date: r.date, platform: r.platform || 'Unknown',
-    type: MOVEMENT_TYPES.some(([k])=>k===r.type) ? r.type : 'ISSUED_TO_PLANT',
-    quantity: parseInt(r.quantity)||0, reference: r.reference || '', notes: r.notes || '', loggedBy: r.loggedBy || '',
-  };
-}
+async function saveNewBatteryRecords(list){ await window.storage.set('new_battery_records', JSON.stringify(list)); }
 async function loadInventoryAdjustments(){
-  try{
-    const r = await window.storage.get('inventory_adjustments', true);
-    const list = r ? JSON.parse(r.value) : [];
-    return list.map(normalizeInventoryAdjustment);
-  }catch(e){ return []; }
+  try{ const r = await window.storage.get('inventory_adjustments'); return r ? JSON.parse(r.value) : []; }catch(e){ return []; }
 }
-async function saveInventoryAdjustments(list){
-  await window.storage.set('inventory_adjustments', JSON.stringify(list), true);
+async function saveInventoryAdjustments(list){ await window.storage.set('inventory_adjustments', JSON.stringify(list)); }
+async function loadWarrantyRecords(){
+  try{ const r = await window.storage.get('warranty_records'); return r ? JSON.parse(r.value) : []; }catch(e){ return []; }
 }
+async function saveWarrantyRecords(list){ await window.storage.set('warranty_records', JSON.stringify(list)); }
 
-/* State */
+/* ---------------- State ---------------- */
 let STATE = {
   role: null,
   techName: '',
@@ -454,81 +483,43 @@ let STATE = {
   plantRecords: [],
   newBatteryRecords: [],
   inventoryAdjustments: [],
+  warrantyRecords: [],
   settings: null,
   view: 'entry',
   period: 'daily',
-  plantPeriod: 'daily',
   draft: emptyDraft(),
-  plantDraft: emptyPlantDraft(),
-  newBatteryDraft: emptyNewBatteryDraft(),
-  adjustmentDraft: emptyAdjustmentDraft(),
+  warrantyDraft: emptyWarrantyDraft(),
   serialWarning: null,
+  correctionInfo: null,
   toast: null,
 };
 
-function emptyPlantDraft(){
-  return {
-    date: todayStr(),
-    activeBatteries:'', pendingIot:'', chargedToday:'',
-    unboxedToday:'', palletsUnboxedToday:'', palletsLeft:'', givenForIQC:'',
-    boxedBatteries:'', testBatteries:'', totalOldBatteries:'', totalAvailableBatteries:'',
-    newBatchTotalUnboxed:'',
-    upgraded:'', notUpgraded:'', faultyBatteries:'',
-    quality:{}, qualityNote:'',
-    dispatch:{},
-    enteredBy:'',
-  };
+function emptyWarrantyDraft(){
+  return { date: todayStr(), platform:'', bmsId:'', issueText:'', remarkText:'', status: 'Still In Warranty', escalatedBy:'' };
 }
-
-function emptyNewBatteryDraft(){
-  return {
-    date: todayStr(), platform: PLATFORMS[0], quantity:'', batchLot:'', source:'',
-    condition: 'New', serialsRaw:'', notes:'', loggedBy:'',
-  };
-}
-function emptyAdjustmentDraft(){
-  return {
-    date: todayStr(), platform: PLATFORMS[0], type: MOVEMENT_TYPES[0][0],
-    quantity:'', reference:'', notes:'', loggedBy:'',
-  };
-}
-
 function emptyDraft(){
   return {
-    dateReceived: todayStr(), timeReceived: nowTime(), serial:'', model:'', bmsId:'', imei:'',
-    site:'', receivedBy:'',
-    pre: {}, post: {},
-    issues: {}, otherNote:'',
+    dateReceived: todayStr(), timeReceived: nowTime(), bmsId:'', platform:'', platformTouched:false,
+    serial:'', model:'', imei:'', site:'', receivedBy:'',
+    pre: {}, post: {}, issues: {}, otherNote:'',
     sopRef:'', repairAction:'', partsReplaced:'', technician:'', repairDate: todayStr(),
     tests: { packVoltage:'', minCell:'', maxCell:'', irMeasured:'', irThreshold:550 },
-    testBools: {},
-    resolved: {},
-    qcPassed:'', handoverDate:'', qcVerifiedBy:'', omReceivedBy:'',
-    observations:'', remarks:'',
+    testBools: {}, resolved: {}, qcPassed:'', handoverDate:'', qcVerifiedBy:'', omReceivedBy:'',
+    observations:'', remarks:'', correctionOf: '',
   };
 }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function nowTime(){ return new Date().toTimeString().slice(0,5); }
 function uid(){ return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 
-/* Helper to check if IMEI is required based on issues */
-function isImeiRequired(draft) {
-  return !!(draft.issues.noPower || draft.issues.bmsFault || draft.issues.iotFault);
-}
-
-/* Calculations */
 function checklistResult(map, items){
   const vals = items.map(([k])=>map[k]);
   if(vals.some(v=>v==='FAIL')) return 'FAIL';
   if(vals.some(v=>!v)) return 'INCOMPLETE';
   return 'PASS';
 }
-function issuesReportedCount(d){
-  return ISSUE_ITEMS.filter(([k])=>d.issues[k]).length;
-}
-function issuesResolvedCount(d){
-  return ISSUE_ITEMS.filter(([k])=>d.issues[k] && d.resolved[k]).length;
-}
+function issuesReportedCount(d){ return ISSUE_ITEMS.filter(([k])=>d.issues[k]).length; }
+function issuesResolvedCount(d){ return ISSUE_ITEMS.filter(([k])=>d.issues[k] && d.resolved[k]).length; }
 function testsResult(d){
   const boolsOk = TEST_BOOLS.every(([k])=>d.testBools[k]===true);
   const ir = parseFloat(d.tests.irMeasured), thr = parseFloat(d.tests.irThreshold);
@@ -537,57 +528,59 @@ function testsResult(d){
   if(irOk===null) return 'INCOMPLETE';
   return 'PASS';
 }
-function priorAttempts(records, serial){
-  if (!serial) return [];
-  return records.filter(r=>r.serial.trim().toUpperCase()===serial.trim().toUpperCase());
+function priorAttempts(records, bmsId){
+  const v = (bmsId||'').trim().toUpperCase();
+  if(!v) return [];
+  return records.filter(r=>(r.bmsId||'').trim().toUpperCase()===v);
+}
+function imeiRequired(d){ return !!(d.issues.offlineBattery || d.issues.bmsMismatch || d.issues.iotFault); }
+function vandalismFlagged(d){ return !!d.issues.vandalism; }
+function issueLabelsList(d){ return ISSUE_ITEMS.filter(([k])=>d.issues[k]).map(([,label])=>label); }
+
+/* ---------------- Scanner ---------------- */
+async function openScanner(onDetect){
+  const overlay = el('div', {class:'scanner-overlay'});
+  const video = el('video', {autoplay:'true', playsinline:'true', muted:'true'});
+  const status = el('div', {class:'status'}, 'Point camera at BMS barcode / QR label…');
+  const closeBtn = el('button', {class:'btn-ghost btn-sm'}, 'Cancel');
+  overlay.appendChild(video); overlay.appendChild(status); overlay.appendChild(closeBtn);
+  document.body.appendChild(overlay);
+
+  let stream = null, stopped = false;
+  function cleanup(){
+    stopped = true;
+    if(stream){ stream.getTracks().forEach(t=>t.stop()); }
+    if(overlay.parentNode) overlay.parentNode.removeChild(overlay);
+  }
+  closeBtn.addEventListener('click', cleanup);
+
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    video.srcObject = stream;
+    if(!('BarcodeDetector' in window)){
+      status.textContent = 'Live scanning unsupported. Please enter ID manually.';
+      setTimeout(cleanup, 2400);
+      return;
+    }
+    const detector = new BarcodeDetector({ formats: ['qr_code','code_128','code_39'] });
+    const loop = async () => {
+      if(stopped) return;
+      try{
+        const codes = await detector.detect(video);
+        if(codes && codes.length){
+          cleanup(); onDetect(codes[0].rawValue); return;
+        }
+      }catch(e){}
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  }catch(e){
+    status.textContent = 'Camera unavailable.';
+    setTimeout(cleanup, 2600);
+  }
 }
 
-function qualitySum(d){
-  return QUALITY_ISSUE_ITEMS.reduce((s,[k])=>s+(parseInt(d.quality[k])||0),0);
-}
-function dispatchSum(d){
-  return DISPATCH_ITEMS.reduce((s,[k])=>s+(parseInt(d.dispatch[k])||0),0);
-}
-
-function calculateTotalAvailable(d){
-  const boxed = parseInt(d.boxedBatteries) || 0;
-  const quality = qualitySum(d);
-  const bikesAtPlant = parseInt(d.dispatch?.bikesRemainAtPlant) || 0;
-  const testing = parseInt(d.testBatteries) || 0;
-  const inactive = parseInt(d.totalOldBatteries) || 0;
-  const upgraded = parseInt(d.upgraded) || 0;
-  
-  return boxed + quality + bikesAtPlant + testing + inactive + upgraded;
-}
-
-function unboxedAccountedFor(d){
-  const up = parseInt(d.upgraded)||0, nup = parseInt(d.notUpgraded)||0,
-        flt = parseInt(d.faultyBatteries)||0, tb = parseInt(d.testBatteries)||0,
-        iqc = parseInt(d.givenForIQC)||0, qi = qualitySum(d);
-  return up+nup+flt+tb+iqc+qi;
-}
-
-function allInventoryMovements(){
-  const received = STATE.newBatteryRecords.map(r=>({
-    id: r.id, date: r.date, platform: r.platform, qty: r.quantity, type: 'RECEIVED',
-    direction: 1, reference: r.batchLot, note: r.source, loggedBy: r.loggedBy, source: 'intake',
-  }));
-  const adjusted = STATE.inventoryAdjustments.map(r=>({
-    id: r.id, date: r.date, platform: r.platform, qty: r.quantity, type: r.type,
-    direction: movementDirection(r.type), reference: r.reference, note: r.notes, loggedBy: r.loggedBy, source: 'adjustment',
-  }));
-  return [...received, ...adjusted].sort((a,b)=>a.date.localeCompare(b.date));
-}
-function stockByPlatform(){
-  const stock = {};
-  PLATFORMS.forEach(p=>stock[p]=0);
-  allInventoryMovements().forEach(m=>{
-    stock[m.platform] = (stock[m.platform]||0) + m.direction*m.qty;
-  });
-  return stock;
-}
-
-/* Render Root */
+/* ---------------- Render Core ---------------- */
 const root = document.getElementById('root');
 function render(){ root.innerHTML=''; root.appendChild(View()); }
 
@@ -600,32 +593,23 @@ function View(){
   if(STATE.role==='tech'){
     wrap.appendChild(Nav(['entry','myrecords'], {entry:'New Entry', myrecords:'My Recent Entries'}));
     wrap.appendChild(STATE.view==='myrecords' ? MyRecordsView() : EntryView());
-
   } else if(STATE.role==='omadmin'){
     wrap.appendChild(Nav(['dashboard','history','entry','settings'], {dashboard:'Dashboard', history:'All Records', entry:'New Entry', settings:'Settings'}));
     if(STATE.view==='dashboard') wrap.appendChild(DashboardView());
     else if(STATE.view==='history') wrap.appendChild(HistoryView());
     else if(STATE.view==='settings') wrap.appendChild(SettingsView());
     else wrap.appendChild(EntryView());
-
   } else if(STATE.role==='quality'){
-    wrap.appendChild(Nav(
-      ['om_dashboard','om_history','plant_entry','plant_dashboard','plant_history','battery_intake','inventory','settings'],
-      {om_dashboard:'O&M Dashboard', om_history:'O&M Records', plant_entry:'Plant Intake', plant_dashboard:'Plant Dashboard', plant_history:'Plant Records', battery_intake:'New Batteries', inventory:'Inventory', settings:'Settings'}
-    ));
+    wrap.appendChild(Nav(['om_dashboard','om_history','entry','settings'], {om_dashboard:'Dashboard', om_history:'All Records', entry:'New Entry', settings:'Settings'}));
     if(STATE.view==='om_dashboard') wrap.appendChild(withSideBadge('om', DashboardView()));
     else if(STATE.view==='om_history') wrap.appendChild(withSideBadge('om', HistoryView()));
-    else if(STATE.view==='plant_entry') wrap.appendChild(withSideBadge('plantside', PlantEntryView()));
-    else if(STATE.view==='plant_history') wrap.appendChild(withSideBadge('plantside', PlantHistoryView()));
-    else if(STATE.view==='battery_intake') wrap.appendChild(withSideBadge('inv', NewBatteryIntakeView()));
-    else if(STATE.view==='inventory') wrap.appendChild(withSideBadge('inv', InventoryView()));
     else if(STATE.view==='settings') wrap.appendChild(SettingsView());
-    else wrap.appendChild(withSideBadge('plantside', PlantDashboardView()));
+    else wrap.appendChild(EntryView());
   }
   return wrap;
 }
 
-const SIDE_BADGE_LABEL = { om:'O&M Quality Control', plantside:'Plant Operational Intake', inv:'Inventory Management' };
+const SIDE_BADGE_LABEL = { om:'O&M Quality Control' };
 function withSideBadge(kind, node){
   const w = el('div');
   w.appendChild(el('div',{class:'side-badge '+kind}, SIDE_BADGE_LABEL[kind] || kind));
@@ -649,17 +633,17 @@ function el(tag, attrs={}, children=[]){
 function toast(msg){ STATE.toast = msg; render(); setTimeout(()=>{ STATE.toast=null; render(); }, 2600); }
 function Toast(){ return el('div',{class:'banner ok'},[STATE.toast]); }
 
-/* Login */
+/* ---------------- Login ---------------- */
 function LoginView(){
   const gate = el('div',{class:'gate'});
   gate.appendChild(el('h2',{},'BATTERY QC & OPS'));
-  gate.appendChild(el('p',{},'Enterprise Quality Assurance, Plant Intake & Fleet Inventory Log'));
+  gate.appendChild(el('p',{},'Enterprise Quality Assurance Asset Management System'));
 
   let mode = 'tech';
   const modeSel = el('select',{style:'margin-bottom:20px;'});
   [['tech','Technician (O&M Repair Entry)'],
    ['omadmin','O&M QC Administrator'],
-   ['quality','Quality Engineer (Full System Access)']
+   ['quality','Quality Engineer Access'],
   ].forEach(([v,l])=>{ modeSel.appendChild(el('option',{value:v},l)); });
   gate.appendChild(modeSel);
 
@@ -684,8 +668,7 @@ function LoginView(){
       });
       body.appendChild(go);
     } else {
-      const roleLabel = mode==='omadmin' ? 'O&M QC Admin' : 'Quality Engineer';
-      body.appendChild(el('label',{}, roleLabel+' PIN'));
+      body.appendChild(el('label',{}, 'Admin PIN'));
       const inp = el('input',{type:'password',placeholder:'••••'});
       body.appendChild(inp);
       const errBox = el('div',{class:'err'});
@@ -693,16 +676,11 @@ function LoginView(){
       const go = el('button',{class:'btn-primary',style:'margin-top:20px;width:100%'},'Authenticate');
       go.addEventListener('click', async ()=>{
         const s = await loadSettings();
-        const pinField = mode==='omadmin' ? 'omAdminPin' : 'qualityPin';
-        if(inp.value === s[pinField]){
+        const pin = mode==='omadmin' ? s.omAdminPin : s.qualityPin;
+        if(inp.value === pin){
           STATE.role = mode; STATE.settings = s;
-          if(mode==='omadmin' || mode==='quality') STATE.records = await loadRecords();
-          if(mode==='quality'){
-            STATE.plantRecords = await loadPlantRecords();
-            STATE.newBatteryRecords = await loadNewBatteryRecords();
-            STATE.inventoryAdjustments = await loadInventoryAdjustments();
-          }
-          STATE.view = mode==='quality' ? 'om_dashboard' : 'dashboard';
+          STATE.records = await loadRecords();
+          STATE.view = 'om_dashboard';
           render();
         } else {
           errBox.textContent = 'Invalid PIN credential.';
@@ -716,11 +694,6 @@ function LoginView(){
   return gate;
 }
 
-/* TopBar & Nav */
-const ROLE_LABEL = { tech:'TECHNICIAN', omadmin:'O&M ADMIN', quality:'QUALITY ENGINEER' };
-const ROLE_DISPLAY_NAME = { omadmin:'O&M Admin', quality:'Quality Engineer' };
-const ROLE_PILL_CLASS = { tech:'tech', omadmin:'admin', quality:'quality' };
-
 function TopBar(){
   const bar = el('div',{class:'topbar'});
   const brand = el('div',{class:'brand'},[
@@ -728,12 +701,11 @@ function TopBar(){
     el('div',{},[el('h1',{},'BATTERY QC & OPERATIONS'), el('p',{},'Asset Management System')])
   ]);
   const who = el('div',{class:'who'},[
-    el('span',{class:'pill '+ROLE_PILL_CLASS[STATE.role]}, ROLE_LABEL[STATE.role]),
-    el('b',{}, STATE.role==='tech' ? STATE.techName : ROLE_DISPLAY_NAME[STATE.role]),
+    el('span',{class:'pill '+(STATE.role==='tech'?'tech':'admin')}, STATE.role.toUpperCase()),
+    el('b',{}, STATE.role==='tech' ? STATE.techName : 'System User'),
   ]);
   const out = el('button',{class:'btn-ghost btn-sm', onClick:()=>{ STATE.role=null; STATE.view='entry'; render(); }},'Sign Out');
-  const whoWrap = el('div',{style:'display:flex;align-items:center;gap:12px;'},[who,out]);
-  bar.appendChild(brand); bar.appendChild(whoWrap);
+  bar.appendChild(brand); bar.appendChild(el('div',{style:'display:flex;align-items:center;gap:12px;'},[who,out]));
   return bar;
 }
 
@@ -748,20 +720,18 @@ function Nav(items, labels){
   return nav;
 }
 
-/* Form Elements */
-function field(label, inputEl){
+/* ---------------- Form Controls ---------------- */
+function field(label, inputEl, required){
   const w = el('div');
-  w.appendChild(el('label',{},label));
+  w.appendChild(el('label',{class: required ? 'req' : ''},label));
   w.appendChild(inputEl);
   return w;
 }
 function textInput(value, onChange, opts={}){
   const i = el('input',{type:opts.type||'text', value: value||''});
   if(opts.mono) i.style.fontFamily='var(--mono)';
-  if(opts.readonly) i.setAttribute('readonly','true');
-  if(opts.placeholder) i.setAttribute('placeholder', opts.placeholder);
-  i.addEventListener('input', ()=>onChange(i.value));
-  if(value!==undefined) i.value = value;
+  if(opts.required) i.className = 'req-field';
+  i.addEventListener('input', ()=>onChange && onChange(i.value));
   return i;
 }
 function textareaInput(value, onChange){
@@ -770,13 +740,23 @@ function textareaInput(value, onChange){
   t.addEventListener('input', ()=>onChange(t.value));
   return t;
 }
+function selectInput(value, options, onChange){
+  const s = el('select',{});
+  options.forEach(opt=>{
+    const [v,l] = Array.isArray(opt) ? opt : [opt,opt];
+    const o = el('option',{value:v}, l);
+    if(v===value) o.setAttribute('selected','true');
+    s.appendChild(o);
+  });
+  s.addEventListener('change', ()=>onChange(s.value));
+  return s;
+}
 
 function ChecklistCard(title, sub, map, items, onSet){
   const card = el('div',{class:'card'});
   card.appendChild(el('h3',{},title));
   const resEl = el('span',{class:'result-chip '+checklistResult(map, items)}, checklistResult(map, items));
-  const subRow = el('div',{class:'sub', style:'display:flex;justify-content:space-between;align-items:center;'},[sub, resEl]);
-  card.appendChild(subRow);
+  card.appendChild(el('div',{class:'sub', style:'display:flex;justify-content:space-between;align-items:center;'},[sub, resEl]));
   items.forEach(([key,label])=>{
     const row = el('div',{class:'check-row'});
     row.appendChild(el('span',{},label));
@@ -795,38 +775,19 @@ function ChecklistCard(title, sub, map, items, onSet){
 
 function IssuesCard(d){
   const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Reported Defects'));
-  card.appendChild(el('div',{class:'sub'},'Identify all reported defects or issues on intake.'));
+  card.appendChild(el('h3',{},'Reported Defects & Flags'));
+  card.appendChild(el('div',{class:'sub'},'Identify all reported defects or status flags on intake.'));
   ISSUE_ITEMS.forEach(([key,label])=>{
     const row = el('div',{class:'bool-row'});
     const cb = el('input',{type:'checkbox'});
     cb.checked = !!d.issues[key];
     cb.addEventListener('change', ()=>{ d.issues[key]=cb.checked; render(); });
-    row.appendChild(cb);
-    row.appendChild(el('label',{},label));
+    row.appendChild(cb); row.appendChild(el('label',{},label));
     card.appendChild(row);
   });
   if(d.issues.other){
     card.appendChild(field('Description of Other Issue', textareaInput(d.otherNote, v=>d.otherNote=v)));
   }
-  return card;
-}
-
-function ResolvedCard(d){
-  const reported = ISSUE_ITEMS.filter(([k])=>d.issues[k]);
-  if(reported.length===0) return null;
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Defect Resolution Status'));
-  card.appendChild(el('div',{class:'sub'},'Verify defects addressed during service.'));
-  reported.forEach(([key,label])=>{
-    const row = el('div',{class:'bool-row'});
-    const cb = el('input',{type:'checkbox'});
-    cb.checked = !!d.resolved[key];
-    cb.addEventListener('change', ()=>{ d.resolved[key]=cb.checked; render(); });
-    row.appendChild(cb);
-    row.appendChild(el('label',{},label));
-    card.appendChild(row);
-  });
   return card;
 }
 
@@ -844,289 +805,130 @@ function TestsCard(d){
   grid.appendChild(field('Insulation Res. (MΩ)', textInput(d.tests.irMeasured, v=>{d.tests.irMeasured=v; render();}, {type:'number'})));
   grid.appendChild(field('IR Threshold (MΩ)', textInput(d.tests.irThreshold, v=>{d.tests.irThreshold=v; render();}, {type:'number'})));
   card.appendChild(grid);
-  card.appendChild(el('div',{style:'margin-top:10px;'}));
   TEST_BOOLS.forEach(([key,label])=>{
     const row = el('div',{class:'bool-row'});
     const cb = el('input',{type:'checkbox'});
     cb.checked = !!d.testBools[key];
     cb.addEventListener('change', ()=>{ d.testBools[key]=cb.checked; render(); });
-    row.appendChild(cb);
-    row.appendChild(el('label',{},label));
+    row.appendChild(cb); row.appendChild(el('label',{},label));
     card.appendChild(row);
   });
   return card;
 }
 
-function EntryView(){
-  const d = STATE.draft;
-  const container = el('div');
-
-  if(STATE.serialWarning){
-    container.appendChild(el('div',{class:'banner'}, STATE.serialWarning));
-  }
-
-  const intake = el('div',{class:'card'});
-  intake.appendChild(el('h3',{},'Pack Intake Information'));
-  intake.appendChild(el('div',{class:'sub'},'Scan or enter BMS ID. System will automatically detect model & track repeat repair history.'));
-  
-  const g1 = el('div',{class:'grid'});
-  g1.appendChild(field('Date Received', textInput(d.dateReceived, v=>d.dateReceived=v, {type:'date'})));
-  g1.appendChild(field('Time Received', textInput(d.timeReceived, v=>d.timeReceived=v, {type:'time'})));
-  
-  // BMS ID Entry with Barcode Scanning Support
-  const bmsInput = textInput(d.bmsId, v => {
-    d.bmsId = v;
-    d.serial = v.trim(); // Auto-map BMS ID directly to Serial for repeat tracking
-    
-    // Auto detect Model from BMS ID
-    const detected = detectModelFromBMS(v);
-    if (detected) {
-      d.model = detected;
-    }
-  }, {mono:true, placeholder:'Scan / Enter BMS ID'});
-
-  bmsInput.addEventListener('blur', () => {
-    const searchSerial = (d.bmsId || d.serial).trim();
-    const prior = priorAttempts(STATE.records, searchSerial);
-    if(searchSerial && prior.length > 0){
-      const last = prior[prior.length-1];
-      STATE.serialWarning = `Repeat repair — Serial/BMS ID has ${prior.length} prior record(s), last logged ${last.dateReceived}. Logging visit #${prior.length+1}.`;
-    } else {
-      STATE.serialWarning = null;
+function bmsIdField(d){
+  const wrap = el('div');
+  wrap.appendChild(el('label',{class:'req'},'BMS Identifier (Scan or Type)'));
+  const row = el('div',{class:'id-row'});
+  const inp = textInput(d.bmsId, v=>{ d.bmsId=v; }, {mono:true, required: !d.bmsId.trim()});
+  inp.placeholder = 'e.g. C7245AC2AAF7009408';
+  inp.addEventListener('blur', ()=>{
+    if(!d.platformTouched){
+      const detected = detectPlatformFromBms(d.bmsId);
+      if(detected) d.platform = detected;
     }
     render();
   });
+  const scanBtn = el('button',{class:'btn-scan btn-sm', type:'button'},'📷 Scan');
+  scanBtn.addEventListener('click', ()=>{
+    openScanner((value)=>{
+      d.bmsId = value;
+      if(!d.platformTouched){
+        const detected = detectPlatformFromBms(value);
+        if(detected) d.platform = detected;
+      }
+      toast('BMS ID captured.');
+    });
+  });
+  row.appendChild(el('div',{},inp)); row.appendChild(scanBtn);
+  wrap.appendChild(row);
+  return wrap;
+}
 
-  g1.appendChild(field('Scan BMS ID / Barcode', bmsInput));
-
-  // Auto-filled / Editable Model designation
-  const modelInput = textInput(d.model, v => d.model = v, { placeholder: 'Auto-detected or Manual' });
-  g1.appendChild(field('Model Designation', modelInput));
-
-  // Conditional IMEI input handling
-  const imeiRequired = isImeiRequired(d);
-  const imeiLabel = imeiRequired ? 'IMEI Number (Required)' : 'IMEI Number (Optional)';
-  const imeiInput = textInput(d.imei, v => d.imei = v, { mono: true, placeholder: imeiRequired ? 'Required for this defect' : 'Optional' });
-  if (imeiRequired) {
-    imeiInput.style.borderColor = 'var(--warn)';
-  }
-  g1.appendChild(field(imeiLabel, imeiInput));
-
-  g1.appendChild(field('Source / Origin Station', textInput(d.site, v=>d.site=v)));
-  g1.appendChild(field('Received By', textInput(d.receivedBy, v=>d.receivedBy=v)));
+/* ---------------- Views ---------------- */
+function EntryView(){
+  const d = STATE.draft;
+  const container = el('div');
+  const intake = el('div',{class:'card'});
+  intake.appendChild(el('h3',{},'Pack Intake Information'));
+  const g1 = el('div',{class:'grid'});
+  g1.appendChild(field('Date Received', textInput(d.dateReceived, v=>d.dateReceived=v, {type:'date'})));
+  g1.appendChild(field('Time Received', textInput(d.timeReceived, v=>d.timeReceived=v, {type:'time'})));
   intake.appendChild(g1);
+
+  const g1b = el('div',{class:'grid'});
+  g1b.appendChild(bmsIdField(d));
+  const platSel = selectInput(d.platform, [['','— Select Platform —'], ...PLATFORMS.map(p=>[p,p])], v=>{ d.platform=v; d.platformTouched=true; render(); });
+  g1b.appendChild(field('Battery Platform', platSel));
+  intake.appendChild(g1b);
   container.appendChild(intake);
 
   container.appendChild(ChecklistCard('Pre-Opening Inspection','Physical inspection before housing removal.', d.pre, CHECK_ITEMS, (k,v)=>d.pre[k]=v));
   container.appendChild(IssuesCard(d));
-
-  const repair = el('div',{class:'card'});
-  repair.appendChild(el('h3',{},'Repair Execution'));
-  const g2 = el('div',{class:'grid'});
-  g2.appendChild(field('SOP / Work Instruction Ref', textInput(d.sopRef, v=>d.sopRef=v)));
-  g2.appendChild(field('Components Replaced', textInput(d.partsReplaced, v=>d.partsReplaced=v)));
-  g2.appendChild(field('Assigned Technician', textInput(d.technician, v=>d.technician=v)));
-  g2.appendChild(field('Date Completed', textInput(d.repairDate, v=>d.repairDate=v, {type:'date'})));
-  repair.appendChild(g2);
-  repair.appendChild(field('Summary of Actions Taken', textareaInput(d.repairAction, v=>d.repairAction=v)));
-  container.appendChild(repair);
-
-  container.appendChild(ChecklistCard('Post-Service Assembly Check','Quality confirmation prior to pack closure.', d.post, POST_ITEMS, (k,v)=>d.post[k]=v));
   container.appendChild(TestsCard(d));
-  const rc = ResolvedCard(d);
-  if(rc) container.appendChild(rc);
-
-  const disp = el('div',{class:'card'});
-  disp.appendChild(el('h3',{},'QC Sign-off & Sign-over'));
-  const g3 = el('div',{class:'grid'});
-  const qcSel = el('select',{});
-  ['','PASS','FAIL'].forEach(v=>{
-    const o = el('option',{value:v}, v===''?'— Select Final Status —':v);
-    if(d.qcPassed===v) o.setAttribute('selected','true');
-    qcSel.appendChild(o);
-  });
-  qcSel.addEventListener('change', ()=>d.qcPassed=qcSel.value);
-  g3.appendChild(field('Final QC Disposition', qcSel));
-  g3.appendChild(field('Sign-over Date', textInput(d.handoverDate, v=>d.handoverDate=v, {type:'date'})));
-  g3.appendChild(field('QC Inspector', textInput(d.qcVerifiedBy, v=>d.qcVerifiedBy=v)));
-  g3.appendChild(field('O&M Representative', textInput(d.omReceivedBy, v=>d.omReceivedBy=v)));
-  disp.appendChild(g3);
-  container.appendChild(disp);
-
-  const notes = el('div',{class:'card'});
-  notes.appendChild(el('h3',{},'Defects & Observations'));
-  notes.appendChild(field('Engineering Observations', textareaInput(d.observations, v=>d.observations=v)));
-  notes.appendChild(field('Technician Remarks', textareaInput(d.remarks, v=>d.remarks=v)));
-  container.appendChild(notes);
 
   const actions = el('div',{class:'footer-actions'});
-  const clearBtn = el('button',{class:'btn-ghost'},'Reset Form');
-  clearBtn.addEventListener('click', ()=>{
-    const keepTech = d.technician;
-    STATE.draft = emptyDraft();
-    STATE.draft.technician = keepTech;
-    STATE.serialWarning = null;
-    render();
-  });
   const saveBtn = el('button',{class:'btn-primary'},'Save Record Entry');
   saveBtn.addEventListener('click', async ()=>{
-    const activeSerial = (d.bmsId || d.serial).trim();
-    if(!activeSerial || !d.dateReceived){ toast('BMS ID / Serial number and intake date are required.'); return; }
-    
-    // Check IMEI requirement validation
-    if (isImeiRequired(d) && !d.imei.trim()) {
-      toast('IMEI Number is required for dead battery, BMS fault, or IoT fault issues.');
-      return;
-    }
-
-    d.serial = activeSerial; // Ensure serial is synchronized
-    const prior = priorAttempts(STATE.records, d.serial);
-    const attemptNumber = prior.length + 1;
-    const preResult = checklistResult(d.pre, CHECK_ITEMS);
-    const postResult = checklistResult(d.post, POST_ITEMS);
-    const tResult = testsResult(d);
-    const reported = issuesReportedCount(d);
-    const resolved = issuesResolvedCount(d);
-    const allResolved = reported>0 ? resolved===reported : true;
-    const firstTimeFix = attemptNumber===1 && d.qcPassed==='PASS' && allResolved && tResult==='PASS';
-    
-    const record = {
-      id: uid(), createdAt: new Date().toISOString(),
-      ...JSON.parse(JSON.stringify(d)),
-      attemptNumber, preResult, postResult, testsResult: tResult,
-      issuesReported: reported, issuesResolved: resolved, allResolved,
-      firstTimeFix, submittedBy: STATE.techName || d.technician,
-    };
+    if(!d.bmsId.trim()){ toast('BMS ID is required.'); return; }
+    const record = { id: uid(), createdAt: new Date().toISOString(), ...JSON.parse(JSON.stringify(d)), submittedBy: STATE.techName || 'Tech' };
     const updated = [...STATE.records, record];
     await saveRecords(updated);
     STATE.records = updated;
-    const keepTech = d.technician;
     STATE.draft = emptyDraft();
-    STATE.draft.technician = keepTech;
-    STATE.serialWarning = null;
-    toast(`Record saved. Serial/BMS ID ${record.serial} logged (Visit #${attemptNumber}).`);
+    toast(`Record saved for BMS ${record.bmsId}.`);
   });
-  actions.appendChild(clearBtn); actions.appendChild(saveBtn);
+  actions.appendChild(saveBtn);
   container.appendChild(actions);
-
   return container;
 }
 
-/* Technician: Recent Records */
 function MyRecordsView(){
   const mine = STATE.records.filter(r=>r.submittedBy===STATE.techName).slice(-25).reverse();
   const wrap = el('div');
-  wrap.appendChild(el('div',{class:'card'},[
-    el('h3',{},'Recent Submissions'),
-    el('div',{class:'sub'},'Showing the latest 25 logs entered under your technician ID.')
-  ]));
-  if(mine.length===0){
-    wrap.appendChild(el('div',{class:'locked'},[el('div',{class:'lock-icon'},'📋'), el('div',{},'No entries logged during this session.')]));
-    return wrap;
-  }
+  wrap.appendChild(el('div',{class:'card'},[el('h3',{},'Recent Submissions')]));
   const tw = el('div',{class:'table-wrap'});
   const t = el('table');
-  t.appendChild(el('tr',{},['Date','Serial / BMS ID','Model','Attempt','Status','FPY'].map(h=>el('th',{},h))));
+  t.appendChild(el('tr',{},['Date','BMS ID','Platform','Disposition'].map(h=>el('th',{},h))));
   mine.forEach(r=>{
     t.appendChild(el('tr',{},[
-      el('td',{},r.dateReceived),
-      el('td',{class:'mono'},r.serial || r.bmsId),
-      el('td',{},r.model||'—'),
-      el('td',{},'#'+r.attemptNumber),
-      el('td',{},el('span',{class:'result-chip '+(r.qcPassed||'INCOMPLETE')}, r.qcPassed||'PENDING')),
-      el('td',{},r.firstTimeFix?'✓':'—'),
+      el('td',{},r.dateReceived), el('td',{class:'mono'},r.bmsId), el('td',{},r.platform||'—'),
+      el('td',{},el('span',{class:'result-chip '+(r.qcPassed||'INCOMPLETE')}, r.qcPassed||'PENDING'))
     ]));
   });
   tw.appendChild(t); wrap.appendChild(tw);
   return wrap;
 }
 
-/* History View */
 function HistoryView(){
   const wrap = el('div');
-  const filters = el('div',{class:'card'});
-  filters.appendChild(el('h3',{},'Quality Assurance Record History'));
-  const grid = el('div',{class:'grid narrow'});
-  let q = {serial:'', tech:'', from:'', to:'', result:''};
-  const searchInp = textInput('', v=>q.serial=v); searchInp.placeholder='Serial / BMS ID filter…';
-  grid.appendChild(field('Serial / BMS ID', searchInp));
-  const techInp = textInput('', v=>q.tech=v); techInp.placeholder='Technician…';
-  grid.appendChild(field('Technician', techInp));
-  grid.appendChild(field('From Date', textInput('', v=>q.from=v, {type:'date'})));
-  grid.appendChild(field('To Date', textInput('', v=>q.to=v, {type:'date'})));
-  const resSel = el('select',{});
-  ['','PASS','FAIL'].forEach(v=>{ resSel.appendChild(el('option',{value:v}, v===''?'All Dispositions':v)); });
-  resSel.addEventListener('change', ()=>{ q.result=resSel.value; apply(); });
-  grid.appendChild(field('QC Status', resSel));
-  filters.appendChild(grid);
-
-  const applyBtn = el('button',{class:'btn-primary btn-sm', style:'margin-top:14px;'},'Filter Records');
-  const exportBtn = el('button',{class:'btn-ghost btn-sm', style:'margin-top:14px;margin-left:8px;'},'Export to Excel');
-  filters.appendChild(applyBtn); filters.appendChild(exportBtn);
-  wrap.appendChild(filters);
-
-  const tableHost = el('div');
-  wrap.appendChild(tableHost);
-
-  function filtered(){
-    return STATE.records.filter(r=>{
-      const searchTarget = (r.serial || r.bmsId || '').toLowerCase();
-      if(q.serial && !searchTarget.includes(q.serial.toLowerCase())) return false;
-      if(q.tech && !(r.submittedBy||'').toLowerCase().includes(q.tech.toLowerCase())) return false;
-      if(q.from && r.dateReceived < q.from) return false;
-      if(q.to && r.dateReceived > q.to) return false;
-      if(q.result && r.qcPassed !== q.result) return false;
-      return true;
-    }).slice().reverse();
-  }
-  function apply(){
-    tableHost.innerHTML='';
-    const rows = filtered();
-    tableHost.appendChild(el('div',{class:'small-note', style:'margin-bottom:8px;'}, rows.length+' record(s) matching criteria.'));
-    const tw = el('div',{class:'table-wrap'});
-    const t = el('table');
-    t.appendChild(el('tr',{},['Date','Serial / BMS ID','Model','Site','Technician','Visit','Defects','Resolved','Disposition','FPY','Sign-over'].map(h=>el('th',{},h))));
-    rows.forEach(r=>{
-      t.appendChild(el('tr',{},[
-        el('td',{},r.dateReceived),
-        el('td',{class:'mono'},r.serial || r.bmsId),
-        el('td',{},r.model||'—'),
-        el('td',{},r.site||'—'),
-        el('td',{},r.submittedBy||r.technician||'—'),
-        el('td',{},'#'+r.attemptNumber),
-        el('td',{},String(r.issuesReported)),
-        el('td',{},String(r.issuesResolved)),
-        el('td',{},el('span',{class:'result-chip '+(r.qcPassed||'INCOMPLETE')}, r.qcPassed||'PENDING')),
-        el('td',{},r.firstTimeFix?'✓':'—'),
-        el('td',{},r.handoverDate||'—'),
-      ]));
-    });
-    tw.appendChild(t); tableHost.appendChild(tw);
-  }
-  applyBtn.addEventListener('click', apply);
-  searchInp.addEventListener('input', apply);
-  techInp.addEventListener('input', apply);
-  exportBtn.addEventListener('click', ()=>exportToExcel(filtered()));
-  apply();
+  const tw = el('div',{class:'table-wrap'});
+  const t = el('table');
+  t.appendChild(el('tr',{},['Date','BMS ID','Platform','Technician','Status'].map(h=>el('th',{},h))));
+  STATE.records.slice().reverse().forEach(r=>{
+    t.appendChild(el('tr',{},[
+      el('td',{},r.dateReceived), el('td',{class:'mono'},r.bmsId), el('td',{},r.platform||'—'),
+      el('td',{},r.submittedBy||'—'), el('td',{},el('span',{class:'result-chip '+(r.qcPassed||'PASS')}, r.qcPassed||'PASS'))
+    ]));
+  });
+  tw.appendChild(t); wrap.appendChild(tw);
   return wrap;
 }
 
-/* O&M Dashboard */
-let chartInstances = [];
-function destroyCharts(){ chartInstances.forEach(c=>c.destroy()); chartInstances=[]; }
+function SettingsView(){
+  const wrap = el('div',{class:'card'});
+  wrap.appendChild(el('h3',{},'System Settings'));
+  wrap.appendChild(el('div',{class:'sub'},'Configure PINs and core parameters.'));
+  return wrap;
+}
 
 function bucketKey(dateStr, period){
-  const dt = new Date(dateStr+'T00:00:00');
-  if(period==='daily') return dateStr;
-  if(period==='weekly'){
-    const d = new Date(dt);
-    const day = (d.getDay()+6)%7;
-    d.setDate(d.getDate()-day);
-    return d.toISOString().slice(0,10)+' (Wk)';
-  }
   if(period==='monthly') return dateStr.slice(0,7);
-  return dateStr.slice(0,4);
+  return dateStr;
 }
+
+let chartInstances = [];
+function destroyCharts(){ chartInstances.forEach(c=>c.destroy()); chartInstances=[]; }
 
 function DashboardView(){
   const wrap = el('div');
@@ -1136,606 +938,57 @@ function DashboardView(){
   const repeatSerials = new Set();
   const seen = new Set();
   STATE.records.forEach(r=>{
-    const s = (r.serial || r.bmsId || '').trim().toUpperCase();
-    if(s) {
-      if(seen.has(s)) repeatSerials.add(s); else seen.add(s);
-    }
+    const s = (r.bmsId||r.serial||'').trim().toUpperCase();
+    if(!s) return;
+    if(seen.has(s)) repeatSerials.add(s); else seen.add(s);
   });
 
-  const stats = el('div',{class:'stat-grid'});
-  const mk = (n,l)=>el('div',{class:'stat'},[el('div',{class:'n'},String(n)), el('div',{class:'l'},l)]);
-  stats.appendChild(mk(total,'Packs Evaluated'));
-  stats.appendChild(mk(total? Math.round(passed/total*100)+'%':'—','Pass Rate'));
-  stats.appendChild(mk(total? Math.round(fpy/total*100)+'%':'—','First Time Yield'));
-  stats.appendChild(mk(repeatSerials.size,'Recurrent Units'));
+  const stats = el('div',{class:'stat-grid'},[
+    el('div',{class:'stat'},[el('div',{class:'n'},String(total)), el('div',{class:'l'},'Total Serviced')]),
+    el('div',{class:'stat'},[el('div',{class:'n'},passed+' ('+(total?Math.round(passed/total*100):0)+'%)'), el('div',{class:'l'},'Pass Rate')]),
+    el('div',{class:'stat'},[el('div',{class:'n'},fpy+' ('+(total?Math.round(fpy/total*100):0)+'%)'), el('div',{class:'l'},'First Time Fix Rate')]),
+    el('div',{class:'stat'},[el('div',{class:'n'},String(repeatSerials.size)), el('div',{class:'l'},'Repeat Failure Packs')]),
+  ]);
   wrap.appendChild(stats);
 
   const toggle = el('div',{class:'period-toggle'});
-  ['daily','weekly','monthly','yearly'].forEach(p=>{
-    const b = el('button',{class: STATE.period===p?'active':''}, p[0].toUpperCase()+p.slice(1));
+  ['daily','weekly','monthly'].forEach(p=>{
+    const b = el('button',{class: STATE.period===p?'active':''}, p.toUpperCase());
     b.addEventListener('click', ()=>{ STATE.period=p; render(); });
     toggle.appendChild(b);
   });
   wrap.appendChild(toggle);
 
-  const buckets = {};
-  STATE.records.forEach(r=>{
-    const k = bucketKey(r.dateReceived, STATE.period);
-    if(!buckets[k]) buckets[k] = {count:0, pass:0, fail:0, fpy:0};
-    buckets[k].count++;
-    if(r.qcPassed==='PASS') buckets[k].pass++;
-    if(r.qcPassed==='FAIL') buckets[k].fail++;
-    if(r.firstTimeFix) buckets[k].fpy++;
-  });
-  const keys = Object.keys(buckets).sort().slice(-24);
-
-  const chartsGrid = el('div',{style:'display:grid;grid-template-columns:1fr;gap:16px;'});
-  const c1 = el('div',{class:'chart-wrap'}); chartsGrid.appendChild(c1);
-  const c2 = el('div',{class:'chart-wrap'}); chartsGrid.appendChild(c2);
-  const c3 = el('div',{class:'chart-wrap'}); chartsGrid.appendChild(c3);
-  wrap.appendChild(chartsGrid);
-
-  const issueCounts = {};
-  ISSUE_ITEMS.forEach(([k,label])=>issueCounts[label]=0);
-  STATE.records.forEach(r=>{ ISSUE_ITEMS.forEach(([k,label])=>{ if(r.issues && r.issues[k]) issueCounts[label]++; }); });
+  const cWrap = el('div',{class:'chart-wrap'});
+  const cvs = el('canvas');
+  cWrap.appendChild(cvs);
+  wrap.appendChild(cWrap);
 
   setTimeout(()=>{
     destroyCharts();
-    const canvas1 = document.createElement('canvas'); c1.innerHTML=''; c1.appendChild(canvas1);
-    chartInstances.push(new Chart(canvas1, {
-      type:'bar',
-      data:{ labels:keys, datasets:[
-        {label:'Pass', data:keys.map(k=>buckets[k].pass), backgroundColor:'#22c55e'},
-        {label:'Fail', data:keys.map(k=>buckets[k].fail), backgroundColor:'#ef4444'},
-      ]},
-      options:{responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'Inspection Volume & Disposition — '+STATE.period, color: currentTheme==='light'?'#0f172a':'#f0f4f8'}, legend:{labels:{color: currentTheme==='light'?'#64748b':'#8b9eb0'}}}, scales:{x:{stacked:true,ticks:{color: currentTheme==='light'?'#64748b':'#8b9eb0'},grid:{color: currentTheme==='light'?'#cbd5e1':'#27343e'}},y:{stacked:true,ticks:{color: currentTheme==='light'?'#64748b':'#8b9eb0'},grid:{color: currentTheme==='light'?'#cbd5e1':'#27343e'}}}}
-    }));
-    const canvas2 = document.createElement('canvas'); c2.innerHTML=''; c2.appendChild(canvas2);
-    chartInstances.push(new Chart(canvas2, {
-      type:'line',
-      data:{ labels:keys, datasets:[
-        {label:'First Time Yield (FPY %)', data:keys.map(k=>buckets[k].count? Math.round(buckets[k].fpy/buckets[k].count*100):0), borderColor:'#38bdf8', backgroundColor:'rgba(56,189,248,0.1)', fill:true, tension:.3},
-      ]},
-      options:{responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'First Time Yield Rate Trend', color: currentTheme==='light'?'#0f172a':'#f0f4f8'}, legend:{labels:{color: currentTheme==='light'?'#64748b':'#8b9eb0'}}}, scales:{x:{ticks:{color: currentTheme==='light'?'#64748b':'#8b9eb0'},grid:{color: currentTheme==='light'?'#cbd5e1':'#27343e'}},y:{min:0,max:100,ticks:{color: currentTheme==='light'?'#64748b':'#8b9eb0'},grid:{color: currentTheme==='light'?'#cbd5e1':'#27343e'}}}}
-    }));
-    const canvas3 = document.createElement('canvas'); c3.innerHTML=''; c3.appendChild(canvas3);
-    const sortedIssues = Object.entries(issueCounts).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,8);
-    chartInstances.push(new Chart(canvas3, {
-      type:'bar',
-      data:{ labels: sortedIssues.map(([k])=>k), datasets:[{label:'Occurrences', data: sortedIssues.map(([,v])=>v), backgroundColor:'#d4af37'}]},
-      options:{indexAxis:'y', responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'Pareto Analysis: Top Reported Defects', color: currentTheme==='light'?'#0f172a':'#f0f4f8'}, legend:{display:false}}, scales:{x:{ticks:{color: currentTheme==='light'?'#64748b':'#8b9eb0'},grid:{color: currentTheme==='light'?'#cbd5e1':'#27343e'}},y:{ticks:{color: currentTheme==='light'?'#64748b':'#8b9eb0'},grid:{color: currentTheme==='light'?'#cbd5e1':'#27343e'}}}}
-    }));
-  }, 0);
-
-  const exportRow = el('div',{style:'display:flex;justify-content:flex-end;margin-top:12px;'});
-  const exportBtn = el('button',{class:'btn-primary'},'Export Complete QA Dataset (Excel)');
-  exportBtn.addEventListener('click', ()=>exportToExcel(STATE.records));
-  exportRow.appendChild(exportBtn);
-  wrap.appendChild(exportRow);
-
-  return wrap;
-}
-
-/* Settings */
-function pinCard(title, sub, settingsKey){
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},title));
-  card.appendChild(el('div',{class:'sub'},sub));
-  const inp = el('input',{type:'password', placeholder:'Enter New PIN'});
-  card.appendChild(field('PIN Credential', inp));
-  const saveBtn = el('button',{class:'btn-primary btn-sm', style:'margin-top:12px;'},'Update Security PIN');
-  saveBtn.addEventListener('click', async ()=>{
-    if(!inp.value.trim()){ toast('Provide a valid PIN.'); return; }
-    const s = { ...STATE.settings, [settingsKey]: inp.value.trim() };
-    await saveSettings(s);
-    STATE.settings = s;
-    inp.value='';
-    toast(title+' successfully updated.');
-  });
-  card.appendChild(saveBtn);
-  return card;
-}
-
-function SettingsView(){
-  const wrap = el('div');
-  if(STATE.role==='omadmin'){
-    wrap.appendChild(pinCard('O&M QC Admin Security PIN','Set access key for administrative view.', 'omAdminPin'));
-  } else if(STATE.role==='quality'){
-    wrap.appendChild(el('div',{class:'banner ok'},'Quality Engineering System Credentials & Configuration'));
-    wrap.appendChild(pinCard('O&M Administrator PIN','Set technician supervisor access PIN.', 'omAdminPin'));
-    wrap.appendChild(pinCard('Quality Engineer PIN','Set primary quality system PIN.', 'qualityPin'));
-  }
-  return wrap;
-}
-
-/* Plant Entry View */
-function PlantEntryView(){
-  const d = STATE.plantDraft;
-  const list = STATE.plantRecords;
-  const container = el('div');
-
-  const existing = list.find(r=>r.date===d.date);
-  if(existing){
-    container.appendChild(el('div',{class:'banner'}, `Log entry for ${d.date} already recorded. Saving will update the existing daily snapshot.`));
-  }
-
-  const autoTotalAvailable = calculateTotalAvailable(d);
-  d.totalAvailableBatteries = autoTotalAvailable;
-
-  const snap = el('div',{class:'card'});
-  snap.appendChild(el('h3',{},'Daily Operational Snapshot'));
-  snap.appendChild(el('div',{class:'sub'},'End-of-day operational inventory status and metrics. Total available is calculated dynamically.'));
-  const g1 = el('div',{class:'grid narrow'});
-  g1.appendChild(field('Log Date', textInput(d.date, v=>{ d.date=v; render(); }, {type:'date'})));
-  g1.appendChild(field('Active Batteries', textInput(d.activeBatteries, v=>d.activeBatteries=v, {type:'number'})));
-  g1.appendChild(field('Pending IoT Sync', textInput(d.pendingIot, v=>d.pendingIot=v, {type:'number'})));
-  g1.appendChild(field('Charged Today', textInput(d.chargedToday, v=>d.chargedToday=v, {type:'number'})));
-  g1.appendChild(field('Boxed Stock', textInput(d.boxedBatteries, v=>{d.boxedBatteries=v; render();}, {type:'number'})));
-  g1.appendChild(field('Remaining Pallets', textInput(d.palletsLeft, v=>d.palletsLeft=v, {type:'number'})));
-  g1.appendChild(field('Inactive / Old Stock', textInput(d.totalOldBatteries, v=>{d.totalOldBatteries=v; render();}, {type:'number'})));
-  g1.appendChild(field('Total Unboxed Batch', textInput(d.newBatchTotalUnboxed, v=>d.newBatchTotalUnboxed=v, {type:'number'})));
-  
-  const autoAvailInput = textInput(autoTotalAvailable, null, {readonly: true, mono: true});
-  autoAvailInput.style.fontWeight = 'bold';
-  autoAvailInput.style.color = 'var(--gold)';
-  g1.appendChild(field('Total Available (Auto)', autoAvailInput));
-  
-  snap.appendChild(g1);
-  container.appendChild(snap);
-
-  const unboxed = el('div',{class:'card'});
-  const acc = unboxedAccountedFor(d);
-  const target = parseInt(d.unboxedToday)||0;
-  const match = target>0 && acc===target;
-  const mismatch = target>0 && acc!==target;
-  unboxed.appendChild(el('div',{class:'sub', style:'display:flex;justify-between;align-items:center;'},[
-    el('h3',{style:'margin:0;'},'Unboxed Batch Distribution'),
-    el('span',{class:'result-chip '+(mismatch?'FAIL':match?'PASS':'INCOMPLETE')}, mismatch ? `UNBALANCED (${acc}/${target})` : match ? 'RECONCILED' : `${acc} Categorized`)
-  ]));
-  const g2 = el('div',{class:'grid narrow'});
-  g2.appendChild(field('Unboxed Total', textInput(d.unboxedToday, v=>{d.unboxedToday=v; render();}, {type:'number'})));
-  g2.appendChild(field('Pallets Unboxed', textInput(d.palletsUnboxedToday, v=>d.palletsUnboxedToday=v, {type:'number'})));
-  g2.appendChild(field('Upgraded Units', textInput(d.upgraded, v=>{d.upgraded=v; render();}, {type:'number'})));
-  g2.appendChild(field('Non-Upgraded Units', textInput(d.notUpgraded, v=>{d.notUpgraded=v; render();}, {type:'number'})));
-  g2.appendChild(field('Faulty Units', textInput(d.faultyBatteries, v=>{d.faultyBatteries=v; render();}, {type:'number'})));
-  g2.appendChild(field('Testing Units', textInput(d.testBatteries, v=>{d.testBatteries=v; render();}, {type:'number'})));
-  g2.appendChild(field('Transferred to IQC', textInput(d.givenForIQC, v=>{d.givenForIQC=v; render();}, {type:'number'})));
-  unboxed.appendChild(g2);
-  container.appendChild(unboxed);
-
-  const qi = el('div',{class:'card'});
-  const qsum = qualitySum(d);
-  qi.appendChild(el('div',{class:'sub', style:'display:flex;justify-between;align-items:center;'},[
-    el('h3',{style:'margin:0;'},'Quality Defect Analysis'),
-    el('span',{class:'result-chip INCOMPLETE'}, 'Total Defective: '+qsum)
-  ]));
-  QUALITY_ISSUE_ITEMS.forEach(([key,label])=>{
-    const row = el('div',{class:'check-row'});
-    row.appendChild(el('span',{},label));
-    row.appendChild(el('input',{type:'number', min:'0', style:'width:80px;text-align:right;', value: d.quality[key]||''}));
-    row.lastChild.addEventListener('input', (e)=>{ d.quality[key]=e.target.value; render(); });
-    qi.appendChild(row);
-  });
-  if(d.quality.other){
-    qi.appendChild(field('Quality Notes', textareaInput(d.qualityNote, v=>d.qualityNote=v)));
-  }
-  container.appendChild(qi);
-
-  const disp = el('div',{class:'card'});
-  const dsum = dispatchSum(d);
-  disp.appendChild(el('div',{class:'sub', style:'display:flex;justify-between;align-items:center;'},[
-    el('h3',{style:'margin:0;'},'Dispatch & Deployment Tracking'),
-    el('span',{class:'result-chip INCOMPLETE'}, 'Total Dispatched: '+dsum)
-  ]));
-  DISPATCH_ITEMS.forEach(([key,label])=>{
-    const row = el('div',{class:'check-row'});
-    row.appendChild(el('span',{},label));
-    row.appendChild(el('input',{type:'number', min:'0', style:'width:80px;text-align:right;', value: d.dispatch[key]||''}));
-    row.lastChild.addEventListener('input', (e)=>{ d.dispatch[key]=e.target.value; render(); });
-    disp.appendChild(row);
-  });
-  container.appendChild(disp);
-
-  const who = el('div',{class:'card'});
-  who.appendChild(el('h3',{},'System Sign-off'));
-  who.appendChild(field('Operator / Inspector ID', textInput(d.enteredBy, v=>d.enteredBy=v)));
-  container.appendChild(who);
-
-  const actions = el('div',{class:'footer-actions'});
-  const clearBtn = el('button',{class:'btn-ghost'},'Clear Form');
-  clearBtn.addEventListener('click', ()=>{ STATE.plantDraft = emptyPlantDraft(); render(); });
-  const saveBtn = el('button',{class:'btn-primary'}, existing ? 'Update Operational Entry' : 'Save Operational Record');
-  saveBtn.addEventListener('click', async ()=>{
-    if(!d.date){ toast('Log date is required.'); return; }
-    
-    d.totalAvailableBatteries = calculateTotalAvailable(d);
-    const snapshot = JSON.parse(JSON.stringify(d));
-    let updated;
-    const idx = STATE.plantRecords.findIndex(r=>r.date===d.date);
-    if(idx>=0){
-      const rec = STATE.plantRecords[idx];
-      const merged = { ...rec, ...snapshot, history: [...rec.history, {ts:new Date().toISOString(), snapshot}] };
-      updated = STATE.plantRecords.slice(); updated[idx]=merged;
-    } else {
-      const rec = { ...snapshot, id: uid(), history: [{ts:new Date().toISOString(), snapshot}] };
-      updated = [...STATE.plantRecords, rec];
-    }
-    await savePlantRecords(updated);
-    STATE.plantRecords = updated;
-    toast(`Plant operational log for ${d.date} saved.`);
-    STATE.plantDraft = emptyPlantDraft();
-    render();
-  });
-  actions.appendChild(clearBtn); actions.appendChild(saveBtn);
-  container.appendChild(actions);
-
-  return container;
-}
-
-/* Plant History View */
-function PlantHistoryView(){
-  const wrap = el('div');
-  wrap.appendChild(el('div',{class:'card'},[
-    el('h3',{},'Plant Operations History'),
-    el('div',{class:'sub'},'Historical summary of plant daily entries.')
-  ]));
-  const exportRow = el('div',{style:'display:flex;justify-content:flex-end;margin-bottom:12px;'});
-  const exportBtn = el('button',{class:'btn-ghost btn-sm'},'Export Data to Excel');
-  exportBtn.addEventListener('click', ()=>exportPlantToExcel(STATE.plantRecords));
-  exportRow.appendChild(exportBtn);
-  wrap.appendChild(exportRow);
-
-  const rows = STATE.plantRecords.slice().sort((a,b)=>b.date.localeCompare(a.date));
-  const tw = el('div',{class:'table-wrap'});
-  const t = el('table');
-  t.appendChild(el('tr',{},['Date','Active','Pending IoT','Unboxed','Upgraded','Non-Upgraded','Quality Defects','Faulty','Dispatched','Boxed','Total Available','Inspector'].map(h=>el('th',{},h))));
-  rows.forEach(r=>{
-    t.appendChild(el('tr',{},[
-      el('td',{},r.date),
-      el('td',{},String(r.activeBatteries||'—')),
-      el('td',{},String(r.pendingIot||'—')),
-      el('td',{},String(r.unboxedToday||'—')),
-      el('td',{},String(r.upgraded||'0')),
-      el('td',{},String(r.notUpgraded||'0')),
-      el('td',{},String(qualitySum(r))),
-      el('td',{},String(r.faultyBatteries||'0')),
-      el('td',{},String(dispatchSum(r))),
-      el('td',{},String(r.boxedBatteries||'—')),
-      el('td',{class:'mono', style:'color:var(--gold);font-weight:600;'},String(r.totalAvailableBatteries || calculateTotalAvailable(r))),
-      el('td',{},r.enteredBy||'—'),
-    ]));
-  });
-  tw.appendChild(t); wrap.appendChild(tw);
-  return wrap;
-}
-
-/* Plant Dashboard View */
-let plantChartInstances = [];
-function destroyPlantCharts(){ plantChartInstances.forEach(c=>c.destroy()); plantChartInstances=[]; }
-function PlantDashboardView(){
-  const wrap = el('div');
-  const list = STATE.plantRecords;
-  const totalUnboxed = list.reduce((s,r)=>s+(parseInt(r.unboxedToday)||0),0);
-  const totalUpgraded = list.reduce((s,r)=>s+(parseInt(r.upgraded)||0),0);
-  const totalQuality = list.reduce((s,r)=>s+qualitySum(r),0);
-  const totalFaulty = list.reduce((s,r)=>s+(parseInt(r.faultyBatteries)||0),0);
-  const latest = list.slice().sort((a,b)=>b.date.localeCompare(a.date))[0];
-
-  const stats = el('div',{class:'stat-grid'});
-  const mk = (n,l)=>el('div',{class:'stat'},[el('div',{class:'n'},String(n)), el('div',{class:'l'},l)]);
-  stats.appendChild(mk(latest ? (latest.totalAvailableBatteries || calculateTotalAvailable(latest)) : '—','Total Available Units'));
-  stats.appendChild(mk(totalUnboxed,'Total Unboxed'));
-  stats.appendChild(mk(totalUnboxed? Math.round(totalUpgraded/totalUnboxed*100)+'%':'—','Upgrade Rate'));
-  stats.appendChild(mk(totalUnboxed? Math.round(totalQuality/totalUnboxed*100)+'%':'—','Defect Rate'));
-  stats.appendChild(mk(totalFaulty,'Total Faulty Units'));
-  wrap.appendChild(stats);
-
-  const toggle = el('div',{class:'period-toggle'});
-  ['daily','weekly','monthly','yearly'].forEach(p=>{
-    const b = el('button',{class: STATE.plantPeriod===p?'active':''}, p[0].toUpperCase()+p.slice(1));
-    b.addEventListener('click', ()=>{ STATE.plantPeriod=p; render(); });
-    toggle.appendChild(b);
-  });
-  wrap.appendChild(toggle);
-
-  const buckets = {};
-  list.forEach(r=>{
-    const k = bucketKey(r.date, STATE.plantPeriod);
-    if(!buckets[k]) buckets[k]={unboxed:0, upgraded:0, notUpgraded:0, quality:0, faulty:0, dispatched:0};
-    buckets[k].unboxed += parseInt(r.unboxedToday)||0;
-    buckets[k].upgraded += parseInt(r.upgraded)||0;
-    buckets[k].notUpgraded += parseInt(r.notUpgraded)||0;
-    buckets[k].quality += qualitySum(r);
-    buckets[k].faulty += parseInt(r.faultyBatteries)||0;
-    buckets[k].dispatched += dispatchSum(r);
-  });
-  const keys = Object.keys(buckets).sort().slice(-24);
-
-  const issueTotals = {};
-  QUALITY_ISSUE_ITEMS.forEach(([k,label])=>issueTotals[label]=0);
-  list.forEach(r=>{ QUALITY_ISSUE_ITEMS.forEach(([k,label])=>{ issueTotals[label]+= parseInt(r.quality[k])||0; }); });
-
-  const dispatchTotals = {};
-  DISPATCH_ITEMS.forEach(([k,label])=>dispatchTotals[label]=0);
-  list.forEach(r=>{ DISPATCH_ITEMS.forEach(([k,label])=>{ dispatchTotals[label]+= parseInt(r.dispatch[k])||0; }); });
-
-  const chartsGrid = el('div',{style:'display:grid;grid-template-columns:1fr;gap:16px;'});
-  const c1 = el('div',{class:'chart-wrap'}); chartsGrid.appendChild(c1);
-  const c2 = el('div',{class:'chart-wrap'}); chartsGrid.appendChild(c2);
-  const c3 = el('div',{class:'chart-wrap'}); chartsGrid.appendChild(c3);
-  wrap.appendChild(chartsGrid);
-
-  setTimeout(()=>{
-    destroyPlantCharts();
-    const canvas1 = document.createElement('canvas'); c1.innerHTML=''; c1.appendChild(canvas1);
-    plantChartInstances.push(new Chart(canvas1, {
-      type:'bar',
-      data:{ labels:keys, datasets:[
-        {label:'Upgraded', data:keys.map(k=>buckets[k].upgraded), backgroundColor:'#22c55e'},
-        {label:'Non-Upgraded', data:keys.map(k=>buckets[k].notUpgraded), backgroundColor:'#38bdf8'},
-        {label:'Defects', data:keys.map(k=>buckets[k].quality), backgroundColor:'#eab308'},
-        {label:'Faulty', data:keys.map(k=>buckets[k].faulty), backgroundColor:'#ef4444'},
-      ]},
-      options:{responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'Batch Categorization — '+STATE.plantPeriod, color: currentTheme==='light'?'#0f172a':'#f0f4f8'}, legend:{labels:{color: currentTheme==='light'?'#64748b':'#8b9eb0'}}}, scales:{x:{stacked:true,ticks:{color: currentTheme==='light'?'#64748b':'#8b9eb0'},grid:{color: currentTheme==='light'?'#cbd5e1':'#27343e'}},y:{stacked:true,ticks:{color: currentTheme==='light'?'#64748b':'#8b9eb0'},grid:{color: currentTheme==='light'?'#cbd5e1':'#27343e'}}}}
-    }));
-    const canvas2 = document.createElement('canvas'); c2.innerHTML=''; c2.appendChild(canvas2);
-    const sortedIssues = Object.entries(issueTotals).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-    plantChartInstances.push(new Chart(canvas2, {
-      type:'bar',
-      data:{ labels: sortedIssues.map(([k])=>k), datasets:[{label:'Occurrences', data: sortedIssues.map(([,v])=>v), backgroundColor:'#eab308'}]},
-      options:{indexAxis:'y', responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'Plant Quality Issue Breakdown', color: currentTheme==='light'?'#0f172a':'#f0f4f8'}, legend:{display:false}}, scales:{x:{ticks:{color: currentTheme==='light'?'#64748b':'#8b9eb0'},grid:{color: currentTheme==='light'?'#cbd5e1':'#27343e'}},y:{ticks:{color: currentTheme==='light'?'#64748b':'#8b9eb0'},grid:{color: currentTheme==='light'?'#cbd5e1':'#27343e'}}}}
-    }));
-    const canvas3 = document.createElement('canvas'); c3.innerHTML=''; c3.appendChild(canvas3);
-    const sortedDispatch = Object.entries(dispatchTotals).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-    plantChartInstances.push(new Chart(canvas3, {
-      type:'bar',
-      data:{ labels: sortedDispatch.map(([k])=>k), datasets:[{label:'Units Dispatched', data: sortedDispatch.map(([,v])=>v), backgroundColor:'#a855f7'}]},
-      options:{indexAxis:'y', responsive:true,maintainAspectRatio:false, plugins:{title:{display:true,text:'Deployment Target Breakdown', color: currentTheme==='light'?'#0f172a':'#f0f4f8'}, legend:{display:false}}, scales:{x:{ticks:{color: currentTheme==='light'?'#64748b':'#8b9eb0'},grid:{color: currentTheme==='light'?'#cbd5e1':'#27343e'}},y:{ticks:{color: currentTheme==='light'?'#64748b':'#8b9eb0'},grid:{color: currentTheme==='light'?'#cbd5e1':'#27343e'}}}}
-    }));
-  }, 0);
-
-  const exportRow = el('div',{style:'display:flex;justify-content:flex-end;margin-top:12px;'});
-  const exportBtn = el('button',{class:'btn-primary'},'Export Plant Operations Report (Excel)');
-  exportBtn.addEventListener('click', ()=>exportPlantToExcel(STATE.plantRecords));
-  exportRow.appendChild(exportBtn);
-  wrap.appendChild(exportRow);
-
-  return wrap;
-}
-
-/* New Battery Intake */
-function NewBatteryIntakeView(){
-  const d = STATE.newBatteryDraft;
-  const container = el('div');
-
-  const info = el('div',{class:'card'});
-  info.appendChild(el('h3',{},'Shipment Intake Registration'));
-  info.appendChild(el('div',{class:'sub'},'Register newly received factory battery shipments into system inventory.'));
-  const g1 = el('div',{class:'grid narrow'});
-  g1.appendChild(field('Receipt Date', textInput(d.date, v=>d.date=v, {type:'date'})));
-  const platformSel = el('select',{});
-  PLATFORMS.forEach(p=>{ const o=el('option',{value:p},p); if(d.platform===p) o.setAttribute('selected','true'); platformSel.appendChild(o); });
-  platformSel.addEventListener('change', ()=>d.platform=platformSel.value);
-  g1.appendChild(field('Cell / Pack Platform', platformSel));
-  g1.appendChild(field('Quantity Received', textInput(d.quantity, v=>d.quantity=v, {type:'number'})));
-  g1.appendChild(field('Batch / Lot Reference', textInput(d.batchLot, v=>d.batchLot=v)));
-  g1.appendChild(field('Supplier / Origin', textInput(d.source, v=>d.source=v)));
-  const condSel = el('select',{});
-  BATTERY_CONDITIONS.forEach(c=>{ const o=el('option',{value:c},c); if(d.condition===c) o.setAttribute('selected','true'); condSel.appendChild(o); });
-  condSel.addEventListener('change', ()=>d.condition=condSel.value);
-  g1.appendChild(field('Intake Condition', condSel));
-  g1.appendChild(field('Inspector ID', textInput(d.loggedBy, v=>d.loggedBy=v)));
-  info.appendChild(g1);
-  info.appendChild(field('Pack Serial Numbers (Optional - Delimit by newline or comma)', textareaInput(d.serialsRaw, v=>d.serialsRaw=v)));
-  info.appendChild(field('Batch Notes', textareaInput(d.notes, v=>d.notes=v)));
-  container.appendChild(info);
-
-  const actions = el('div',{class:'footer-actions'});
-  const clearBtn = el('button',{class:'btn-ghost'},'Clear');
-  clearBtn.addEventListener('click', ()=>{ STATE.newBatteryDraft = emptyNewBatteryDraft(); render(); });
-  const saveBtn = el('button',{class:'btn-primary'},'Register Shipment Intake');
-  saveBtn.addEventListener('click', async ()=>{
-    const qty = parseInt(d.quantity);
-    if(!d.date || !qty || qty<=0){ toast('Receipt date and positive quantity required.'); return; }
-    const serials = d.serialsRaw.split(/[\n,]/).map(s=>s.trim()).filter(Boolean);
-    const record = {
-      id: uid(), schemaVersion: 1, createdAt: new Date().toISOString(),
-      date: d.date, platform: d.platform, quantity: qty, batchLot: d.batchLot, source: d.source,
-      condition: d.condition, serials, notes: d.notes, loggedBy: d.loggedBy,
-    };
-    const updated = [...STATE.newBatteryRecords, record];
-    await saveNewBatteryRecords(updated);
-    STATE.newBatteryRecords = updated;
-    const keepBy = d.loggedBy;
-    STATE.newBatteryDraft = emptyNewBatteryDraft();
-    STATE.newBatteryDraft.loggedBy = keepBy;
-    toast(`Registered ${qty} units (${record.platform}). Fleet inventory updated.`);
-  });
-  actions.appendChild(clearBtn); actions.appendChild(saveBtn);
-  container.appendChild(actions);
-
-  const recent = STATE.newBatteryRecords.slice(-25).reverse();
-  const histCard = el('div',{class:'card'});
-  histCard.appendChild(el('h3',{},'Recent Intake Entries'));
-  histCard.appendChild(el('div',{class:'sub'},'History of logged intake shipments.'));
-  if(recent.length){
-    const tw = el('div',{class:'table-wrap'});
-    const t = el('table');
-    t.appendChild(el('tr',{},['Date','Platform','Qty','Batch/Lot','Supplier','Condition','Inspector'].map(h=>el('th',{},h))));
-    recent.forEach(r=>{
-      t.appendChild(el('tr',{},[
-        el('td',{},r.date), el('td',{},r.platform), el('td',{class:'mono'},String(r.quantity)),
-        el('td',{},r.batchLot||'—'), el('td',{},r.source||'—'), el('td',{},r.condition||'—'), el('td',{},r.loggedBy||'—'),
-      ]));
+    const buckets = {};
+    STATE.records.forEach(r=>{
+      const k = bucketKey(r.dateReceived, STATE.period);
+      buckets[k] = (buckets[k]||0)+1;
     });
-    tw.appendChild(t); histCard.appendChild(tw);
-  } else {
-    histCard.appendChild(el('div',{class:'small-note'},'No intake records found.'));
-  }
-  container.appendChild(histCard);
-
-  return container;
-}
-
-/* Inventory View */
-function InventoryView(){
-  const wrap = el('div');
-  const stock = stockByPlatform();
-  const totalStock = PLATFORMS.reduce((s,p)=>s+(stock[p]||0),0);
-
-  const stats = el('div',{class:'stat-grid'});
-  const mk = (n,l)=>el('div',{class:'stat'},[el('div',{class:'n'},String(n)), el('div',{class:'l'},l)]);
-  stats.appendChild(mk(totalStock,'Total Fleet Stock'));
-  PLATFORMS.forEach(p=>stats.appendChild(mk(stock[p]||0, p+' Stock')));
-  wrap.appendChild(stats);
-
-  const d = STATE.adjustmentDraft;
-  const form = el('div',{class:'card'});
-  form.appendChild(el('h3',{},'Stock Movement & Reconciliation Log'));
-  form.appendChild(el('div',{class:'sub'},'Record material transfers, deployments, supplier returns, or stock adjustments.'));
-  const g = el('div',{class:'grid narrow'});
-  g.appendChild(field('Transaction Date', textInput(d.date, v=>d.date=v, {type:'date'})));
-  const pSel = el('select',{});
-  PLATFORMS.forEach(p=>{ const o=el('option',{value:p},p); if(d.platform===p) o.setAttribute('selected','true'); pSel.appendChild(o); });
-  pSel.addEventListener('change', ()=>d.platform=pSel.value);
-  g.appendChild(field('Platform', pSel));
-  const tSel = el('select',{});
-  MOVEMENT_TYPES.forEach(([v,l])=>{ const o=el('option',{value:v},l); if(d.type===v) o.setAttribute('selected','true'); tSel.appendChild(o); });
-  tSel.addEventListener('change', ()=>d.type=tSel.value);
-  g.appendChild(field('Movement Type', tSel));
-  g.appendChild(field('Quantity', textInput(d.quantity, v=>d.quantity=v, {type:'number'})));
-  g.appendChild(field('Reference Ref (WO / Dispatch)', textInput(d.reference, v=>d.reference=v)));
-  g.appendChild(field('Operator ID', textInput(d.loggedBy, v=>d.loggedBy=v)));
-  form.appendChild(g);
-  form.appendChild(field('Transaction Notes', textareaInput(d.notes, v=>d.notes=v)));
-  const saveBtn = el('button',{class:'btn-primary btn-sm', style:'margin-top:14px;'},'Post Movement Entry');
-  saveBtn.addEventListener('click', async ()=>{
-    const qty = parseInt(d.quantity);
-    if(!d.date || !qty || qty<=0){ toast('Date and valid quantity required.'); return; }
-    const record = {
-      id: uid(), schemaVersion: 1, createdAt: new Date().toISOString(),
-      date: d.date, platform: d.platform, type: d.type, quantity: qty,
-      reference: d.reference, notes: d.notes, loggedBy: d.loggedBy,
-    };
-    const updated = [...STATE.inventoryAdjustments, record];
-    await saveInventoryAdjustments(updated);
-    STATE.inventoryAdjustments = updated;
-    const keepBy = d.loggedBy;
-    STATE.adjustmentDraft = emptyAdjustmentDraft();
-    STATE.adjustmentDraft.loggedBy = keepBy;
-    toast('Stock movement entry posted.');
-  });
-  form.appendChild(saveBtn);
-  wrap.appendChild(form);
-
-  const ledgerCard = el('div',{class:'card'});
-  ledgerCard.appendChild(el('h3',{},'Inventory Movement Audit Ledger'));
-  ledgerCard.appendChild(el('div',{class:'sub'},'Complete history of material movements.'));
-  const exportBtn = el('button',{class:'btn-ghost btn-sm', style:'margin-bottom:12px;'},'Export Ledger (Excel)');
-  exportBtn.addEventListener('click', ()=>exportInventoryToExcel());
-  ledgerCard.appendChild(exportBtn);
-  const moves = allInventoryMovements().slice().reverse();
-  const tw = el('div',{class:'table-wrap'});
-  const t = el('table');
-  t.appendChild(el('tr',{},['Date','Platform','Action','Qty','Reference','Operator'].map(h=>el('th',{},h))));
-  moves.forEach(m=>{
-    t.appendChild(el('tr',{},[
-      el('td',{},m.date), el('td',{},m.platform),
-      el('td',{},(m.direction>0?'+ ':'− ')+movementLabel(m.type)),
-      el('td',{class:'mono'},String(m.qty)),
-      el('td',{},m.reference||'—'),
-      el('td',{},m.loggedBy||'—'),
-    ]));
-  });
-  tw.appendChild(t); ledgerCard.appendChild(tw);
-  wrap.appendChild(ledgerCard);
+    const labels = Object.keys(buckets).sort();
+    const data = labels.map(l=>buckets[l]);
+    chartInstances.push(new Chart(cvs, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'Serviced Packs', data, borderColor: '#d4af37', backgroundColor: 'rgba(212,175,55,0.1)', fill: true }] },
+      options: { responsive: true, maintainAspectRatio: false }
+    }));
+  }, 0);
 
   return wrap;
 }
 
-/* Excel Exports */
-function exportToExcel(records){
-  const rows = records.map(r=>({
-    'Date Received': r.dateReceived, 'Time Received': r.timeReceived, 'BMS ID / Serial': r.serial || r.bmsId, 'Model': r.model,
-    'BMS ID': r.bmsId, 'IMEI': r.imei || 'N/A', 'Site': r.site, 'Received By': r.receivedBy,
-    'Pre-Check Result': r.preResult, 'Post-Check Result': r.postResult, 'Tests Result': r.testsResult,
-    'Issues Reported': r.issuesReported, 'Issues Resolved': r.issuesResolved, 'All Resolved': r.allResolved?'YES':'NO',
-    'SOP Ref': r.sopRef, 'Repair Action': r.repairAction, 'Parts Replaced': r.partsReplaced,
-    'Technician': r.submittedBy||r.technician, 'Repair Date': r.repairDate, 'Attempt #': r.attemptNumber,
-    'Pack Voltage (V)': r.tests?.packVoltage, 'Min Cell (V)': r.tests?.minCell, 'Max Cell (V)': r.tests?.maxCell,
-    'IR Measured (MΩ)': r.tests?.irMeasured, 'IR Threshold (MΩ)': r.tests?.irThreshold,
-    'QC Result': r.qcPassed, 'First Time Fix': r.firstTimeFix?'YES':'NO',
-    'Handover Date': r.handoverDate, 'QC Verified By': r.qcVerifiedBy, 'O&M Received By': r.omReceivedBy,
-    'Observations': r.observations, 'Remarks': r.remarks,
-  }));
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(rows);
-  XLSX.utils.book_append_sheet(wb, ws, 'Records');
-
-  const daily = {};
-  records.forEach(r=>{
-    const k = r.dateReceived;
-    if(!daily[k]) daily[k]={Date:k,Total:0,Passed:0,Failed:0,FPY:0};
-    daily[k].Total++;
-    if(r.qcPassed==='PASS') daily[k].Passed++;
-    if(r.qcPassed==='FAIL') daily[k].Failed++;
-    if(r.firstTimeFix) daily[k].FPY++;
-  });
-  const dailyRows = Object.values(daily).sort((a,b)=>a.Date.localeCompare(b.Date)).map(d=>({...d, 'FPY %': d.Total? Math.round(d.FPY/d.Total*100)+'%':'—'}));
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dailyRows), 'Daily Summary');
-
-  XLSX.writeFile(wb, `BatteryQC_OM_Export_${todayStr()}.xlsx`);
-}
-
-function exportPlantToExcel(list){
-  const rows = list.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(r=>{
-    const row = {
-      'Date': r.date, 'Active Batteries': r.activeBatteries, 'Pending IoT': r.pendingIot,
-      'Charged Today': r.chargedToday, 'Unboxed Today': r.unboxedToday, 'Pallets Unboxed Today': r.palletsUnboxedToday,
-      'Pallets Left': r.palletsLeft, 'Given for IQC': r.givenForIQC, 'Boxed Batteries': r.boxedBatteries,
-      'Test Batteries': r.testBatteries, 'Total Old Batteries': r.totalOldBatteries,
-      'Total Unboxed (new batch, cum.)': r.newBatchTotalUnboxed, 
-      'Total Available Batteries': r.totalAvailableBatteries || calculateTotalAvailable(r),
-      'Upgraded': r.upgraded, 'Not Upgraded': r.notUpgraded, 'Faulty Batteries': r.faultyBatteries,
-      'Quality Issues (total)': qualitySum(r),
-    };
-    QUALITY_ISSUE_ITEMS.forEach(([k,label])=>row['QI: '+label] = r.quality[k]||0);
-    row['Quality Note'] = r.qualityNote||'';
-    DISPATCH_ITEMS.forEach(([k,label])=>row['Dispatch: '+label] = r.dispatch[k]||0);
-    row['Total Dispatched'] = dispatchSum(r);
-    row['Logged By'] = r.enteredBy||'';
-    row['Reconciled?'] = (parseInt(r.unboxedToday)||0)===unboxedAccountedFor(r) ? 'YES' : 'CHECK';
-    return row;
-  });
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Daily Plant Records');
-  XLSX.writeFile(wb, `BatteryQC_Plant_Export_${todayStr()}.xlsx`);
-}
-
-function exportInventoryToExcel(){
-  const moves = allInventoryMovements();
-  const rows = moves.map(m=>({
-    Date: m.date, Platform: m.platform, 'Movement Type': movementLabel(m.type),
-    Direction: m.direction>0 ? 'IN' : 'OUT', Quantity: m.qty,
-    Reference: m.reference||'', Note: m.note||'', 'Logged By': m.loggedBy||'',
-  }));
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Movements');
-
-  const stock = stockByPlatform();
-  const stockRows = PLATFORMS.map(p=>({ Platform: p, 'Current Stock': stock[p]||0 }));
-  stockRows.push({ Platform: 'TOTAL', 'Current Stock': PLATFORMS.reduce((s,p)=>s+(stock[p]||0),0) });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stockRows), 'Current Stock');
-
-  XLSX.writeFile(wb, `BatteryQC_Inventory_Export_${todayStr()}.xlsx`);
-}
-
-/* Initialize Application */
-render();
+/* ---------------- Init ---------------- */
+(async function init(){
+  STATE.records = await loadRecords();
+  render();
+})();
 </script>
 </body>
 </html>
-
-
-
 
