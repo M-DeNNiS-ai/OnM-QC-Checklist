@@ -894,13 +894,25 @@ function Stage2Card(rec){
 
   card.appendChild(ChecklistCard('Post-Service Inspection', s2.post, POST_ITEMS, (k,v)=>s2.post[k]=v));
 
+  if(STATE.intakeError){
+    card.appendChild(el('div',{class:'banner'}, '⚠ '+STATE.intakeError));
+  }
+
   const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;'});
   const sendBtn = el('button',{class:'btn-primary'},'Send to Stage 3 Docket');
   sendBtn.addEventListener('click', async ()=>{
+    STATE.intakeError = null;
     s2.technician = STATE.techName;
     s2.completedAt = nowIso();
     rec.stage = 3; rec.status = 'STAGE3_OPEN';
-    await saveOm(STATE.omRecords);
+    // Save against the freshest shared record set — never overwrite STATE.omRecords wholesale,
+    // since it can be stale while this form was open (auto-refresh pauses while a record is open).
+    const fresh = await loadOm();
+    const idx = fresh.findIndex(r=>r.id===rec.id);
+    if(idx===-1){ STATE.intakeError = 'This record no longer exists in the shared docket — it may have been edited elsewhere. Refreshing.'; STATE.omRecords = fresh; render(); return; }
+    fresh[idx] = rec;
+    await saveOm(fresh);
+    STATE.omRecords = fresh;
     STATE.openId = null;
     toast(`BMS ${rec.bmsId} sent to Stage 3 docket.`);
   });
@@ -928,18 +940,21 @@ function Stage3Card(rec){
     card.appendChild(field('Return Battery To', selectInput('2', [['2','Stage 2 — Repair Again'],['1','Stage 1 — Re-Inspect First']], v=>returnTo=parseInt(v))));
   }
 
+  if(STATE.intakeError){
+    card.appendChild(el('div',{class:'banner'}, '⚠ '+STATE.intakeError));
+  }
+
   const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;'});
   const finalizeBtn = el('button',{class: s3.qcPassed==='FAIL' ? 'btn-capa' : 'btn-primary'}, s3.qcPassed==='FAIL' ? 'Return for Corrective Action' : 'Finalize');
   finalizeBtn.addEventListener('click', async ()=>{
     if(!s3.qcPassed){ toast('Select a final QC disposition first.'); return; }
+    STATE.intakeError = null;
     s3.technician = STATE.techName;
     s3.completedAt = nowIso();
     if(s3.qcPassed==='PASS'){
       rec.status='CLOSED_PASS'; rec.finalDisposition='PASS'; rec.closedAt = nowIso();
-      toast(`BMS ${rec.bmsId} passed final QC and is closed out.`);
     } else if(s3.qcPassed==='SCRAP'){
       rec.status='CLOSED_SCRAPPED'; rec.finalDisposition='SCRAPPED'; rec.closedAt = nowIso();
-      toast(`BMS ${rec.bmsId} scrapped and removed from the fleet.`);
     } else {
       rec.capaCycles += 1;
       rec.isCorrectiveAction = true;
@@ -947,10 +962,19 @@ function Stage3Card(rec){
       rec.stage = returnTo;
       rec.status = returnTo===1 ? 'STAGE1_OPEN' : 'STAGE2_OPEN';
       s3.qcPassed = '';
-      toast(`BMS ${rec.bmsId} returned to Stage ${returnTo} for corrective action (not counted as a new repeat failure).`);
     }
-    await saveOm(STATE.omRecords);
+    // Save against the freshest shared record set so this finalize step can't clobber
+    // other technicians' concurrent changes (new intakes, other stage transitions, etc.).
+    const fresh = await loadOm();
+    const idx = fresh.findIndex(r=>r.id===rec.id);
+    if(idx===-1){ STATE.intakeError = 'This record no longer exists in the shared docket — it may have been edited elsewhere. Refreshing.'; STATE.omRecords = fresh; render(); return; }
+    fresh[idx] = rec;
+    await saveOm(fresh);
+    STATE.omRecords = fresh;
     STATE.openId = null;
+    if(rec.status==='CLOSED_PASS') toast(`BMS ${rec.bmsId} passed final QC and is closed out.`);
+    else if(rec.status==='CLOSED_SCRAPPED') toast(`BMS ${rec.bmsId} scrapped and removed from the fleet.`);
+    else toast(`BMS ${rec.bmsId} returned to Stage ${returnTo} for corrective action (not counted as a new repeat failure).`);
   });
   actions.appendChild(finalizeBtn);
   disp.appendChild(actions);
@@ -1670,8 +1694,18 @@ async function exportAllDataToExcel(){
    battery sent from Stage 1 wouldn't appear on a Stage 2 technician's screen until they signed
    out and back in. This polls the shared store in the background and re-renders the docket
    list — but only when nobody is actively filling out a form, so typing is never interrupted. */
+function userIsTypingInForm(){
+  const active = document.activeElement;
+  if(!active || !root.contains(active)) return false;
+  const tag = active.tagName;
+  return tag==='INPUT' || tag==='TEXTAREA' || tag==='SELECT';
+}
 async function autoRefreshDocket(){
   try{
+    // Never blow away the DOM (and the user's focus/cursor position) while they're mid-input —
+    // this previously fired every 7s regardless, yanking focus out of whatever field the tech
+    // was typing in on the Stage 1 intake form.
+    if(userIsTypingInForm()) return;
     if(STATE.role==='omtech' && STATE.openId===null && STATE.view==='main'){
       STATE.omRecords = await loadOm();
       STATE.omLastRefreshed = nowTime();
@@ -1684,13 +1718,14 @@ async function autoRefreshDocket(){
   }catch(e){ console.error('Auto-refresh failed', e); }
 }
 setInterval(autoRefreshDocket, 7000);
-document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) autoRefreshDocket(); });
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && !userIsTypingInForm()) autoRefreshDocket(); });
 
 /* ---------- Boot ---------- */
 render();
 </script>
 </body>
 </html>
+
 
 
 
