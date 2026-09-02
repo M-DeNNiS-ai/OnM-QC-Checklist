@@ -1,3 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Battery Quality Control & Operations</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #090c0e;
+  --panel: #11161a;
+  --panel2: #171f24;
+  --panel3: #1e2830;
+  --line: #27343e;
+  --line-light: #344654;
+  --text: #f0f4f8;
+  --muted: #8b9eb0;
+  --gold: #d4af37;
+  --gold-dim: #2e2612;
+  --gold-border: #5c4b1e;
+  --amp: #22c55e;
+  --amp-dim: #103820;
+  --volt: #38bdf8;
+  --volt-dim: #0c3347;
+  --warn: #eab308;
+  --fail: #ef4444;
+  --fail-dim: #3a1516;
+  --iris: #a855f7;
+  --iris-dim: #2b173e;
+  --font-serif: 'Cinzel', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: 'JetBrains Mono', Consolas, monospace;
+}
+
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --panel: #ffffff;
+  --panel2: #f1f5f9;
+  --panel3: #e2e8f0;
+  --line: #cbd5e1;
+  --line-light: #94a3b8;
+  --text: #0f172a;
+  --muted: #64748b;
+  --gold: #b45309;
+  --gold-dim: #fef3c7;
+  --gold-border: #fde68a;
+  --amp: #15803d;
+  --amp-dim: #dcfce7;
+  --volt: #0284c7;
+  --volt-dim: #e0f2fe;
+  --warn: #ca8a04;
+  --fail: #dc2626;
+  --fail-dim: #fee2e2;
+  --iris: #7e22ce;
+  --iris-dim: #f3e8ff;
+}
+
 [data-theme="grayscale"] {
   --bg: #121212;
   --panel: #1e1e1e;
@@ -35,7 +96,6 @@ body {
 
 .app { max-width: 1180px; margin: 0 auto; padding: 24px 20px 80px; }
 
-/* Classic Topbar */
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 0 22px; border-bottom: 1px solid var(--line); margin-bottom: 24px;
@@ -63,7 +123,6 @@ body {
 }
 .pill.admin { background: var(--gold-dim); color: var(--gold); border-color: var(--gold-border); }
 .pill.tech { background: var(--amp-dim); color: var(--amp); border-color: var(--line); }
-.pill.plant { background: var(--volt-dim); color: var(--volt); border-color: var(--line); }
 .pill.quality { background: var(--iris-dim); color: var(--iris); border-color: var(--line); }
 
 .side-badge {
@@ -74,7 +133,6 @@ body {
 .side-badge.plantside { background: var(--volt-dim); color: var(--volt); border-color: var(--line); }
 .side-badge.inv { background: var(--amp-dim); color: var(--amp); border-color: var(--line); }
 
-/* Buttons */
 button {
   font-family: var(--font-sans); cursor: pointer; border: none; border-radius: 6px;
   padding: 9px 16px; font-size: 13px; font-weight: 600; transition: all 0.15s ease;
@@ -86,9 +144,7 @@ button:active { transform: translateY(1px); }
 .btn-ghost { background: var(--panel2); border: 1px solid var(--line); color: var(--text); }
 .btn-ghost:hover { border-color: var(--muted); background: var(--panel3); }
 .btn-sm { padding: 6px 12px; font-size: 12px; }
-.btn-danger { background: var(--fail); color: #fff; }
 
-/* Theme Selector Control */
 .theme-select {
   display: flex; align-items: center; gap: 6px; margin-left: auto; font-size: 12px; color: var(--muted);
 }
@@ -96,7 +152,6 @@ button:active { transform: translateY(1px); }
   padding: 4px 8px; font-size: 12px; border-radius: 4px; width: auto;
 }
 
-/* Login */
 .gate {
   max-width: 440px; margin: 10vh auto 0; padding: 32px 28px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
@@ -114,13 +169,11 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); }
 textarea { resize: vertical; min-height: 70px; }
 
-/* Navigation */
 .nav { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 12px; align-items: center; }
 .nav button { background: transparent; color: var(--muted); border: 1px solid transparent; border-radius: 6px; font-size: 13px; padding: 8px 14px; }
 .nav button.active { background: var(--panel2); color: var(--gold); border-color: var(--gold-border); font-weight: 600; }
 .nav button:hover:not(.active) { color: var(--text); background: var(--panel3); }
 
-/* Card System */
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
 .card h3 { margin: 0 0 4px; font-family: var(--font-serif); font-size: 16px; color: var(--text); letter-spacing: 0.3px; }
 .card .sub { color: var(--muted); font-size: 12.5px; margin-bottom: 16px; }
@@ -189,7 +242,7 @@ tr:hover td { background: var(--panel2); }
 <div id="root"></div>
 
 <script>
-/* ---------------- Theme Handling ---------------- */
+/* Theme Handling */
 let currentTheme = localStorage.getItem('app_theme') || 'dark';
 document.documentElement.setAttribute('data-theme', currentTheme);
 
@@ -221,7 +274,7 @@ function ThemeSelector() {
   return container;
 }
 
-/* ---------------- Config ---------------- */
+/* Config */
 const CHECK_ITEMS = [
   ['foreignObjects','No Foreign Objects'],
   ['looseComponents','No Loose Components / Connectors'],
@@ -241,16 +294,16 @@ const POST_ITEMS = [
   ['fasteners','All Screws / Fasteners Reinstalled'],
 ];
 const ISSUE_ITEMS = [
-  ['noPower','No Power / Dead Battery'],
+  ['noPower','No Power / Dead Battery (Offline)'],
   ['lowCapacity','Low Capacity / Poor Range'],
   ['cellImbalance','Cell Imbalance'],
-  ['bmsFault','BMS Fault / Error Code'],
+  ['bmsFault','BMS Fault / Error Code (BMS Mismatch)'],
   ['canFail','CAN Communication Failure'],
   ['chargeFail','Charging Failure'],
   ['dischargeFail','Discharge Failure'],
   ['swelling','Swelling / Physical Damage'],
   ['irFail','Insulation Resistance Failure'],
-  ['iotFault','IoT / IMEI Fault'],
+  ['iotFault','IoT / IMEI Fault (IoT Mismatch)'],
   ['overheat','Overheating'],
   ['connectorDamage','Connector / Wiring Damage'],
   ['other','Other Issue (see remarks)'],
@@ -265,6 +318,21 @@ const TEST_BOOLS = [
 const DEFAULT_OM_PIN = '1234';
 const DEFAULT_PLANT_PIN = '2345';
 const DEFAULT_QUALITY_PIN = '9999';
+
+/* Model Detection Constants */
+const BMS_MODEL_PREFIXES = [
+  { prefix: 'C7245AC2AA', model: 'CBAK' },
+  { prefix: 'U7245AU1G1', model: 'UNIQUE' },
+  { prefix: 'A7246AX1A1', model: 'AMPACE' },
+  { prefix: 'D72451LWK', model: 'GREENWAY' }
+];
+
+function detectModelFromBMS(bmsId) {
+  if (!bmsId) return '';
+  const cleanId = bmsId.trim().toUpperCase();
+  const match = BMS_MODEL_PREFIXES.find(p => cleanId.startsWith(p.prefix));
+  return match ? match.model : '';
+}
 
 /* Plant intake config */
 const QUALITY_ISSUE_ITEMS = [
@@ -285,17 +353,7 @@ const DISPATCH_ITEMS = [
   ['bikesDeployedToday','Deployed to Bikes — left plant today'],
   ['bikesRemainAtPlant','Bikes at Plant — battery installed, bike stays'],
 ];
-const PLANT_SNAPSHOT_FIELDS = [
-  ['activeBatteries','Active Batteries'],
-  ['pendingIot','Pending IoT'],
-  ['boxedBatteries','Boxed Batteries'],
-  ['palletsLeft','Pallets Left'],
-  ['totalOldBatteries','Total Old Batteries'],
-  ['newBatchTotalUnboxed','Total Unboxed (New Batch, cumulative)'],
-  ['totalAvailableBatteries','Total Available Batteries'],
-];
 
-/* New battery intake & inventory config */
 const PLATFORMS = ['CBAK','Ampace','Unique','Greenway'];
 const BATTERY_CONDITIONS = ['New','Refurbished','Returned - Unopened'];
 const MOVEMENT_TYPES = [
@@ -315,7 +373,7 @@ function movementDirection(type){
   return (type==='RECEIVED' || type==='CORRECTION_ADD') ? 1 : -1;
 }
 
-/* ---------------- Storage helpers ---------------- */
+/* Storage helpers */
 async function loadRecords(){
   try{
     const r = await window.storage.get('records', true);
@@ -388,7 +446,7 @@ async function saveInventoryAdjustments(list){
   await window.storage.set('inventory_adjustments', JSON.stringify(list), true);
 }
 
-/* ---------------- State ---------------- */
+/* State */
 let STATE = {
   role: null,
   techName: '',
@@ -438,7 +496,7 @@ function emptyAdjustmentDraft(){
 function emptyDraft(){
   return {
     dateReceived: todayStr(), timeReceived: nowTime(), serial:'', model:'', bmsId:'', imei:'',
-    site:'', workOrder:'', receivedBy:'',
+    site:'', receivedBy:'',
     pre: {}, post: {},
     issues: {}, otherNote:'',
     sopRef:'', repairAction:'', partsReplaced:'', technician:'', repairDate: todayStr(),
@@ -453,7 +511,12 @@ function todayStr(){ return new Date().toISOString().slice(0,10); }
 function nowTime(){ return new Date().toTimeString().slice(0,5); }
 function uid(){ return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 
-/* ---------------- Calculations ---------------- */
+/* Helper to check if IMEI is required based on issues */
+function isImeiRequired(draft) {
+  return !!(draft.issues.noPower || draft.issues.bmsFault || draft.issues.iotFault);
+}
+
+/* Calculations */
 function checklistResult(map, items){
   const vals = items.map(([k])=>map[k]);
   if(vals.some(v=>v==='FAIL')) return 'FAIL';
@@ -475,10 +538,10 @@ function testsResult(d){
   return 'PASS';
 }
 function priorAttempts(records, serial){
+  if (!serial) return [];
   return records.filter(r=>r.serial.trim().toUpperCase()===serial.trim().toUpperCase());
 }
 
-/* Plant Calculations */
 function qualitySum(d){
   return QUALITY_ISSUE_ITEMS.reduce((s,[k])=>s+(parseInt(d.quality[k])||0),0);
 }
@@ -486,7 +549,6 @@ function dispatchSum(d){
   return DISPATCH_ITEMS.reduce((s,[k])=>s+(parseInt(d.dispatch[k])||0),0);
 }
 
-/* Dynamic calculation for available batteries */
 function calculateTotalAvailable(d){
   const boxed = parseInt(d.boxedBatteries) || 0;
   const quality = qualitySum(d);
@@ -504,19 +566,7 @@ function unboxedAccountedFor(d){
         iqc = parseInt(d.givenForIQC)||0, qi = qualitySum(d);
   return up+nup+flt+tb+iqc+qi;
 }
-function prevPlantRecord(list, dateStr){
-  const before = list.filter(r=>r.date < dateStr).sort((a,b)=>a.date.localeCompare(b.date));
-  return before.length ? before[before.length-1] : null;
-}
-function plantDelta(list, dateStr, key, currentVal){
-  const prev = prevPlantRecord(list, dateStr);
-  if(!prev || currentVal==='' || currentVal===undefined || isNaN(parseFloat(currentVal))) return null;
-  const p = parseFloat(prev[key]);
-  if(isNaN(p)) return null;
-  return parseFloat(currentVal) - p;
-}
 
-/* Inventory movements */
 function allInventoryMovements(){
   const received = STATE.newBatteryRecords.map(r=>({
     id: r.id, date: r.date, platform: r.platform, qty: r.quantity, type: 'RECEIVED',
@@ -537,7 +587,7 @@ function stockByPlatform(){
   return stock;
 }
 
-/* ---------------- Render Root ---------------- */
+/* Render Root */
 const root = document.getElementById('root');
 function render(){ root.innerHTML=''; root.appendChild(View()); }
 
@@ -599,7 +649,7 @@ function el(tag, attrs={}, children=[]){
 function toast(msg){ STATE.toast = msg; render(); setTimeout(()=>{ STATE.toast=null; render(); }, 2600); }
 function Toast(){ return el('div',{class:'banner ok'},[STATE.toast]); }
 
-/* ---------------- Login ---------------- */
+/* Login */
 function LoginView(){
   const gate = el('div',{class:'gate'});
   gate.appendChild(el('h2',{},'BATTERY QC & OPS'));
@@ -666,7 +716,7 @@ function LoginView(){
   return gate;
 }
 
-/* ---------------- TopBar & Nav ---------------- */
+/* TopBar & Nav */
 const ROLE_LABEL = { tech:'TECHNICIAN', omadmin:'O&M ADMIN', quality:'QUALITY ENGINEER' };
 const ROLE_DISPLAY_NAME = { omadmin:'O&M Admin', quality:'Quality Engineer' };
 const ROLE_PILL_CLASS = { tech:'tech', omadmin:'admin', quality:'quality' };
@@ -698,7 +748,7 @@ function Nav(items, labels){
   return nav;
 }
 
-/* ---------------- Form Elements ---------------- */
+/* Form Elements */
 function field(label, inputEl){
   const w = el('div');
   w.appendChild(el('label',{},label));
@@ -709,6 +759,7 @@ function textInput(value, onChange, opts={}){
   const i = el('input',{type:opts.type||'text', value: value||''});
   if(opts.mono) i.style.fontFamily='var(--mono)';
   if(opts.readonly) i.setAttribute('readonly','true');
+  if(opts.placeholder) i.setAttribute('placeholder', opts.placeholder);
   i.addEventListener('input', ()=>onChange(i.value));
   if(value!==undefined) i.value = value;
   return i;
@@ -816,28 +867,52 @@ function EntryView(){
 
   const intake = el('div',{class:'card'});
   intake.appendChild(el('h3',{},'Pack Intake Information'));
-  intake.appendChild(el('div',{class:'sub'},'Battery arrival & identification parameters.'));
+  intake.appendChild(el('div',{class:'sub'},'Scan or enter BMS ID. System will automatically detect model & track repeat repair history.'));
+  
   const g1 = el('div',{class:'grid'});
   g1.appendChild(field('Date Received', textInput(d.dateReceived, v=>d.dateReceived=v, {type:'date'})));
   g1.appendChild(field('Time Received', textInput(d.timeReceived, v=>d.timeReceived=v, {type:'time'})));
-  const serialInput = textInput(d.serial, v=>{ d.serial=v; }, {mono:true});
-  serialInput.placeholder = 'e.g. RTN-0142';
-  serialInput.addEventListener('blur', ()=>{
-    const prior = priorAttempts(STATE.records, serialInput.value);
-    if(serialInput.value.trim() && prior.length>0){
+  
+  // BMS ID Entry with Barcode Scanning Support
+  const bmsInput = textInput(d.bmsId, v => {
+    d.bmsId = v;
+    d.serial = v.trim(); // Auto-map BMS ID directly to Serial for repeat tracking
+    
+    // Auto detect Model from BMS ID
+    const detected = detectModelFromBMS(v);
+    if (detected) {
+      d.model = detected;
+    }
+  }, {mono:true, placeholder:'Scan / Enter BMS ID'});
+
+  bmsInput.addEventListener('blur', () => {
+    const searchSerial = (d.bmsId || d.serial).trim();
+    const prior = priorAttempts(STATE.records, searchSerial);
+    if(searchSerial && prior.length > 0){
       const last = prior[prior.length-1];
-      STATE.serialWarning = `Repeat visit — Serial has ${prior.length} prior record(s), last logged ${last.dateReceived}. Creating visit #${prior.length+1}.`;
+      STATE.serialWarning = `Repeat repair — Serial/BMS ID has ${prior.length} prior record(s), last logged ${last.dateReceived}. Logging visit #${prior.length+1}.`;
     } else {
       STATE.serialWarning = null;
     }
     render();
   });
-  g1.appendChild(field('Serial Number', serialInput));
-  g1.appendChild(field('Model Designation', textInput(d.model, v=>d.model=v)));
-  g1.appendChild(field('BMS Identifier', textInput(d.bmsId, v=>d.bmsId=v, {mono:true})));
-  g1.appendChild(field('IMEI Number', textInput(d.imei, v=>d.imei=v, {mono:true})));
+
+  g1.appendChild(field('Scan BMS ID / Barcode', bmsInput));
+
+  // Auto-filled / Editable Model designation
+  const modelInput = textInput(d.model, v => d.model = v, { placeholder: 'Auto-detected or Manual' });
+  g1.appendChild(field('Model Designation', modelInput));
+
+  // Conditional IMEI input handling
+  const imeiRequired = isImeiRequired(d);
+  const imeiLabel = imeiRequired ? 'IMEI Number (Required)' : 'IMEI Number (Optional)';
+  const imeiInput = textInput(d.imei, v => d.imei = v, { mono: true, placeholder: imeiRequired ? 'Required for this defect' : 'Optional' });
+  if (imeiRequired) {
+    imeiInput.style.borderColor = 'var(--warn)';
+  }
+  g1.appendChild(field(imeiLabel, imeiInput));
+
   g1.appendChild(field('Source / Origin Station', textInput(d.site, v=>d.site=v)));
-  g1.appendChild(field('RMA / Work Order', textInput(d.workOrder, v=>d.workOrder=v)));
   g1.appendChild(field('Received By', textInput(d.receivedBy, v=>d.receivedBy=v)));
   intake.appendChild(g1);
   container.appendChild(intake);
@@ -895,7 +970,16 @@ function EntryView(){
   });
   const saveBtn = el('button',{class:'btn-primary'},'Save Record Entry');
   saveBtn.addEventListener('click', async ()=>{
-    if(!d.serial.trim() || !d.dateReceived){ toast('Serial number and intake date are required.'); return; }
+    const activeSerial = (d.bmsId || d.serial).trim();
+    if(!activeSerial || !d.dateReceived){ toast('BMS ID / Serial number and intake date are required.'); return; }
+    
+    // Check IMEI requirement validation
+    if (isImeiRequired(d) && !d.imei.trim()) {
+      toast('IMEI Number is required for dead battery, BMS fault, or IoT fault issues.');
+      return;
+    }
+
+    d.serial = activeSerial; // Ensure serial is synchronized
     const prior = priorAttempts(STATE.records, d.serial);
     const attemptNumber = prior.length + 1;
     const preResult = checklistResult(d.pre, CHECK_ITEMS);
@@ -905,6 +989,7 @@ function EntryView(){
     const resolved = issuesResolvedCount(d);
     const allResolved = reported>0 ? resolved===reported : true;
     const firstTimeFix = attemptNumber===1 && d.qcPassed==='PASS' && allResolved && tResult==='PASS';
+    
     const record = {
       id: uid(), createdAt: new Date().toISOString(),
       ...JSON.parse(JSON.stringify(d)),
@@ -919,7 +1004,7 @@ function EntryView(){
     STATE.draft = emptyDraft();
     STATE.draft.technician = keepTech;
     STATE.serialWarning = null;
-    toast(`Record saved. Serial ${record.serial} logged (Visit #${attemptNumber}).`);
+    toast(`Record saved. Serial/BMS ID ${record.serial} logged (Visit #${attemptNumber}).`);
   });
   actions.appendChild(clearBtn); actions.appendChild(saveBtn);
   container.appendChild(actions);
@@ -927,7 +1012,7 @@ function EntryView(){
   return container;
 }
 
-/* ---------------- Technician: Recent Records ---------------- */
+/* Technician: Recent Records */
 function MyRecordsView(){
   const mine = STATE.records.filter(r=>r.submittedBy===STATE.techName).slice(-25).reverse();
   const wrap = el('div');
@@ -941,11 +1026,11 @@ function MyRecordsView(){
   }
   const tw = el('div',{class:'table-wrap'});
   const t = el('table');
-  t.appendChild(el('tr',{},['Date','Serial','Model','Attempt','Status','FPY'].map(h=>el('th',{},h))));
+  t.appendChild(el('tr',{},['Date','Serial / BMS ID','Model','Attempt','Status','FPY'].map(h=>el('th',{},h))));
   mine.forEach(r=>{
     t.appendChild(el('tr',{},[
       el('td',{},r.dateReceived),
-      el('td',{class:'mono'},r.serial),
+      el('td',{class:'mono'},r.serial || r.bmsId),
       el('td',{},r.model||'—'),
       el('td',{},'#'+r.attemptNumber),
       el('td',{},el('span',{class:'result-chip '+(r.qcPassed||'INCOMPLETE')}, r.qcPassed||'PENDING')),
@@ -956,15 +1041,15 @@ function MyRecordsView(){
   return wrap;
 }
 
-/* ---------------- History View ---------------- */
+/* History View */
 function HistoryView(){
   const wrap = el('div');
   const filters = el('div',{class:'card'});
   filters.appendChild(el('h3',{},'Quality Assurance Record History'));
   const grid = el('div',{class:'grid narrow'});
   let q = {serial:'', tech:'', from:'', to:'', result:''};
-  const searchInp = textInput('', v=>q.serial=v); searchInp.placeholder='Serial filter…';
-  grid.appendChild(field('Serial Number', searchInp));
+  const searchInp = textInput('', v=>q.serial=v); searchInp.placeholder='Serial / BMS ID filter…';
+  grid.appendChild(field('Serial / BMS ID', searchInp));
   const techInp = textInput('', v=>q.tech=v); techInp.placeholder='Technician…';
   grid.appendChild(field('Technician', techInp));
   grid.appendChild(field('From Date', textInput('', v=>q.from=v, {type:'date'})));
@@ -985,7 +1070,8 @@ function HistoryView(){
 
   function filtered(){
     return STATE.records.filter(r=>{
-      if(q.serial && !r.serial.toLowerCase().includes(q.serial.toLowerCase())) return false;
+      const searchTarget = (r.serial || r.bmsId || '').toLowerCase();
+      if(q.serial && !searchTarget.includes(q.serial.toLowerCase())) return false;
       if(q.tech && !(r.submittedBy||'').toLowerCase().includes(q.tech.toLowerCase())) return false;
       if(q.from && r.dateReceived < q.from) return false;
       if(q.to && r.dateReceived > q.to) return false;
@@ -999,11 +1085,11 @@ function HistoryView(){
     tableHost.appendChild(el('div',{class:'small-note', style:'margin-bottom:8px;'}, rows.length+' record(s) matching criteria.'));
     const tw = el('div',{class:'table-wrap'});
     const t = el('table');
-    t.appendChild(el('tr',{},['Date','Serial','Model','Site','Technician','Visit','Defects','Resolved','Disposition','FPY','Sign-over'].map(h=>el('th',{},h))));
+    t.appendChild(el('tr',{},['Date','Serial / BMS ID','Model','Site','Technician','Visit','Defects','Resolved','Disposition','FPY','Sign-over'].map(h=>el('th',{},h))));
     rows.forEach(r=>{
       t.appendChild(el('tr',{},[
         el('td',{},r.dateReceived),
-        el('td',{class:'mono'},r.serial),
+        el('td',{class:'mono'},r.serial || r.bmsId),
         el('td',{},r.model||'—'),
         el('td',{},r.site||'—'),
         el('td',{},r.submittedBy||r.technician||'—'),
@@ -1025,7 +1111,7 @@ function HistoryView(){
   return wrap;
 }
 
-/* ---------------- O&M Dashboard ---------------- */
+/* O&M Dashboard */
 let chartInstances = [];
 function destroyCharts(){ chartInstances.forEach(c=>c.destroy()); chartInstances=[]; }
 
@@ -1050,8 +1136,10 @@ function DashboardView(){
   const repeatSerials = new Set();
   const seen = new Set();
   STATE.records.forEach(r=>{
-    const s = r.serial.trim().toUpperCase();
-    if(seen.has(s)) repeatSerials.add(s); else seen.add(s);
+    const s = (r.serial || r.bmsId || '').trim().toUpperCase();
+    if(s) {
+      if(seen.has(s)) repeatSerials.add(s); else seen.add(s);
+    }
   });
 
   const stats = el('div',{class:'stat-grid'});
@@ -1128,7 +1216,7 @@ function DashboardView(){
   return wrap;
 }
 
-/* ---------------- Settings ---------------- */
+/* Settings */
 function pinCard(title, sub, settingsKey){
   const card = el('div',{class:'card'});
   card.appendChild(el('h3',{},title));
@@ -1160,7 +1248,7 @@ function SettingsView(){
   return wrap;
 }
 
-/* ---------------- Plant Entry View ---------------- */
+/* Plant Entry View */
 function PlantEntryView(){
   const d = STATE.plantDraft;
   const list = STATE.plantRecords;
@@ -1171,7 +1259,6 @@ function PlantEntryView(){
     container.appendChild(el('div',{class:'banner'}, `Log entry for ${d.date} already recorded. Saving will update the existing daily snapshot.`));
   }
 
-  // Calculate live Total Available Batteries
   const autoTotalAvailable = calculateTotalAvailable(d);
   d.totalAvailableBatteries = autoTotalAvailable;
 
@@ -1188,7 +1275,6 @@ function PlantEntryView(){
   g1.appendChild(field('Inactive / Old Stock', textInput(d.totalOldBatteries, v=>{d.totalOldBatteries=v; render();}, {type:'number'})));
   g1.appendChild(field('Total Unboxed Batch', textInput(d.newBatchTotalUnboxed, v=>d.newBatchTotalUnboxed=v, {type:'number'})));
   
-  // Total Available - Read Only Auto Calculated Field
   const autoAvailInput = textInput(autoTotalAvailable, null, {readonly: true, mono: true});
   autoAvailInput.style.fontWeight = 'bold';
   autoAvailInput.style.color = 'var(--gold)';
@@ -1202,7 +1288,7 @@ function PlantEntryView(){
   const target = parseInt(d.unboxedToday)||0;
   const match = target>0 && acc===target;
   const mismatch = target>0 && acc!==target;
-  unboxed.appendChild(el('div',{class:'sub', style:'display:flex;justify-content:space-between;align-items:center;'},[
+  unboxed.appendChild(el('div',{class:'sub', style:'display:flex;justify-between;align-items:center;'},[
     el('h3',{style:'margin:0;'},'Unboxed Batch Distribution'),
     el('span',{class:'result-chip '+(mismatch?'FAIL':match?'PASS':'INCOMPLETE')}, mismatch ? `UNBALANCED (${acc}/${target})` : match ? 'RECONCILED' : `${acc} Categorized`)
   ]));
@@ -1219,7 +1305,7 @@ function PlantEntryView(){
 
   const qi = el('div',{class:'card'});
   const qsum = qualitySum(d);
-  qi.appendChild(el('div',{class:'sub', style:'display:flex;justify-content:space-between;align-items:center;'},[
+  qi.appendChild(el('div',{class:'sub', style:'display:flex;justify-between;align-items:center;'},[
     el('h3',{style:'margin:0;'},'Quality Defect Analysis'),
     el('span',{class:'result-chip INCOMPLETE'}, 'Total Defective: '+qsum)
   ]));
@@ -1237,7 +1323,7 @@ function PlantEntryView(){
 
   const disp = el('div',{class:'card'});
   const dsum = dispatchSum(d);
-  disp.appendChild(el('div',{class:'sub', style:'display:flex;justify-content:space-between;align-items:center;'},[
+  disp.appendChild(el('div',{class:'sub', style:'display:flex;justify-between;align-items:center;'},[
     el('h3',{style:'margin:0;'},'Dispatch & Deployment Tracking'),
     el('span',{class:'result-chip INCOMPLETE'}, 'Total Dispatched: '+dsum)
   ]));
@@ -1262,7 +1348,6 @@ function PlantEntryView(){
   saveBtn.addEventListener('click', async ()=>{
     if(!d.date){ toast('Log date is required.'); return; }
     
-    // Final auto-recalculation verify before save
     d.totalAvailableBatteries = calculateTotalAvailable(d);
     const snapshot = JSON.parse(JSON.stringify(d));
     let updated;
@@ -1287,7 +1372,7 @@ function PlantEntryView(){
   return container;
 }
 
-/* ---------------- Plant History View ---------------- */
+/* Plant History View */
 function PlantHistoryView(){
   const wrap = el('div');
   wrap.appendChild(el('div',{class:'card'},[
@@ -1324,7 +1409,7 @@ function PlantHistoryView(){
   return wrap;
 }
 
-/* ---------------- Plant Dashboard View ---------------- */
+/* Plant Dashboard View */
 let plantChartInstances = [];
 function destroyPlantCharts(){ plantChartInstances.forEach(c=>c.destroy()); plantChartInstances=[]; }
 function PlantDashboardView(){
@@ -1418,7 +1503,7 @@ function PlantDashboardView(){
   return wrap;
 }
 
-/* ---------------- New Battery Intake ---------------- */
+/* New Battery Intake */
 function NewBatteryIntakeView(){
   const d = STATE.newBatteryDraft;
   const container = el('div');
@@ -1492,7 +1577,7 @@ function NewBatteryIntakeView(){
   return container;
 }
 
-/* ---------------- Inventory View ---------------- */
+/* Inventory View */
 function InventoryView(){
   const wrap = el('div');
   const stock = stockByPlatform();
@@ -1568,11 +1653,11 @@ function InventoryView(){
   return wrap;
 }
 
-/* ---------------- Excel Exports ---------------- */
+/* Excel Exports */
 function exportToExcel(records){
   const rows = records.map(r=>({
-    'Date Received': r.dateReceived, 'Time Received': r.timeReceived, 'Serial': r.serial, 'Model': r.model,
-    'BMS ID': r.bmsId, 'IMEI': r.imei, 'Site': r.site, 'Work Order': r.workOrder, 'Received By': r.receivedBy,
+    'Date Received': r.dateReceived, 'Time Received': r.timeReceived, 'BMS ID / Serial': r.serial || r.bmsId, 'Model': r.model,
+    'BMS ID': r.bmsId, 'IMEI': r.imei || 'N/A', 'Site': r.site, 'Received By': r.receivedBy,
     'Pre-Check Result': r.preResult, 'Post-Check Result': r.postResult, 'Tests Result': r.testsResult,
     'Issues Reported': r.issuesReported, 'Issues Resolved': r.issuesResolved, 'All Resolved': r.allResolved?'YES':'NO',
     'SOP Ref': r.sopRef, 'Repair Action': r.repairAction, 'Parts Replaced': r.partsReplaced,
@@ -1645,11 +1730,12 @@ function exportInventoryToExcel(){
   XLSX.writeFile(wb, `BatteryQC_Inventory_Export_${todayStr()}.xlsx`);
 }
 
-/* ---------------- Initialize Application ---------------- */
+/* Initialize Application */
 render();
 </script>
 </body>
 </html>
+
 
 
 
