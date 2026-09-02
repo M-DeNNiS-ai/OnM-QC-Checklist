@@ -375,6 +375,8 @@ let STATE = {
   intakeDraft: emptyIntakeDraft(''),
   openId: null,          // record currently open for stage2/stage3/CAPA-stage1 editing
   serialWarning: null,
+  intakeError: null,     // persistent (non-fading) validation error shown on the intake/re-inspection form
+  omLastRefreshed: null, // human-readable HH:MM of the last successful background/manual docket refresh
 
   plantDraft: null,
   newBatteryDraft: null,
@@ -672,7 +674,7 @@ function OmTechDocketView(){
     const rec = findRecord(STATE.omRecords, STATE.openId);
     if(rec){
       const back = el('button',{class:'btn-sm', style:'margin-bottom:10px;'},'← Back to Docket');
-      back.addEventListener('click', ()=>{ STATE.openId=null; STATE.serialWarning=null; render(); });
+      back.addEventListener('click', ()=>{ STATE.openId=null; STATE.serialWarning=null; STATE.intakeError=null; render(); });
       container.appendChild(back);
       if(rec.capaCycles>0){
         container.appendChild(el('div',{class:'banner capa'},
@@ -702,6 +704,9 @@ function NewIntakeCard(){
 
   if(STATE.serialWarning){
     container_warn(card);
+  }
+  if(STATE.intakeError){
+    card.appendChild(el('div',{class:'banner'}, '⚠ '+STATE.intakeError));
   }
 
   const g1 = el('div',{class:'grid'});
@@ -748,14 +753,18 @@ function NewIntakeCard(){
 
   const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;'});
   const clearBtn = el('button',{},'Reset');
-  clearBtn.addEventListener('click', ()=>{ STATE.intakeDraft = emptyIntakeDraft(STATE.techName); STATE.serialWarning=null; render(); });
+  clearBtn.addEventListener('click', ()=>{ STATE.intakeDraft = emptyIntakeDraft(STATE.techName); STATE.serialWarning=null; STATE.intakeError=null; render(); });
   const sendBtn = el('button',{class:'btn-primary'},'Send to Stage 2 Docket');
   sendBtn.addEventListener('click', async ()=>{
     const clean = d.bmsId.trim();
-    if(!clean || !d.dateReceived){ toast('BMS ID and intake date are required.'); return; }
-    if(isImeiRequired(d) && !d.imei.trim()){ toast('IMEI is required for the selected issue type.'); return; }
-    if(isSwapStationRequired(d) && !d.site.trim()){ toast('Swap Station is required for this defect type.'); return; }
-    if(openRecordForBms(STATE.omRecords, clean)){ toast('This BMS ID is already open in the pipeline.'); return; }
+    STATE.intakeError = null;
+    // Re-check against the freshest shared data, not a possibly-stale local copy, so two
+    // technicians racing on the same BMS ID (or a record another tech just moved) can't collide.
+    STATE.omRecords = await loadOm();
+    if(!clean || !d.dateReceived){ STATE.intakeError='BMS ID and intake date are required.'; render(); return; }
+    if(isImeiRequired(d) && !d.imei.trim()){ STATE.intakeError='IMEI is required for the selected issue type.'; render(); return; }
+    if(isSwapStationRequired(d) && !d.site.trim()){ STATE.intakeError='Swap Station is required for this defect type.'; render(); return; }
+    if(openRecordForBms(STATE.omRecords, clean)){ STATE.intakeError='This BMS ID is already open in the pipeline. Use that docket instead of creating a new intake.'; render(); return; }
     const visitNumber = closedRecordsForBms(STATE.omRecords, clean).length + 1;
     const rec = newOmRecord(d, visitNumber, STATE.techName);
     const updated = [...STATE.omRecords, rec];
@@ -763,6 +772,7 @@ function NewIntakeCard(){
     STATE.omRecords = updated;
     STATE.intakeDraft = emptyIntakeDraft(STATE.techName);
     STATE.serialWarning = null;
+    STATE.intakeError = null;
     toast(`Intake logged — BMS ${rec.bmsId} sent to Stage 2 docket.`);
   });
   actions.appendChild(clearBtn); actions.appendChild(sendBtn);
@@ -777,10 +787,23 @@ function DocketListCard(){
   const stage = STATE.stage;
   const queue = stageQueue(STATE.omRecords, stage);
   const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{}, `Stage ${stage} Docket`));
-  card.appendChild(el('div',{class:'sub'}, stage===1
-    ? 'Batteries returned for corrective re-inspection appear here.'
-    : `Batteries waiting on your stage. Total: ${queue.length}`));
+  const titleRow = el('div',{style:'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;'});
+  titleRow.appendChild(el('h3',{}, `Stage ${stage} Docket`));
+  const refreshWrap = el('div',{style:'display:flex;align-items:center;gap:8px;'});
+  if(STATE.omLastRefreshed) refreshWrap.appendChild(el('span',{class:'meta'}, 'Updated '+STATE.omLastRefreshed));
+  const refreshBtn = el('button',{class:'btn-sm'},'🔄 Refresh Docket');
+  refreshBtn.addEventListener('click', async ()=>{
+    STATE.omRecords = await loadOm();
+    STATE.omLastRefreshed = nowTime();
+    toast('Docket refreshed from the shared record.');
+  });
+  refreshWrap.appendChild(refreshBtn);
+  titleRow.appendChild(refreshWrap);
+  card.appendChild(titleRow);
+  card.appendChild(el('div',{class:'sub'}, (stage===1
+    ? 'Batteries returned for corrective re-inspection appear here. '
+    : `Batteries waiting on your stage. Total: ${queue.length}. `)
+    + 'This list updates automatically every few seconds, or tap Refresh Docket for an immediate check.'));
 
   if(queue.length===0){
     card.appendChild(el('div',{class:'empty-note'},'Docket is empty.'));
@@ -797,7 +820,7 @@ function DocketListCard(){
     if(rec.capaCycles>0) right.appendChild(el('span',{class:'status-chip CAPA'},'CAPA'));
     right.appendChild(el('span',{class:'status-chip OPEN'}, 'Stage '+rec.stage));
     const openBtn = el('button',{class:'btn-sm btn-primary'},'Open');
-    openBtn.addEventListener('click', ()=>{ STATE.openId=rec.id; STATE.serialWarning=null; render(); });
+    openBtn.addEventListener('click', ()=>{ STATE.openId=rec.id; STATE.serialWarning=null; STATE.intakeError=null; render(); });
     right.appendChild(openBtn);
     row.appendChild(left); row.appendChild(right);
     card.appendChild(row);
@@ -818,15 +841,28 @@ function Stage1EditCard(rec){
   card.appendChild(g1);
 
   card.appendChild(ChecklistCard('Pre-Opening Inspection', s1.pre, CHECK_ITEMS, (k,v)=>s1.pre[k]=v));
-  card.appendChild(IssuesCard({issues:s1.issues, otherNote:s1.otherNote}));
+  const issuesProxy = { issues: s1.issues, get otherNote(){ return s1.otherNote; }, set otherNote(v){ s1.otherNote = v; } };
+  card.appendChild(IssuesCard(issuesProxy));
+
+  if(STATE.intakeError){
+    card.appendChild(el('div',{class:'banner'}, '⚠ '+STATE.intakeError));
+  }
 
   const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;'});
   const sendBtn = el('button',{class:'btn-primary'},'Resend to Stage 2 Docket');
   sendBtn.addEventListener('click', async ()=>{
+    STATE.intakeError = null;
     s1.technician = STATE.techName;
     s1.completedAt = nowIso();
     rec.stage = 2; rec.status = 'STAGE2_OPEN';
-    await saveOm(STATE.omRecords);
+    // Save against the freshest shared record set so this update can't clobber changes
+    // another technician made to a different record in the meantime.
+    const fresh = await loadOm();
+    const idx = fresh.findIndex(r=>r.id===rec.id);
+    if(idx===-1){ STATE.intakeError = 'This record no longer exists in the shared docket — it may have been edited elsewhere. Refreshing.'; STATE.omRecords = fresh; render(); return; }
+    fresh[idx] = rec;
+    await saveOm(fresh);
+    STATE.omRecords = fresh;
     STATE.openId = null;
     toast(`BMS ${rec.bmsId} resent to Stage 2 docket.`);
   });
@@ -1629,11 +1665,33 @@ async function exportAllDataToExcel(){
   toast('Excel report downloaded: '+filename);
 }
 
+/* ---------- Live docket refresh ----------
+   Each session used to load the shared O&M records once at sign-in and never again, so a
+   battery sent from Stage 1 wouldn't appear on a Stage 2 technician's screen until they signed
+   out and back in. This polls the shared store in the background and re-renders the docket
+   list — but only when nobody is actively filling out a form, so typing is never interrupted. */
+async function autoRefreshDocket(){
+  try{
+    if(STATE.role==='omtech' && STATE.openId===null && STATE.view==='main'){
+      STATE.omRecords = await loadOm();
+      STATE.omLastRefreshed = nowTime();
+      render();
+    } else if(STATE.role==='omadmin' && (STATE.view==='dashboard' || STATE.view==='history')){
+      STATE.omRecords = await loadOm();
+      STATE.omLastRefreshed = nowTime();
+      render();
+    }
+  }catch(e){ console.error('Auto-refresh failed', e); }
+}
+setInterval(autoRefreshDocket, 7000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) autoRefreshDocket(); });
+
 /* ---------- Boot ---------- */
 render();
 </script>
 </body>
 </html>
+
 
 
 
