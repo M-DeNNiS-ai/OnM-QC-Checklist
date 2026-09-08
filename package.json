@@ -1,19 +1,16 @@
 {
   "name": "battery-qc-server",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Battery QC secure backend and SQLite database",
+  "description": "Multi-device Battery QC backend using Supabase Postgres",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js"
   },
-  "engines": {
-    "node": ">=20"
-  },
+  "engines": { "node": ">=20" },
   "dependencies": {
-    "bcryptjs": "^3.0.2",
-    "better-sqlite3": "^12.4.1",
+    "@supabase/supabase-js": "^2.57.4",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
