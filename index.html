@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Battery QC</title>
+<title>Battery QC — Server</title>
 <style>
 :root {
   --bg: #f8f9fa;
@@ -185,6 +185,52 @@ tr:hover td { background: var(--panel2); }
 .sync-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; background: var(--pass); }
 .sync-dot.bad { background: var(--fail); }
 .sync-line { font-size: 10px; color: var(--muted); display:flex; align-items:center; }
+.server-badge{font-size:10px;color:var(--muted);margin-top:3px;}
+
+/* ---------- Animations & loading polish ---------- */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulseDot { 0%,100% { box-shadow: 0 0 0 0 rgba(21,128,61,0.35); } 50% { box-shadow: 0 0 0 4px rgba(21,128,61,0); } }
+@keyframes chipPop { 0% { transform: scale(0.92); opacity: 0.6; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes toastPop { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+.spinner {
+  display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid rgba(127,127,127,0.35); border-top-color: var(--accent);
+  animation: spin 0.7s linear infinite; vertical-align: -2px; margin-right: 2px;
+}
+.boot-loading {
+  min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+}
+.boot-loading .spinner { width: 28px; height: 28px; border-width: 3px; margin-right: 0; }
+.boot-loading-text { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 0.3px; }
+
+.fade-in { animation: fadeIn 0.28s ease both; }
+.field-anim { animation: fadeIn 0.2s ease both; }
+.stat-anim { animation: fadeIn 0.25s ease both; transition: transform 0.15s ease; }
+.stat-anim:hover { transform: translateY(-2px); }
+.toast-pop { animation: toastPop 0.22s ease both; }
+.chip-anim { animation: chipPop 0.18s ease; }
+.banner { animation: slideDown 0.2s ease both; }
+
+.card, .chart-card { transition: box-shadow 0.15s ease, transform 0.15s ease; }
+.card:hover, .chart-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+.docket-item { transition: background 0.15s ease; }
+.docket-item:hover { background: var(--panel2); }
+
+.sync-dot { animation: pulseDot 1.8s ease-in-out infinite; }
+.sync-dot.bad { animation: none; }
+.spin-icon { animation: spin 0.9s linear infinite; }
+
+button { transition: background 0.12s ease, transform 0.08s ease, opacity 0.12s ease; }
+button:active:not(:disabled) { transform: scale(0.97); }
+
+.dir-seg button { min-width: 84px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}
 </style>
 </head>
 <body>
@@ -203,9 +249,7 @@ function setTheme(theme) {
 }
 
 /* ---------- Credentials ---------- */
-const STAGE_PINS = { '1001': 1, '1002': 2, '1003': 3 };
 const STAGE_LABEL = { 1: 'Stage 1 — Intake & Pre-Check', 2: 'Stage 2 — Repair & Reassembly', 3: 'Stage 3 — Final Test & QC Sign-off' };
-const SECTOR_PINS = { omadmin: '1234', plant: '2345', inventory: '3456', quality: '9999' };
 const SECTOR_LABEL = { omadmin: 'O&M Admin', plant: 'Plant Admin', inventory: 'Inventory Manager', quality: 'Quality Engineer' };
 
 /* ---------- Domain constants ---------- */
@@ -286,26 +330,89 @@ function movementLabel(type){
   return f ? f[1] : type;
 }
 
-/* ---------- Storage — each sector kept in its own store, never merged ----------
-   IMPORTANT: every write now reports success/failure instead of failing silently.
-   Previously, if window.storage.set() rejected (network hiccup, rate limit, etc.)
-   the click handler's promise just rejected with nobody watching — the UI showed
-   no error, the record was never actually written, and the button looked "dead"
-   even though the user had done everything right. */
-async function loadOm(){ try { const r = await window.storage.get('om_chain_records', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
-async function saveOm(list){ try { await window.storage.set('om_chain_records', JSON.stringify(list), true); return true; } catch(e){ console.error('saveOm failed', e); return false; } }
+/* ---------- Bulk battery movements (Plant sector <-> Quality visibility) ----------
+   Records the daily flow of physical batteries by OEM/BMS serial in and out of the
+   plant, per platform. Quantities are entered up front; the OEM ID list can be filled
+   in immediately or added later, but once IDs exist their count must reconcile with
+   the declared quantity. This feeds the computed Daily Stock Report table. */
+const MOVEMENT_DIRECTIONS = [
+  ['RECEIVED', 'Received'],
+  ['DISPATCHED', 'Dispatched'],
+];
+function emptyMovementDraft(){
+  return { date: todayStr(), platform: PLATFORMS[0], direction: 'RECEIVED', quantity: '', idsText: '', reference: '', loggedBy: '' };
+}
+function parseIdsText(text){
+  return (text||'')
+    .split(/[\n,]+/)
+    .map(s=>s.trim())
+    .filter(Boolean);
+}
+function newMovementRecord(d, loggedBy){
+  const ids = parseIdsText(d.idsText);
+  return {
+    id: uid(), createdAt: nowIso(),
+    date: d.date, platform: d.platform, direction: d.direction,
+    quantity: parseInt(d.quantity)||0,
+    ids, reference: (d.reference||'').trim(), loggedBy: loggedBy || d.loggedBy || '',
+  };
+}
+function computeDailyStockTable(movements){
+  const byDate = {};
+  movements.forEach(m=>{
+    if(!byDate[m.date]) byDate[m.date] = {};
+    if(!byDate[m.date][m.platform]) byDate[m.date][m.platform] = { inwards:0, outwards:0 };
+    if(m.direction==='RECEIVED') byDate[m.date][m.platform].inwards += (m.quantity||0);
+    else byDate[m.date][m.platform].outwards += (m.quantity||0);
+  });
+  const dates = Object.keys(byDate).sort();
+  const running = {}; PLATFORMS.forEach(p=>running[p]=0);
+  const rows = [];
+  dates.forEach(date=>{
+    const platforms = {};
+    let totals = { opening:0, inwards:0, outwards:0, closing:0 };
+    PLATFORMS.forEach(p=>{
+      const opening = running[p]||0;
+      const day = byDate[date][p] || { inwards:0, outwards:0 };
+      const closing = opening + day.inwards - day.outwards;
+      platforms[p] = { opening, inwards: day.inwards, outwards: day.outwards, closing };
+      running[p] = closing;
+      totals.opening += opening; totals.inwards += day.inwards; totals.outwards += day.outwards; totals.closing += closing;
+    });
+    rows.push({ date, platforms, totals });
+  });
+  return rows;
+}
+function movementIdStatus(m){
+  if(!m.ids || m.ids.length===0) return { label:'IDs pending', ok:false, count:0 };
+  if(m.ids.length===m.quantity) return { label:`${m.ids.length}/${m.quantity} IDs`, ok:true, count:m.ids.length };
+  return { label:`${m.ids.length}/${m.quantity} IDs — mismatch`, ok:false, count:m.ids.length };
+}
 
-async function loadPlant(){ try { const r = await window.storage.get('plant_records', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
-async function savePlant(list){ try { await window.storage.set('plant_records', JSON.stringify(list), true); return true; } catch(e){ console.error('savePlant failed', e); return false; } }
-
-async function loadNewBattery(){ try { const r = await window.storage.get('new_battery_records', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
-async function saveNewBattery(list){ try { await window.storage.set('new_battery_records', JSON.stringify(list), true); return true; } catch(e){ console.error('saveNewBattery failed', e); return false; } }
-
-async function loadAdjustments(){ try { const r = await window.storage.get('inventory_adjustments', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
-async function saveAdjustments(list){ try { await window.storage.set('inventory_adjustments', JSON.stringify(list), true); return true; } catch(e){ console.error('saveAdjustments failed', e); return false; } }
-
-async function loadWarranty(){ try { const r = await window.storage.get('warranty_records', true); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
-async function saveWarranty(list){ try { await window.storage.set('warranty_records', JSON.stringify(list), true); return true; } catch(e){ console.error('saveWarranty failed', e); return false; } }
+/* ---------- Server-backed storage ----------
+   All persistent data is stored in the backend SQLite database. The browser keeps
+   only UI state; records are loaded/saved through authenticated /api/data endpoints.
+*/
+async function apiFetch(path, options={}){
+  const res = await fetch(path, { credentials:'include', headers:{'Content-Type':'application/json', ...(options.headers||{})}, ...options });
+  let body=null; try { body=await res.json(); } catch(e) {}
+  if(!res.ok){ const msg = body && body.error ? body.error : `Server error (${res.status})`; throw new Error(msg); }
+  return body;
+}
+async function loadStore(key){ try { const r=await apiFetch('/api/data/'+encodeURIComponent(key)); return Array.isArray(r.data)?r.data:[]; } catch(e){ console.error('loadStore failed', key, e); return []; } }
+async function saveStore(key,list){ try { await apiFetch('/api/data/'+encodeURIComponent(key), {method:'PUT', body:JSON.stringify({data:list})}); return true; } catch(e){ console.error('saveStore failed', key, e); return false; } }
+async function loadOm(){ return loadStore('om_chain_records'); }
+async function saveOm(list){ return saveStore('om_chain_records',list); }
+async function loadPlant(){ return loadStore('plant_records'); }
+async function savePlant(list){ return saveStore('plant_records',list); }
+async function loadNewBattery(){ return loadStore('new_battery_records'); }
+async function saveNewBattery(list){ return saveStore('new_battery_records',list); }
+async function loadAdjustments(){ return loadStore('inventory_adjustments'); }
+async function saveAdjustments(list){ return saveStore('inventory_adjustments',list); }
+async function loadWarranty(){ return loadStore('warranty_records'); }
+async function saveWarranty(list){ return saveStore('warranty_records',list); }
+async function loadMovements(){ return loadStore('plant_bulk_movements'); }
+async function saveMovements(list){ return saveStore('plant_bulk_movements',list); }
 
 /* ---------- Utilities ---------- */
 function todayStr(){ return new Date().toISOString().slice(0,10); }
@@ -373,12 +480,14 @@ let STATE = {
   techName: '',
   view: 'main',
   toast: null,
+  bootLoading: true,
 
   omRecords: [],
   plantRecords: [],
   newBatteryRecords: [],
   adjustments: [],
   warrantyRecords: [],
+  plantMovements: [],
 
   intakeDraft: emptyIntakeDraft(''),
   openId: null,
@@ -392,6 +501,12 @@ let STATE = {
   newBatteryDraft: null,
   adjustmentDraft: null,
   warrantyDraft: null,
+
+  movementDraft: emptyMovementDraft(),
+  movementSaving: false,
+  movementError: null,
+  movementIdsEditId: null,
+  movementIdsDraftText: '',
 };
 
 function toast(msg){ STATE.toast = msg; render(); setTimeout(()=>{ STATE.toast=null; render(); }, 2800); }
@@ -399,6 +514,18 @@ function toast(msg){ STATE.toast = msg; render(); setTimeout(()=>{ STATE.toast=n
 const root = document.getElementById('root');
 let pendingCharts = [];
 function render(){
+  // Preserve keyboard focus + cursor position across full re-renders. Without this,
+  // any field whose onChange triggers render() (e.g. to live-update a status chip)
+  // would rebuild the DOM node under the user's cursor and kick focus out on every
+  // keystroke. Fields opt in by passing a stable `key` to textInput/textareaInput,
+  // which stores it as data-fkey.
+  const active = document.activeElement;
+  let focusKey = null, selStart = null, selEnd = null;
+  if(active && root.contains(active) && active.dataset && active.dataset.fkey){
+    focusKey = active.dataset.fkey;
+    if('selectionStart' in active){ try{ selStart = active.selectionStart; selEnd = active.selectionEnd; }catch(e){} }
+  }
+
   pendingCharts = [];
   root.innerHTML='';
   root.appendChild(View());
@@ -407,6 +534,14 @@ function render(){
     catch(e){ console.error('Chart render error', e); }
   });
   pendingCharts = [];
+
+  if(focusKey){
+    const restored = root.querySelector('[data-fkey="'+CSS.escape(focusKey)+'"]');
+    if(restored){
+      restored.focus();
+      if(selStart!=null && restored.setSelectionRange){ try{ restored.setSelectionRange(selStart, selEnd); }catch(e){} }
+    }
+  }
 }
 
 function el(tag, attrs={}, children=[]){
@@ -424,7 +559,7 @@ function el(tag, attrs={}, children=[]){
   return e;
 }
 function field(label, inputEl){
-  const w = el('div');
+  const w = el('div', {class:'field-anim'});
   w.appendChild(el('label',{},label));
   w.appendChild(inputEl);
   return w;
@@ -434,13 +569,18 @@ function textInput(value, onChange, opts={}){
   if(opts.mono) i.className = 'mono';
   if(opts.placeholder) i.setAttribute('placeholder', opts.placeholder);
   if(opts.readonly) i.setAttribute('readonly','true');
+  if(opts.key) i.setAttribute('data-fkey', opts.key);
+  if(opts.step!=null) i.setAttribute('step', opts.step);
   i.addEventListener('input', ()=>onChange(i.value));
   if(value!==undefined) i.value = value;
   return i;
 }
-function textareaInput(value, onChange){
+function textareaInput(value, onChange, opts={}){
   const t = el('textarea',{});
   t.value = value||'';
+  if(opts && opts.key) t.setAttribute('data-fkey', opts.key);
+  if(opts && opts.placeholder) t.setAttribute('placeholder', opts.placeholder);
+  if(opts && opts.mono) t.className = 'mono';
   t.addEventListener('input', ()=>onChange(t.value));
   return t;
 }
@@ -454,10 +594,11 @@ function selectInput(value, options, onChange){
   s.addEventListener('change', ()=>onChange(s.value));
   return s;
 }
-function Toast(){ return el('div',{class:'banner ok'},[STATE.toast]); }
+function spinner(){ return el('span',{class:'spinner', 'aria-hidden':'true'}); }
+function Toast(){ return el('div',{class:'banner ok toast-pop'},[STATE.toast]); }
 
 function ChecklistCard(title, map, items, onSet){
-  const card = el('div',{class:'card'});
+  const card = el('div',{class:'card fade-in'});
   const res = checklistResult(map, items);
   card.appendChild(el('div',{style:'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'},[
     el('h3',{},title),
@@ -479,7 +620,7 @@ function ChecklistCard(title, map, items, onSet){
   return card;
 }
 function IssuesCard(d){
-  const card = el('div',{class:'card'});
+  const card = el('div',{class:'card fade-in'});
   card.appendChild(el('h3',{},'Defect Diagnostics'));
   card.appendChild(el('div',{class:'sub'},'Select all applicable failure modes observed on arrival.'));
   ISSUE_ITEMS.forEach(([key,label])=>{
@@ -496,19 +637,24 @@ function IssuesCard(d){
   }
   return card;
 }
-function TestsCard(d){
-  const card = el('div',{class:'card'});
+function TestsCard(d, keyPrefix){
+  const kp = keyPrefix || 'tests';
+  const card = el('div',{class:'card fade-in'});
   const res = testsResult(d);
   card.appendChild(el('div',{style:'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'},[
     el('h3',{},'Verification Tests'),
-    el('span',{class:'status-chip '+res}, res)
+    el('span',{class:'status-chip '+res+' chip-anim'}, res)
   ]));
   const grid = el('div',{class:'grid narrow'});
-  grid.appendChild(field('Pack Voltage (V)', textInput(d.tests.packVoltage, v=>d.tests.packVoltage=v, {type:'number', mono:true})));
-  grid.appendChild(field('Min Cell (V)', textInput(d.tests.minCell, v=>d.tests.minCell=v, {type:'number', mono:true})));
-  grid.appendChild(field('Max Cell (V)', textInput(d.tests.maxCell, v=>d.tests.maxCell=v, {type:'number', mono:true})));
-  grid.appendChild(field('IR Measured (MΩ)', textInput(d.tests.irMeasured, v=>{d.tests.irMeasured=v; render();}, {type:'number', mono:true})));
-  grid.appendChild(field('IR Threshold (MΩ)', textInput(d.tests.irThreshold, v=>{d.tests.irThreshold=v; render();}, {type:'number', mono:true})));
+  grid.appendChild(field('Pack Voltage (V)', textInput(d.tests.packVoltage, v=>d.tests.packVoltage=v, {type:'number', mono:true, key:kp+'-pv'})));
+  grid.appendChild(field('Min Cell (V)', textInput(d.tests.minCell, v=>d.tests.minCell=v, {type:'number', mono:true, key:kp+'-minc'})));
+  grid.appendChild(field('Max Cell (V)', textInput(d.tests.maxCell, v=>d.tests.maxCell=v, {type:'number', mono:true, key:kp+'-maxc'})));
+  // IR fields drive the live PASS/FAIL/INCOMPLETE chip above, so they trigger a
+  // render() on every keystroke. The `key` lets render() find this exact input again
+  // after the rebuild and restore focus + cursor position, so typing feels normal
+  // instead of losing focus after every character.
+  grid.appendChild(field('IR Measured (MΩ)', textInput(d.tests.irMeasured, v=>{d.tests.irMeasured=v; render();}, {type:'number', step:'any', mono:true, key:kp+'-irm'})));
+  grid.appendChild(field('IR Threshold (MΩ)', textInput(d.tests.irThreshold, v=>{d.tests.irThreshold=v; render();}, {type:'number', step:'any', mono:true, key:kp+'-irt'})));
   card.appendChild(grid);
   card.appendChild(el('div',{style:'margin-top:8px;'}));
   TEST_BOOLS.forEach(([key,label])=>{
@@ -523,7 +669,7 @@ function TestsCard(d){
   return card;
 }
 function statBox(num, label){
-  const s = el('div',{class:'stat'});
+  const s = el('div',{class:'stat stat-anim'});
   s.appendChild(el('div',{class:'n'}, String(num)));
   s.appendChild(el('div',{class:'l'}, label));
   return s;
@@ -531,86 +677,60 @@ function statBox(num, label){
 
 /* ---------- Login ---------- */
 function LoginView(){
-  const gate = el('div',{class:'gate'});
+  const gate = el('div',{class:'gate fade-in'});
   gate.appendChild(el('h2',{},'Battery QC'));
-  gate.appendChild(el('p',{},'Select your role to sign in.'));
-
-  let mode = 'omtech';
-  const modeSel = el('select',{style:'margin-bottom:12px;'});
-  [['omtech','O&M Technician (chain inspection)'],
-   ['omadmin','O&M Admin'],
-   ['plant','Plant Admin'],
-   ['inventory','Inventory Manager'],
-   ['quality','Quality Engineer']].forEach(([v,l])=>{ modeSel.appendChild(el('option',{value:v},l)); });
+  gate.appendChild(el('p',{},'Sign in to the secure Battery QC server.'));
+  let mode='omtech';
+  const modeSel=el('select',{style:'margin-bottom:12px;'});
+  [['omtech','O&M Technician (chain inspection)'],['omadmin','O&M Admin'],['plant','Plant Admin'],['inventory','Inventory Manager'],['quality','Quality Engineer']].forEach(([v,l])=>modeSel.appendChild(el('option',{value:v},l)));
   gate.appendChild(modeSel);
-
-  const body = el('div');
-  gate.appendChild(body);
-
+  const body=el('div'); gate.appendChild(body);
   function renderBody(){
     body.innerHTML='';
     if(mode==='omtech'){
       body.appendChild(el('label',{},'Your Name'));
-      const nameInp = el('input',{placeholder:'Name'});
-      body.appendChild(nameInp);
+      const nameInp=el('input',{placeholder:'Name'}); body.appendChild(nameInp);
       body.appendChild(el('label',{},'Stage PIN'));
-      const pinInp = el('input',{type:'password',placeholder:'••••'});
-      body.appendChild(pinInp);
-      body.appendChild(el('div',{class:'pin-hint'},'Your PIN determines which stage of the chain you work: intake, repair, or final QC.'));
-      const errBox = el('div',{class:'err'});
-      body.appendChild(errBox);
-      const go = el('button',{class:'btn-primary btn-block',style:'margin-top:12px;'},'Sign In');
-      go.addEventListener('click', async ()=>{
-        const stage = STAGE_PINS[pinInp.value];
-        if(!nameInp.value.trim()){ errBox.textContent='Enter your name.'; return; }
-        if(!stage){ errBox.textContent='Invalid stage PIN.'; return; }
-        STATE.techName = nameInp.value.trim();
-        STATE.role='omtech'; STATE.stage=stage; STATE.view='main';
-        STATE.omRecords = await loadOm();
-        STATE.intakeDraft = emptyIntakeDraft(STATE.techName);
-        render();
-      });
-      body.appendChild(go);
-    } else {
-      body.appendChild(el('label',{}, SECTOR_LABEL[mode]+' PIN'));
-      const inp = el('input',{type:'password',placeholder:'••••'});
-      body.appendChild(inp);
-      const errBox = el('div',{class:'err'});
-      body.appendChild(errBox);
-      const go = el('button',{class:'btn-primary btn-block',style:'margin-top:12px;'},'Authenticate');
-      go.addEventListener('click', async ()=>{
-        if(inp.value !== SECTOR_PINS[mode]){ errBox.textContent='Invalid PIN.'; return; }
-        STATE.role = mode; STATE.view='main';
-        if(mode==='omadmin'){ STATE.omRecords = await loadOm(); STATE.view='dashboard'; }
-        else if(mode==='plant'){ STATE.plantRecords = await loadPlant(); STATE.plantDraft = emptyPlantDraft(); STATE.view='entry'; }
-        else if(mode==='inventory'){
-          STATE.newBatteryRecords = await loadNewBattery();
-          STATE.adjustments = await loadAdjustments();
-          STATE.newBatteryDraft = emptyNewBatteryDraft();
-          STATE.adjustmentDraft = emptyAdjustmentDraft();
-          STATE.view='intake';
-        } else if(mode==='quality'){
-          STATE.warrantyRecords = await loadWarranty();
-          STATE.warrantyDraft = emptyWarrantyDraft();
-          STATE.omRecords = await loadOm();
-          STATE.plantRecords = await loadPlant();
-          STATE.newBatteryRecords = await loadNewBattery();
-          STATE.adjustments = await loadAdjustments();
-          STATE.view='warranty';
-        }
-        render();
-      });
-      body.appendChild(go);
+      const pinInp=el('input',{type:'password',placeholder:'••••'}); body.appendChild(pinInp);
+      body.appendChild(el('div',{class:'pin-hint'},'Stage PIN is validated by the server.'));
+      const errBox=el('div',{class:'err'}); body.appendChild(errBox);
+      const go=el('button',{class:'btn-primary btn-block',style:'margin-top:12px;'},'Sign In');
+      go.addEventListener('click',async()=>{
+        errBox.textContent='';
+        if(!nameInp.value.trim()){errBox.textContent='Enter your name.';return;}
+        go.disabled = true; go.textContent=''; go.appendChild(spinner()); go.appendChild(document.createTextNode(' Signing in…'));
+        try{
+          const auth=await apiFetch('/api/auth/login',{method:'POST',body:JSON.stringify({mode,name:nameInp.value.trim(),pin:pinInp.value})});
+          STATE.techName=auth.user.name||nameInp.value.trim(); STATE.role='omtech'; STATE.stage=auth.user.stage; STATE.view='main';
+          STATE.omRecords=await loadOm(); STATE.intakeDraft=emptyIntakeDraft(STATE.techName); render();
+        }catch(e){errBox.textContent=e.message; go.disabled=false; go.textContent='Sign In';}
+      }); body.appendChild(go);
+    }else{
+      body.appendChild(el('label',{},SECTOR_LABEL[mode]+' PIN'));
+      const inp=el('input',{type:'password',placeholder:'••••'}); body.appendChild(inp);
+      const errBox=el('div',{class:'err'}); body.appendChild(errBox);
+      const go=el('button',{class:'btn-primary btn-block',style:'margin-top:12px;'},'Authenticate');
+      go.addEventListener('click',async()=>{
+        errBox.textContent='';
+        go.disabled = true; go.textContent=''; go.appendChild(spinner()); go.appendChild(document.createTextNode(' Authenticating…'));
+        try{
+          const auth=await apiFetch('/api/auth/login',{method:'POST',body:JSON.stringify({mode,pin:inp.value})});
+          STATE.role=mode; STATE.view='main';
+          if(mode==='omadmin'){STATE.omRecords=await loadOm();STATE.view='dashboard';}
+          else if(mode==='plant'){STATE.plantRecords=await loadPlant();STATE.plantMovements=await loadMovements();STATE.plantDraft=emptyPlantDraft();STATE.movementDraft=emptyMovementDraft();STATE.view='entry';}
+          else if(mode==='inventory'){STATE.newBatteryRecords=await loadNewBattery();STATE.adjustments=await loadAdjustments();STATE.newBatteryDraft=emptyNewBatteryDraft();STATE.adjustmentDraft=emptyAdjustmentDraft();STATE.view='intake';}
+          else if(mode==='quality'){STATE.warrantyRecords=await loadWarranty();STATE.warrantyDraft=emptyWarrantyDraft();STATE.omRecords=await loadOm();STATE.plantRecords=await loadPlant();STATE.newBatteryRecords=await loadNewBattery();STATE.adjustments=await loadAdjustments();STATE.plantMovements=await loadMovements();STATE.view='warranty';}
+          render();
+        }catch(e){errBox.textContent=e.message; go.disabled=false; go.textContent='Authenticate';}
+      }); body.appendChild(go);
     }
   }
-  modeSel.addEventListener('change', ()=>{ mode=modeSel.value; renderBody(); });
-  renderBody();
-  return gate;
+  modeSel.addEventListener('change',()=>{mode=modeSel.value;renderBody();}); renderBody(); return gate;
 }
 
 /* ---------- Header / Nav ---------- */
 function Header(){
-  const head = el('div',{class:'header'});
+  const head = el('div',{class:'header fade-in'});
   const brand = el('div',{class:'brand'},[
     el('h1',{},'Battery QC'),
     el('p',{}, STATE.role==='omtech' ? STAGE_LABEL[STATE.stage] : (SECTOR_LABEL[STATE.role]||''))
@@ -620,6 +740,7 @@ function Header(){
     el('span',{class:'badge'}, roleTag),
     el('span',{}, STATE.role==='omtech' ? STATE.techName : SECTOR_LABEL[STATE.role]),
     el('button',{class:'btn-sm', onClick:()=>{
+      apiFetch('/api/auth/logout',{method:'POST'}).catch(()=>{});
       STATE.role=null; STATE.stage=null; STATE.view='main'; STATE.openId=null; STATE.serialWarning=null;
       render();
     }},'Sign Out')
@@ -648,6 +769,7 @@ function Nav(items, labels){
 
 /* ---------- Top level router ---------- */
 function View(){
+  if(STATE.bootLoading) return BootLoadingView();
   if(!STATE.role) return LoginView();
   const wrap = el('div',{class:'app'});
   wrap.appendChild(Header());
@@ -660,19 +782,30 @@ function View(){
     wrap.appendChild(Nav(['dashboard','history'], {dashboard:'Dashboard', history:'Full Chain History'}));
     wrap.appendChild(STATE.view==='history' ? OmHistoryView() : OmDashboardView());
   } else if(STATE.role==='plant'){
-    wrap.appendChild(Nav(['entry','history'], {entry:'Daily Log Entry', history:'Plant Log History'}));
-    wrap.appendChild(STATE.view==='history' ? PlantHistoryView() : PlantEntryView());
+    wrap.appendChild(Nav(['entry','movements','daily','history'], {entry:'Daily Log Entry', movements:'Battery Movements', daily:'Daily Stock Report', history:'Plant Log History'}));
+    if(STATE.view==='movements') wrap.appendChild(PlantMovementsView());
+    else if(STATE.view==='daily') wrap.appendChild(DailyStockReportView(true));
+    else if(STATE.view==='history') wrap.appendChild(PlantHistoryView());
+    else wrap.appendChild(PlantEntryView());
   } else if(STATE.role==='inventory'){
     wrap.appendChild(Nav(['intake','adjust','stock'], {intake:'New Battery Intake', adjust:'Stock Movement', stock:'Stock Summary'}));
     if(STATE.view==='adjust') wrap.appendChild(AdjustmentView());
     else if(STATE.view==='stock') wrap.appendChild(StockView());
     else wrap.appendChild(NewBatteryView());
   } else if(STATE.role==='quality'){
-    wrap.appendChild(Nav(['warranty','overview','analytics'], {warranty:'Warranty & Escalations', overview:'Sector Overview', analytics:'Analytics & Reports'}));
+    wrap.appendChild(Nav(['warranty','overview','plantstock','analytics'], {warranty:'Warranty & Escalations', overview:'Sector Overview', plantstock:'Plant Stock', analytics:'Analytics & Reports'}));
     if(STATE.view==='overview') wrap.appendChild(QualityOverviewView());
+    else if(STATE.view==='plantstock') wrap.appendChild(DailyStockReportView(false));
     else if(STATE.view==='analytics') wrap.appendChild(QualityAnalyticsView());
     else wrap.appendChild(WarrantyView());
   }
+  return wrap;
+}
+
+function BootLoadingView(){
+  const wrap = el('div',{class:'boot-loading fade-in'});
+  wrap.appendChild(spinner());
+  wrap.appendChild(el('div',{class:'boot-loading-text'},'Loading Battery QC…'));
   return wrap;
 }
 
@@ -709,7 +842,7 @@ function OmTechDocketView(){
 
 function NewIntakeCard(){
   const d = STATE.intakeDraft;
-  const card = el('div',{class:'card'});
+  const card = el('div',{class:'card fade-in'});
   card.appendChild(el('h3',{},'Receive Battery — New Intake'));
   card.appendChild(el('div',{class:'sub'},'Log a battery arriving at Stage 1. Once sent, it moves to the Stage 2 repair docket.'));
 
@@ -763,7 +896,7 @@ function NewIntakeCard(){
   card.appendChild(IssuesCard(d));
 
   const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;align-items:center;'});
-  if(STATE.intakeSaving) actions.appendChild(el('span',{class:'sync-line'},'Saving…'));
+  if(STATE.intakeSaving) actions.appendChild(el('span',{class:'sync-line'},[spinner(), ' Saving…']));
   const clearBtn = el('button',{disabled: STATE.intakeSaving},'Reset');
   clearBtn.addEventListener('click', ()=>{ STATE.intakeDraft = emptyIntakeDraft(STATE.techName); STATE.serialWarning=null; STATE.intakeError=null; render(); });
   const sendBtn = el('button',{class:'btn-primary', disabled: STATE.intakeSaving}, STATE.intakeSaving ? 'Sending…' : 'Send to Stage 2 Docket');
@@ -809,7 +942,7 @@ function container_warn(card){
 function DocketListCard(){
   const stage = STATE.stage;
   const queue = stageQueue(STATE.omRecords, stage);
-  const card = el('div',{class:'card'});
+  const card = el('div',{class:'card fade-in'});
   const titleRow = el('div',{style:'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;'});
   titleRow.appendChild(el('h3',{}, `Stage ${stage} Docket`));
   const refreshWrap = el('div',{style:'display:flex;align-items:center;gap:8px;'});
@@ -818,6 +951,7 @@ function DocketListCard(){
   refreshWrap.appendChild(syncLine);
   const refreshBtn = el('button',{class:'btn-sm'},'🔄 Refresh Docket');
   refreshBtn.addEventListener('click', async ()=>{
+    refreshBtn.disabled = true; refreshBtn.classList.add('spin-icon');
     const fresh = await loadOm();
     STATE.omRecords = fresh;
     STATE.omLastRefreshed = nowTime();
@@ -857,7 +991,7 @@ function DocketListCard(){
 
 function Stage1EditCard(rec){
   const s1 = rec.stage1;
-  const card = el('div',{class:'card'});
+  const card = el('div',{class:'card fade-in'});
   card.appendChild(el('h3',{}, `Re-Inspection — ${rec.bmsId}`));
   card.appendChild(el('div',{class:'sub'},'Corrective action: re-check the pack and update diagnostics before resending to Stage 2.'));
 
@@ -907,7 +1041,7 @@ function Stage1EditCard(rec){
 
 function Stage2Card(rec){
   const s2 = rec.stage2;
-  const card = el('div',{class:'card'});
+  const card = el('div',{class:'card fade-in'});
   card.appendChild(el('h3',{}, `Repair Execution — ${rec.bmsId}`));
   card.appendChild(el('div',{class:'sub'}, `${rec.model||'Unknown'} · visit #${rec.visitNumber} · received ${rec.dateReceived}`));
 
@@ -964,11 +1098,11 @@ function Stage2Card(rec){
 
 function Stage3Card(rec){
   const s3 = rec.stage3;
-  const card = el('div',{class:'card'});
+  const card = el('div',{class:'card fade-in'});
   card.appendChild(el('h3',{}, `Final Test & QC — ${rec.bmsId}`));
   card.appendChild(el('div',{class:'sub'}, `${rec.model||'Unknown'} · visit #${rec.visitNumber} · repaired by ${rec.stage2.technician||'—'}`));
 
-  card.appendChild(TestsCard(s3));
+  card.appendChild(TestsCard(s3, rec.id));
 
   const disp = el('div',{class:'card'});
   disp.style.padding='0'; disp.style.border='none'; disp.style.background='transparent'; disp.style.marginBottom='0';
@@ -1039,7 +1173,7 @@ function OmTechClosedView(){
   const stage = STATE.stage;
   const key = `stage${stage}`;
   const list = STATE.omRecords.filter(r => r[key].technician===STATE.techName).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
-  const card = el('div',{class:'card'});
+  const card = el('div',{class:'card fade-in'});
   card.appendChild(el('h3',{},'Work Completed By Me'));
   card.appendChild(el('div',{class:'sub'}, `Records where you completed the Stage ${stage} step. Total: ${list.length}`));
   if(list.length===0){ card.appendChild(el('div',{class:'empty-note'},'No records yet.')); return card; }
@@ -1093,7 +1227,7 @@ function OmDashboardView(){
 }
 
 function OmHistoryView(){
-  const card = el('div',{class:'card'});
+  const card = el('div',{class:'card fade-in'});
   card.appendChild(el('h3',{},'Full Chain History'));
   card.appendChild(el('div',{class:'sub'}, `Total records: ${STATE.omRecords.length}`));
   if(STATE.omRecords.length===0){ card.appendChild(el('div',{class:'empty-note'},'No service entries found.')); return card; }
@@ -1136,7 +1270,7 @@ function PlantEntryView(){
   const d = STATE.plantDraft;
   const container = el('div');
   container.appendChild(el('div',{class:'sector-tag'},'Plant Sector — stored separately from O&M and Inventory'));
-  const card = el('div',{class:'card'});
+  const card = el('div',{class:'card fade-in'});
   card.appendChild(el('h3',{},'Daily Plant Log'));
   card.appendChild(el('div',{class:'sub'},'One entry per day summarizing plant-side battery activity.'));
 
@@ -1173,7 +1307,7 @@ function PlantEntryView(){
 function PlantHistoryView(){
   const container = el('div');
   container.appendChild(el('div',{class:'sector-tag'},'Plant Sector'));
-  const card = el('div',{class:'card'});
+  const card = el('div',{class:'card fade-in'});
   card.appendChild(el('h3',{},'Plant Log History'));
   card.appendChild(el('div',{class:'sub'}, `Total entries: ${STATE.plantRecords.length}`));
   if(STATE.plantRecords.length===0){ card.appendChild(el('div',{class:'empty-note'},'No plant log entries yet.')); container.appendChild(card); return container; }
@@ -1201,6 +1335,190 @@ function PlantHistoryView(){
   return container;
 }
 
+/* ==================== PLANT — bulk battery movements (received / dispatched by OEM ID) ==================== */
+
+function PlantMovementsView(){
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Plant Sector — visible to Quality Engineer'));
+  container.appendChild(MovementFormCard());
+  container.appendChild(MovementListCard());
+  return container;
+}
+
+function MovementFormCard(){
+  const d = STATE.movementDraft;
+  const card = el('div',{class:'card fade-in'});
+  card.appendChild(el('h3',{},'Log Battery Movement'));
+  card.appendChild(el('div',{class:'sub'},'Record batteries received or dispatched for a date and platform, in bulk. Enter the quantity now — you can paste in the OEM / BMS ID numbers immediately or add them later, but once entered their count must match the quantity.'));
+
+  if(STATE.movementError){
+    card.appendChild(el('div',{class:'banner err'}, '⚠ '+STATE.movementError));
+  }
+
+  const g = el('div',{class:'grid'});
+  g.appendChild(field('Date', textInput(d.date, v=>d.date=v, {type:'date'})));
+  g.appendChild(field('Platform', selectInput(d.platform, PLATFORMS.map(p=>[p,p]), v=>d.platform=v)));
+
+  const dirSeg = el('div',{class:'seg dir-seg'});
+  MOVEMENT_DIRECTIONS.forEach(([v,l])=>{
+    const b = el('button',{class: d.direction===v ? ('sel-'+(v==='RECEIVED'?'pass':'fail')) : ''}, l);
+    b.addEventListener('click', ()=>{ d.direction=v; render(); });
+    dirSeg.appendChild(b);
+  });
+  g.appendChild(field('Direction', dirSeg));
+  g.appendChild(field('Quantity', textInput(d.quantity, v=>d.quantity=v, {type:'number', mono:true, key:'mv-qty'})));
+  g.appendChild(field('Logged By', textInput(d.loggedBy, v=>d.loggedBy=v)));
+  g.appendChild(field('Reference / Batch', textInput(d.reference, v=>d.reference=v, {placeholder:'e.g. new batch 17th August'})));
+  card.appendChild(g);
+
+  const idsCount = parseIdsText(d.idsText).length;
+  const qtyNum = parseInt(d.quantity)||0;
+  const idsLabel = qtyNum>0
+    ? `OEM / BMS ID Numbers (optional now — ${idsCount}/${qtyNum} entered)`
+    : 'OEM / BMS ID Numbers (optional — paste one per line or comma-separated)';
+  card.appendChild(field(idsLabel, textareaInput(d.idsText, v=>{d.idsText=v; render();}, {key:'mv-ids', mono:true, placeholder:'Paste OEM / BMS IDs here, one per line — or leave blank and add them later'})));
+  if(qtyNum>0 && idsCount>0 && idsCount!==qtyNum){
+    card.appendChild(el('div',{class:'banner'}, `You've pasted ${idsCount} ID${idsCount===1?'':'s'} but the quantity is ${qtyNum}. Adjust one of them, or clear the IDs and add them later.`));
+  }
+
+  const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;align-items:center;'});
+  if(STATE.movementSaving) actions.appendChild(el('span',{class:'sync-line'},[spinner(), ' Saving…']));
+  const clearBtn = el('button',{disabled: STATE.movementSaving},'Reset');
+  clearBtn.addEventListener('click', ()=>{ STATE.movementDraft = emptyMovementDraft(); STATE.movementError=null; render(); });
+  const saveBtn = el('button',{class:'btn-primary', disabled: STATE.movementSaving}, STATE.movementSaving ? 'Saving…' : 'Log Movement');
+  saveBtn.addEventListener('click', async ()=>{
+    if(STATE.movementSaving) return;
+    STATE.movementError = null;
+    const qty = parseInt(d.quantity)||0;
+    const ids = parseIdsText(d.idsText);
+    if(!d.date || qty<=0){ STATE.movementError = 'Date and a quantity greater than zero are required.'; render(); return; }
+    if(ids.length>0 && ids.length!==qty){ STATE.movementError = `You entered ${ids.length} OEM ID(s) but the quantity is ${qty}. They must match — or clear the ID list and add them later.`; render(); return; }
+    const rec = newMovementRecord(d, STATE.techName);
+    const fresh = await loadMovements();
+    const updated = [...fresh, rec];
+    STATE.movementSaving = true; render();
+    const ok = await saveMovements(updated);
+    STATE.movementSaving = false;
+    if(!ok){
+      STATE.movementError = 'Could not save to the shared record — check your connection and tap Log Movement again.';
+      render();
+      return;
+    }
+    STATE.plantMovements = updated;
+    STATE.movementDraft = emptyMovementDraft();
+    toast(`✓ Logged ${qty} ${rec.platform} unit(s) ${rec.direction==='RECEIVED'?'received':'dispatched'} for ${rec.date}.`);
+  });
+  actions.appendChild(clearBtn); actions.appendChild(saveBtn);
+  card.appendChild(actions);
+  return card;
+}
+
+function MovementListCard(){
+  const card = el('div',{class:'card fade-in'});
+  card.appendChild(el('h3',{},'Recent Movements'));
+  card.appendChild(el('div',{class:'sub'},'Tap "Add / Edit IDs" on any row to fill in OEM IDs that were skipped at entry time.'));
+  const list = [...STATE.plantMovements].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,60);
+  if(list.length===0){ card.appendChild(el('div',{class:'empty-note'},'No movements logged yet.')); return card; }
+
+  list.forEach(m=>{
+    const status = movementIdStatus(m);
+    const row = el('div',{class:'docket-item'});
+    const dirColor = m.direction==='RECEIVED' ? 'PASS' : 'FAIL';
+    const left = el('div',{},[
+      el('div',{style:'font-weight:700;display:flex;align-items:center;gap:6px;'},[
+        el('span',{class:'status-chip '+dirColor}, m.direction==='RECEIVED'?'IN':'OUT'),
+        `${m.platform} · ${m.quantity} unit(s)`
+      ]),
+      el('div',{class:'meta'}, `${m.date}${m.reference?(' · '+m.reference):''}${m.loggedBy?(' · logged by '+m.loggedBy):''}`)
+    ]);
+    const right = el('div',{style:'display:flex;align-items:center;gap:8px;'});
+    right.appendChild(el('span',{class:'status-chip '+(status.ok?'PASS':'PENDING')}, status.label));
+    const editBtn = el('button',{class:'btn-sm'}, STATE.movementIdsEditId===m.id ? 'Close' : 'Add / Edit IDs');
+    editBtn.addEventListener('click', ()=>{
+      if(STATE.movementIdsEditId===m.id){ STATE.movementIdsEditId=null; }
+      else { STATE.movementIdsEditId=m.id; STATE.movementIdsDraftText = (m.ids||[]).join('\n'); }
+      render();
+    });
+    right.appendChild(editBtn);
+    row.appendChild(left); row.appendChild(right);
+    card.appendChild(row);
+
+    if(STATE.movementIdsEditId===m.id){
+      const editWrap = el('div',{style:'padding:8px 0 12px;'});
+      editWrap.appendChild(field(`OEM / BMS IDs (need ${m.quantity})`, textareaInput(STATE.movementIdsDraftText, v=>STATE.movementIdsDraftText=v, {key:'mv-ids-edit-'+m.id, mono:true})));
+      const saveIdsBtn = el('button',{class:'btn-primary btn-sm'},'Save IDs');
+      saveIdsBtn.addEventListener('click', async ()=>{
+        const ids = parseIdsText(STATE.movementIdsDraftText);
+        if(ids.length!==m.quantity){ toast(`⚠ ${ids.length} ID(s) entered but quantity is ${m.quantity} — they must match.`); return; }
+        const fresh = await loadMovements();
+        const idx = fresh.findIndex(x=>x.id===m.id);
+        if(idx===-1){ toast('⚠ This movement no longer exists in the shared record.'); STATE.plantMovements = fresh; STATE.movementIdsEditId=null; render(); return; }
+        fresh[idx] = { ...fresh[idx], ids };
+        const ok = await saveMovements(fresh);
+        if(!ok){ toast('⚠ Could not save — check your connection and try again.'); return; }
+        STATE.plantMovements = fresh;
+        STATE.movementIdsEditId = null;
+        toast('✓ OEM IDs saved.');
+      });
+      editWrap.appendChild(saveIdsBtn);
+      card.appendChild(editWrap);
+    }
+  });
+  return card;
+}
+
+/* ==================== Daily Stock Report — computed from bulk movements ====================
+   Shared, read-only-safe view: Plant sees it with the reminder it's driven by the
+   Battery Movements log; Quality Engineer sees the same computed table for oversight. */
+function DailyStockReportView(showEntryHint){
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'}, showEntryHint ? 'Plant Sector — computed from Battery Movements' : 'Quality Sector — read view of Plant\'s computed daily stock'));
+  const rows = computeDailyStockTable(STATE.plantMovements);
+  const card = el('div',{class:'card fade-in'});
+  card.appendChild(el('h3',{},'Daily Stock Report'));
+  card.appendChild(el('div',{class:'sub'}, showEntryHint
+    ? 'Opening / Inwards / Outwards / Closing per platform, computed automatically from the Battery Movements log.'
+    : 'Automatically computed from Plant\'s Battery Movements log — for oversight only.'));
+
+  if(rows.length===0){
+    card.appendChild(el('div',{class:'empty-note'}, showEntryHint ? 'No movements logged yet — log one under Battery Movements.' : 'Plant has not logged any battery movements yet.'));
+    return card;
+  }
+
+  [...rows].reverse().forEach(row=>{
+    const dayCard = el('div',{class:'sop-box fade-in'});
+    dayCard.appendChild(el('div',{style:'font-weight:700;margin-bottom:6px;'}, row.date));
+    const wrap = el('div',{class:'table-wrap'});
+    const tbl = el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[
+      el('th',{},'Platform'), el('th',{},'Opening'), el('th',{},'Inwards'), el('th',{},'Outwards'), el('th',{},'Closing')
+    ])]));
+    const tbody = el('tbody');
+    PLATFORMS.forEach(p=>{
+      const s = row.platforms[p];
+      tbody.appendChild(el('tr',{},[
+        el('td',{}, p),
+        el('td',{class:'mono'}, s.opening),
+        el('td',{class:'mono'}, s.inwards>0 ? ('+'+s.inwards) : s.inwards),
+        el('td',{class:'mono'}, s.outwards>0 ? ('-'+s.outwards) : s.outwards),
+        el('td',{class:'mono', style:'font-weight:700;'}, s.closing),
+      ]));
+    });
+    tbody.appendChild(el('tr',{style:'font-weight:700;'},[
+      el('td',{}, 'Total'),
+      el('td',{class:'mono'}, row.totals.opening),
+      el('td',{class:'mono'}, row.totals.inwards>0?('+'+row.totals.inwards):row.totals.inwards),
+      el('td',{class:'mono'}, row.totals.outwards>0?('-'+row.totals.outwards):row.totals.outwards),
+      el('td',{class:'mono'}, row.totals.closing),
+    ]));
+    tbl.appendChild(tbody);
+    wrap.appendChild(tbl);
+    dayCard.appendChild(wrap);
+    card.appendChild(dayCard);
+  });
+  return card;
+}
+
 /* ==================== INVENTORY MANAGER — separate sector store ==================== */
 
 function emptyNewBatteryDraft(){
@@ -1214,7 +1532,7 @@ function NewBatteryView(){
   const d = STATE.newBatteryDraft;
   const container = el('div');
   container.appendChild(el('div',{class:'sector-tag'},'Inventory Sector — stored separately from O&M and Plant'));
-  const card = el('div',{class:'card'});
+  const card = el('div',{class:'card fade-in'});
   card.appendChild(el('h3',{},'New Battery Intake'));
   card.appendChild(el('div',{class:'sub'},'Log freshly received stock into the warehouse.'));
 
@@ -1244,7 +1562,7 @@ function NewBatteryView(){
   card.appendChild(actions);
   container.appendChild(card);
 
-  const listCard = el('div',{class:'card'});
+  const listCard = el('div',{class:'card fade-in'});
   listCard.appendChild(el('h3',{},'Recent Intakes'));
   if(STATE.newBatteryRecords.length===0){
     listCard.appendChild(el('div',{class:'empty-note'},'No intake entries yet.'));
@@ -1269,7 +1587,7 @@ function AdjustmentView(){
   const d = STATE.adjustmentDraft;
   const container = el('div');
   container.appendChild(el('div',{class:'sector-tag'},'Inventory Sector'));
-  const card = el('div',{class:'card'});
+  const card = el('div',{class:'card fade-in'});
   card.appendChild(el('h3',{},'Stock Movement'));
   card.appendChild(el('div',{class:'sub'},'Record stock leaving or being corrected against the warehouse baseline.'));
 
@@ -1299,7 +1617,7 @@ function AdjustmentView(){
   card.appendChild(actions);
   container.appendChild(card);
 
-  const listCard = el('div',{class:'card'});
+  const listCard = el('div',{class:'card fade-in'});
   listCard.appendChild(el('h3',{},'Recent Movements'));
   if(STATE.adjustments.length===0){
     listCard.appendChild(el('div',{class:'empty-note'},'No movements yet.'));
@@ -1335,7 +1653,7 @@ function StockView(){
   const container = el('div');
   container.appendChild(el('div',{class:'sector-tag'},'Inventory Sector'));
   const stock = stockByPlatform();
-  const card = el('div',{class:'card'});
+  const card = el('div',{class:'card fade-in'});
   card.appendChild(el('h3',{},'Current Stock by Platform'));
   card.appendChild(el('div',{class:'sub'},'Computed from all intake and movement records logged in this sector.'));
   const stats = el('div',{class:'stat-grid'});
@@ -1356,7 +1674,7 @@ function WarrantyView(){
   const container = el('div');
   container.appendChild(el('div',{class:'sector-tag'},'Quality Sector — warranty store, kept separate from other sectors'));
   const d = STATE.warrantyDraft;
-  const form = el('div',{class:'card'});
+  const form = el('div',{class:'card fade-in'});
   form.appendChild(el('h3',{},'Escalate Pack to Warranty'));
 
   const g = el('div',{class:'grid'});
@@ -1388,7 +1706,7 @@ function WarrantyView(){
   form.appendChild(addBtn);
   container.appendChild(form);
 
-  const listCard = el('div',{class:'card'});
+  const listCard = el('div',{class:'card fade-in'});
   listCard.appendChild(el('h3',{},'Active Warranty Escalations'));
   if(STATE.warrantyRecords.length===0){
     listCard.appendChild(el('div',{class:'empty-note'},'No active warranty escalations.'));
@@ -1432,7 +1750,7 @@ function QualityOverviewView(){
   const container = el('div');
   container.appendChild(el('div',{class:'sector-tag'},'Read-only summary — each sector\'s data still lives in its own store'));
 
-  const omCard = el('div',{class:'card'});
+  const omCard = el('div',{class:'card fade-in'});
   omCard.appendChild(el('h3',{},'O&M Chain'));
   const recs = STATE.omRecords;
   const stats1 = el('div',{class:'stat-grid'});
@@ -1443,7 +1761,7 @@ function QualityOverviewView(){
   omCard.appendChild(stats1);
   container.appendChild(omCard);
 
-  const plantCard = el('div',{class:'card'});
+  const plantCard = el('div',{class:'card fade-in'});
   plantCard.appendChild(el('h3',{},'Plant — Latest Log'));
   const lastPlant = STATE.plantRecords[STATE.plantRecords.length-1];
   if(lastPlant){
@@ -1458,7 +1776,18 @@ function QualityOverviewView(){
   }
   container.appendChild(plantCard);
 
-  const invCard = el('div',{class:'card'});
+  const movCard = el('div',{class:'card fade-in'});
+  movCard.appendChild(el('h3',{},'Plant — Latest Battery Movement'));
+  const lastMove = [...STATE.plantMovements].sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
+  if(lastMove){
+    const status = movementIdStatus(lastMove);
+    movCard.appendChild(el('div',{class:'sub'}, `${lastMove.date} · ${lastMove.direction==='RECEIVED'?'Received':'Dispatched'} ${lastMove.quantity} ${lastMove.platform} · ${status.label}`));
+  } else {
+    movCard.appendChild(el('div',{class:'empty-note'},'No battery movements logged yet.'));
+  }
+  container.appendChild(movCard);
+
+  const invCard = el('div',{class:'card fade-in'});
   invCard.appendChild(el('h3',{},'Inventory — Current Stock'));
   const stock = stockByPlatform();
   const stats3 = el('div',{class:'stat-grid'});
@@ -1516,7 +1845,7 @@ function baseLineConfig(labels, datasets, opts={}){
   return { type:'line', data:{ labels, datasets: datasets.map(d=>({ label:d.label, data:d.data, borderColor:d.color, backgroundColor:d.color, tension:0.3, fill:false, pointRadius:3 })) }, options: chartBaseOptions({...opts, legend: datasets.length>1}) };
 }
 function chartCard(title, config){
-  const card = el('div',{class:'chart-card'});
+  const card = el('div',{class:'chart-card fade-in'});
   card.appendChild(el('h3',{},title));
   const wrap = el('div',{class:'chart-wrap'});
   const canvas = el('canvas');
@@ -1603,11 +1932,11 @@ function QualityAnalyticsView(){
 
   const fpy = fpyStats();
 
-  const headerCard = el('div',{class:'card'});
+  const headerCard = el('div',{class:'card fade-in'});
   const headerTop = el('div',{style:'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;'});
   headerTop.appendChild(el('h3',{},'First Pass Yield (FPY) & Inventory Analytics'));
   const exportBtn = el('button',{class:'btn-primary'},'⬇ Download Full Excel Report');
-  exportBtn.addEventListener('click', ()=>{ exportAllDataToExcel(); });
+  exportBtn.addEventListener('click', ()=>{ exportAllDataToExcel(exportBtn); });
   headerTop.appendChild(exportBtn);
   headerCard.appendChild(headerTop);
   headerCard.appendChild(el('div',{class:'sub'},'FPY = packs that passed final QC on the first attempt (zero corrective-action cycles) out of all closed packs. All charts and the export below refresh from live sector data on every visit to this tab.'));
@@ -1640,13 +1969,15 @@ function QualityAnalyticsView(){
   row4.appendChild(chartCard('Warranty Escalations by Status', warrantyByStatusConfig()));
   container.appendChild(row4);
 
-  const exportCard = el('div',{class:'card'});
+  const exportCard = el('div',{class:'card fade-in'});
   exportCard.appendChild(el('h3',{},'Excel Report Contents'));
-  exportCard.appendChild(el('div',{class:'sub'},'One workbook, nine sheets — every sector\'s raw records plus computed analysis, ready to download.'));
+  exportCard.appendChild(el('div',{class:'sub'},'One workbook, ten sheets — every sector\'s raw records plus computed analysis, ready to download.'));
   const list = el('div');
   [
     'OM Chain Records — every intake/repair/QC record across all 3 stages, with technicians, tests, and CAPA cycles',
     'Plant Logs — full daily plant log history',
+    'Plant Battery Movements — every received/dispatched entry with OEM IDs where recorded',
+    'Daily Stock Report — computed opening/inwards/outwards/closing per platform per date',
     'New Battery Intake — all warehouse intake entries',
     'Stock Movements — every issue, correction, and return with direction',
     'Stock Summary — current computed stock per platform',
@@ -1657,7 +1988,7 @@ function QualityAnalyticsView(){
   ].forEach(t=> list.appendChild(el('div',{class:'check-row'},[el('span',{},t)])));
   exportCard.appendChild(list);
   const exportBtn2 = el('button',{class:'btn-primary', style:'margin-top:10px;'},'⬇ Download Full Excel Report');
-  exportBtn2.addEventListener('click', ()=>{ exportAllDataToExcel(); });
+  exportBtn2.addEventListener('click', ()=>{ exportAllDataToExcel(exportBtn2); });
   exportCard.appendChild(exportBtn2);
   container.appendChild(exportCard);
 
@@ -1673,115 +2004,4 @@ function buildOmExportRows(){
     'Date Received': r.dateReceived, 'Time Received': r.timeReceived, 'Visit #': r.visitNumber,
     'Current Stage': r.stage, 'Status': r.status, 'CAPA Cycles': r.capaCycles,
     'Stage1 Technician': r.stage1.technician||'', 'Stage1 Received By': r.stage1.receivedBy||'', 'Stage1 Completed At': r.stage1.completedAt||'',
-    'Stage2 Technician': r.stage2.technician||'', 'Stage2 SOP': r.stage2.sopRef||'', 'Stage2 Parts Replaced': r.stage2.partsReplaced||'', 'Stage2 Repair Notes': r.stage2.repairAction||'', 'Stage2 Completed At': r.stage2.completedAt||'',
-    'Stage3 Technician': r.stage3.technician||'', 'Pack Voltage (V)': r.stage3.tests.packVoltage||'', 'Min Cell (V)': r.stage3.tests.minCell||'', 'Max Cell (V)': r.stage3.tests.maxCell||'',
-    'IR Measured (MΩ)': r.stage3.tests.irMeasured||'', 'IR Threshold (MΩ)': r.stage3.tests.irThreshold||'',
-    'QC Disposition': r.finalDisposition||'', 'QC Notes': r.stage3.qcNote||'', 'Closed At': r.closedAt||'',
-  })));
-}
-function buildPlantExportRows(){
-  return rowsOrEmpty(STATE.plantRecords.map(r=>({
-    'Date': r.date, 'Active Batteries': r.activeBatteries||0, 'Charged Today': r.chargedToday||0,
-    'Unboxed Today': r.unboxedToday||0, 'Faulty Flagged': r.faultyBatteries||0, 'Notes': r.notes||'', 'Entered By': r.enteredBy||''
-  })));
-}
-function buildNewBatteryExportRows(){
-  return rowsOrEmpty(STATE.newBatteryRecords.map(r=>({
-    'Date': r.date, 'Platform': r.platform, 'Quantity': r.quantity, 'Batch/Lot': r.batchLot||'',
-    'Source': r.source||'', 'Notes': r.notes||'', 'Logged By': r.loggedBy||''
-  })));
-}
-function buildAdjustmentExportRows(){
-  return rowsOrEmpty(STATE.adjustments.map(r=>({
-    'Date': r.date, 'Platform': r.platform, 'Movement Type': movementLabel(r.type), 'Quantity': r.quantity,
-    'Direction': movementDirection(r.type)>0?'IN':'OUT', 'Reference': r.reference||'', 'Notes': r.notes||'', 'Logged By': r.loggedBy||''
-  })));
-}
-function buildWarrantyExportRows(){
-  return rowsOrEmpty(STATE.warrantyRecords.map(r=>({
-    'Date Escalated': r.dateEscalated, 'BMS ID': r.bmsId, 'Platform': r.model||'', 'Failure Category': r.failureCategory,
-    'Status': r.status, 'Comments': r.comments||''
-  })));
-}
-function buildStockSummaryRows(){
-  const stock = stockByPlatform();
-  return rowsOrEmpty(Object.keys(stock).map(p=>({ Platform:p, 'Current Stock': stock[p] })));
-}
-function buildFpyExportRows(fpy){
-  return [{ 'Overall FPY %': fpy.overallFPY.toFixed(1), 'Total Closed Packs': fpy.total, 'First-Pass Closures': fpy.firstPass }];
-}
-function buildFpyByPlatformRows(fpy){
-  return rowsOrEmpty(Object.keys(fpy.byPlatform).map(p=>{
-    const s = fpy.byPlatform[p];
-    return { Platform:p, 'Total Closed': s.total, 'First-Pass': s.firstPass, 'FPY %': s.total ? (s.firstPass/s.total*100).toFixed(1) : '0.0' };
-  }));
-}
-function buildFpyByMonthRows(fpy){
-  return rowsOrEmpty(Object.keys(fpy.byMonth).sort().map(m=>{
-    const s = fpy.byMonth[m];
-    return { Month:m, 'Total Closed': s.total, 'First-Pass': s.firstPass, 'FPY %': s.total ? (s.firstPass/s.total*100).toFixed(1) : '0.0' };
-  }));
-}
-
-async function exportAllDataToExcel(){
-  if(typeof XLSX === 'undefined'){ toast('Excel library failed to load — check your connection and try again.'); return; }
-  STATE.omRecords = await loadOm();
-  STATE.plantRecords = await loadPlant();
-  STATE.newBatteryRecords = await loadNewBattery();
-  STATE.adjustments = await loadAdjustments();
-  STATE.warrantyRecords = await loadWarranty();
-
-  const fpy = fpyStats();
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildOmExportRows()), 'OM Chain Records');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildPlantExportRows()), 'Plant Logs');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildNewBatteryExportRows()), 'New Battery Intake');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildAdjustmentExportRows()), 'Stock Movements');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildStockSummaryRows()), 'Stock Summary');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildWarrantyExportRows()), 'Warranty Escalations');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildFpyExportRows(fpy)), 'FPY Overall');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildFpyByPlatformRows(fpy)), 'FPY by Platform');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildFpyByMonthRows(fpy)), 'FPY by Month');
-
-  const filename = `battery-qc-report-${todayStr()}.xlsx`;
-  XLSX.writeFile(wb, filename);
-  toast('Excel report downloaded: '+filename);
-}
-
-/* ---------- Live docket refresh ----------
-   Polls the shared store in the background and re-renders the docket list so a battery sent
-   from Stage 1 appears for a Stage 2 technician without them having to sign out and back in.
-   Skips refreshing while the user is actively typing so it never yanks focus mid-entry. */
-function userIsTypingInForm(){
-  const active = document.activeElement;
-  if(!active || !root.contains(active)) return false;
-  const tag = active.tagName;
-  return tag==='INPUT' || tag==='TEXTAREA' || tag==='SELECT';
-}
-async function autoRefreshDocket(){
-  try{
-    if(userIsTypingInForm()) return;
-    if(STATE.role==='omtech' && STATE.openId===null && STATE.view==='main'){
-      STATE.omRecords = await loadOm();
-      STATE.omLastRefreshed = nowTime();
-      STATE.omSyncOk = true;
-      render();
-    } else if(STATE.role==='omadmin' && (STATE.view==='dashboard' || STATE.view==='history')){
-      STATE.omRecords = await loadOm();
-      STATE.omLastRefreshed = nowTime();
-      STATE.omSyncOk = true;
-      render();
-    }
-  }catch(e){
-    console.error('Auto-refresh failed', e);
-    STATE.omSyncOk = false;
-  }
-}
-setInterval(autoRefreshDocket, 4000);
-document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && !userIsTypingInForm()) autoRefreshDocket(); });
-
-/* ---------- Boot ---------- */
-render();
-</script>
-</body>
-</html>
+    'Stage2 Technician': r.stage2.technician||'', 'Stage2 SO
