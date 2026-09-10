@@ -1,57 +1,1820 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Battery QC — Server</title>
-<link rel="stylesheet" href="css/styles.css" />
+<title>Battery Ops — Server</title>
+<style>
+:root {
+  --bg: #f8f9fa; --panel: #ffffff; --panel2: #f1f3f5; --line: #e9ecef; --line-dark: #ced4da;
+  --text: #111827; --muted: #6b7280; --accent: #0f172a;
+  --pass: #15803d; --pass-bg: #f0fdf4; --fail: #b91c1c; --fail-bg: #fef2f2;
+  --warn: #c2410c; --warn-bg: #fff7ed; --capa: #7c3aed; --capa-bg: #f5f3ff;
+  --bsa: #0369a1; --bsa-bg: #eff6ff; --iot: #b45309; --iot-bg: #fffbeb;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+[data-theme="dark"] {
+  --bg: #0f172a; --panel: #1e293b; --panel2: #334155; --line: #334155; --line-dark: #475569;
+  --text: #f8fafc; --muted: #94a3b8; --accent: #38bdf8;
+  --pass: #4ade80; --pass-bg: rgba(74,222,128,.1); --fail: #f87171; --fail-bg: rgba(248,113,113,.1);
+  --warn: #fb923c; --warn-bg: rgba(251,146,60,.1); --capa: #c4b5fd; --capa-bg: rgba(196,181,253,.12);
+  --bsa: #7dd3fc; --bsa-bg: rgba(125,211,252,.12); --iot: #fbbf24; --iot-bg: rgba(251,191,36,.12);
+}
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--text); font-family:var(--font-sans); font-size:13px; line-height:1.4; -webkit-font-smoothing:antialiased; }
+.app { max-width: 1180px; margin:0 auto; padding:16px; }
+.header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:var(--panel); border:1px solid var(--line-dark); border-radius:4px; margin-bottom:16px; gap:12px; flex-wrap:wrap; }
+.brand h1 { font-size:15px; font-weight:700; margin:0; letter-spacing:.2px; }
+.brand h1::after { content:''; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); margin-left:7px; vertical-align:middle; animation: pulseGlow 2.6s ease-in-out infinite; }
+.brand p { margin:0; font-size:11px; color:var(--muted); }
+.user-info { display:flex; align-items:center; gap:8px; font-size:12px; }
+.badge { padding:2px 6px; border-radius:3px; font-size:10px; font-weight:700; text-transform:uppercase; background:var(--panel2); border:1px solid var(--line-dark); }
+button { font-family:var(--font-sans); cursor:pointer; border:1px solid var(--line-dark); background:var(--panel); color:var(--text); border-radius:3px; padding:6px 12px; font-size:12px; font-weight:600; transition:transform .08s ease, background .15s ease, opacity .15s ease, box-shadow .15s ease; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+button:hover { background:var(--panel2); }
+button:active:not(:disabled) { transform:scale(.96); }
+button:disabled { opacity:.55; cursor:not-allowed; }
+.btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+.btn-primary:hover:not(:disabled) { opacity:.92; box-shadow:0 2px 8px rgba(15,23,42,.25); }
+.btn-danger { background:var(--fail-bg); border-color:var(--fail); color:var(--fail); }
+.btn-danger:hover { background:var(--fail); color:#fff; }
+.btn-capa { background:var(--capa-bg); border-color:var(--capa); color:var(--capa); }
+.btn-capa:hover { background:var(--capa); color:#fff; }
+.btn-bsa { background:var(--bsa-bg); border-color:var(--bsa); color:var(--bsa); }
+.btn-bsa:hover { background:var(--bsa); color:#fff; }
+.btn-sm { padding:3px 8px; font-size:11px; }
+.btn-block { width:100%; }
+.theme-toggle select { padding:3px 6px; font-size:11px; border-radius:3px; background:var(--panel); color:var(--text); border:1px solid var(--line-dark); font-family:var(--font-sans); }
+.gate { max-width:400px; margin:8vh auto 0; padding:24px; background:var(--panel); border:1px solid var(--line-dark); border-radius:4px; animation:fadeInUp .4s ease both; }
+.gate h2 { margin-top:0; font-size:16px; font-weight:700; margin-bottom:4px; }
+.gate p { color:var(--muted); font-size:12px; margin-bottom:16px; }
+.pin-hint { font-size:10px; color:var(--muted); margin-top:4px; }
+.nav { display:flex; gap:4px; margin-bottom:16px; border-bottom:1px solid var(--line-dark); padding-bottom:8px; flex-wrap:wrap; align-items:center; }
+.nav button { background:transparent; color:var(--muted); border:none; border-radius:3px; font-size:12px; font-weight:600; padding:6px 12px; }
+.nav button.active { background:var(--panel2); color:var(--text); font-weight:700; }
+.nav button:hover:not(.active) { color:var(--text); }
+.card { background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:14px 16px; margin-bottom:12px; animation:fadeInUp .3s ease both; }
+.card h3 { margin:0 0 2px; font-size:13px; font-weight:700; }
+.card .sub { color:var(--muted); font-size:11px; margin-bottom:12px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px 12px; }
+.grid.narrow { grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); }
+label { display:block; font-size:10px; font-weight:700; color:var(--muted); margin:8px 0 4px; text-transform:uppercase; letter-spacing:.3px; }
+input, select, textarea { width:100%; padding:6px 8px; background:var(--panel); color:var(--text); border:1px solid var(--line-dark); border-radius:3px; font-size:12px; font-family:var(--font-sans); transition:border-color .12s ease; }
+input:focus, select:focus, textarea:focus { outline:none; border-color:var(--accent); }
+textarea { resize:vertical; min-height:50px; }
+.banner { padding:8px 12px; border-radius:3px; font-size:11px; margin-bottom:12px; border:1px solid var(--warn); background:var(--warn-bg); color:var(--warn); font-weight:600; animation:fadeInUp .2s ease both; }
+.banner.ok { border-color:var(--pass); background:var(--pass-bg); color:var(--pass); }
+.banner.capa { border-color:var(--capa); background:var(--capa-bg); color:var(--capa); }
+.banner.err { border-color:var(--fail); background:var(--fail-bg); color:var(--fail); }
+.banner.bsa { border-color:var(--bsa); background:var(--bsa-bg); color:var(--bsa); }
+.banner.iot { border-color:var(--iot); background:var(--iot-bg); color:var(--iot); }
+.check-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 0; border-bottom:1px solid var(--line); transition:background .15s ease; }
+.check-row:last-child { border-bottom:none; }
+.seg { display:flex; border:1px solid var(--line-dark); border-radius:3px; overflow:hidden; }
+.seg button { border-radius:0; padding:2px 8px; font-size:10px; background:var(--panel); color:var(--muted); border:none; border-right:1px solid var(--line-dark); }
+.seg button:last-child { border-right:none; }
+.seg button.sel-pass { background:var(--pass-bg); color:var(--pass); font-weight:700; }
+.seg button.sel-fail { background:var(--fail-bg); color:var(--fail); font-weight:700; }
+.seg button.sel-na { background:var(--panel2); color:var(--text); }
+.bool-row { display:flex; align-items:center; gap:8px; padding:4px 0; border-bottom:1px solid var(--line); }
+.bool-row input { width:14px; height:14px; margin:0; cursor:pointer; accent-color:var(--accent); }
+.bool-row label { margin:0; color:var(--text); font-size:12px; text-transform:none; font-weight:400; cursor:pointer; }
+.status-chip { display:inline-block; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:700; text-transform:uppercase; }
+.status-chip.PASS, .status-chip.CLOSED_PASS, .status-chip.REPAIRED, .status-chip.RETURNED_TO_OM { background:var(--pass-bg); color:var(--pass); border:1px solid var(--pass); }
+.status-chip.FAIL, .status-chip.CLOSED_SCRAPPED, .status-chip.SCRAPPED, .status-chip.UNREPAIRABLE { background:var(--fail-bg); color:var(--fail); border:1px solid var(--fail); }
+.status-chip.INCOMPLETE, .status-chip.NA, .status-chip.PENDING { background:var(--panel2); color:var(--muted); border:1px solid var(--line-dark); }
+.status-chip.CAPA { background:var(--capa-bg); color:var(--capa); border:1px solid var(--capa); animation:pulseGlow 2.2s ease-in-out infinite; }
+.status-chip.OPEN, .status-chip.NEW { background:var(--warn-bg); color:var(--warn); border:1px solid var(--warn); animation:pulseGlow 2.2s ease-in-out infinite; }
+.status-chip.RETRIEVED, .status-chip.RCA_OBTAINED, .status-chip.INVESTIGATING { background:var(--bsa-bg); color:var(--bsa); border:1px solid var(--bsa); }
+.stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:12px; }
+.stat { background:var(--panel); border:1px solid var(--line-dark); border-radius:4px; padding:12px; transition:transform .15s ease, box-shadow .15s ease; }
+.stat:hover { transform:translateY(-2px); box-shadow:0 4px 10px rgba(0,0,0,.08); }
+.stat .n { font-size:20px; font-weight:700; }
+.stat .l { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-top:2px; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th, td { padding:6px 10px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap; }
+th { color:var(--muted); font-weight:700; text-transform:uppercase; font-size:10px; background:var(--panel2); position:sticky; top:0; }
+.table-wrap { overflow-x:auto; border:1px solid var(--line-dark); border-radius:3px; background:var(--panel); }
+tr { transition:background .15s ease; }
+tr:hover td { background:var(--panel2); }
+tr.dup-row td { background:var(--fail-bg); }
+.mono { font-family:var(--font-mono); }
+.footer-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; position:sticky; bottom:0; background:var(--bg); padding:10px 0; border-top:1px solid var(--line-dark); }
+.err { color:var(--fail); font-size:11px; margin-top:6px; }
+.sop-box { background:var(--panel2); border:1px solid var(--line-dark); padding:8px 12px; border-radius:3px; margin-bottom:12px; font-size:11px; }
+.docket-item { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); }
+.docket-item:last-child { border-bottom:none; }
+.docket-item .meta { font-size:11px; color:var(--muted); }
+.empty-note { padding:12px 0; color:var(--muted); font-size:12px; }
+.sector-tag { display:inline-block; padding:3px 8px; border-radius:3px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; margin-bottom:12px; border:1px solid var(--line-dark); background:var(--panel2); color:var(--muted); }
+.chart-card { background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:14px 16px; margin-bottom:12px; animation:fadeInUp .3s ease both; }
+.chart-card .chart-wrap { position:relative; height:250px; }
+.chart-card .chart-wrap.mini { height:140px; }
+.chart-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:12px; }
+.sync-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; background:var(--pass); }
+.sync-dot.bad { background:var(--fail); }
+.sync-line { font-size:10px; color:var(--muted); display:flex; align-items:center; }
+.pill-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+.pill-tabs button { border-radius:14px; padding:4px 12px; font-size:11px; }
+.pill-tabs button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+.spinner { width:13px; height:13px; border:2px solid var(--line-dark); border-top-color:var(--accent); border-radius:50%; display:inline-block; animation:spin .7s linear infinite; vertical-align:middle; }
+.spinner.big { width:30px; height:30px; border-width:3px; }
+.loading-overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; background:var(--bg); z-index:999; }
+.loading-text { font-size:12px; color:var(--muted); font-weight:600; letter-spacing:.3px; }
+.toast-anim { position:fixed; right:16px; bottom:16px; max-width:340px; z-index:500; box-shadow:0 6px 18px rgba(0,0,0,.15); animation:slideInRight .25s ease both; }
+.checkbox-list { display:flex; flex-direction:column; gap:2px; max-height:260px; overflow-y:auto; border:1px solid var(--line-dark); border-radius:3px; padding:8px; background:var(--panel2); }
+.iot-balance { font-size:26px; font-weight:800; }
+.note-item { display:flex; align-items:flex-start; gap:8px; padding:6px 0; border-bottom:1px solid var(--line); }
+.note-item.DONE span.note-text { text-decoration:line-through; color:var(--muted); }
+.note-item input[type=checkbox] { margin-top:2px; accent-color:var(--pass); }
+@keyframes fadeInUp { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+@keyframes spin { to{transform:rotate(360deg);} }
+@keyframes pulseGlow { 0%,100%{box-shadow:0 0 0 0 rgba(194,65,12,.35);} 50%{box-shadow:0 0 0 5px rgba(194,65,12,0);} }
+@keyframes slideInRight { from{opacity:0; transform:translateX(16px);} to{opacity:1; transform:translateX(0);} }
+</style>
 </head>
 <body>
-<div id="boot-loader" class="boot-loader">
-  <div class="boot-card">
-    <div class="boot-spinner"></div>
-    <div class="boot-text">Connecting to Battery QC server…</div>
-  </div>
-</div>
 <div id="root"></div>
-
-<!-- Third-party libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* ============================================================
+   THEME
+   ============================================================ */
+let currentTheme = localStorage.getItem('bqc_theme') || 'light';
+document.documentElement.setAttribute('data-theme', currentTheme);
+function setTheme(theme){ currentTheme=theme; localStorage.setItem('bqc_theme',theme); document.documentElement.setAttribute('data-theme',theme); render(); }
 
-<!-- Foundations: constants, generic utilities, backend I/O, domain/record model, theme, global state -->
-<script src="js/constants.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/api.js"></script>
-<script src="js/records.js"></script>
-<script src="js/theme.js"></script>
-<script src="js/state.js"></script>
+/* ============================================================
+   ROLE / LABEL CONSTANTS
+   ============================================================
+   qtech       = Quality Technician  (does the Stage 1/2/3 pipeline work — was "O&M Technician")
+   ommanager   = O&M Manager         (oversight of the whole pipeline — was "O&M Admin")
+   plantinv    = Plant & Inventory   (combined plant floor + all inventory: new batteries, warranty/scrapped, bulk OEM, IoT, daily notes)
+   quality     = Quality Engineer    (analytics, warranty oversight, flags unsolved cases to BSA)
+   bsa         = BSA Engineer        (Battery Service Assurance — RCA + repair on escalated / flagged batteries)
+*/
+const STAGE_LABEL = { 1:'Stage 1 — Intake & Pre-Check', 2:'Stage 2 — Repair & Reassembly', 3:'Stage 3 — Final Test & QC Sign-off' };
+const SECTOR_LABEL = { ommanager:'O&M Manager', plantinv:'Plant & Inventory', quality:'Quality Engineer', bsa:'BSA Engineer' };
 
-<!-- UI plumbing: DOM builder helpers + the render loop, then shared form-card widgets -->
-<script src="js/dom.js"></script>
-<script src="js/ui-shared.js"></script>
+/* ============================================================
+   DOMAIN CONSTANTS
+   ============================================================ */
+const STANDARD_SOPS = [
+  "SOP-BAT-01: Housing Opening Protocol","SOP-BAT-02: Cell Balancing & Diagnostics","SOP-BAT-03: BMS Replacement & Firmware Sync",
+  "SOP-BAT-04: Insulation Safety Testing","SOP-BAT-05: IoT Rewiring & Flashing","SOP-BAT-06: Charge Port Thermal Servicing",
+  "NO SOP AVAILABLE — escalate to BSA"
+];
+const BMS_MODEL_PREFIXES = [
+  { prefix:'C7245AC2AA', model:'CBAK' }, { prefix:'U7245AU1G1', model:'UNIQUE' },
+  { prefix:'A7246AX1A1', model:'AMPACE' }, { prefix:'D72451LWK', model:'GREENWAY' }
+];
+function detectModelFromBMS(bmsId){
+  if(!bmsId) return '';
+  const c = bmsId.trim().toUpperCase();
+  const m = BMS_MODEL_PREFIXES.find(p=>c.startsWith(p.prefix));
+  return m ? m.model : '';
+}
+const CBAK_EXACT_LENGTH = 18;
+// Returns null if fine, or an error string if this id violates the CBAK length rule.
+function cbakLengthError(id, platformHint){
+  const clean=(id||'').trim();
+  if(!clean) return null;
+  const isCbak = platformHint==='CBAK' || detectModelFromBMS(clean)==='CBAK';
+  if(!isCbak) return null;
+  if(clean.length!==CBAK_EXACT_LENGTH) return `"${clean}" is ${clean.length} chars — CBAK IDs must be exactly ${CBAK_EXACT_LENGTH}.`;
+  return null;
+}
+function dedupeIds(list){
+  const seen=new Set(), out=[];
+  list.forEach(x=>{ const k=x.trim().toUpperCase(); if(!k) return; if(seen.has(k)) return; seen.add(k); out.push(x.trim()); });
+  return out;
+}
+function parseOemIdsText(txt){ return (txt||'').split(/[\n,]+/).map(s=>s.trim()).filter(Boolean); }
 
-<!-- Shell: login gate, header/nav, top-level router -->
-<script src="js/view-login.js"></script>
-<script src="js/view-header-nav.js"></script>
-<script src="js/router.js"></script>
+const CHECK_ITEMS = [['foreignObjects','No Foreign Objects / Cables'],['looseComponents','No Loose Components'],['wiring','Internal Wiring Intact'],['cells','Cells Intact'],['corrosion','No Moisture / Corrosion'],['bmsMount','BMS Board Secure'],['internalDamage','No Internal Damage']];
+const POST_ITEMS = [['foreignObjects','No Foreign Objects Left Inside'],['looseComponents','No Loose Components'],['wiring','Wiring Reconnected Properly'],['cells','Cells Secure'],['bmsMount','BMS Board Secure'],['seal','Casing Seal Intact'],['fasteners','Fasteners Reinstalled']];
+const ISSUE_ITEMS = [['noPower','No Power / Offline'],['lowCapacity','Low Capacity / Range'],['cellImbalance','Cell Imbalance'],['bmsFault','BMS Fault / Mismatch'],['canFail','CAN Fail'],['chargeFail','Charge Failure'],['dischargeFail','Discharge Failure'],['swelling','Swelling / Damage'],['irFail','Insulation Failure'],['iotFault','IoT / IMEI Mismatch'],['tampered','Vandalism / Water Ingress'],['connectorDamage','Connector Damage'],['other','Other Issue']];
+const TEST_BOOLS = [['canEstablished','CAN Established'],['bmsFaultCleared','BMS Fault Cleared'],['chargeVerified','Charge Verified'],['dischargeVerified','Discharge Verified'],['noAbnormal','No Abnormal Behavior']];
+const PLATFORMS = ['CBAK','UNIQUE','AMPACE','GREENWAY'];
+const MOVEMENT_TYPES = [['ISSUED_TO_PLANT','Issued to Plant'],['ISSUED_TO_SWAP_STATION','Issued to Swap Station'],['DAMAGED_ON_ARRIVAL','Damaged on Arrival'],['RETURNED_TO_SUPPLIER','Returned to Supplier'],['CORRECTION_ADD','Stock Correction (Add)'],['CORRECTION_SUB','Stock Correction (Subtract)']];
+function movementDirection(type){ return (type==='RECEIVED'||type==='CORRECTION_ADD') ? 1 : -1; }
+function movementLabel(type){ if(type==='RECEIVED') return 'Received (New Stock)'; const f=MOVEMENT_TYPES.find(([k])=>k===type); return f?f[1]:type; }
+const WARRANTY_FAILURE_CATEGORIES = ['Charging Port Failure','Cell Degradation','BMS Defect','IoT Board Failure','Water Ingress','Swelling','Physical Damage','Other'];
+const BSA_STATUSES = [['NEW','New — Awaiting BSA Pickup'],['RETRIEVED','Retrieved by BSA'],['RCA_OBTAINED','RCA Obtained'],['REPAIRED','Repaired'],['RETURNED_TO_OM','Returned to O&M for Deployment'],['UNREPAIRABLE','Unrepairable'],['SCRAPPED','Scrapped']];
+const BSA_SOURCE_TYPES = [['OM_ESCALATION','O&M Pipeline Escalation (no SOP / unsolved)'],['CX_FLAG','Flagged by Customer Experience'],['ENGINEERING_FLAG','Flagged by Battery Engineering']];
 
-<!-- Role-specific views -->
-<script src="js/view-om-tech.js"></script>
-<script src="js/view-om-admin.js"></script>
-<script src="js/view-plant-bulk.js"></script>
-<script src="js/view-plant-log.js"></script>
-<script src="js/view-data-integrity.js"></script>
-<script src="js/view-inventory.js"></script>
-<script src="js/view-warranty.js"></script>
+/* ============================================================
+   SERVER-BACKED STORAGE
+   ============================================================ */
+async function apiFetch(path, options={}){
+  const res = await fetch(path, { credentials:'include', headers:{'Content-Type':'application/json', ...(options.headers||{})}, ...options });
+  let body=null; try{ body=await res.json(); }catch(e){}
+  if(!res.ok){ const msg = body && body.error ? body.error : `Server error (${res.status})`; throw new Error(msg); }
+  return body;
+}
+async function loadStore(key){ try{ const r=await apiFetch('/api/data/'+encodeURIComponent(key)); return Array.isArray(r.data)?r.data:[]; }catch(e){ console.error('loadStore failed',key,e); return []; } }
+async function saveStore(key,list){ try{ await apiFetch('/api/data/'+encodeURIComponent(key), {method:'PUT', body:JSON.stringify({data:list})}); return true; }catch(e){ console.error('saveStore failed',key,e); return false; } }
 
-<!-- Analytics + reporting -->
-<script src="js/analytics-charts.js"></script>
-<script src="js/view-analytics.js"></script>
-<script src="js/export-excel.js"></script>
+const loadOm=()=>loadStore('om_chain_records'), saveOm=l=>saveStore('om_chain_records',l);
+const loadPlantDaily=()=>loadStore('plant_daily_records'), savePlantDaily=l=>saveStore('plant_daily_records',l);
+const loadNewBattery=()=>loadStore('new_battery_records'), saveNewBattery=l=>saveStore('new_battery_records',l);
+const loadAdjustments=()=>loadStore('inventory_adjustments'), saveAdjustments=l=>saveStore('inventory_adjustments',l);
+const loadWarranty=()=>loadStore('warranty_scrapped_inventory'), saveWarranty=l=>saveStore('warranty_scrapped_inventory',l);
+const loadBulk=()=>loadStore('bulk_oem_movements'), saveBulk=l=>saveStore('bulk_oem_movements',l);
+const loadIot=()=>loadStore('iot_upgrades'), saveIot=l=>saveStore('iot_upgrades',l);
+const loadBsa=()=>loadStore('bsa_cases'), saveBsa=l=>saveStore('bsa_cases',l);
+const loadNotes=()=>loadStore('daily_notes'), saveNotes=l=>saveStore('daily_notes',l);
 
-<!-- Boot last: kicks off session restore + live polling -->
-<script src="js/app-boot.js"></script>
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function nowTime(){ return new Date().toTimeString().slice(0,5); }
+function nowIso(){ return new Date().toISOString(); }
+function uid(){ return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function checklistResult(map, items){ const vals=items.map(([k])=>map[k]); if(vals.some(v=>v==='FAIL')) return 'FAIL'; if(vals.some(v=>!v)) return 'INCOMPLETE'; return 'PASS'; }
+function testsResult(d){
+  const boolsOk = TEST_BOOLS.every(([k])=>d.testBools[k]===true);
+  const ir=parseFloat(d.tests.irMeasured), thr=parseFloat(d.tests.irThreshold);
+  const irOk = !isNaN(ir)&&!isNaN(thr) ? ir>=thr : null;
+  if(!boolsOk || irOk===false) return 'FAIL';
+  if(irOk===null) return 'INCOMPLETE';
+  return 'PASS';
+}
+function isImeiRequired(d){ return !!(d.issues.noPower||d.issues.bmsFault||d.issues.iotFault); }
+function isSwapStationRequired(d){ return !!(d.issues.tampered||d.issues.swelling||d.pre.foreignObjects==='FAIL'||d.pre.corrosion==='FAIL'); }
+function issueHasNoSop(d){ return !!(d && d.issues && (d.issues.tampered || d.issues.other)); }
+
+/* ============================================================
+   O&M chain record model
+   ============================================================ */
+function emptyIntakeDraft(techName){ return { dateReceived:todayStr(), timeReceived:nowTime(), bmsId:'', model:'', imei:'', site:'', receivedBy:techName||'', pre:{}, issues:{}, otherNote:'' }; }
+function newOmRecord(d, visitNumber, techName){
+  return {
+    id:uid(), createdAt:nowIso(), bmsId:d.bmsId.trim(), model:d.model, imei:d.imei, site:d.site,
+    dateReceived:d.dateReceived, timeReceived:d.timeReceived, visitNumber, stage:2, status:'STAGE2_OPEN',
+    capaCycles:0, isCorrectiveAction:false, capaLog:[],
+    stage1:{ technician:techName, receivedBy:d.receivedBy, pre:d.pre, issues:d.issues, otherNote:d.otherNote, completedAt:nowIso() },
+    stage2:{ technician:'', sopRef:STANDARD_SOPS[0], repairAction:'', partsReplaced:'', post:{}, completedAt:null },
+    stage3:{ technician:'', tests:{packVoltage:'',minCell:'',maxCell:'',irMeasured:'',irThreshold:550}, testBools:{}, qcPassed:'', qcNote:'', completedAt:null },
+    finalDisposition:null, closedAt:null, bsaCaseId:null,
+  };
+}
+function closedRecordsForBms(records,bmsId){ const c=(bmsId||'').trim().toUpperCase(); if(!c) return []; return records.filter(r=>r.bmsId.trim().toUpperCase()===c && r.status.startsWith('CLOSED')); }
+function openRecordForBms(records,bmsId){ const c=(bmsId||'').trim().toUpperCase(); if(!c) return null; return records.find(r=>r.bmsId.trim().toUpperCase()===c && !r.status.startsWith('CLOSED')) || null; }
+function stageQueue(records,stage){ return records.filter(r=>r.stage===stage && !r.status.startsWith('CLOSED')).sort((a,b)=>a.createdAt.localeCompare(b.createdAt)); }
+function findRecord(records,id){ return records.find(r=>r.id===id); }
+
+/* ============================================================
+   APP STATE
+   ============================================================ */
+let STATE = {
+  booting:true, role:null, stage:null, techName:'', view:'main', toast:null,
+
+  omRecords:[], plantDaily:[], newBatteryRecords:[], adjustments:[], warrantyRecords:[],
+  bulkMovements:[], iotUpgrades:[], bsaCases:[], dailyNotes:[],
+
+  intakeDraft: emptyIntakeDraft(''), openId:null, serialWarning:null, intakeError:null,
+  omLastRefreshed:null, omSyncOk:true, intakeSaving:false,
+
+  plantDraft:null, plantSaving:false,
+  newBatteryDraft:null, adjustmentDraft:null,
+  warrantyDraft:null,
+  bulkDraft:null, bulkSaving:false, bulkEditId:null, bulkEditText:'', bulkIdError:null,
+  iotDraft:null, iotSaving:false,
+  bsaDraft:null, bsaSaving:false, bsaOpenId:null, bsaStatusNote:'',
+  notesDate: null, noteDraftText:'',
+  plantInvTab:'daily',
+  exportSelected:{}, exportPreviewKey:null,
+};
+function toast(msg){ STATE.toast=msg; render(); setTimeout(()=>{ STATE.toast=null; render(); }, 2800); }
+
+const root = document.getElementById('root');
+let pendingCharts = [];
+function render(){
+  pendingCharts = [];
+  root.innerHTML='';
+  root.appendChild(View());
+  pendingCharts.forEach(({canvas,config})=>{ try{ if(typeof Chart!=='undefined') new Chart(canvas.getContext('2d'), config); }catch(e){ console.error('Chart error',e); } });
+  pendingCharts = [];
+}
+// Re-renders while preserving focus + cursor position on the field that was
+// being typed in — used any time an input's onChange must also trigger a
+// live-updating recompute (charts, validation, totals). This is what stops the
+// cursor from jumping out on every keystroke (e.g. IR readings, quantities).
+function safeRender(){
+  const active = document.activeElement;
+  let fkey=null, selStart=null, selEnd=null;
+  if(active && root.contains(active) && active.dataset && active.dataset.fkey){
+    fkey = active.dataset.fkey;
+    if('selectionStart' in active){ try{ selStart=active.selectionStart; selEnd=active.selectionEnd; }catch(e){} }
+  }
+  render();
+  if(fkey){
+    const found = root.querySelector('[data-fkey="'+fkey.replace(/"/g,'\\"')+'"]');
+    if(found){ found.focus(); if(selStart!=null && typeof found.setSelectionRange==='function'){ try{ found.setSelectionRange(selStart, selEnd); }catch(e){} } }
+  }
+}
+
+function el(tag, attrs={}, children=[]){
+  const e = document.createElement(tag);
+  for(const k in attrs){
+    if(k==='class') e.className=attrs[k];
+    else if(k==='disabled'){ if(attrs[k]) e.setAttribute('disabled','true'); }
+    else if(k.startsWith('on')) e.addEventListener(k.slice(2).toLowerCase(), attrs[k]);
+    else e.setAttribute(k, attrs[k]);
+  }
+  (Array.isArray(children)?children:[children]).forEach(c=>{ if(c==null) return; e.appendChild(typeof c==='string'?document.createTextNode(c):c); });
+  return e;
+}
+function field(label, inputEl){ const w=el('div'); w.appendChild(el('label',{},label)); w.appendChild(inputEl); return w; }
+function textInput(value, onChange, opts={}){
+  const i = el('input',{type:opts.type||'text', value:value||''});
+  if(opts.mono) i.className='mono';
+  if(opts.placeholder) i.setAttribute('placeholder', opts.placeholder);
+  if(opts.readonly) i.setAttribute('readonly','true');
+  if(opts.fkey) i.setAttribute('data-fkey', opts.fkey);
+  i.addEventListener('input', ()=>onChange(i.value));
+  if(value!==undefined) i.value=value;
+  return i;
+}
+function textareaInput(value, onChange, opts={}){
+  const t = el('textarea',{});
+  if(opts && opts.fkey) t.setAttribute('data-fkey', opts.fkey);
+  if(opts && opts.placeholder) t.setAttribute('placeholder', opts.placeholder);
+  t.value = value||'';
+  t.addEventListener('input', ()=>onChange(t.value));
+  return t;
+}
+function selectInput(value, options, onChange){
+  const s = el('select',{});
+  options.forEach(([v,l])=>{ const o=el('option',{value:v},l); if(v===value) o.setAttribute('selected','true'); s.appendChild(o); });
+  s.addEventListener('change', ()=>onChange(s.value));
+  return s;
+}
+function checkboxRow(checked, label, onChange){
+  const row = el('div',{class:'bool-row'});
+  const cb = el('input',{type:'checkbox'}); cb.checked=!!checked;
+  cb.addEventListener('change', ()=>onChange(cb.checked));
+  row.appendChild(cb); row.appendChild(el('label',{},label));
+  return row;
+}
+function statBox(num,label){ const s=el('div',{class:'stat'}); s.appendChild(el('div',{class:'n'},String(num))); s.appendChild(el('div',{class:'l'},label)); return s; }
+function Toast(){ return el('div',{class:'banner ok toast-anim'},[STATE.toast]); }
+function spinnerLabel(text){ return [el('span',{class:'spinner'}), ' '+text]; }
+function pillTabs(items, activeKey, onSelect){
+  const wrap = el('div',{class:'pill-tabs'});
+  items.forEach(([k,l])=>{ const b=el('button',{class:k===activeKey?'active':''},l); b.addEventListener('click',()=>onSelect(k)); wrap.appendChild(b); });
+  return wrap;
+}
+
+function ChecklistCard(title, map, items, onSet){
+  const card = el('div',{class:'card'});
+  const res = checklistResult(map, items);
+  card.appendChild(el('div',{style:'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'},[el('h3',{},title), el('span',{class:'status-chip '+res}, res)]));
+  items.forEach(([key,label])=>{
+    const row = el('div',{class:'check-row'});
+    row.appendChild(el('span',{},label));
+    const seg = el('div',{class:'seg'});
+    ['PASS','FAIL','NA'].forEach(v=>{
+      const cur=map[key];
+      const b=el('button',{class: cur===v?'sel-'+v.toLowerCase():''}, v==='NA'?'N/A':v);
+      b.addEventListener('click', ()=>{ onSet(key, cur===v?undefined:v); render(); });
+      seg.appendChild(b);
+    });
+    row.appendChild(seg); card.appendChild(row);
+  });
+  return card;
+}
+function IssuesCard(d){
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Defect Diagnostics'));
+  card.appendChild(el('div',{class:'sub'},'Select all applicable failure modes observed on arrival.'));
+  ISSUE_ITEMS.forEach(([key,label])=>{ card.appendChild(checkboxRow(d.issues[key], label, v=>{ d.issues[key]=v; render(); })); });
+  if(d.issues.other) card.appendChild(field('Details of Other Failure Mode', textareaInput(d.otherNote, v=>d.otherNote=v)));
+  if(issueHasNoSop(d)) card.appendChild(el('div',{class:'banner bsa'},'This defect pattern often has no standard SOP — if Stage 2/3 cannot resolve it, the Quality Engineer can flag this battery to BSA.'));
+  return card;
+}
+function TestsCard(d){
+  const card = el('div',{class:'card'});
+  const res = testsResult(d);
+  card.appendChild(el('div',{style:'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'},[el('h3',{},'Verification Tests'), el('span',{class:'status-chip '+res}, res)]));
+  const grid = el('div',{class:'grid narrow'});
+  grid.appendChild(field('Pack Voltage (V)', textInput(d.tests.packVoltage, v=>d.tests.packVoltage=v, {type:'number', mono:true})));
+  grid.appendChild(field('Min Cell (V)', textInput(d.tests.minCell, v=>d.tests.minCell=v, {type:'number', mono:true})));
+  grid.appendChild(field('Max Cell (V)', textInput(d.tests.maxCell, v=>d.tests.maxCell=v, {type:'number', mono:true})));
+  // IR fields: use fkey + safeRender so the status chip updates live without the
+  // cursor jumping out of the field on every keystroke.
+  grid.appendChild(field('IR Measured (MΩ)', textInput(d.tests.irMeasured, v=>{ d.tests.irMeasured=v; safeRender(); }, {type:'number', mono:true, fkey:'irMeasured'})));
+  grid.appendChild(field('IR Threshold (MΩ)', textInput(d.tests.irThreshold, v=>{ d.tests.irThreshold=v; safeRender(); }, {type:'number', mono:true, fkey:'irThreshold'})));
+  card.appendChild(grid);
+  card.appendChild(el('div',{style:'margin-top:8px;'}));
+  TEST_BOOLS.forEach(([key,label])=>{ card.appendChild(checkboxRow(d.testBools[key], label, v=>{ d.testBools[key]=v; render(); })); });
+  return card;
+}
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+function LoginView(){
+  const gate = el('div',{class:'gate'});
+  gate.appendChild(el('h2',{},'Battery Ops'));
+  gate.appendChild(el('p',{},'Sign in to the secure Battery Ops server.'));
+  let mode='qtech';
+  const modeSel = el('select',{style:'margin-bottom:12px;'});
+  [['qtech','Quality Technician (pipeline stage work)'],['ommanager','O&M Manager'],['plantinv','Plant & Inventory'],['quality','Quality Engineer'],['bsa','BSA Engineer']].forEach(([v,l])=>modeSel.appendChild(el('option',{value:v},l)));
+  gate.appendChild(modeSel);
+  const body = el('div'); gate.appendChild(body);
+  async function afterLogin(){
+    if(STATE.role==='qtech'){ STATE.omRecords=await loadOm(); STATE.intakeDraft=emptyIntakeDraft(STATE.techName); STATE.view='main'; }
+    else if(STATE.role==='ommanager'){ STATE.omRecords=await loadOm(); STATE.bulkMovements=await loadBulk(); STATE.dailyNotes=await loadNotes(); STATE.view='dashboard'; }
+    else if(STATE.role==='plantinv'){
+      STATE.plantDaily=await loadPlantDaily(); STATE.plantDraft=emptyPlantDraft();
+      STATE.newBatteryRecords=await loadNewBattery(); STATE.newBatteryDraft=emptyNewBatteryDraft();
+      STATE.adjustments=await loadAdjustments(); STATE.adjustmentDraft=emptyAdjustmentDraft();
+      STATE.warrantyRecords=await loadWarranty(); STATE.warrantyDraft=emptyWarrantyDraft();
+      STATE.bulkMovements=await loadBulk(); STATE.bulkDraft=emptyBulkDraft();
+      STATE.iotUpgrades=await loadIot(); STATE.iotDraft=emptyIotDraft();
+      STATE.dailyNotes=await loadNotes(); STATE.notesDate=todayStr();
+      STATE.view='main'; STATE.plantInvTab='daily';
+    } else if(STATE.role==='quality'){
+      STATE.warrantyRecords=await loadWarranty(); STATE.warrantyDraft=emptyWarrantyDraft();
+      STATE.omRecords=await loadOm(); STATE.plantDaily=await loadPlantDaily(); STATE.newBatteryRecords=await loadNewBattery();
+      STATE.adjustments=await loadAdjustments(); STATE.bulkMovements=await loadBulk(); STATE.bsaCases=await loadBsa();
+      STATE.view='warranty';
+    } else if(STATE.role==='bsa'){
+      STATE.bsaCases=await loadBsa(); STATE.bsaDraft=emptyBsaDraft(); STATE.view='main';
+    }
+  }
+  function renderBody(){
+    body.innerHTML='';
+    if(mode==='qtech'){
+      body.appendChild(el('label',{},'Your Name')); const nameInp=el('input',{placeholder:'Name'}); body.appendChild(nameInp);
+      body.appendChild(el('label',{},'Stage PIN')); const pinInp=el('input',{type:'password',placeholder:'••••'}); body.appendChild(pinInp);
+      body.appendChild(el('div',{class:'pin-hint'},'Stage PIN is validated by the server.'));
+      const errBox=el('div',{class:'err'}); body.appendChild(errBox);
+      const go=el('button',{class:'btn-primary btn-block',style:'margin-top:12px;'},'Sign In');
+      go.addEventListener('click', async()=>{
+        errBox.textContent='';
+        if(!nameInp.value.trim()){ errBox.textContent='Enter your name.'; return; }
+        try{
+          const auth=await apiFetch('/api/auth/login',{method:'POST',body:JSON.stringify({mode,name:nameInp.value.trim(),pin:pinInp.value})});
+          STATE.techName=auth.user.name||nameInp.value.trim(); STATE.role='qtech'; STATE.stage=auth.user.stage;
+          await afterLogin(); render();
+        }catch(e){ errBox.textContent=e.message; }
+      });
+      body.appendChild(go);
+    } else {
+      body.appendChild(el('label',{}, SECTOR_LABEL[mode]+' PIN'));
+      const inp=el('input',{type:'password',placeholder:'••••'}); body.appendChild(inp);
+      const errBox=el('div',{class:'err'}); body.appendChild(errBox);
+      const go=el('button',{class:'btn-primary btn-block',style:'margin-top:12px;'},'Authenticate');
+      go.addEventListener('click', async()=>{
+        errBox.textContent='';
+        try{
+          const auth=await apiFetch('/api/auth/login',{method:'POST',body:JSON.stringify({mode,pin:inp.value})});
+          STATE.role=mode; STATE.techName = auth.user && auth.user.name || '';
+          await afterLogin(); render();
+        }catch(e){ errBox.textContent=e.message; }
+      });
+      body.appendChild(go);
+    }
+  }
+  modeSel.addEventListener('change', ()=>{ mode=modeSel.value; renderBody(); });
+  renderBody();
+  return gate;
+}
+
+function LoadingOverlay(){
+  const wrap = el('div',{class:'loading-overlay'});
+  wrap.appendChild(el('div',{class:'spinner big'}));
+  wrap.appendChild(el('div',{class:'loading-text'},'Loading Battery Ops…'));
+  return wrap;
+}
+
+/* ============================================================
+   HEADER / NAV / ROUTER
+   ============================================================ */
+function Header(){
+  const roleTag = STATE.role==='qtech' ? ('QUALITY TECH · STAGE '+STATE.stage) : STATE.role.toUpperCase();
+  const brand = el('div',{class:'brand'},[el('h1',{},'Battery Ops'), el('p',{}, STATE.role==='qtech'?STAGE_LABEL[STATE.stage]:(SECTOR_LABEL[STATE.role]||''))]);
+  const user = el('div',{class:'user-info'},[
+    el('span',{class:'badge'}, roleTag),
+    el('span',{}, STATE.role==='qtech'?STATE.techName:(STATE.techName||SECTOR_LABEL[STATE.role])),
+    el('button',{class:'btn-sm', onClick:()=>{ apiFetch('/api/auth/logout',{method:'POST'}).catch(()=>{}); STATE.role=null; STATE.stage=null; STATE.view='main'; STATE.openId=null; STATE.serialWarning=null; render(); }},'Sign Out')
+  ]);
+  const themeSel = el('select',{onChange:(e)=>setTheme(e.target.value)});
+  [['light','Light UI'],['dark','Dark UI']].forEach(([v,l])=>{ const o=el('option',{value:v},l); if(v===currentTheme) o.setAttribute('selected','true'); themeSel.appendChild(o); });
+  const right = el('div',{style:'display:flex;align-items:center;gap:12px;'},[user, el('div',{class:'theme-toggle'},[themeSel])]);
+  const head = el('div',{class:'header'}); head.appendChild(brand); head.appendChild(right);
+  return head;
+}
+function Nav(items, labels){
+  const nav = el('div',{class:'nav'});
+  items.forEach(k=>{ const b=el('button',{class:STATE.view===k?'active':''}, labels[k]); b.addEventListener('click',()=>{ STATE.view=k; STATE.openId=null; render(); }); nav.appendChild(b); });
+  return nav;
+}
+function View(){
+  if(STATE.booting) return LoadingOverlay();
+  if(!STATE.role) return LoginView();
+  const wrap = el('div',{class:'app'});
+  wrap.appendChild(Header());
+  if(STATE.toast) wrap.appendChild(Toast());
+
+  if(STATE.role==='qtech'){
+    wrap.appendChild(Nav(['main','myclosed'], {main:'My Docket', myclosed:'My Completed Work'}));
+    wrap.appendChild(STATE.view==='myclosed' ? QTechClosedView() : QTechDocketView());
+  } else if(STATE.role==='ommanager'){
+    wrap.appendChild(Nav(['dashboard','history','duplicates','notes'], {dashboard:'Dashboard', history:'Full Chain History', duplicates:'Duplicate Manager', notes:'Daily Notes'}));
+    if(STATE.view==='history') wrap.appendChild(OmHistoryView());
+    else if(STATE.view==='duplicates') wrap.appendChild(DuplicateManagerView());
+    else if(STATE.view==='notes') wrap.appendChild(DailyNotesView());
+    else wrap.appendChild(OmDashboardView());
+  } else if(STATE.role==='plantinv'){
+    wrap.appendChild(Nav(['main'], {main:'Plant & Inventory'}));
+    wrap.appendChild(PlantInventoryHub());
+  } else if(STATE.role==='quality'){
+    wrap.appendChild(Nav(['warranty','overview','analytics','export'], {warranty:'Warranty & Scrapped', overview:'Sector Overview', analytics:'Analytics', export:'Export Center'}));
+    if(STATE.view==='overview') wrap.appendChild(QualityOverviewView());
+    else if(STATE.view==='analytics') wrap.appendChild(QualityAnalyticsView());
+    else if(STATE.view==='export') wrap.appendChild(ExportCenterView());
+    else wrap.appendChild(WarrantyView());
+  } else if(STATE.role==='bsa'){
+    wrap.appendChild(Nav(['main','log'], {main:'My Activity', log:'Log New Case'}));
+    wrap.appendChild(STATE.view==='log' ? BsaLogCaseView() : BsaActivityView());
+  }
+  return wrap;
+}
+
+/* ============================================================
+   QUALITY TECHNICIAN — 3-STAGE PIPELINE (formerly "O&M Technician")
+   ============================================================ */
+function QTechDocketView(){
+  const container = el('div');
+  if(STATE.openId){
+    const rec = findRecord(STATE.omRecords, STATE.openId);
+    if(rec){
+      const back=el('button',{class:'btn-sm',style:'margin-bottom:10px;'},'← Back to Docket');
+      back.addEventListener('click', ()=>{ STATE.openId=null; STATE.serialWarning=null; STATE.intakeError=null; render(); });
+      container.appendChild(back);
+      if(rec.capaCycles>0) container.appendChild(el('div',{class:'banner capa'}, `Under Corrective Action — Cycle ${rec.capaCycles}. This is not a new repeat failure; it is the same visit returning for correction.`));
+      if(rec.bsaCaseId) container.appendChild(el('div',{class:'banner bsa'}, `This battery has an open BSA case (flagged by Quality Engineering). Coordinate with BSA before proceeding.`));
+      if(STATE.stage===1) container.appendChild(Stage1EditCard(rec));
+      else if(STATE.stage===2) container.appendChild(Stage2Card(rec));
+      else if(STATE.stage===3) container.appendChild(Stage3Card(rec));
+      return container;
+    }
+    STATE.openId=null;
+  }
+  if(STATE.stage===1) container.appendChild(NewIntakeCard());
+  container.appendChild(DocketListCard());
+  return container;
+}
+
+function NewIntakeCard(){
+  const d = STATE.intakeDraft;
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Receive Battery — New Intake'));
+  card.appendChild(el('div',{class:'sub'},'Log a battery arriving at Stage 1. Once sent, it moves to the Stage 2 repair docket.'));
+  if(STATE.serialWarning) card.appendChild(el('div',{class:'banner'}, STATE.serialWarning));
+  if(STATE.intakeError) card.appendChild(el('div',{class:'banner err'}, '⚠ '+STATE.intakeError));
+
+  const g1 = el('div',{class:'grid'});
+  g1.appendChild(field('Date Received', textInput(d.dateReceived, v=>d.dateReceived=v, {type:'date'})));
+  g1.appendChild(field('Time Received', textInput(d.timeReceived, v=>d.timeReceived=v, {type:'time'})));
+  const bmsInput = textInput(d.bmsId, v=>{ d.bmsId=v; const det=detectModelFromBMS(v); if(det) d.model=det; }, {mono:true, placeholder:'Scan BMS Barcode'});
+  bmsInput.addEventListener('blur', ()=>{
+    const clean=d.bmsId.trim();
+    STATE.serialWarning=null; STATE.intakeError=null;
+    const lenErr = cbakLengthError(clean, d.model);
+    if(lenErr){ STATE.intakeError = lenErr; render(); return; }
+    if(clean){
+      const openRec = openRecordForBms(STATE.omRecords, clean);
+      if(openRec) STATE.serialWarning = `This BMS ID is already in the pipeline (Stage ${openRec.stage}). Use that docket instead of creating a new intake.`;
+      else { const closed=closedRecordsForBms(STATE.omRecords, clean); if(closed.length>0) STATE.serialWarning = `Notice: BMS ID has ${closed.length} prior closed service visit(s).`; }
+    }
+    render();
+  });
+  g1.appendChild(field('Scan BMS ID Barcode', bmsInput));
+  g1.appendChild(field('Battery Platform', textInput(d.model, v=>d.model=v, {placeholder:'Auto-detected'})));
+  const imeiRequired = isImeiRequired(d);
+  const imeiInput = textInput(d.imei, v=>d.imei=v, {mono:true, placeholder:imeiRequired?'Required':'Optional'});
+  if(imeiRequired) imeiInput.style.borderColor='var(--warn)';
+  g1.appendChild(field(imeiRequired?'IMEI Number (Mandatory)':'IMEI Number', imeiInput));
+  const swapRequired = isSwapStationRequired(d);
+  const swapInput = textInput(d.site, v=>d.site=v, {placeholder:swapRequired?'Station Required':'Optional'});
+  if(swapRequired) swapInput.style.borderColor='var(--warn)';
+  g1.appendChild(field(swapRequired?'Swap Station (Mandatory)':'Swap Station', swapInput));
+  g1.appendChild(field('Received By', textInput(d.receivedBy, v=>d.receivedBy=v)));
+  card.appendChild(g1);
+  card.appendChild(ChecklistCard('Pre-Opening Inspection', d.pre, CHECK_ITEMS, (k,v)=>d.pre[k]=v));
+  card.appendChild(IssuesCard(d));
+
+  const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;align-items:center;'});
+  if(STATE.intakeSaving) actions.appendChild(el('span',{class:'sync-line'}, spinnerLabel('Saving…')));
+  const clearBtn = el('button',{disabled:STATE.intakeSaving},'Reset');
+  clearBtn.addEventListener('click', ()=>{ STATE.intakeDraft=emptyIntakeDraft(STATE.techName); STATE.serialWarning=null; STATE.intakeError=null; render(); });
+  const sendBtn = el('button',{class:'btn-primary', disabled:STATE.intakeSaving}, STATE.intakeSaving?spinnerLabel('Sending…'):'Send to Stage 2 Docket');
+  sendBtn.addEventListener('click', async ()=>{
+    if(STATE.intakeSaving) return;
+    const clean=d.bmsId.trim();
+    STATE.intakeError=null;
+    STATE.omRecords = await loadOm();
+    if(!clean || !d.dateReceived){ STATE.intakeError='BMS ID and intake date are required.'; render(); return; }
+    const lenErr = cbakLengthError(clean, d.model);
+    if(lenErr){ STATE.intakeError=lenErr; render(); return; }
+    if(isImeiRequired(d) && !d.imei.trim()){ STATE.intakeError='IMEI is required for the selected issue type.'; render(); return; }
+    if(isSwapStationRequired(d) && !d.site.trim()){ STATE.intakeError='Swap Station is required for this defect type.'; render(); return; }
+    if(openRecordForBms(STATE.omRecords, clean)){ STATE.intakeError='This BMS ID is already open in the pipeline. Use that docket instead of creating a new intake.'; render(); return; }
+    const visitNumber = closedRecordsForBms(STATE.omRecords, clean).length+1;
+    const rec = newOmRecord(d, visitNumber, STATE.techName);
+    const updated = [...STATE.omRecords, rec];
+    STATE.intakeSaving=true; render();
+    const ok = await saveOm(updated);
+    STATE.intakeSaving=false;
+    if(!ok){ STATE.intakeError='Could not save to the shared record — check your connection and tap Send again. Your entries have not been lost.'; render(); return; }
+    STATE.omRecords=updated; STATE.intakeDraft=emptyIntakeDraft(STATE.techName); STATE.serialWarning=null; STATE.intakeError=null; STATE.omLastRefreshed=nowTime();
+    toast(`✓ Intake logged — BMS ${rec.bmsId} sent to Stage 2 docket.`);
+  });
+  actions.appendChild(clearBtn); actions.appendChild(sendBtn);
+  card.appendChild(actions);
+  return card;
+}
+
+function DocketListCard(){
+  const stage=STATE.stage, queue=stageQueue(STATE.omRecords, stage);
+  const card = el('div',{class:'card'});
+  const titleRow = el('div',{style:'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;'});
+  titleRow.appendChild(el('h3',{}, `Stage ${stage} Docket`));
+  const refreshWrap = el('div',{style:'display:flex;align-items:center;gap:8px;'});
+  const dot = el('span',{class:'sync-dot'+(STATE.omSyncOk?'':' bad')});
+  refreshWrap.appendChild(el('span',{class:'sync-line'},[dot, STATE.omLastRefreshed?('Synced '+STATE.omLastRefreshed):'Not yet synced']));
+  const refreshBtn = el('button',{class:'btn-sm'},'🔄 Refresh Docket');
+  refreshBtn.addEventListener('click', async ()=>{ STATE.omRecords=await loadOm(); STATE.omLastRefreshed=nowTime(); STATE.omSyncOk=true; toast('Docket refreshed from the shared record.'); });
+  refreshWrap.appendChild(refreshBtn);
+  titleRow.appendChild(refreshWrap);
+  card.appendChild(titleRow);
+  card.appendChild(el('div',{class:'sub'}, (stage===1?'Batteries returned for corrective re-inspection appear here. ':`Batteries waiting on your stage. Total: ${queue.length}. `)+'This list updates automatically every few seconds, or tap Refresh Docket.'));
+  if(queue.length===0){ card.appendChild(el('div',{class:'empty-note'},'Docket is empty.')); return card; }
+  queue.forEach(rec=>{
+    const row = el('div',{class:'docket-item'});
+    row.appendChild(el('div',{},[el('div',{style:'font-weight:700;'}, `${rec.bmsId} — ${rec.model||'Unknown'}`), el('div',{class:'meta'}, `Visit #${rec.visitNumber} · received ${rec.dateReceived}`+(rec.capaCycles>0?` · Corrective Action Cycle ${rec.capaCycles}`:''))]));
+    const right = el('div',{style:'display:flex;align-items:center;gap:8px;'});
+    if(rec.capaCycles>0) right.appendChild(el('span',{class:'status-chip CAPA'},'CAPA'));
+    if(rec.bsaCaseId) right.appendChild(el('span',{class:'status-chip NEW'},'BSA'));
+    right.appendChild(el('span',{class:'status-chip OPEN'}, 'Stage '+rec.stage));
+    const openBtn = el('button',{class:'btn-sm btn-primary'},'Open');
+    openBtn.addEventListener('click', ()=>{ STATE.openId=rec.id; STATE.serialWarning=null; STATE.intakeError=null; render(); });
+    right.appendChild(openBtn);
+    row.appendChild(right); card.appendChild(row);
+  });
+  return card;
+}
+
+function Stage1EditCard(rec){
+  const s1 = rec.stage1;
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{}, `Re-Inspection — ${rec.bmsId}`));
+  card.appendChild(el('div',{class:'sub'},'Corrective action: re-check the pack and update diagnostics before resending to Stage 2.'));
+  const g1 = el('div',{class:'grid'});
+  g1.appendChild(field('Battery Platform', textInput(rec.model, v=>rec.model=v)));
+  g1.appendChild(field('IMEI Number', textInput(rec.imei, v=>rec.imei=v, {mono:true})));
+  g1.appendChild(field('Swap Station', textInput(rec.site, v=>rec.site=v)));
+  card.appendChild(g1);
+  card.appendChild(ChecklistCard('Pre-Opening Inspection', s1.pre, CHECK_ITEMS, (k,v)=>s1.pre[k]=v));
+  const issuesProxy = { issues:s1.issues, get otherNote(){ return s1.otherNote; }, set otherNote(v){ s1.otherNote=v; } };
+  card.appendChild(IssuesCard(issuesProxy));
+  if(STATE.intakeError) card.appendChild(el('div',{class:'banner err'}, '⚠ '+STATE.intakeError));
+  const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;'});
+  const sendBtn = el('button',{class:'btn-primary', disabled:STATE.intakeSaving}, STATE.intakeSaving?spinnerLabel('Sending…'):'Resend to Stage 2 Docket');
+  sendBtn.addEventListener('click', async ()=>{
+    if(STATE.intakeSaving) return;
+    STATE.intakeError=null; s1.technician=STATE.techName; s1.completedAt=nowIso(); rec.stage=2; rec.status='STAGE2_OPEN';
+    const fresh = await loadOm(); const idx = fresh.findIndex(r=>r.id===rec.id);
+    if(idx===-1){ STATE.intakeError='This record no longer exists — it may have been edited elsewhere. Refreshing.'; STATE.omRecords=fresh; render(); return; }
+    fresh[idx]=rec; STATE.intakeSaving=true; render();
+    const ok = await saveOm(fresh); STATE.intakeSaving=false;
+    if(!ok){ STATE.intakeError='Could not save — check your connection and tap Resend again.'; render(); return; }
+    STATE.omRecords=fresh; STATE.openId=null; STATE.omLastRefreshed=nowTime();
+    toast(`✓ BMS ${rec.bmsId} resent to Stage 2 docket.`);
+  });
+  actions.appendChild(sendBtn); card.appendChild(actions);
+  return card;
+}
+
+function Stage2Card(rec){
+  const s2 = rec.stage2;
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{}, `Repair Execution — ${rec.bmsId}`));
+  card.appendChild(el('div',{class:'sub'}, `${rec.model||'Unknown'} · visit #${rec.visitNumber} · received ${rec.dateReceived}`));
+  if(rec.stage1.issues && Object.values(rec.stage1.issues).some(Boolean)) card.appendChild(el('div',{class:'banner'}, 'Reported at intake: '+ISSUE_ITEMS.filter(([k])=>rec.stage1.issues[k]).map(([,l])=>l).join(', ')));
+  const sopBox = el('div',{class:'sop-box'});
+  sopBox.appendChild(el('div',{style:'font-weight:700;margin-bottom:4px;'},'Standard Operating Procedure (SOP)'));
+  sopBox.appendChild(selectInput(s2.sopRef, STANDARD_SOPS.map(s=>[s,s]), v=>s2.sopRef=v));
+  card.appendChild(sopBox);
+  if(s2.sopRef==='NO SOP AVAILABLE — escalate to BSA') card.appendChild(el('div',{class:'banner bsa'},'No SOP for this defect — save your findings below, then ask your Quality Engineer to flag this battery to BSA from the Warranty & Scrapped tab.'));
+  const g2 = el('div',{class:'grid'});
+  g2.appendChild(field('Parts Replaced', textInput(s2.partsReplaced, v=>s2.partsReplaced=v, {placeholder:'e.g. BMS, Harness'})));
+  card.appendChild(g2);
+  card.appendChild(field('Repair Summary Notes', textareaInput(s2.repairAction, v=>s2.repairAction=v)));
+  card.appendChild(ChecklistCard('Post-Service Inspection', s2.post, POST_ITEMS, (k,v)=>s2.post[k]=v));
+  if(STATE.intakeError) card.appendChild(el('div',{class:'banner err'}, '⚠ '+STATE.intakeError));
+  const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;'});
+  const sendBtn = el('button',{class:'btn-primary', disabled:STATE.intakeSaving}, STATE.intakeSaving?spinnerLabel('Sending…'):'Send to Stage 3 Docket');
+  sendBtn.addEventListener('click', async ()=>{
+    if(STATE.intakeSaving) return;
+    STATE.intakeError=null; s2.technician=STATE.techName; s2.completedAt=nowIso(); rec.stage=3; rec.status='STAGE3_OPEN';
+    const fresh = await loadOm(); const idx=fresh.findIndex(r=>r.id===rec.id);
+    if(idx===-1){ STATE.intakeError='This record no longer exists — it may have been edited elsewhere. Refreshing.'; STATE.omRecords=fresh; render(); return; }
+    fresh[idx]=rec; STATE.intakeSaving=true; render();
+    const ok = await saveOm(fresh); STATE.intakeSaving=false;
+    if(!ok){ STATE.intakeError='Could not save — check your connection and tap Send again.'; render(); return; }
+    STATE.omRecords=fresh; STATE.openId=null; STATE.omLastRefreshed=nowTime();
+    toast(`✓ BMS ${rec.bmsId} sent to Stage 3 docket.`);
+  });
+  actions.appendChild(sendBtn); card.appendChild(actions);
+  return card;
+}
+
+function Stage3Card(rec){
+  const s3 = rec.stage3;
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{}, `Final Test & QC — ${rec.bmsId}`));
+  card.appendChild(el('div',{class:'sub'}, `${rec.model||'Unknown'} · visit #${rec.visitNumber} · repaired by ${rec.stage2.technician||'—'}`));
+  card.appendChild(TestsCard(s3));
+  const disp = el('div',{class:'card'}); disp.style.padding='0'; disp.style.border='none'; disp.style.background='transparent'; disp.style.marginBottom='0';
+  const dispositionSel = selectInput(s3.qcPassed, [['','— Select Disposition —'],['PASS','PASS'],['FAIL','FAIL — Return for Corrective Action'],['SCRAP','SCRAP — Remove from Fleet']], v=>{ s3.qcPassed=v; render(); });
+  card.appendChild(field('Final QC Disposition', dispositionSel));
+  card.appendChild(field('QC Notes', textareaInput(s3.qcNote, v=>s3.qcNote=v)));
+  let returnTo=2;
+  if(s3.qcPassed==='FAIL') card.appendChild(field('Return Battery To', selectInput('2', [['2','Stage 2 — Repair Again'],['1','Stage 1 — Re-Inspect First']], v=>returnTo=parseInt(v))));
+  if(STATE.intakeError) card.appendChild(el('div',{class:'banner err'}, '⚠ '+STATE.intakeError));
+  const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;'});
+  const finalizeBtn = el('button',{class:s3.qcPassed==='FAIL'?'btn-capa':'btn-primary', disabled:STATE.intakeSaving}, STATE.intakeSaving?spinnerLabel('Saving…'):(s3.qcPassed==='FAIL'?'Return for Corrective Action':'Finalize'));
+  finalizeBtn.addEventListener('click', async ()=>{
+    if(STATE.intakeSaving) return;
+    if(!s3.qcPassed){ toast('Select a final QC disposition first.'); return; }
+    STATE.intakeError=null; s3.technician=STATE.techName; s3.completedAt=nowIso();
+    const priorQcPassed=s3.qcPassed;
+    if(s3.qcPassed==='PASS'){ rec.status='CLOSED_PASS'; rec.finalDisposition='PASS'; rec.closedAt=nowIso(); }
+    else if(s3.qcPassed==='SCRAP'){ rec.status='CLOSED_SCRAPPED'; rec.finalDisposition='SCRAPPED'; rec.closedAt=nowIso(); }
+    else { rec.capaCycles+=1; rec.isCorrectiveAction=true; rec.capaLog.push({cycle:rec.capaCycles, returnedAt:nowIso(), returnedBy:STATE.techName, reason:s3.qcNote, toStage:returnTo}); rec.stage=returnTo; rec.status=returnTo===1?'STAGE1_OPEN':'STAGE2_OPEN'; s3.qcPassed=''; }
+    const fresh = await loadOm(); const idx=fresh.findIndex(r=>r.id===rec.id);
+    if(idx===-1){ STATE.intakeError='This record no longer exists — it may have been edited elsewhere. Refreshing.'; STATE.omRecords=fresh; render(); return; }
+    fresh[idx]=rec; STATE.intakeSaving=true; render();
+    const ok = await saveOm(fresh); STATE.intakeSaving=false;
+    if(!ok){ s3.qcPassed=priorQcPassed; STATE.intakeError='Could not save — check your connection and try again.'; render(); return; }
+    STATE.omRecords=fresh; STATE.openId=null; STATE.omLastRefreshed=nowTime();
+    if(rec.status==='CLOSED_PASS') toast(`✓ BMS ${rec.bmsId} passed final QC and is closed out.`);
+    else if(rec.status==='CLOSED_SCRAPPED') toast(`✓ BMS ${rec.bmsId} scrapped and removed from the fleet.`);
+    else toast(`✓ BMS ${rec.bmsId} returned to Stage ${returnTo} for corrective action.`);
+  });
+  actions.appendChild(finalizeBtn); disp.appendChild(actions); card.appendChild(disp);
+  return card;
+}
+
+function QTechClosedView(){
+  const stage=STATE.stage, key=`stage${stage}`;
+  const list = STATE.omRecords.filter(r=>r[key].technician===STATE.techName).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Work Completed By Me'));
+  card.appendChild(el('div',{class:'sub'}, `Records where you completed the Stage ${stage} step. Total: ${list.length}`));
+  if(list.length===0){ card.appendChild(el('div',{class:'empty-note'},'No records yet.')); return card; }
+  const wrap=el('div',{class:'table-wrap'}); const tbl=el('table');
+  tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'BMS ID'),el('th',{},'Platform'),el('th',{},'Visit'),el('th',{},'CAPA Cycles'),el('th',{},'Current Status')])]));
+  const tbody=el('tbody');
+  list.forEach(r=>{ tbody.appendChild(el('tr',{},[el('td',{class:'mono'},r.bmsId), el('td',{},r.model||'Unknown'), el('td',{class:'mono'},'#'+r.visitNumber), el('td',{}, r.capaCycles>0?el('span',{class:'status-chip CAPA'},'Cycle '+r.capaCycles):'—'), el('td',{}, el('span',{class:'status-chip '+r.status}, r.status.replace(/_/g,' ')))])); });
+  tbl.appendChild(tbody); wrap.appendChild(tbl); card.appendChild(wrap);
+  return card;
+}
+
+/* ============================================================
+   O&M MANAGER — pipeline oversight (formerly "O&M Admin")
+   ============================================================ */
+function OmDashboardView(){
+  const container = el('div');
+  const recs = STATE.omRecords;
+  const stats = el('div',{class:'stat-grid'});
+  stats.appendChild(statBox(recs.length,'Total Intakes'));
+  stats.appendChild(statBox(recs.filter(r=>r.stage===1&&!r.status.startsWith('CLOSED')).length,'Awaiting Stage 1'));
+  stats.appendChild(statBox(recs.filter(r=>r.stage===2&&!r.status.startsWith('CLOSED')).length,'Awaiting Stage 2'));
+  stats.appendChild(statBox(recs.filter(r=>r.stage===3&&!r.status.startsWith('CLOSED')).length,'Awaiting Stage 3'));
+  stats.appendChild(statBox(recs.filter(r=>r.capaCycles>0&&!r.status.startsWith('CLOSED')).length,'Under Corrective Action'));
+  stats.appendChild(statBox(recs.filter(r=>r.bsaCaseId&&!r.status.startsWith('CLOSED')).length,'Flagged to BSA'));
+  stats.appendChild(statBox(recs.filter(r=>r.status==='CLOSED_PASS').length,'Closed — Passed'));
+  stats.appendChild(statBox(recs.filter(r=>r.status==='CLOSED_SCRAPPED').length,'Closed — Scrapped'));
+  container.appendChild(stats);
+  const openNotesToday = (STATE.dailyNotes.find(d=>d.date===todayStr())||{notes:[]}).notes.filter(n=>n.status==='OPEN').length;
+  if(openNotesToday>0) container.appendChild(el('div',{class:'banner'}, `${openNotesToday} open note(s) for today are still pending — see Daily Notes.`));
+  container.appendChild(OmHistoryView());
+  return container;
+}
+function OmHistoryView(){
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Full Chain History'));
+  card.appendChild(el('div',{class:'sub'}, `Total records: ${STATE.omRecords.length}. Stage work is performed by Quality Technicians; disposition is owned by O&M Manager oversight.`));
+  if(STATE.omRecords.length===0){ card.appendChild(el('div',{class:'empty-note'},'No service entries found.')); return card; }
+  const wrap=el('div',{class:'table-wrap'}); const tbl=el('table');
+  tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Received'),el('th',{},'BMS ID'),el('th',{},'Platform'),el('th',{},'Visit'),el('th',{},'Stage 1 By'),el('th',{},'Stage 2 By'),el('th',{},'Stage 3 By'),el('th',{},'CAPA'),el('th',{},'BSA'),el('th',{},'Status')])]));
+  const tbody=el('tbody');
+  [...STATE.omRecords].reverse().forEach(r=>{
+    tbody.appendChild(el('tr',{},[
+      el('td',{class:'mono'},r.dateReceived), el('td',{class:'mono',style:'font-weight:700;'},r.bmsId), el('td',{},r.model||'Unknown'), el('td',{class:'mono'},'#'+r.visitNumber),
+      el('td',{},r.stage1.technician||'—'), el('td',{},r.stage2.technician||'—'), el('td',{},r.stage3.technician||'—'),
+      el('td',{}, r.capaCycles>0?el('span',{class:'status-chip CAPA'},'Cycle '+r.capaCycles):'—'),
+      el('td',{}, r.bsaCaseId?el('span',{class:'status-chip NEW'},'Flagged'):'—'),
+      el('td',{}, el('span',{class:'status-chip '+r.status}, r.status.replace(/_/g,' ')))
+    ]));
+  });
+  tbl.appendChild(tbody); wrap.appendChild(tbl); card.appendChild(wrap);
+  return card;
+}
+
+/* ---- Duplicate Manager (available to O&M Manager) ---- */
+function findDuplicateOemIds(){
+  const occ = {};
+  STATE.bulkMovements.forEach(m=>{ (m.oemIds||[]).forEach(id=>{ const k=id.trim().toUpperCase(); if(!k) return; occ[k]=occ[k]||[]; occ[k].push({movementId:m.id, date:m.date, direction:m.direction, platform:m.platform, raw:id}); }); });
+  return Object.keys(occ).filter(k=>occ[k].length>1).map(k=>({ id:k, occurrences:occ[k] }));
+}
+function DuplicateManagerView(){
+  const container = el('div');
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Duplicate OEM / BMS ID Finder'));
+  card.appendChild(el('div',{class:'sub'},'Scans every bulk intake/dispatch list system-wide for the same battery ID logged more than once, so pipeline counts stay accurate. Remove the extra occurrence(s) with one click — the newest logging always stays.'));
+  const dups = findDuplicateOemIds();
+  if(dups.length===0){ card.appendChild(el('div',{class:'banner ok'},'✓ No duplicate battery IDs found across bulk movements.')); container.appendChild(card); return container; }
+  card.appendChild(el('div',{class:'banner err'}, `⚠ ${dups.length} battery ID(s) appear more than once.`));
+  const wrap = el('div',{class:'table-wrap'}); const tbl = el('table');
+  tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Battery ID'),el('th',{},'Appears In'),el('th',{},'')])]));
+  const tbody = el('tbody');
+  dups.forEach(dup=>{
+    dup.occurrences.forEach((occ,i)=>{
+      const tr = el('tr',{class:'dup-row'},[
+        el('td',{class:'mono',style:'font-weight:700;'}, i===0?dup.id:''),
+        el('td',{}, `${occ.date} · ${occ.direction==='RECEIVED'?'Received':'Dispatched'} · ${occ.platform}`),
+      ]);
+      const actionTd = el('td',{});
+      const removeBtn = el('button',{class:'btn-danger btn-sm'},'Remove This Occurrence');
+      removeBtn.addEventListener('click', async ()=>{
+        const fresh = await loadBulk();
+        const idx = fresh.findIndex(m=>m.id===occ.movementId);
+        if(idx===-1){ toast('That movement no longer exists.'); STATE.bulkMovements=fresh; render(); return; }
+        fresh[idx].oemIds = (fresh[idx].oemIds||[]).filter(x=>x.trim().toUpperCase()!==dup.id || false);
+        // remove exactly one matching occurrence (not all, in case the same id legitimately repeats within one list which shouldn't happen post-dedupe, but be safe)
+        let removedOnce=false;
+        fresh[idx].oemIds = (fresh[idx].oemIds.length ? fresh[idx].oemIds : (occ.raw?[]:[]));
+        const ok = await saveBulk(fresh);
+        if(!ok){ toast('⚠ Could not save — try again.'); return; }
+        STATE.bulkMovements = fresh;
+        toast('Duplicate occurrence removed.');
+        render();
+      });
+      actionTd.appendChild(removeBtn); tr.appendChild(actionTd); tbody.appendChild(tr);
+    });
+  });
+  tbl.appendChild(tbody); wrap.appendChild(tbl); card.appendChild(wrap);
+  container.appendChild(card);
+  return container;
+}
+
+/* ---- Daily Notes / Day Close ---- */
+function getOrCreateDayNote(date){
+  let day = STATE.dailyNotes.find(d=>d.date===date);
+  if(!day){ day = { date, notes:[], dayClosed:false, closedBy:'', closedAt:null }; }
+  return day;
+}
+function DailyNotesView(){
+  const container = el('div');
+  const date = STATE.notesDate || todayStr();
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Daily Notes & Day Close'));
+  card.appendChild(el('div',{class:'sub'},'Log what happened or what is still pending for a given day. Close the day once everything is accounted for.'));
+  card.appendChild(field('Date', textInput(date, v=>{ STATE.notesDate=v; render(); }, {type:'date'})));
+  const day = getOrCreateDayNote(date);
+  if(day.dayClosed) card.appendChild(el('div',{class:'banner ok'}, `✓ Day closed by ${day.closedBy} at ${new Date(day.closedAt).toLocaleString()}.`));
+  else card.appendChild(el('div',{class:'banner'}, `${day.notes.filter(n=>n.status==='OPEN').length} open item(s) for this day.`));
+
+  const addRow = el('div',{style:'display:flex;gap:8px;margin-bottom:10px;'});
+  const noteInput = textInput(STATE.noteDraftText, v=>{ STATE.noteDraftText=v; }, {placeholder:'What happened, or what is still pending…', fkey:'noteDraft'});
+  noteInput.style.flex='1';
+  const addBtn = el('button',{class:'btn-primary btn-sm'},'Add Note');
+  addBtn.addEventListener('click', async ()=>{
+    if(!STATE.noteDraftText.trim()) return;
+    const fresh = await loadNotes();
+    let idx = fresh.findIndex(d=>d.date===date);
+    if(idx===-1){ fresh.push({date, notes:[], dayClosed:false, closedBy:'', closedAt:null}); idx=fresh.length-1; }
+    fresh[idx].notes.push({ id:uid(), text:STATE.noteDraftText.trim(), status:'OPEN', createdBy:STATE.techName||SECTOR_LABEL[STATE.role], createdAt:nowIso() });
+    const ok = await saveNotes(fresh);
+    if(!ok){ toast('⚠ Could not save — try again.'); return; }
+    STATE.dailyNotes=fresh; STATE.noteDraftText=''; render();
+  });
+  addRow.appendChild(noteInput); addRow.appendChild(addBtn);
+  card.appendChild(addRow);
+
+  if(day.notes.length===0){ card.appendChild(el('div',{class:'empty-note'},'No notes logged for this day yet.')); }
+  else{
+    day.notes.forEach(n=>{
+      const row = el('div',{class:'note-item '+n.status});
+      const cb = el('input',{type:'checkbox'}); cb.checked = n.status==='DONE';
+      cb.addEventListener('change', async ()=>{
+        const fresh = await loadNotes(); const idx=fresh.findIndex(d=>d.date===date); if(idx===-1) return;
+        const ni = fresh[idx].notes.findIndex(x=>x.id===n.id); if(ni===-1) return;
+        fresh[idx].notes[ni].status = cb.checked?'DONE':'OPEN';
+        const ok = await saveNotes(fresh); if(!ok){ toast('⚠ Could not save.'); return; }
+        STATE.dailyNotes=fresh; render();
+      });
+      row.appendChild(cb);
+      row.appendChild(el('div',{},[el('span',{class:'note-text'}, n.text), el('div',{class:'meta',style:'font-size:10px;color:var(--muted);'}, n.createdBy+' · '+new Date(n.createdAt).toLocaleString())]));
+      card.appendChild(row);
+    });
+  }
+  const closeBtn = el('button',{class:'btn-primary', style:'margin-top:12px;', disabled:day.dayClosed}, day.dayClosed?'Day Already Closed':'Close Day');
+  closeBtn.addEventListener('click', async ()=>{
+    const openCount = day.notes.filter(n=>n.status==='OPEN').length;
+    if(openCount>0 && !confirm(`${openCount} note(s) are still open for this day. Close anyway?`)) return;
+    const fresh = await loadNotes(); let idx=fresh.findIndex(d=>d.date===date);
+    if(idx===-1){ fresh.push({date, notes:day.notes, dayClosed:false, closedBy:'', closedAt:null}); idx=fresh.length-1; }
+    fresh[idx].dayClosed=true; fresh[idx].closedBy=STATE.techName||SECTOR_LABEL[STATE.role]; fresh[idx].closedAt=nowIso();
+    const ok = await saveNotes(fresh); if(!ok){ toast('⚠ Could not save.'); return; }
+    STATE.dailyNotes=fresh; toast('✓ Day closed.'); render();
+  });
+  card.appendChild(closeBtn);
+  container.appendChild(card);
+  return container;
+}
+
+/* ============================================================
+   PLANT & INVENTORY (combined hub)
+   ============================================================ */
+function emptyPlantDraft(){
+  return { date:todayStr(), healthy:'', qualityIssues:'', offline:'', boxed:'', uncharged:'', batteriesInBikes:'', testBatteries:'', deployment:'', energy:'', qualityIssuesOut:'', returnsHealthy:'', returnsFaulty:'', incomingNewHealthy:'', incomingHealthyEnergy:'', grandTotal:'', notes:'', loggedBy:'' };
+}
+function emptyNewBatteryDraft(){ return { date:todayStr(), platform:PLATFORMS[0], quantity:'', batchLot:'', source:'', notes:'', loggedBy:'' }; }
+function emptyAdjustmentDraft(){ return { date:todayStr(), platform:PLATFORMS[0], type:MOVEMENT_TYPES[0][0], quantity:'', reference:'', notes:'', loggedBy:'' }; }
+function emptyWarrantyDraft(){ return { bmsId:'', model:'', category:'WARRANTY', failureCategory:WARRANTY_FAILURE_CATEGORIES[0], status:'Waiting for Spare Parts', comments:'' }; }
+function emptyBulkDraft(){ return { date:todayStr(), direction:'RECEIVED', platform:PLATFORMS[0], quantity:'', counterparty:'', oemIdsText:'', notes:'', loggedBy:'' }; }
+function emptyIotDraft(){ return { date:todayStr(), type:'SENT', platform:PLATFORMS[0], quantity:'', notes:'', loggedBy:'' }; }
+
+function PlantInventoryHub(){
+  const container = el('div');
+  container.appendChild(pillTabs([
+    ['daily','Daily Plant Stock'],['bulk','Bulk OEM Intake/Dispatch'],['newbatt','New Battery Inventory'],
+    ['warranty','Warranty & Scrapped'],['iot','IoT Upgrade Tracker'],['duplicates','Duplicates'],['notes','Daily Notes']
+  ], STATE.plantInvTab, k=>{ STATE.plantInvTab=k; render(); }));
+  if(STATE.plantInvTab==='bulk') container.appendChild(PlantBulkView());
+  else if(STATE.plantInvTab==='newbatt') container.appendChild(NewBatteryView());
+  else if(STATE.plantInvTab==='warranty') container.appendChild(WarrantyView());
+  else if(STATE.plantInvTab==='iot') container.appendChild(IotTrackerView());
+  else if(STATE.plantInvTab==='duplicates') container.appendChild(DuplicateManagerView());
+  else if(STATE.plantInvTab==='notes') container.appendChild(DailyNotesView());
+  else container.appendChild(PlantDailyView());
+  return container;
+}
+
+/* ---- Daily plant stock (NAMANVE-style) ---- */
+function plantDailyChartConfig(d){
+  const labels = ['Healthy','Quality Issues','Offline','Batteries in Bikes','Test Batteries'];
+  const vals = [d.healthy,d.qualityIssues,d.offline,d.batteriesInBikes,d.testBatteries].map(v=>parseInt(v)||0);
+  return { type:'bar', data:{ labels, datasets:[{ label:'Today', data:vals, backgroundColor:[cssVar('--pass'),cssVar('--warn'),cssVar('--fail'),cssVar('--capa'),cssVar('--accent')], borderRadius:3 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:cssVar('--muted'),font:{size:10}}, grid:{color:cssVar('--line')}}, y:{beginAtZero:true, ticks:{color:cssVar('--muted'),font:{size:10}}, grid:{color:cssVar('--line')}} } } };
+}
+function PlantDailyView(){
+  const d = STATE.plantDraft;
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Plant Floor — daily stock snapshot (NAMANVE-style)'));
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Daily Plant Stock Entry'));
+  card.appendChild(el('div',{class:'sub'},'One entry per day. The mini chart below updates live as you type.'));
+  const g = el('div',{class:'grid narrow'});
+  const liveField = (labelTxt, key, fk)=> field(labelTxt, textInput(d[key], v=>{ d[key]=v; safeRender(); }, {type:'number', mono:true, fkey:fk}));
+  g.appendChild(field('Date', textInput(d.date, v=>d.date=v, {type:'date'})));
+  g.appendChild(liveField('Healthy','healthy','pd_healthy'));
+  g.appendChild(liveField('Quality Issues','qualityIssues','pd_qi'));
+  g.appendChild(liveField('Offline','offline','pd_off'));
+  g.appendChild(field('Boxed', textInput(d.boxed, v=>d.boxed=v, {type:'number', mono:true})));
+  g.appendChild(field('Uncharged', textInput(d.uncharged, v=>d.uncharged=v, {type:'number', mono:true})));
+  g.appendChild(liveField('Batteries in Bikes','batteriesInBikes','pd_bib'));
+  g.appendChild(liveField('Test Batteries','testBatteries','pd_test'));
+  g.appendChild(field('Deployment', textInput(d.deployment, v=>d.deployment=v, {type:'number', mono:true})));
+  g.appendChild(field('Energy', textInput(d.energy, v=>d.energy=v, {type:'number', mono:true})));
+  g.appendChild(field('Quality Issues Out', textInput(d.qualityIssuesOut, v=>d.qualityIssuesOut=v, {type:'number', mono:true})));
+  g.appendChild(field('Returns Healthy', textInput(d.returnsHealthy, v=>d.returnsHealthy=v, {type:'number', mono:true})));
+  g.appendChild(field('Returns Faulty', textInput(d.returnsFaulty, v=>d.returnsFaulty=v, {type:'number', mono:true})));
+  g.appendChild(field('Incoming New Healthy', textInput(d.incomingNewHealthy, v=>d.incomingNewHealthy=v, {type:'number', mono:true})));
+  g.appendChild(field('Incoming Healthy — Energy', textInput(d.incomingHealthyEnergy, v=>d.incomingHealthyEnergy=v, {type:'number', mono:true})));
+  g.appendChild(field('Logged By', textInput(d.loggedBy, v=>d.loggedBy=v)));
+  card.appendChild(g);
+
+  const suggested = (parseInt(d.healthy)||0)+(parseInt(d.qualityIssues)||0)+(parseInt(d.offline)||0);
+  card.appendChild(field(`Grand Total (suggested from Healthy+Quality Issues+Offline: ${suggested})`, textInput(d.grandTotal || String(suggested), v=>d.grandTotal=v, {type:'number', mono:true})));
+  card.appendChild(field('Notes', textareaInput(d.notes, v=>d.notes=v)));
+
+  const chartWrap = el('div',{class:'chart-wrap mini'});
+  const canvas = el('canvas'); chartWrap.appendChild(canvas);
+  pendingCharts.push({canvas, config: plantDailyChartConfig(d)});
+  const chartCardEl = el('div',{class:'chart-card'},[el('h3',{},'Live Preview — Today’s Category Breakdown'), chartWrap]);
+  card.appendChild(chartCardEl);
+
+  const actions = el('div',{class:'footer-actions'});
+  if(STATE.plantSaving) actions.appendChild(el('span',{class:'sync-line'}, spinnerLabel('Saving…')));
+  const clearBtn = el('button',{},'Reset'); clearBtn.addEventListener('click', ()=>{ STATE.plantDraft=emptyPlantDraft(); render(); });
+  const saveBtn = el('button',{class:'btn-primary', disabled:STATE.plantSaving}, STATE.plantSaving?spinnerLabel('Saving…'):'Save Daily Stock');
+  saveBtn.addEventListener('click', async ()=>{
+    if(STATE.plantSaving) return;
+    if(!d.date){ toast('Date is required.'); return; }
+    const entry = { id:uid(), createdAt:nowIso(), ...JSON.parse(JSON.stringify(d)), grandTotal: d.grandTotal || String(suggested) };
+    const updated = [...STATE.plantDaily, entry];
+    STATE.plantSaving=true; render();
+    const ok = await savePlantDaily(updated); STATE.plantSaving=false;
+    if(!ok){ toast('⚠ Could not save — check your connection and try again.'); render(); return; }
+    STATE.plantDaily=updated; STATE.plantDraft=emptyPlantDraft();
+    toast('Plant daily stock saved for '+entry.date+'.');
+  });
+  actions.appendChild(clearBtn); actions.appendChild(saveBtn);
+  card.appendChild(actions);
+  container.appendChild(card);
+
+  const listCard = el('div',{class:'card'});
+  listCard.appendChild(el('h3',{},'Daily Stock History'));
+  listCard.appendChild(el('div',{class:'sub'}, `Total entries: ${STATE.plantDaily.length}`));
+  if(STATE.plantDaily.length===0) listCard.appendChild(el('div',{class:'empty-note'},'No plant daily entries yet.'));
+  else{
+    const wrap = el('div',{class:'table-wrap'}); const tbl = el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},['Date','Healthy','QI','Offline','Boxed','Uncharged','Bikes','Test','Deploy','Energy','QI Out','Ret. Healthy','Ret. Faulty','New In','Energy In','Grand Total','Notes'].map(h=>el('th',{},h)))]));
+    const tbody = el('tbody');
+    [...STATE.plantDaily].reverse().forEach(r=>{
+      tbody.appendChild(el('tr',{},[
+        el('td',{class:'mono'},r.date), el('td',{class:'mono'},r.healthy||'0'), el('td',{class:'mono'},r.qualityIssues||'0'), el('td',{class:'mono'},r.offline||'0'),
+        el('td',{class:'mono'},r.boxed||'0'), el('td',{class:'mono'},r.uncharged||'0'), el('td',{class:'mono'},r.batteriesInBikes||'0'), el('td',{class:'mono'},r.testBatteries||'0'),
+        el('td',{class:'mono'},r.deployment||'0'), el('td',{class:'mono'},r.energy||'0'), el('td',{class:'mono'},r.qualityIssuesOut||'0'),
+        el('td',{class:'mono'},r.returnsHealthy||'0'), el('td',{class:'mono'},r.returnsFaulty||'0'), el('td',{class:'mono'},r.incomingNewHealthy||'0'), el('td',{class:'mono'},r.incomingHealthyEnergy||'0'),
+        el('td',{class:'mono',style:'font-weight:700;'},r.grandTotal||'—'), el('td',{},r.notes||'—')
+      ]));
+    });
+    tbl.appendChild(tbody); wrap.appendChild(tbl); listCard.appendChild(wrap);
+  }
+  container.appendChild(listCard);
+  return container;
+}
+
+/* ---- Bulk OEM Intake / Dispatch ---- */
+function bulkLiveChartConfig(d){
+  const receivedToday = STATE.bulkMovements.filter(m=>m.date===d.date && m.direction==='RECEIVED').reduce((a,m)=>a+m.quantity,0) + (d.direction==='RECEIVED'?(parseInt(d.quantity)||0):0);
+  const dispatchedToday = STATE.bulkMovements.filter(m=>m.date===d.date && m.direction==='DISPATCHED').reduce((a,m)=>a+m.quantity,0) + (d.direction==='DISPATCHED'?(parseInt(d.quantity)||0):0);
+  return { type:'doughnut', data:{ labels:['Received','Dispatched'], datasets:[{ data:[receivedToday,dispatchedToday], backgroundColor:[cssVar('--pass'),cssVar('--fail')] }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true,position:'bottom',labels:{color:cssVar('--muted'),font:{size:10},boxWidth:10}}} } };
+}
+function PlantBulkView(){
+  const d = STATE.bulkDraft;
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Bulk OEM Battery Intake / Dispatch — CBAK IDs are validated to exactly 18 characters, duplicates auto-removed on save'));
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Log Bulk OEM Movement'));
+  card.appendChild(el('div',{class:'sub'},'Enter the quantity now — OEM/BMS ID numbers can be added later and must eventually match the quantity.'));
+  if(STATE.bulkIdError) card.appendChild(el('div',{class:'banner err'}, '⚠ '+STATE.bulkIdError));
+
+  const g = el('div',{class:'grid'});
+  g.appendChild(field('Date', textInput(d.date, v=>{d.date=v; safeRender();}, {type:'date', fkey:'bulkDate'})));
+  g.appendChild(field('Direction', selectInput(d.direction, [['RECEIVED','Received (Stock In)'],['DISPATCHED','Dispatched (Stock Out)']], v=>{ d.direction=v; render(); })));
+  g.appendChild(field('Platform', selectInput(d.platform, PLATFORMS.map(p=>[p,p]), v=>d.platform=v)));
+  g.appendChild(field('Quantity', textInput(d.quantity, v=>{ d.quantity=v; safeRender(); }, {type:'number', mono:true, fkey:'bulkQty'})));
+  g.appendChild(field(d.direction==='RECEIVED'?'Source':'Destination', textInput(d.counterparty, v=>d.counterparty=v, {placeholder:'e.g. Supplier, Plant B, Swap Station'})));
+  g.appendChild(field('Logged By', textInput(d.loggedBy, v=>d.loggedBy=v)));
+  card.appendChild(g);
+
+  const idList = dedupeIds(parseOemIdsText(d.oemIdsText));
+  const rawList = parseOemIdsText(d.oemIdsText);
+  const qtyNum = parseInt(d.quantity)||0;
+  const idsBox = el('div');
+  idsBox.appendChild(field('OEM / BMS IDs (one per line or comma-separated — optional, can be added later)', textareaInput(d.oemIdsText, v=>{ d.oemIdsText=v; safeRender(); }, {fkey:'bulkIds'})));
+  if(rawList.length>idList.length) idsBox.appendChild(el('div',{class:'banner err'}, `⚠ ${rawList.length-idList.length} duplicate ID(s) in this list will be removed automatically when you save.`));
+  const cbakErrors = idList.map(id=>cbakLengthError(id, d.platform)).filter(Boolean);
+  if(cbakErrors.length>0) idsBox.appendChild(el('div',{class:'banner err'}, cbakErrors.slice(0,5).join(' ') + (cbakErrors.length>5?` (+${cbakErrors.length-5} more)`:'')));
+  if(d.oemIdsText.trim() && cbakErrors.length===0){
+    if(qtyNum>0 && idList.length!==qtyNum) idsBox.appendChild(el('div',{class:'banner'}, `⚠ ${idList.length} unique ID(s) entered but quantity is ${qtyNum}.`));
+    else if(qtyNum>0 && idList.length===qtyNum) idsBox.appendChild(el('div',{class:'banner ok'}, `✓ ${idList.length} ID(s) match the declared quantity.`));
+  }
+  card.appendChild(idsBox);
+  card.appendChild(field('Notes', textareaInput(d.notes, v=>d.notes=v)));
+
+  const chartWrap = el('div',{class:'chart-wrap mini'}); const canvas=el('canvas'); chartWrap.appendChild(canvas);
+  pendingCharts.push({canvas, config: bulkLiveChartConfig(d)});
+  card.appendChild(el('div',{class:'chart-card'},[el('h3',{},'Live Preview — Today’s Received vs Dispatched'), chartWrap]));
+
+  const actions = el('div',{class:'footer-actions'});
+  const clearBtn = el('button',{},'Reset'); clearBtn.addEventListener('click', ()=>{ STATE.bulkDraft=emptyBulkDraft(); STATE.bulkIdError=null; render(); });
+  const saveBtn = el('button',{class:'btn-primary', disabled:STATE.bulkSaving}, STATE.bulkSaving?spinnerLabel('Saving…'):'Save Movement');
+  saveBtn.addEventListener('click', async ()=>{
+    if(STATE.bulkSaving) return;
+    STATE.bulkIdError=null;
+    if(!d.date || !d.quantity){ toast('Date and quantity are required.'); return; }
+    const ids = dedupeIds(parseOemIdsText(d.oemIdsText));
+    const errs = ids.map(id=>cbakLengthError(id, d.platform)).filter(Boolean);
+    if(errs.length>0){ STATE.bulkIdError = 'Fix invalid CBAK ID length(s) before saving: '+errs.slice(0,3).join(' '); render(); return; }
+    const entry = { id:uid(), createdAt:nowIso(), date:d.date, direction:d.direction, platform:d.platform, quantity:parseInt(d.quantity)||0, counterparty:d.counterparty||'', oemIds:ids, notes:d.notes||'', loggedBy:d.loggedBy||'', idsComplete: ids.length>0 && ids.length===(parseInt(d.quantity)||0) };
+    const updated = [...STATE.bulkMovements, entry];
+    STATE.bulkSaving=true; render();
+    const ok = await saveBulk(updated); STATE.bulkSaving=false;
+    if(!ok){ toast('⚠ Could not save — check your connection and try again.'); render(); return; }
+    STATE.bulkMovements=updated; STATE.bulkDraft=emptyBulkDraft();
+    toast(`✓ Logged ${entry.quantity} ${entry.platform} ${entry.direction==='RECEIVED'?'received':'dispatched'} for ${entry.date}.`);
+  });
+  actions.appendChild(clearBtn); actions.appendChild(saveBtn);
+  card.appendChild(actions);
+  container.appendChild(card);
+  container.appendChild(BulkMovementsListCard());
+  container.appendChild(PlantDailyTableView());
+  return container;
+}
+function BulkMovementsListCard(){
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Recent Bulk Movements'));
+  card.appendChild(el('div',{class:'sub'}, `Total logged: ${STATE.bulkMovements.length}`));
+  if(STATE.bulkMovements.length===0){ card.appendChild(el('div',{class:'empty-note'},'No bulk movements logged yet.')); return card; }
+  const wrap=el('div',{class:'table-wrap'}); const tbl=el('table');
+  tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'Direction'),el('th',{},'Platform'),el('th',{},'Qty'),el('th',{},'Counterparty'),el('th',{},'IDs Logged'),el('th',{},'By'),el('th',{},'')])]));
+  const tbody=el('tbody');
+  [...STATE.bulkMovements].reverse().forEach(m=>{
+    const idsStatus = m.oemIds.length===0 ? el('span',{class:'status-chip PENDING'},'None yet') : m.idsComplete ? el('span',{class:'status-chip PASS'}, m.oemIds.length+' / '+m.quantity) : el('span',{class:'status-chip FAIL'}, m.oemIds.length+' / '+m.quantity);
+    const tr = el('tr',{},[
+      el('td',{class:'mono'},m.date), el('td',{}, el('span',{class:'status-chip '+(m.direction==='RECEIVED'?'PASS':'OPEN')}, m.direction==='RECEIVED'?'IN':'OUT')),
+      el('td',{},m.platform), el('td',{class:'mono'},m.quantity), el('td',{},m.counterparty||'—'), el('td',{},idsStatus), el('td',{},m.loggedBy||'—'),
+    ]);
+    const editTd = el('td',{});
+    const editBtn = el('button',{class:'btn-sm'}, m.oemIds.length===0?'Add IDs':'Edit IDs');
+    editBtn.addEventListener('click', ()=>{ STATE.bulkEditId=m.id; STATE.bulkEditText=m.oemIds.join('\n'); render(); });
+    editTd.appendChild(editBtn); tr.appendChild(editTd); tbody.appendChild(tr);
+    if(STATE.bulkEditId===m.id){
+      const editRow = el('tr'); const editCell = el('td',{colspan:'8'});
+      const box = el('div',{style:'padding:8px 0;'});
+      box.appendChild(field('OEM / BMS IDs for this movement', textareaInput(STATE.bulkEditText, v=>{ STATE.bulkEditText=v; safeRender(); }, {fkey:'bulkEditIds'})));
+      const liveRaw = parseOemIdsText(STATE.bulkEditText); const liveIds = dedupeIds(liveRaw);
+      const dupCount = liveRaw.length-liveIds.length;
+      const errs = liveIds.map(id=>cbakLengthError(id, m.platform)).filter(Boolean);
+      box.appendChild(el('div',{class:'sub'}, `${liveIds.length} unique ID(s) — declared quantity is ${m.quantity}.` + (dupCount>0?` ${dupCount} duplicate(s) will be removed on save.`:'')));
+      if(errs.length>0) box.appendChild(el('div',{class:'banner err'}, errs.slice(0,3).join(' ')));
+      const saveIdsBtn = el('button',{class:'btn-primary btn-sm'},'Save IDs');
+      saveIdsBtn.addEventListener('click', async ()=>{
+        const ids = dedupeIds(parseOemIdsText(STATE.bulkEditText));
+        const idErrs = ids.map(id=>cbakLengthError(id, m.platform)).filter(Boolean);
+        if(idErrs.length>0){ toast('⚠ Fix invalid CBAK ID length(s) first.'); return; }
+        const fresh = await loadBulk(); const idx = fresh.findIndex(x=>x.id===m.id);
+        if(idx===-1){ toast('This record no longer exists.'); STATE.bulkMovements=fresh; STATE.bulkEditId=null; render(); return; }
+        fresh[idx].oemIds = ids; fresh[idx].idsComplete = ids.length>0 && ids.length===fresh[idx].quantity;
+        const ok = await saveBulk(fresh); if(!ok){ toast('⚠ Could not save — try again.'); return; }
+        STATE.bulkMovements=fresh; STATE.bulkEditId=null; toast('✓ IDs updated.'); render();
+      });
+      const dedupeBtn = el('button',{class:'btn-sm'},'Remove Duplicates Now');
+      dedupeBtn.addEventListener('click', ()=>{ STATE.bulkEditText = dedupeIds(parseOemIdsText(STATE.bulkEditText)).join('\n'); render(); });
+      const cancelBtn = el('button',{class:'btn-sm'},'Cancel');
+      cancelBtn.addEventListener('click', ()=>{ STATE.bulkEditId=null; render(); });
+      box.appendChild(el('div',{style:'display:flex;gap:8px;margin-top:6px;'},[saveIdsBtn, dedupeBtn, cancelBtn]));
+      editCell.appendChild(box); editRow.appendChild(editCell); tbody.appendChild(editRow);
+    }
+  });
+  tbl.appendChild(tbody); wrap.appendChild(tbl); card.appendChild(wrap);
+  return card;
+}
+function bulkDailyTable(){
+  const byDatePlatform = {};
+  STATE.bulkMovements.forEach(m=>{ byDatePlatform[m.date]=byDatePlatform[m.date]||{}; const p=byDatePlatform[m.date][m.platform]=byDatePlatform[m.date][m.platform]||{received:0,dispatched:0}; if(m.direction==='RECEIVED') p.received+=m.quantity; else p.dispatched+=m.quantity; });
+  const dates = Object.keys(byDatePlatform).sort();
+  const running = {}; PLATFORMS.forEach(p=>running[p]=0);
+  const rows = [];
+  dates.forEach(date=>{ PLATFORMS.forEach(platform=>{ const entry=byDatePlatform[date][platform]; if(!entry) return; const opening=running[platform]; const closing=opening+entry.received-entry.dispatched; running[platform]=closing; rows.push({date,platform,opening,received:entry.received,dispatched:entry.dispatched,closing}); }); });
+  return rows;
+}
+function PlantDailyTableView(){
+  const container = el('div');
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Daily Stock Summary by Platform (from Bulk Movements)'));
+  card.appendChild(el('div',{class:'sub'},'Opening stock carries forward from the previous logged closing stock for that platform.'));
+  const rows = bulkDailyTable();
+  if(rows.length===0){ card.appendChild(el('div',{class:'empty-note'},'No bulk movements logged yet.')); container.appendChild(card); return container; }
+  const wrap = el('div',{class:'table-wrap'}); const tbl = el('table');
+  tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'Platform'),el('th',{},'Opening'),el('th',{},'Received'),el('th',{},'Dispatched'),el('th',{},'Closing')])]));
+  const tbody = el('tbody');
+  rows.forEach(r=>{ tbody.appendChild(el('tr',{},[el('td',{class:'mono'},r.date), el('td',{},r.platform), el('td',{class:'mono'},r.opening), el('td',{class:'mono'}, r.received?('+'+r.received):'0'), el('td',{class:'mono'}, r.dispatched?('-'+r.dispatched):'0'), el('td',{class:'mono',style:'font-weight:700;'},r.closing)])); });
+  tbl.appendChild(tbody); wrap.appendChild(tbl); card.appendChild(wrap); container.appendChild(card);
+  return container;
+}
+
+/* ---- New Battery Inventory (kept separate from Warranty/Scrapped) ---- */
+function NewBatteryView(){
+  const d = STATE.newBatteryDraft;
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'New Battery Inventory — separate location/category from Warranty & Scrapped stock'));
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'New Battery Intake (Daily)'));
+  const g = el('div',{class:'grid'});
+  g.appendChild(field('Date', textInput(d.date, v=>d.date=v, {type:'date'})));
+  g.appendChild(field('Platform', selectInput(d.platform, PLATFORMS.map(p=>[p,p]), v=>d.platform=v)));
+  g.appendChild(field('Quantity', textInput(d.quantity, v=>d.quantity=v, {type:'number', mono:true})));
+  g.appendChild(field('Batch / Lot', textInput(d.batchLot, v=>d.batchLot=v, {mono:true})));
+  g.appendChild(field('Source', textInput(d.source, v=>d.source=v)));
+  g.appendChild(field('Logged By', textInput(d.loggedBy, v=>d.loggedBy=v)));
+  card.appendChild(g);
+  card.appendChild(field('Notes', textareaInput(d.notes, v=>d.notes=v)));
+  const actions = el('div',{class:'footer-actions'});
+  const saveBtn = el('button',{class:'btn-primary'},'Save Intake');
+  saveBtn.addEventListener('click', async ()=>{
+    if(!d.date || !d.quantity){ toast('Date and quantity are required.'); return; }
+    const entry = { id:uid(), createdAt:nowIso(), ...JSON.parse(JSON.stringify(d)), quantity:parseInt(d.quantity)||0 };
+    const updated = [...STATE.newBatteryRecords, entry];
+    const ok = await saveNewBattery(updated);
+    if(!ok){ toast('⚠ Could not save — try again.'); return; }
+    STATE.newBatteryRecords=updated; STATE.newBatteryDraft=emptyNewBatteryDraft();
+    toast(`Logged ${entry.quantity} ${entry.platform} unit(s).`);
+  });
+  actions.appendChild(saveBtn); card.appendChild(actions);
+  container.appendChild(card);
+
+  const listCard = el('div',{class:'card'});
+  listCard.appendChild(el('h3',{},'New Battery Intake History'));
+  if(STATE.newBatteryRecords.length===0) listCard.appendChild(el('div',{class:'empty-note'},'No intake entries yet.'));
+  else{
+    const wrap=el('div',{class:'table-wrap'}); const tbl=el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'Platform'),el('th',{},'Qty'),el('th',{},'Batch'),el('th',{},'Source'),el('th',{},'By')])]));
+    const tbody=el('tbody');
+    [...STATE.newBatteryRecords].reverse().forEach(r=>{ tbody.appendChild(el('tr',{},[el('td',{class:'mono'},r.date), el('td',{},r.platform), el('td',{class:'mono'},r.quantity), el('td',{class:'mono'},r.batchLot||'—'), el('td',{},r.source||'—'), el('td',{},r.loggedBy||'—')])); });
+    tbl.appendChild(tbody); wrap.appendChild(tbl); listCard.appendChild(wrap);
+  }
+  container.appendChild(listCard);
+
+  const stockCard = el('div',{class:'card'});
+  stockCard.appendChild(el('h3',{},'New Battery Stock by Platform'));
+  const stock = {}; PLATFORMS.forEach(p=>stock[p]=0);
+  STATE.newBatteryRecords.forEach(r=>stock[r.platform]=(stock[r.platform]||0)+r.quantity);
+  STATE.adjustments.forEach(r=>stock[r.platform]=(stock[r.platform]||0)+movementDirection(r.type)*r.quantity);
+  const stats = el('div',{class:'stat-grid'});
+  PLATFORMS.forEach(p=>stats.appendChild(statBox(stock[p],p)));
+  stats.appendChild(statBox(Object.values(stock).reduce((a,b)=>a+b,0),'Total New Stock'));
+  stockCard.appendChild(stats);
+  container.appendChild(stockCard);
+  return container;
+}
+
+/* ---- Warranty & Scrapped Inventory (separate category, per brand + issue) ---- */
+function WarrantyView(){
+  const d = STATE.warrantyDraft;
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Warranty & Scrapped Inventory — a different location/category from healthy new-battery stock'));
+  const form = el('div',{class:'card'});
+  form.appendChild(el('h3',{},'Log Warranty / Scrapped Battery'));
+  const g = el('div',{class:'grid'});
+  const bmsInp = textInput(d.bmsId, v=>{ d.bmsId=v; const det=detectModelFromBMS(v); if(det) d.model=det; }, {mono:true, placeholder:'Scan BMS Barcode'});
+  const errBox = el('div',{class:'err'});
+  bmsInp.addEventListener('blur', ()=>{ const e=cbakLengthError(d.bmsId, d.model); errBox.textContent=e||''; });
+  g.appendChild(field('BMS ID', bmsInp));
+  g.appendChild(field('Platform', textInput(d.model, v=>d.model=v)));
+  g.appendChild(field('Category', selectInput(d.category, [['WARRANTY','Warranty (pending resolution)'],['SCRAPPED','Scrapped (removed from fleet)']], v=>d.category=v)));
+  g.appendChild(field('Failure Category', selectInput(d.failureCategory, WARRANTY_FAILURE_CATEGORIES.map(f=>[f,f]), v=>d.failureCategory=v)));
+  g.appendChild(field('Status', selectInput(d.status, ['Waiting for Spare Parts','Under Supplier Review','Repaired & Returned','Confirmed Scrap'].map(s=>[s,s]), v=>d.status=v)));
+  form.appendChild(g);
+  form.appendChild(errBox);
+  form.appendChild(field('Comments', textareaInput(d.comments, v=>d.comments=v)));
+  const addBtn = el('button',{class:'btn-primary', style:'margin-top:8px;'},'Log Entry');
+  addBtn.addEventListener('click', async ()=>{
+    if(!d.bmsId.trim()){ toast('BMS ID is required.'); return; }
+    const lenErr = cbakLengthError(d.bmsId, d.model);
+    if(lenErr){ errBox.textContent=lenErr; return; }
+    const entry = { id:uid(), ...JSON.parse(JSON.stringify(d)), dateEscalated:todayStr() };
+    const updated = [...STATE.warrantyRecords, entry];
+    const ok = await saveWarranty(updated);
+    if(!ok){ toast('⚠ Could not save — try again.'); return; }
+    STATE.warrantyRecords=updated; STATE.warrantyDraft=emptyWarrantyDraft();
+    toast(`Logged ${entry.bmsId} to ${entry.category==='SCRAPPED'?'Scrapped':'Warranty'} inventory.`);
+  });
+  form.appendChild(addBtn);
+  container.appendChild(form);
+
+  const stats = el('div',{class:'stat-grid'});
+  const warrCount = STATE.warrantyRecords.filter(w=>w.category==='WARRANTY'||!w.category).length;
+  const scrapCount = STATE.warrantyRecords.filter(w=>w.category==='SCRAPPED').length;
+  stats.appendChild(statBox(warrCount,'In Warranty'));
+  stats.appendChild(statBox(scrapCount,'Scrapped'));
+  PLATFORMS.forEach(p=>stats.appendChild(statBox(STATE.warrantyRecords.filter(w=>w.model===p).length, p+' Total')));
+  container.appendChild(el('div',{class:'stat-grid'},[])); // spacing
+  container.appendChild((()=>{ const c=el('div',{class:'card'}); c.appendChild(el('h3',{},'Breakdown')); c.appendChild(stats); return c; })());
+
+  const listCard = el('div',{class:'card'});
+  listCard.appendChild(el('h3',{},'Warranty & Scrapped Records'));
+  if(STATE.warrantyRecords.length===0) listCard.appendChild(el('div',{class:'empty-note'},'No records logged yet.'));
+  else{
+    const wrap = el('div',{class:'table-wrap'}); const tbl = el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'BMS ID'),el('th',{},'Platform'),el('th',{},'Category'),el('th',{},'Failure'),el('th',{},'Status'),el('th',{},'')])]));
+    const tbody = el('tbody');
+    STATE.warrantyRecords.forEach(w=>{
+      const tr = el('tr',{},[
+        el('td',{class:'mono'},w.dateEscalated), el('td',{class:'mono',style:'font-weight:700;'},w.bmsId), el('td',{},w.model||'Unknown'),
+        el('td',{}, el('span',{class:'status-chip '+(w.category==='SCRAPPED'?'FAIL':'OPEN')}, w.category==='SCRAPPED'?'SCRAPPED':'WARRANTY')),
+        el('td',{},w.failureCategory), el('td',{}, el('span',{class:'badge'}, w.status)),
+      ]);
+      const actionTd = el('td',{});
+      if(w.category!=='SCRAPPED'){
+        const scrapBtn = el('button',{class:'btn-danger btn-sm'},'Move to Scrapped');
+        scrapBtn.addEventListener('click', async ()=>{
+          const prior = w.category; w.category='SCRAPPED'; w.status='Confirmed Scrap';
+          const ok = await saveWarranty(STATE.warrantyRecords);
+          if(!ok){ w.category=prior; toast('⚠ Could not save — try again.'); render(); return; }
+          toast(`${w.bmsId} moved to Scrapped inventory.`); render();
+        });
+        actionTd.appendChild(scrapBtn);
+      } else actionTd.appendChild(el('span',{class:'status-chip FAIL'},'SCRAPPED'));
+      tr.appendChild(actionTd); tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody); wrap.appendChild(tbl); listCard.appendChild(wrap);
+  }
+  container.appendChild(listCard);
+  return container;
+}
+
+/* ---- IoT Upgrade Tracker ---- */
+function iotBalance(){
+  const sent = STATE.iotUpgrades.filter(x=>x.type==='SENT').reduce((a,x)=>a+x.quantity,0);
+  const returned = STATE.iotUpgrades.filter(x=>x.type==='RETURNED').reduce((a,x)=>a+x.quantity,0);
+  const oldestPendingSent = STATE.iotUpgrades.filter(x=>x.type==='SENT').sort((a,b)=>a.date.localeCompare(b.date))[0];
+  return { sent, returned, balance: sent-returned, oldestPendingSent };
+}
+function IotTrackerView(){
+  const d = STATE.iotDraft;
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'IoT Upgrade Tracker — batteries sent to the IoT team and returned upgraded'));
+  const bal = iotBalance();
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Current Balance With IoT Team'));
+  card.appendChild(el('div',{class:'iot-balance', style: bal.balance>0 ? 'color:var(--iot);' : 'color:var(--pass);'}, String(bal.balance)+' still with IoT'));
+  const stats = el('div',{class:'stat-grid'});
+  stats.appendChild(statBox(bal.sent,'Total Sent to IoT'));
+  stats.appendChild(statBox(bal.returned,'Total Returned Upgraded'));
+  stats.appendChild(statBox(bal.balance,'Balance Pending'));
+  card.appendChild(stats);
+  if(bal.balance>0 && bal.oldestPendingSent) card.appendChild(el('div',{class:'banner iot'}, `⏰ Reminder: ${bal.balance} batteries are still pending upgrade with the IoT team. Oldest batch sent ${bal.oldestPendingSent.date}.`));
+  container.appendChild(card);
+
+  const form = el('div',{class:'card'});
+  form.appendChild(el('h3',{},'Log IoT Movement'));
+  const g = el('div',{class:'grid'});
+  g.appendChild(field('Date', textInput(d.date, v=>d.date=v, {type:'date'})));
+  g.appendChild(field('Type', selectInput(d.type, [['SENT','Sent to IoT for Upgrade'],['RETURNED','Returned — Upgraded']], v=>d.type=v)));
+  g.appendChild(field('Platform', selectInput(d.platform, PLATFORMS.map(p=>[p,p]), v=>d.platform=v)));
+  g.appendChild(field('Quantity', textInput(d.quantity, v=>d.quantity=v, {type:'number', mono:true})));
+  g.appendChild(field('Logged By', textInput(d.loggedBy, v=>d.loggedBy=v)));
+  form.appendChild(g);
+  form.appendChild(field('Notes', textareaInput(d.notes, v=>d.notes=v)));
+  const saveBtn = el('button',{class:'btn-primary', style:'margin-top:8px;'},'Save Movement');
+  saveBtn.addEventListener('click', async ()=>{
+    if(!d.date || !d.quantity){ toast('Date and quantity are required.'); return; }
+    const entry = { id:uid(), createdAt:nowIso(), ...JSON.parse(JSON.stringify(d)), quantity:parseInt(d.quantity)||0 };
+    const updated = [...STATE.iotUpgrades, entry];
+    const ok = await saveIot(updated);
+    if(!ok){ toast('⚠ Could not save — try again.'); return; }
+    STATE.iotUpgrades=updated; STATE.iotDraft=emptyIotDraft();
+    toast(`Logged ${entry.quantity} ${entry.platform} ${entry.type==='SENT'?'sent to':'returned from'} IoT.`);
+  });
+  form.appendChild(saveBtn);
+  container.appendChild(form);
+
+  const listCard = el('div',{class:'card'});
+  listCard.appendChild(el('h3',{},'IoT Movement History'));
+  if(STATE.iotUpgrades.length===0) listCard.appendChild(el('div',{class:'empty-note'},'No IoT movements logged yet.'));
+  else{
+    const wrap=el('div',{class:'table-wrap'}); const tbl=el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'Type'),el('th',{},'Platform'),el('th',{},'Qty'),el('th',{},'Notes'),el('th',{},'By')])]));
+    const tbody=el('tbody');
+    [...STATE.iotUpgrades].reverse().forEach(r=>{ tbody.appendChild(el('tr',{},[el('td',{class:'mono'},r.date), el('td',{}, el('span',{class:'status-chip '+(r.type==='SENT'?'OPEN':'PASS')}, r.type==='SENT'?'SENT':'RETURNED')), el('td',{},r.platform), el('td',{class:'mono'},r.quantity), el('td',{},r.notes||'—'), el('td',{},r.loggedBy||'—')])); });
+    tbl.appendChild(tbody); wrap.appendChild(tbl); listCard.appendChild(wrap);
+  }
+  container.appendChild(listCard);
+  return container;
+}
+
+/* ============================================================
+   QUALITY ENGINEER — oversight, analytics, BSA flagging, export
+   ============================================================ */
+function QualityOverviewView(){
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Read-only summary — each store still lives separately'));
+  const omCard = el('div',{class:'card'});
+  omCard.appendChild(el('h3',{},'O&M Chain'));
+  const recs = STATE.omRecords;
+  const s1 = el('div',{class:'stat-grid'});
+  s1.appendChild(statBox(recs.length,'Total Intakes'));
+  s1.appendChild(statBox(recs.filter(r=>!r.status.startsWith('CLOSED')).length,'In Pipeline'));
+  s1.appendChild(statBox(recs.filter(r=>r.capaCycles>0&&!r.status.startsWith('CLOSED')).length,'Under Corrective Action'));
+  s1.appendChild(statBox(recs.filter(r=>r.status==='CLOSED_PASS').length,'Closed — Passed'));
+  s1.appendChild(statBox(recs.filter(r=>r.bsaCaseId).length,'Flagged to BSA'));
+  omCard.appendChild(s1); container.appendChild(omCard);
+
+  const invCard = el('div',{class:'card'});
+  invCard.appendChild(el('h3',{},'New Battery Stock'));
+  const stock = {}; PLATFORMS.forEach(p=>stock[p]=0);
+  STATE.newBatteryRecords.forEach(r=>stock[r.platform]=(stock[r.platform]||0)+r.quantity);
+  STATE.adjustments.forEach(r=>stock[r.platform]=(stock[r.platform]||0)+movementDirection(r.type)*r.quantity);
+  const s2 = el('div',{class:'stat-grid'}); PLATFORMS.forEach(p=>s2.appendChild(statBox(stock[p],p))); invCard.appendChild(s2); container.appendChild(invCard);
+
+  const warrCard = el('div',{class:'card'});
+  warrCard.appendChild(el('h3',{},'Warranty & Scrapped'));
+  const s3 = el('div',{class:'stat-grid'});
+  s3.appendChild(statBox(STATE.warrantyRecords.filter(w=>w.category!=='SCRAPPED').length,'In Warranty'));
+  s3.appendChild(statBox(STATE.warrantyRecords.filter(w=>w.category==='SCRAPPED').length,'Scrapped'));
+  s3.appendChild(statBox(STATE.bsaCases.filter(c=>!['RETURNED_TO_OM','SCRAPPED'].includes(c.status)).length,'Open BSA Cases'));
+  warrCard.appendChild(s3); container.appendChild(warrCard);
+
+  container.appendChild(PlantDailyTableView());
+  return container;
+}
+
+/* ---- Flagging an O&M record to BSA ---- */
+function FlagToBsaCard(){
+  const eligible = STATE.omRecords.filter(r=>!r.status.startsWith('CLOSED') && !r.bsaCaseId);
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Flag a Battery to BSA'));
+  card.appendChild(el('div',{class:'sub'},'For batteries with complex failures the pipeline cannot solve, or with no SOP available. This creates a BSA case with all the failure details so the BSA & Quality Engineer can take over.'));
+  if(eligible.length===0){ card.appendChild(el('div',{class:'empty-note'},'No open, unflagged O&M records right now.')); return card; }
+  let selectedId = eligible[0].id;
+  const sel = selectInput(selectedId, eligible.map(r=>[r.id, `${r.bmsId} — ${r.model||'Unknown'} (Stage ${r.stage})`]), v=>selectedId=v);
+  card.appendChild(field('Battery', sel));
+  const summaryInput = textareaInput('', v=>{}, {placeholder:'What failed and what is wrong — this goes to BSA.'});
+  card.appendChild(field('What Failed / What Is Wrong', summaryInput));
+  const btn = el('button',{class:'btn-bsa'},'Flag to BSA');
+  btn.addEventListener('click', async ()=>{
+    const rec = findRecord(STATE.omRecords, selectedId);
+    if(!rec){ toast('Select a battery first.'); return; }
+    const summary = summaryInput.value.trim();
+    if(!summary){ toast('Describe what failed before flagging.'); return; }
+    const caseEntry = {
+      id:uid(), createdAt:nowIso(), bmsId:rec.bmsId, platform:rec.model, sourceType:'OM_ESCALATION', omRecordId:rec.id,
+      issueSummary:summary,
+      whatFailed: ISSUE_ITEMS.filter(([k])=>rec.stage1.issues && rec.stage1.issues[k]).map(([,l])=>l).join(', ')||'—',
+      whatWrong: rec.stage2.repairAction || '—',
+      reportedBy:'', flaggedBy:STATE.techName||'Quality Engineer', flaggedAt:nowIso(), assignedTo:'',
+      status:'NEW', rcaNotes:'', repairNotes:'', statusLog:[{status:'NEW', at:nowIso(), by:STATE.techName||'Quality Engineer'}], closedAt:null
+    };
+    const freshCases = await loadBsa(); const updatedCases=[...freshCases, caseEntry];
+    const okCase = await saveBsa(updatedCases);
+    if(!okCase){ toast('⚠ Could not create BSA case — try again.'); return; }
+    const freshOm = await loadOm(); const idx = freshOm.findIndex(r=>r.id===rec.id);
+    if(idx!==-1){ freshOm[idx].bsaCaseId = caseEntry.id; await saveOm(freshOm); STATE.omRecords=freshOm; }
+    STATE.bsaCases=updatedCases;
+    toast(`✓ ${rec.bmsId} flagged to BSA.`);
+    render();
+  });
+  card.appendChild(el('div',{style:'margin-top:8px;'},[btn]));
+  return card;
+}
+
+/* ---- Analytics: daily / person / platform / issue FPY, pies, bars ---- */
+function dayKey(dateStr){ return (dateStr||'').slice(0,10); }
+function monthKey(dateStr){ return (dateStr||'').slice(0,7); }
+function cssVar(name){ return (getComputedStyle(document.documentElement).getPropertyValue(name)||'').trim() || '#888'; }
+function chartBaseOptions(opts={}){
+  const textColor=cssVar('--muted'), gridColor=cssVar('--line');
+  return { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:!!opts.legend, position:'bottom', labels:{color:textColor,font:{size:11},boxWidth:12}}},
+    scales: opts.noScales ? {} : { x:{ticks:{color:textColor,font:{size:10}}, grid:{color:gridColor}}, y:{ticks:{color:textColor,font:{size:10}, callback:v=>opts.suffix?v+opts.suffix:v}, grid:{color:gridColor}, suggestedMax:opts.suggestedMax, beginAtZero:true} } };
+}
+function baseBarConfig(labels, datasets, opts={}){ return { type:'bar', data:{labels, datasets:datasets.map(d=>({label:d.label,data:d.data,backgroundColor:d.color,borderRadius:3,maxBarThickness:46}))}, options:chartBaseOptions({...opts, legend:datasets.length>1}) }; }
+function baseLineConfig(labels, datasets, opts={}){ return { type:'line', data:{labels, datasets:datasets.map(d=>({label:d.label,data:d.data,borderColor:d.color,backgroundColor:d.color,tension:.3,fill:false,pointRadius:3}))}, options:chartBaseOptions({...opts, legend:datasets.length>1}) }; }
+function basePieConfig(labels, data, colors){ return { type:'pie', data:{labels, datasets:[{data, backgroundColor:colors}]}, options:chartBaseOptions({legend:true, noScales:true}) }; }
+function chartCard(title, config, mini){
+  const card = el('div',{class:'chart-card'}); card.appendChild(el('h3',{},title));
+  const wrap = el('div',{class:'chart-wrap'+(mini?' mini':'')}); const canvas=el('canvas'); wrap.appendChild(canvas); card.appendChild(wrap);
+  pendingCharts.push({canvas, config});
+  return card;
+}
+function fpyStats(){
+  const closed = STATE.omRecords.filter(r=>r.status.startsWith('CLOSED'));
+  const total = closed.length, firstPass = closed.filter(r=>r.capaCycles===0 && r.finalDisposition==='PASS').length;
+  const overallFPY = total>0 ? firstPass/total*100 : 0;
+  const byPlatform={}, byDay={}, byPerson={}, byIssue={};
+  closed.forEach(r=>{
+    const p=r.model||'Unknown'; byPlatform[p]=byPlatform[p]||{total:0,firstPass:0}; byPlatform[p].total++; if(r.capaCycles===0&&r.finalDisposition==='PASS') byPlatform[p].firstPass++;
+    const dk=dayKey(r.closedAt?r.closedAt.slice(0,10):r.dateReceived); byDay[dk]=byDay[dk]||{total:0,firstPass:0}; byDay[dk].total++; if(r.capaCycles===0&&r.finalDisposition==='PASS') byDay[dk].firstPass++;
+    const person=r.stage3.technician||'Unassigned'; byPerson[person]=byPerson[person]||{total:0,firstPass:0}; byPerson[person].total++; if(r.capaCycles===0&&r.finalDisposition==='PASS') byPerson[person].firstPass++;
+    const issues = ISSUE_ITEMS.filter(([k])=>r.stage1.issues && r.stage1.issues[k]).map(([,l])=>l);
+    const issueKey = issues.length ? issues[0] : 'No Issue Logged';
+    byIssue[issueKey]=byIssue[issueKey]||{total:0,firstPass:0}; byIssue[issueKey].total++; if(r.capaCycles===0&&r.finalDisposition==='PASS') byIssue[issueKey].firstPass++;
+  });
+  return { overallFPY, total, firstPass, byPlatform, byDay, byPerson, byIssue };
+}
+function pctSeries(map){ const keys=Object.keys(map); return { keys, data: keys.map(k=>map[k].total?map[k].firstPass/map[k].total*100:0) }; }
+function newBatteryFpyByDay(){
+  const rows = [...STATE.plantDaily].sort((a,b)=>a.date.localeCompare(b.date));
+  const labels = rows.map(r=>r.date);
+  const data = rows.map(r=>{ const h=parseInt(r.healthy)||0, qi=parseInt(r.qualityIssues)||0; return (h+qi)>0 ? h/(h+qi)*100 : 0; });
+  return { labels, data };
+}
+function QualityAnalyticsView(){
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Analytics — computed live from all sector stores'));
+  const fpy = fpyStats();
+  const headerCard = el('div',{class:'card'});
+  const top = el('div',{style:'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;'});
+  top.appendChild(el('h3',{},'First Pass Yield (FPY) Overview'));
+  headerCard.appendChild(top);
+  headerCard.appendChild(el('div',{class:'sub'},'FPY = packs that passed final QC on the first attempt (zero corrective-action cycles) out of all closed packs.'));
+  const stats = el('div',{class:'stat-grid'});
+  stats.appendChild(statBox(fpy.overallFPY.toFixed(1)+'%','O&M Line FPY'));
+  stats.appendChild(statBox(fpy.total,'Total Closed Packs'));
+  stats.appendChild(statBox(fpy.firstPass,'First-Pass Closures'));
+  stats.appendChild(statBox(STATE.omRecords.filter(r=>r.capaCycles>0).length,'Ever Under CAPA'));
+  stats.appendChild(statBox(STATE.bsaCases.length,'BSA Cases (All Time)'));
+  headerCard.appendChild(stats);
+  container.appendChild(headerCard);
+
+  // FPY per day (O&M line) + FPY new batteries per day
+  const dayKeys = Object.keys(fpy.byDay).sort();
+  const row0 = el('div',{class:'chart-row'});
+  row0.appendChild(chartCard('O&M Line — FPY per Day', baseLineConfig(dayKeys, [{label:'FPY %', data: dayKeys.map(k=>fpy.byDay[k].total?fpy.byDay[k].firstPass/fpy.byDay[k].total*100:0), color:cssVar('--pass')}], {suggestedMax:100,suffix:'%'})));
+  const nb = newBatteryFpyByDay();
+  row0.appendChild(chartCard('New Batteries — FPY per Day (Healthy vs Quality Issues)', baseLineConfig(nb.labels.length?nb.labels:['No data'], [{label:'FPY %', data: nb.data.length?nb.data:[0], color:cssVar('--accent')}], {suggestedMax:100,suffix:'%'})));
+  container.appendChild(row0);
+
+  // FPY per platform (bar) + disposition breakdown (pie)
+  const platKeys = Object.keys(fpy.byPlatform);
+  const row1 = el('div',{class:'chart-row'});
+  row1.appendChild(chartCard('FPY per Battery Brand', baseBarConfig(platKeys.length?platKeys:['No data'], [{label:'FPY %', data: platKeys.length?platKeys.map(p=>fpy.byPlatform[p].total?fpy.byPlatform[p].firstPass/fpy.byPlatform[p].total*100:0):[0], color:cssVar('--capa')}], {suggestedMax:100,suffix:'%'})));
+  const closed = STATE.omRecords.filter(r=>r.status.startsWith('CLOSED'));
+  const passed = closed.filter(r=>r.finalDisposition==='PASS').length, scrapped = closed.filter(r=>r.finalDisposition==='SCRAPPED').length;
+  row1.appendChild(chartCard('Final Disposition Breakdown', basePieConfig(['Passed','Scrapped'], [passed,scrapped], [cssVar('--pass'),cssVar('--fail')])));
+  container.appendChild(row1);
+
+  // FPY per person (bar) + per issue (bar)
+  const personKeys = Object.keys(fpy.byPerson);
+  const row2 = el('div',{class:'chart-row'});
+  row2.appendChild(chartCard('FPY per Quality Technician', baseBarConfig(personKeys.length?personKeys:['No data'], [{label:'FPY %', data: personKeys.length?personKeys.map(p=>fpy.byPerson[p].total?fpy.byPerson[p].firstPass/fpy.byPerson[p].total*100:0):[0], color:cssVar('--accent')}], {suggestedMax:100,suffix:'%'})));
+  const issueKeys = Object.keys(fpy.byIssue);
+  row2.appendChild(chartCard('FPY per Issue Type', baseBarConfig(issueKeys.length?issueKeys:['No data'], [{label:'FPY %', data: issueKeys.length?issueKeys.map(k=>fpy.byIssue[k].total?fpy.byIssue[k].firstPass/fpy.byIssue[k].total*100:0):[0], color:cssVar('--warn')}], {suggestedMax:100,suffix:'%'})));
+  container.appendChild(row2);
+
+  // Cases per person (bar, count) + CAPA distribution
+  const row3 = el('div',{class:'chart-row'});
+  row3.appendChild(chartCard('Closures per Quality Technician (Count)', baseBarConfig(personKeys.length?personKeys:['No data'], [{label:'Closures', data: personKeys.length?personKeys.map(p=>fpy.byPerson[p].total):[0], color:cssVar('--bsa')}])));
+  const buckets={'0 (First Pass)':0,'1':0,'2':0,'3+':0};
+  STATE.omRecords.forEach(r=>{ const c=r.capaCycles; if(c<=0) buckets['0 (First Pass)']++; else if(c===1) buckets['1']++; else if(c===2) buckets['2']++; else buckets['3+']++; });
+  row3.appendChild(chartCard('Corrective Action (CAPA) Cycles', baseBarConfig(Object.keys(buckets), [{label:'Packs', data:Object.values(buckets), color:cssVar('--capa')}])));
+  container.appendChild(row3);
+
+  // Warranty/scrapped breakdown by platform + BSA case status pie
+  const row4 = el('div',{class:'chart-row'});
+  const wCounts={}; PLATFORMS.forEach(p=>wCounts[p]={warranty:0,scrapped:0});
+  STATE.warrantyRecords.forEach(w=>{ if(!wCounts[w.model]) wCounts[w.model]={warranty:0,scrapped:0}; if(w.category==='SCRAPPED') wCounts[w.model].scrapped++; else wCounts[w.model].warranty++; });
+  const wPlatforms = Object.keys(wCounts);
+  row4.appendChild(chartCard('Warranty vs Scrapped per Brand', baseBarConfig(wPlatforms, [{label:'Warranty', data:wPlatforms.map(p=>wCounts[p].warranty), color:cssVar('--warn')}, {label:'Scrapped', data:wPlatforms.map(p=>wCounts[p].scrapped), color:cssVar('--fail')}])));
+  const bsaCounts={}; BSA_STATUSES.forEach(([k])=>bsaCounts[k]=0); STATE.bsaCases.forEach(c=>bsaCounts[c.status]=(bsaCounts[c.status]||0)+1);
+  const bsaKeys = Object.keys(bsaCounts).filter(k=>bsaCounts[k]>0);
+  row4.appendChild(chartCard('BSA Case Status Breakdown', bsaKeys.length ? basePieConfig(bsaKeys, bsaKeys.map(k=>bsaCounts[k]), bsaKeys.map((_,i)=>[cssVar('--warn'),cssVar('--bsa'),cssVar('--capa'),cssVar('--pass'),cssVar('--pass'),cssVar('--fail'),cssVar('--fail')][i%7])) : basePieConfig(['No data'],[1],[cssVar('--line-dark')])));
+  container.appendChild(row4);
+
+  return container;
+}
+
+/* ---- Export Center: choose what to download + preview ---- */
+function buildRowsOrEmpty(rows){ return rows.length?rows:[{Note:'No data recorded yet'}]; }
+const EXPORT_DATASETS = [
+  { key:'om', label:'OM Chain Records', build:()=>buildRowsOrEmpty(STATE.omRecords.map(r=>({ 'BMS ID':r.bmsId,'Platform':r.model||'','IMEI':r.imei||'','Swap Station':r.site||'','Date Received':r.dateReceived,'Visit #':r.visitNumber,'Stage':r.stage,'Status':r.status,'CAPA Cycles':r.capaCycles,'Stage1 By':r.stage1.technician||'','Stage2 By':r.stage2.technician||'','Stage3 By':r.stage3.technician||'','QC Disposition':r.finalDisposition||'','BSA Flagged':r.bsaCaseId?'Yes':'No','Closed At':r.closedAt||'' }))) },
+  { key:'plantDaily', label:'Plant Daily Stock', build:()=>buildRowsOrEmpty(STATE.plantDaily.map(r=>({ 'Date':r.date,'Healthy':r.healthy,'Quality Issues':r.qualityIssues,'Offline':r.offline,'Boxed':r.boxed,'Uncharged':r.uncharged,'Batteries in Bikes':r.batteriesInBikes,'Test Batteries':r.testBatteries,'Deployment':r.deployment,'Energy':r.energy,'Quality Issues Out':r.qualityIssuesOut,'Returns Healthy':r.returnsHealthy,'Returns Faulty':r.returnsFaulty,'Incoming New Healthy':r.incomingNewHealthy,'Incoming Healthy Energy':r.incomingHealthyEnergy,'Grand Total':r.grandTotal,'Notes':r.notes }))) },
+  { key:'newBattery', label:'New Battery Intake', build:()=>buildRowsOrEmpty(STATE.newBatteryRecords.map(r=>({ 'Date':r.date,'Platform':r.platform,'Quantity':r.quantity,'Batch/Lot':r.batchLot||'','Source':r.source||'','By':r.loggedBy||'' }))) },
+  { key:'adjustments', label:'Stock Movements', build:()=>buildRowsOrEmpty(STATE.adjustments.map(r=>({ 'Date':r.date,'Platform':r.platform,'Type':movementLabel(r.type),'Qty':r.quantity,'Reference':r.reference||'','By':r.loggedBy||'' }))) },
+  { key:'bulk', label:'Bulk OEM Movements', build:()=>buildRowsOrEmpty(STATE.bulkMovements.map(m=>({ 'Date':m.date,'Direction':m.direction,'Platform':m.platform,'Qty':m.quantity,'Counterparty':m.counterparty,'IDs Logged':m.oemIds.length,'By':m.loggedBy }))) },
+  { key:'bulkDaily', label:'Daily Stock Summary (from Bulk)', build:()=>buildRowsOrEmpty(bulkDailyTable().map(r=>({ 'Date':r.date,'Platform':r.platform,'Opening':r.opening,'Received':r.received,'Dispatched':r.dispatched,'Closing':r.closing }))) },
+  { key:'warranty', label:'Warranty & Scrapped Inventory', build:()=>buildRowsOrEmpty(STATE.warrantyRecords.map(w=>({ 'Date':w.dateEscalated,'BMS ID':w.bmsId,'Platform':w.model,'Category':w.category,'Failure':w.failureCategory,'Status':w.status,'Comments':w.comments }))) },
+  { key:'iot', label:'IoT Upgrade Tracker', build:()=>buildRowsOrEmpty(STATE.iotUpgrades.map(r=>({ 'Date':r.date,'Type':r.type,'Platform':r.platform,'Qty':r.quantity,'By':r.loggedBy }))) },
+  { key:'bsa', label:'BSA Cases', build:()=>buildRowsOrEmpty(STATE.bsaCases.map(c=>({ 'BMS ID':c.bmsId,'Platform':c.platform,'Source':c.sourceType,'Status':c.status,'Flagged By':c.flaggedBy,'Assigned To':c.assignedTo,'RCA Notes':c.rcaNotes,'Repair Notes':c.repairNotes }))) },
+  { key:'notes', label:'Daily Notes', build:()=>buildRowsOrEmpty(STATE.dailyNotes.flatMap(d=>d.notes.map(n=>({ 'Date':d.date,'Note':n.text,'Status':n.status,'By':n.createdBy,'Day Closed':d.dayClosed?'Yes':'No' })))) },
+  { key:'fpyOverall', label:'FPY Overall', build:()=>{ const f=fpyStats(); return [{ 'Overall FPY %':f.overallFPY.toFixed(1), 'Total Closed':f.total, 'First-Pass':f.firstPass }]; } },
+  { key:'fpyPlatform', label:'FPY by Platform', build:()=>{ const f=fpyStats(); return buildRowsOrEmpty(Object.keys(f.byPlatform).map(p=>({Platform:p,'Total':f.byPlatform[p].total,'First-Pass':f.byPlatform[p].firstPass,'FPY %':f.byPlatform[p].total?(f.byPlatform[p].firstPass/f.byPlatform[p].total*100).toFixed(1):'0.0'}))); } },
+  { key:'fpyPerson', label:'FPY by Person', build:()=>{ const f=fpyStats(); return buildRowsOrEmpty(Object.keys(f.byPerson).map(p=>({Person:p,'Total':f.byPerson[p].total,'First-Pass':f.byPerson[p].firstPass,'FPY %':f.byPerson[p].total?(f.byPerson[p].firstPass/f.byPerson[p].total*100).toFixed(1):'0.0'}))); } },
+  { key:'fpyIssue', label:'FPY by Issue', build:()=>{ const f=fpyStats(); return buildRowsOrEmpty(Object.keys(f.byIssue).map(k=>({Issue:k,'Total':f.byIssue[k].total,'First-Pass':f.byIssue[k].firstPass,'FPY %':f.byIssue[k].total?(f.byIssue[k].firstPass/f.byIssue[k].total*100).toFixed(1):'0.0'}))); } },
+  { key:'fpyDay', label:'FPY by Day', build:()=>{ const f=fpyStats(); return buildRowsOrEmpty(Object.keys(f.byDay).sort().map(k=>({Date:k,'Total':f.byDay[k].total,'First-Pass':f.byDay[k].firstPass,'FPY %':f.byDay[k].total?(f.byDay[k].firstPass/f.byDay[k].total*100).toFixed(1):'0.0'}))); } },
+];
+function ExportCenterView(){
+  const container = el('div');
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Export Center'));
+  card.appendChild(el('div',{class:'sub'},'Choose exactly what to include. Preview a dataset before downloading, then export only what you selected as one Excel workbook.'));
+  if(Object.keys(STATE.exportSelected).length===0) EXPORT_DATASETS.forEach(ds=>STATE.exportSelected[ds.key]=true);
+  const list = el('div',{class:'checkbox-list'});
+  EXPORT_DATASETS.forEach(ds=>{
+    const row = el('div',{class:'bool-row'});
+    const cb = el('input',{type:'checkbox'}); cb.checked = !!STATE.exportSelected[ds.key];
+    cb.addEventListener('change', ()=>{ STATE.exportSelected[ds.key]=cb.checked; });
+    row.appendChild(cb); row.appendChild(el('label',{},ds.label));
+    const previewBtn = el('button',{class:'btn-sm', style:'margin-left:auto;'},'Preview');
+    previewBtn.addEventListener('click', ()=>{ STATE.exportPreviewKey=ds.key; render(); });
+    row.style.display='flex'; row.style.alignItems='center'; row.style.gap='8px';
+    row.appendChild(previewBtn);
+    list.appendChild(row);
+  });
+  card.appendChild(list);
+
+  const btnRow = el('div',{style:'display:flex;gap:8px;margin-top:10px;'});
+  const allBtn = el('button',{class:'btn-sm'},'Select All'); allBtn.addEventListener('click', ()=>{ EXPORT_DATASETS.forEach(ds=>STATE.exportSelected[ds.key]=true); render(); });
+  const noneBtn = el('button',{class:'btn-sm'},'Select None'); noneBtn.addEventListener('click', ()=>{ EXPORT_DATASETS.forEach(ds=>STATE.exportSelected[ds.key]=false); render(); });
+  const exportBtn = el('button',{class:'btn-primary'},'⬇ Download Selected as Excel');
+  exportBtn.addEventListener('click', ()=>exportSelectedToExcel());
+  btnRow.appendChild(allBtn); btnRow.appendChild(noneBtn); btnRow.appendChild(exportBtn);
+  card.appendChild(btnRow);
+  container.appendChild(card);
+
+  if(STATE.exportPreviewKey){
+    const ds = EXPORT_DATASETS.find(x=>x.key===STATE.exportPreviewKey);
+    if(ds){
+      const rows = ds.build().slice(0,8);
+      const pCard = el('div',{class:'card'});
+      pCard.appendChild(el('h3',{}, 'Preview — '+ds.label));
+      pCard.appendChild(el('div',{class:'sub'}, `Showing up to 8 of ${ds.build().length} row(s).`));
+      if(rows.length===0) pCard.appendChild(el('div',{class:'empty-note'},'No data.'));
+      else{
+        const cols = Object.keys(rows[0]);
+        const wrap=el('div',{class:'table-wrap'}); const tbl=el('table');
+        tbl.appendChild(el('thead',{},[el('tr',{},cols.map(c=>el('th',{},c)))]));
+        const tbody=el('tbody');
+        rows.forEach(r=>tbody.appendChild(el('tr',{},cols.map(c=>el('td',{},String(r[c]??'—'))))));
+        tbl.appendChild(tbody); wrap.appendChild(tbl); pCard.appendChild(wrap);
+      }
+      container.appendChild(pCard);
+    }
+  }
+  return container;
+}
+async function exportSelectedToExcel(){
+  if(typeof XLSX==='undefined'){ toast('Excel library failed to load — check your connection and try again.'); return; }
+  const chosen = EXPORT_DATASETS.filter(ds=>STATE.exportSelected[ds.key]);
+  if(chosen.length===0){ toast('Select at least one dataset first.'); return; }
+  const wb = XLSX.utils.book_new();
+  chosen.forEach(ds=>{ XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ds.build()), ds.label.slice(0,31)); });
+  const filename = `battery-ops-report-${todayStr()}.xlsx`;
+  XLSX.writeFile(wb, filename);
+  toast('Excel report downloaded: '+filename);
+}
+
+/* ============================================================
+   BSA ENGINEER — Battery Service Assurance
+   ============================================================ */
+function emptyBsaDraft(){ return { bmsId:'', platform:PLATFORMS[0], sourceType:'CX_FLAG', reportedBy:'', issueSummary:'' }; }
+function BsaLogCaseView(){
+  const d = STATE.bsaDraft;
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Log a battery flagged by Customer Experience or Battery Engineering for misbehaviour'));
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Log New BSA Case'));
+  const errBox = el('div',{class:'err'});
+  const g = el('div',{class:'grid'});
+  const bmsInp = textInput(d.bmsId, v=>{ d.bmsId=v; const det=detectModelFromBMS(v); if(det) d.platform=det; }, {mono:true, placeholder:'Scan BMS Barcode'});
+  bmsInp.addEventListener('blur', ()=>{ errBox.textContent = cbakLengthError(d.bmsId, d.platform) || ''; });
+  g.appendChild(field('BMS ID', bmsInp));
+  g.appendChild(field('Platform', selectInput(d.platform, PLATFORMS.map(p=>[p,p]), v=>d.platform=v)));
+  g.appendChild(field('Source', selectInput(d.sourceType, [['CX_FLAG','Flagged by Customer Experience'],['ENGINEERING_FLAG','Flagged by Battery Engineering']], v=>d.sourceType=v)));
+  g.appendChild(field('Reported By', textInput(d.reportedBy, v=>d.reportedBy=v)));
+  card.appendChild(g); card.appendChild(errBox);
+  card.appendChild(field('Reported Issue / Misbehaviour', textareaInput(d.issueSummary, v=>d.issueSummary=v)));
+  const saveBtn = el('button',{class:'btn-bsa', style:'margin-top:8px;'},'Create Case');
+  saveBtn.addEventListener('click', async ()=>{
+    if(!d.bmsId.trim() || !d.issueSummary.trim()){ toast('BMS ID and issue description are required.'); return; }
+    const lenErr = cbakLengthError(d.bmsId, d.platform);
+    if(lenErr){ errBox.textContent=lenErr; return; }
+    const entry = { id:uid(), createdAt:nowIso(), bmsId:d.bmsId.trim(), platform:d.platform, sourceType:d.sourceType, omRecordId:null,
+      issueSummary:d.issueSummary.trim(), whatFailed:'—', whatWrong:'—', reportedBy:d.reportedBy, flaggedBy:STATE.techName||'BSA', flaggedAt:nowIso(),
+      assignedTo:STATE.techName||'', status:'NEW', rcaNotes:'', repairNotes:'', statusLog:[{status:'NEW', at:nowIso(), by:STATE.techName||'BSA'}], closedAt:null };
+    const fresh = await loadBsa(); const updated=[...fresh, entry];
+    const ok = await saveBsa(updated);
+    if(!ok){ toast('⚠ Could not save — try again.'); return; }
+    STATE.bsaCases=updated; STATE.bsaDraft=emptyBsaDraft(); STATE.view='main';
+    toast(`✓ Case created for ${entry.bmsId}.`); render();
+  });
+  card.appendChild(saveBtn);
+  container.appendChild(card);
+  return container;
+}
+function BsaActivityView(){
+  const container = el('div');
+  if(STATE.bsaOpenId){
+    const c = STATE.bsaCases.find(x=>x.id===STATE.bsaOpenId);
+    if(c) return BsaCaseDetail(c, container);
+    STATE.bsaOpenId=null;
+  }
+  const mine = STATE.bsaCases;
+  const stats = el('div',{class:'stat-grid'});
+  stats.appendChild(statBox(mine.filter(c=>!['RETURNED_TO_OM','SCRAPPED'].includes(c.status)).length,'Open Cases'));
+  stats.appendChild(statBox(mine.filter(c=>c.status==='NEW').length,'New — Awaiting Pickup'));
+  stats.appendChild(statBox(mine.filter(c=>c.status==='RCA_OBTAINED').length,'RCA Obtained'));
+  stats.appendChild(statBox(mine.filter(c=>c.status==='RETURNED_TO_OM').length,'Repaired & Returned'));
+  stats.appendChild(statBox(mine.filter(c=>c.status==='SCRAPPED'||c.status==='UNREPAIRABLE').length,'Unrepairable / Scrapped'));
+  container.appendChild((()=>{ const c=el('div',{class:'card'}); c.appendChild(el('h3',{},'My Activity')); c.appendChild(stats); return c; })());
+
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'All BSA Cases'));
+  if(mine.length===0){ card.appendChild(el('div',{class:'empty-note'},'No cases yet — log one from "Log New Case", or wait for Quality Engineering to flag one from the pipeline.')); container.appendChild(card); return container; }
+  const wrap = el('div',{class:'table-wrap'}); const tbl = el('table');
+  tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'BMS ID'),el('th',{},'Platform'),el('th',{},'Source'),el('th',{},'Status'),el('th',{},'Assigned To'),el('th',{},'')])]));
+  const tbody = el('tbody');
+  [...mine].reverse().forEach(c=>{
+    const tr = el('tr',{},[
+      el('td',{class:'mono',style:'font-weight:700;'},c.bmsId), el('td',{},c.platform||'—'),
+      el('td',{}, (BSA_SOURCE_TYPES.find(([k])=>k===c.sourceType)||[,c.sourceType])[1]),
+      el('td',{}, el('span',{class:'status-chip '+c.status}, c.status.replace(/_/g,' '))), el('td',{},c.assignedTo||'—')
+    ]);
+    const openTd = el('td',{}); const openBtn=el('button',{class:'btn-sm btn-bsa'},'Open'); openBtn.addEventListener('click',()=>{ STATE.bsaOpenId=c.id; render(); }); openTd.appendChild(openBtn); tr.appendChild(openTd);
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody); wrap.appendChild(tbl); card.appendChild(wrap);
+  container.appendChild(card);
+  return container;
+}
+function BsaCaseDetail(c, container){
+  const back = el('button',{class:'btn-sm', style:'margin-bottom:10px;'},'← Back to My Activity');
+  back.addEventListener('click', ()=>{ STATE.bsaOpenId=null; render(); });
+  container.appendChild(back);
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{}, `Case — ${c.bmsId}`));
+  card.appendChild(el('div',{class:'sub'}, `${c.platform||'Unknown platform'} · source: ${(BSA_SOURCE_TYPES.find(([k])=>k===c.sourceType)||[,c.sourceType])[1]} · flagged by ${c.flaggedBy} on ${new Date(c.flaggedAt).toLocaleString()}`));
+  card.appendChild(el('div',{class:'banner'}, `Issue: ${c.issueSummary}`));
+  if(c.whatFailed && c.whatFailed!=='—') card.appendChild(el('div',{class:'sub'}, `Reported failure modes: ${c.whatFailed}`));
+  if(c.whatWrong && c.whatWrong!=='—') card.appendChild(el('div',{class:'sub'}, `Repair notes from pipeline: ${c.whatWrong}`));
+
+  const g = el('div',{class:'grid'});
+  g.appendChild(field('Status', selectInput(c.status, BSA_STATUSES, v=>{ c.status=v; render(); })));
+  g.appendChild(field('Assigned To', textInput(c.assignedTo, v=>c.assignedTo=v)));
+  card.appendChild(g);
+  card.appendChild(field('RCA Notes', textareaInput(c.rcaNotes, v=>c.rcaNotes=v)));
+  card.appendChild(field('Repair Notes', textareaInput(c.repairNotes, v=>c.repairNotes=v)));
+
+  const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;'});
+  const saveBtn = el('button',{class:'btn-bsa', disabled:STATE.bsaSaving}, STATE.bsaSaving?spinnerLabel('Saving…'):'Save Case');
+  saveBtn.addEventListener('click', async ()=>{
+    if(STATE.bsaSaving) return;
+    c.statusLog = c.statusLog||[]; c.statusLog.push({status:c.status, at:nowIso(), by:STATE.techName||'BSA'});
+    if(c.status==='RETURNED_TO_OM' || c.status==='SCRAPPED') c.closedAt = c.closedAt || nowIso();
+    const fresh = await loadBsa(); const idx = fresh.findIndex(x=>x.id===c.id);
+    if(idx===-1){ toast('This case no longer exists.'); STATE.bsaCases=fresh; STATE.bsaOpenId=null; render(); return; }
+    fresh[idx]=c; STATE.bsaSaving=true; render();
+    const ok = await saveBsa(fresh); STATE.bsaSaving=false;
+    if(!ok){ toast('⚠ Could not save — try again.'); render(); return; }
+    STATE.bsaCases=fresh;
+    if(c.status==='RETURNED_TO_OM'){
+      // Close the loop: log it as a bulk RECEIVED movement so it flows back into O&M/Plant stock for deployment to the energy team.
+      const bulkFresh = await loadBulk();
+      bulkFresh.push({ id:uid(), createdAt:nowIso(), date:todayStr(), direction:'RECEIVED', platform:c.platform||'CBAK', quantity:1, counterparty:'BSA Repair Return', oemIds:[c.bmsId], notes:'Returned to O&M for deployment after BSA repair.', loggedBy:STATE.techName||'BSA', idsComplete:true });
+      await saveBulk(bulkFresh);
+    }
+    toast('✓ Case updated.');
+  });
+  actions.appendChild(saveBtn); card.appendChild(actions);
+  container.appendChild(card);
+  return container;
+}
+
+/* ============================================================
+   LIVE DOCKET REFRESH (background polling, skips while typing)
+   ============================================================ */
+function userIsTypingInForm(){
+  const active = document.activeElement;
+  if(!active || !root.contains(active)) return false;
+  const tag = active.tagName;
+  return tag==='INPUT' || tag==='TEXTAREA' || tag==='SELECT';
+}
+async function autoRefreshDocket(){
+  try{
+    if(userIsTypingInForm()) return;
+    if(STATE.role==='qtech' && STATE.openId===null && STATE.view==='main'){ STATE.omRecords=await loadOm(); STATE.omLastRefreshed=nowTime(); STATE.omSyncOk=true; render(); }
+    else if(STATE.role==='ommanager' && (STATE.view==='dashboard'||STATE.view==='history')){ STATE.omRecords=await loadOm(); STATE.omLastRefreshed=nowTime(); STATE.omSyncOk=true; render(); }
+  }catch(e){ console.error('Auto-refresh failed', e); STATE.omSyncOk=false; }
+}
+setInterval(autoRefreshDocket, 4000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && !userIsTypingInForm()) autoRefreshDocket(); });
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+async function restoreSession(){
+  render();
+  try{
+    const s = await apiFetch('/api/auth/me');
+    STATE.booting = false;
+    if(!s.authenticated) return render();
+    STATE.role = s.user.role; STATE.stage = s.user.stage||null; STATE.techName = s.user.name||'';
+    if(STATE.role==='qtech'){ STATE.view='main'; STATE.omRecords=await loadOm(); STATE.intakeDraft=emptyIntakeDraft(STATE.techName); }
+    else if(STATE.role==='ommanager'){ STATE.view='dashboard'; STATE.omRecords=await loadOm(); STATE.bulkMovements=await loadBulk(); STATE.dailyNotes=await loadNotes(); }
+    else if(STATE.role==='plantinv'){
+      STATE.view='main'; STATE.plantInvTab='daily';
+      STATE.plantDaily=await loadPlantDaily(); STATE.plantDraft=emptyPlantDraft();
+      STATE.newBatteryRecords=await loadNewBattery(); STATE.newBatteryDraft=emptyNewBatteryDraft();
+      STATE.adjustments=await loadAdjustments(); STATE.adjustmentDraft=emptyAdjustmentDraft();
+      STATE.warrantyRecords=await loadWarranty(); STATE.warrantyDraft=emptyWarrantyDraft();
+      STATE.bulkMovements=await loadBulk(); STATE.bulkDraft=emptyBulkDraft();
+      STATE.iotUpgrades=await loadIot(); STATE.iotDraft=emptyIotDraft();
+      STATE.dailyNotes=await loadNotes(); STATE.notesDate=todayStr();
+    } else if(STATE.role==='quality'){
+      STATE.view='warranty'; STATE.warrantyRecords=await loadWarranty(); STATE.warrantyDraft=emptyWarrantyDraft();
+      STATE.omRecords=await loadOm(); STATE.plantDaily=await loadPlantDaily(); STATE.newBatteryRecords=await loadNewBattery();
+      STATE.adjustments=await loadAdjustments(); STATE.bulkMovements=await loadBulk(); STATE.bsaCases=await loadBsa();
+    } else if(STATE.role==='bsa'){ STATE.view='main'; STATE.bsaCases=await loadBsa(); STATE.bsaDraft=emptyBsaDraft(); }
+    render();
+  }catch(e){ console.error(e); STATE.booting=false; render(); }
+}
+restoreSession();
+</script>
 </body>
 </html>
