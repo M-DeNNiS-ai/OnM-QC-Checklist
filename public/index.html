@@ -248,7 +248,7 @@ function setTheme(theme) {
  
 /* ---------- Credentials ---------- */
 const STAGE_LABEL = { 1: 'Stage 1 — Intake & Pre-Check', 2: 'Stage 2 — Repair & Reassembly', 3: 'Stage 3 — Final Test & QC Sign-off' };
-const SECTOR_LABEL = { omadmin: 'O&M Admin', plant: 'Plant Admin', inventory: 'Inventory Manager', quality: 'Quality Engineer' };
+const SECTOR_LABEL = { omadmin: 'O&M Manager', plant: 'Plant & Inventory', inventory: 'Plant & Inventory', quality: 'Quality Engineer' };
  
 /* ---------- Domain constants ---------- */
 const STANDARD_SOPS = [
@@ -437,14 +437,21 @@ function emptyBulkStockDraft(){
 function findStockRecord(records, date, platform){
   return records.find(r=> r.date===date && r.platform===platform) || null;
 }
-function buildStockRecordFromRow(existing, date, row, enteredBy){
-  const newReceivedIds = parseIdList(row.receivedIds);
-  const newDispatchedIds = parseIdList(row.dispatchedIds);
+function buildStockRecordFromRow(existing, date, row, enteredBy, skipIdsSet){
+  let newReceivedIds = parseIdList(row.receivedIds);
+  let newDispatchedIds = parseIdList(row.dispatchedIds);
+  let skippedCount = 0;
+  if(skipIdsSet && skipIdsSet.size){
+    const beforeR = newReceivedIds.length, beforeD = newDispatchedIds.length;
+    newReceivedIds = newReceivedIds.filter(id=>!skipIdsSet.has(id));
+    newDispatchedIds = newDispatchedIds.filter(id=>!skipIdsSet.has(id));
+    skippedCount = (beforeR-newReceivedIds.length)+(beforeD-newDispatchedIds.length);
+  }
   const mergedReceivedIds = existing ? Array.from(new Set([...(existing.receivedIds||[]), ...newReceivedIds])) : newReceivedIds;
   const mergedDispatchedIds = existing ? Array.from(new Set([...(existing.dispatchedIds||[]), ...newDispatchedIds])) : newDispatchedIds;
   const receivedQty = row.receivedQty!=='' ? (parseInt(row.receivedQty)||0) : (existing? existing.receivedQty : 0);
   const dispatchedQty = row.dispatchedQty!=='' ? (parseInt(row.dispatchedQty)||0) : (existing? existing.dispatchedQty : 0);
-  return {
+  const record = {
     id: existing? existing.id : uid(),
     date, platform: row.platform,
     receivedQty, dispatchedQty,
@@ -453,6 +460,7 @@ function buildStockRecordFromRow(existing, date, row, enteredBy){
     createdAt: existing? existing.createdAt : nowIso(),
     updatedAt: nowIso(),
   };
+  return { record, skippedCount };
 }
 function computeStockLedger(records){
   const dates = Array.from(new Set(records.map(r=>r.date))).sort();
@@ -491,6 +499,71 @@ function loadDraftForDate(){
     };
   });
 }
+async function loadPlantInventorySector(){
+  STATE.plantRecords = await loadPlant();
+  STATE.plantStockRecords = await loadPlantStock();
+  STATE.newBatteryRecords = await loadNewBattery();
+  STATE.adjustments = await loadAdjustments();
+  STATE.warrantyRecords = await loadWarranty();
+  STATE.plantDraft = emptyPlantDraft();
+  STATE.newBatteryDraft = emptyNewBatteryDraft();
+  STATE.adjustmentDraft = emptyAdjustmentDraft();
+  STATE.bulkStockDraft = emptyBulkStockDraft();
+  loadDraftForDate();
+}
+function allIdsForPlatform(records, platform, excludeRecordId){
+  const set = new Set();
+  records.forEach(r=>{
+    if(r.platform!==platform) return;
+    if(excludeRecordId && r.id===excludeRecordId) return;
+    (r.receivedIds||[]).forEach(id=>set.add(id));
+    (r.dispatchedIds||[]).forEach(id=>set.add(id));
+  });
+  return set;
+}
+function findDuplicateOpenOmGroups(records){
+  const map = {};
+  records.forEach(r=>{
+    if(r.status.startsWith('CLOSED')) return;
+    const key = r.bmsId.trim().toUpperCase();
+    if(!map[key]) map[key]=[];
+    map[key].push(r);
+  });
+  return Object.values(map).filter(list=>list.length>1).map(list=>list.slice().sort((a,b)=>a.createdAt.localeCompare(b.createdAt)));
+}
+function findDuplicateOemIdOccurrences(records){
+  const byPlatform = {};
+  PLATFORMS.forEach(p=> byPlatform[p] = { received:{}, dispatched:{} });
+  records.forEach(r=>{
+    (r.receivedIds||[]).forEach(id=>{
+      byPlatform[r.platform].received[id] = byPlatform[r.platform].received[id]||[];
+      byPlatform[r.platform].received[id].push({date:r.date, recordId:r.id});
+    });
+    (r.dispatchedIds||[]).forEach(id=>{
+      byPlatform[r.platform].dispatched[id] = byPlatform[r.platform].dispatched[id]||[];
+      byPlatform[r.platform].dispatched[id].push({date:r.date, recordId:r.id});
+    });
+  });
+  const dups = [];
+  PLATFORMS.forEach(p=>{
+    ['received','dispatched'].forEach(dir=>{
+      Object.entries(byPlatform[p][dir]).forEach(([id,occ])=>{
+        if(occ.length>1) dups.push({ platform:p, direction:dir, id, occurrences: occ.slice().sort((a,b)=>a.date.localeCompare(b.date)) });
+      });
+    });
+  });
+  return dups;
+}
+function findDuplicateActiveWarrantyGroups(records){
+  const map = {};
+  records.forEach(w=>{
+    if(w.status==='Scrapped by QC') return;
+    const key = w.bmsId.trim().toUpperCase();
+    if(!map[key]) map[key]=[];
+    map[key].push(w);
+  });
+  return Object.values(map).filter(list=>list.length>1).map(list=>list.slice().sort((a,b)=>a.dateEscalated.localeCompare(b.dateEscalated)));
+}
  
 /* ---------- App state ---------- */
 let STATE = {
@@ -526,6 +599,8 @@ let STATE = {
   adjustmentSaving: false,
   warrantyDraft: null,
   warrantySaving: false,
+  integrityBusy: false,
+  exportingExcel: false,
 };
  
 function toast(msg){ STATE.toast = msg; render(); setTimeout(()=>{ STATE.toast=null; render(); }, 2800); }
@@ -732,7 +807,7 @@ function LoginView(){
   gate.appendChild(el('p',{},'Sign in to the secure Battery QC server.'));
   let mode='omtech';
   const modeSel=el('select',{style:'margin-bottom:12px;'});
-  [['omtech','O&M Technician (chain inspection)'],['omadmin','O&M Admin'],['plant','Plant Admin'],['inventory','Inventory Manager'],['quality','Quality Engineer']].forEach(([v,l])=>modeSel.appendChild(el('option',{value:v},l)));
+  [['omtech','Quality Technician (chain inspection)'],['omadmin','O&M Manager (pipeline oversight)'],['plant','Plant & Inventory (Plant credentials)'],['inventory','Plant & Inventory (Inventory credentials)'],['quality','Quality Engineer']].forEach(([v,l])=>modeSel.appendChild(el('option',{value:v},l)));
   gate.appendChild(modeSel);
   const body=el('div'); gate.appendChild(body);
   function renderBody(){
@@ -764,13 +839,8 @@ function LoginView(){
         try{
           const auth=await apiFetch('/api/auth/login',{method:'POST',body:JSON.stringify({mode,pin:inp.value})});
           STATE.role=mode; STATE.view='main';
-          if(mode==='omadmin'){STATE.omRecords=await loadOm();STATE.view='dashboard';}
-          else if(mode==='plant'){
-            STATE.plantRecords=await loadPlant(); STATE.plantStockRecords=await loadPlantStock();
-            STATE.plantDraft=emptyPlantDraft(); STATE.bulkStockDraft=emptyBulkStockDraft(); loadDraftForDate();
-            STATE.view='bulk';
-          }
-          else if(mode==='inventory'){STATE.newBatteryRecords=await loadNewBattery();STATE.adjustments=await loadAdjustments();STATE.newBatteryDraft=emptyNewBatteryDraft();STATE.adjustmentDraft=emptyAdjustmentDraft();STATE.view='intake';}
+          if(mode==='omadmin'){STATE.omRecords=await loadOm(); STATE.plantStockRecords=await loadPlantStock(); STATE.warrantyRecords=await loadWarranty(); STATE.view='dashboard';}
+          else if(mode==='plant' || mode==='inventory'){ await loadPlantInventorySector(); STATE.view='bulk'; }
           else if(mode==='quality'){STATE.warrantyRecords=await loadWarranty();STATE.warrantyDraft=emptyWarrantyDraft();STATE.omRecords=await loadOm();STATE.plantRecords=await loadPlant();STATE.plantStockRecords=await loadPlantStock();STATE.newBatteryRecords=await loadNewBattery();STATE.adjustments=await loadAdjustments();STATE.view='warranty';}
           render();
         }catch(e){errBox.textContent=e.message;}
@@ -787,7 +857,7 @@ function Header(){
     el('h1',{},'Battery QC'),
     el('p',{}, STATE.role==='omtech' ? STAGE_LABEL[STATE.stage] : (SECTOR_LABEL[STATE.role]||''))
   ]);
-  const roleTag = STATE.role==='omtech' ? ('TECH · STAGE '+STATE.stage) : STATE.role.toUpperCase();
+  const roleTag = STATE.role==='omtech' ? ('QA TECH · STAGE '+STATE.stage) : STATE.role.toUpperCase();
   const user = el('div',{class:'user-info'},[
     el('span',{class:'badge'}, roleTag),
     el('span',{}, STATE.role==='omtech' ? STATE.techName : SECTOR_LABEL[STATE.role]),
@@ -830,19 +900,25 @@ function View(){
     wrap.appendChild(Nav(['main','myclosed'], {main:'My Docket', myclosed:'My Completed Work'}));
     wrap.appendChild(STATE.view==='myclosed' ? OmTechClosedView() : OmTechDocketView());
   } else if(STATE.role==='omadmin'){
-    wrap.appendChild(Nav(['dashboard','history'], {dashboard:'Dashboard', history:'Full Chain History'}));
-    wrap.appendChild(STATE.view==='history' ? OmHistoryView() : OmDashboardView());
-  } else if(STATE.role==='plant'){
-    wrap.appendChild(Nav(['bulk','ledger','entry','history'], {bulk:'Bulk Stock Entry', ledger:'Daily Stock Table', entry:'Daily Log Entry', history:'Plant Log History'}));
+    wrap.appendChild(Nav(['dashboard','integrity','history'], {dashboard:'Pipeline Oversight', integrity:'Data Integrity', history:'Full Chain History'}));
+    if(STATE.view==='integrity') wrap.appendChild(DataIntegrityView());
+    else if(STATE.view==='history') wrap.appendChild(OmHistoryView());
+    else wrap.appendChild(OmDashboardView());
+  } else if(STATE.role==='plant' || STATE.role==='inventory'){
+    wrap.appendChild(Nav(['bulk','ledger','warrantystock','newintake','adjust','stock','entry','history','integrity'], {
+      bulk:'Bulk Stock Entry', ledger:'Daily Stock Table', warrantystock:'Warranty & Scrap Stock',
+      newintake:'New Battery Intake', adjust:'Stock Movement', stock:'Stock Summary',
+      entry:'Daily Plant Log', history:'Plant Log History', integrity:'Data Integrity'
+    }));
     if(STATE.view==='ledger') wrap.appendChild(StockLedgerView());
-    else if(STATE.view==='history') wrap.appendChild(PlantHistoryView());
-    else if(STATE.view==='entry') wrap.appendChild(PlantEntryView());
-    else wrap.appendChild(BulkStockEntryView());
-  } else if(STATE.role==='inventory'){
-    wrap.appendChild(Nav(['intake','adjust','stock'], {intake:'New Battery Intake', adjust:'Stock Movement', stock:'Stock Summary'}));
-    if(STATE.view==='adjust') wrap.appendChild(AdjustmentView());
+    else if(STATE.view==='warrantystock') wrap.appendChild(WarrantyStockView());
+    else if(STATE.view==='newintake') wrap.appendChild(NewBatteryView());
+    else if(STATE.view==='adjust') wrap.appendChild(AdjustmentView());
     else if(STATE.view==='stock') wrap.appendChild(StockView());
-    else wrap.appendChild(NewBatteryView());
+    else if(STATE.view==='entry') wrap.appendChild(PlantEntryView());
+    else if(STATE.view==='history') wrap.appendChild(PlantHistoryView());
+    else if(STATE.view==='integrity') wrap.appendChild(DataIntegrityView());
+    else wrap.appendChild(BulkStockEntryView());
   } else if(STATE.role==='quality'){
     wrap.appendChild(Nav(['warranty','overview','ledger','analytics'], {warranty:'Warranty & Escalations', overview:'Sector Overview', ledger:'Stock Ledger', analytics:'Analytics & Reports'}));
     if(STATE.view==='overview') wrap.appendChild(QualityOverviewView());
@@ -1248,6 +1324,10 @@ function OmTechClosedView(){
  
 function OmDashboardView(){
   const container = el('div');
+  const introCard = el('div',{class:'card'});
+  introCard.appendChild(el('h3',{},'Pipeline Oversight'));
+  introCard.appendChild(el('div',{class:'sub'},'Stage 1–3 data is logged by Quality Technicians; this view gives the O&M Manager real-time oversight of the whole repair pipeline.'));
+  container.appendChild(introCard);
   const recs = STATE.omRecords;
   const total = recs.length;
   const s1open = recs.filter(r=>r.stage===1 && !r.status.startsWith('CLOSED')).length;
@@ -1405,7 +1485,7 @@ function StockLedgerPreviewCard(date){
 function BulkStockEntryView(){
   const d = STATE.bulkStockDraft;
   const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Plant Sector — Bulk OEM Stock Intake / Dispatch'));
+  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Bulk OEM Stock Intake / Dispatch'));
  
   const dateCard = el('div',{class:'card'});
   dateCard.appendChild(el('h3',{},'Bulk Stock Entry'));
@@ -1433,10 +1513,13 @@ function BulkStockEntryView(){
     if(!hasAny){ STATE.bulkStockError = 'Enter at least one quantity or ID list before saving.'; render(); return; }
     STATE.plantStockRecords = await loadPlantStock();
     let updated = [...STATE.plantStockRecords];
+    let totalSkipped = 0;
     d.rows.forEach(row=>{
       if(row.receivedQty==='' && row.dispatchedQty==='' && !row.receivedIds.trim() && !row.dispatchedIds.trim()) return;
       const existing = findStockRecord(updated, d.date, row.platform);
-      const rec = buildStockRecordFromRow(existing, d.date, row, d.enteredBy||STATE.techName||'');
+      const skipSet = allIdsForPlatform(updated, row.platform, existing? existing.id : null);
+      const { record: rec, skippedCount } = buildStockRecordFromRow(existing, d.date, row, d.enteredBy||STATE.techName||'', skipSet);
+      totalSkipped += skippedCount;
       if(existing){ updated = updated.map(r=> r.id===rec.id ? rec : r); }
       else { updated = [...updated, rec]; }
     });
@@ -1450,7 +1533,7 @@ function BulkStockEntryView(){
     }
     STATE.plantStockRecords = updated;
     loadDraftForDate();
-    toast(`✓ Bulk stock entry saved for ${d.date}.`);
+    toast(`✓ Bulk stock entry saved for ${d.date}.` + (totalSkipped>0 ? ` Skipped ${totalSkipped} duplicate OEM ID(s) already on file.` : ''));
   });
   actions.appendChild(saveBtn);
   container.appendChild(actions);
@@ -1461,7 +1544,7 @@ function BulkStockEntryView(){
  
 function StockLedgerView(){
   const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'}, STATE.role==='quality' ? 'Read-only — computed live from the Plant sector\'s bulk entries' : 'Plant Sector — Daily Stock Table'));
+  container.appendChild(el('div',{class:'sector-tag'}, STATE.role==='quality' ? 'Read-only — computed live from Plant & Inventory\'s bulk entries' : 'Plant & Inventory — Daily Stock Table'));
   const ledger = computeStockLedger(STATE.plantStockRecords).slice().reverse();
   if(ledger.length===0){
     const card = el('div',{class:'card'});
@@ -1505,7 +1588,7 @@ function StockLedgerView(){
 function PlantEntryView(){
   const d = STATE.plantDraft;
   const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Plant Sector — stored separately from O&M and Inventory'));
+  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Daily Plant Log'));
   const card = el('div',{class:'card'});
   card.appendChild(el('h3',{},'Daily Plant Log'));
   card.appendChild(el('div',{class:'sub'},'One entry per day summarizing plant-side battery activity.'));
@@ -1545,7 +1628,7 @@ function PlantEntryView(){
  
 function PlantHistoryView(){
   const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Plant Sector'));
+  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Plant Log History'));
   const card = el('div',{class:'card'});
   card.appendChild(el('h3',{},'Plant Log History'));
   card.appendChild(el('div',{class:'sub'}, `Total entries: ${STATE.plantRecords.length}`));
@@ -1574,6 +1657,162 @@ function PlantHistoryView(){
   return container;
 }
  
+function WarrantyStockView(){
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Warranty & Scrap Stock (read-only, reflects the Quality team\'s warranty log)'));
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Batteries Currently Under Warranty & Scrapped, by Brand'));
+  card.appendChild(el('div',{class:'sub'},'Active = escalated to warranty and not yet scrapped or repaired & returned. Scrapped = removed from the fleet by Quality.'));
+  const active = STATE.warrantyRecords.filter(w=>w.status!=='Scrapped by QC' && w.status!=='Repaired & Returned');
+  const scrapped = STATE.warrantyRecords.filter(w=>w.status==='Scrapped by QC');
+  card.appendChild(el('div',{class:'stat-grid'},[statBox(active.length,'Active Under Warranty'), statBox(scrapped.length,'Scrapped Total')]));
+  container.appendChild(card);
+ 
+  function groupTable(list, title){
+    const c = el('div',{class:'card'});
+    c.appendChild(el('h3',{},title));
+    if(list.length===0){ c.appendChild(el('div',{class:'empty-note'},'None on file.')); return c; }
+    const groups = {};
+    list.forEach(w=>{
+      const brand = w.model||'Unknown';
+      const key = brand+'|'+w.failureCategory;
+      if(!groups[key]) groups[key] = { brand, issue:w.failureCategory, count:0 };
+      groups[key].count++;
+    });
+    const wrap = el('div',{class:'table-wrap'});
+    const tbl = el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Brand'),el('th',{},'Issue / Reason'),el('th',{},'Count')])]));
+    const tbody = el('tbody');
+    Object.values(groups).sort((a,b)=> a.brand.localeCompare(b.brand)||a.issue.localeCompare(b.issue)).forEach(g=>{
+      tbody.appendChild(el('tr',{},[el('td',{},g.brand),el('td',{},g.issue),el('td',{class:'mono',style:'font-weight:700;'},String(g.count))]));
+    });
+    tbl.appendChild(tbody); wrap.appendChild(tbl); c.appendChild(wrap);
+    return c;
+  }
+  container.appendChild(groupTable(active, 'Active Warranty Stock — by Brand & Issue'));
+  container.appendChild(groupTable(scrapped, 'Scrapped Stock — by Brand & Reason'));
+  return container;
+}
+ 
+function DataIntegrityView(){
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Data Integrity — find and remove duplicate battery numbers across the pipeline'));
+ 
+  if(STATE.omRecords && STATE.omRecords.length>0){
+    const omDupGroups = findDuplicateOpenOmGroups(STATE.omRecords);
+    const card = el('div',{class:'card'});
+    card.appendChild(el('h3',{},'Duplicate Open O&M Chain Records'));
+    card.appendChild(el('div',{class:'sub'},'Same BMS ID open in the pipeline more than once. Keeping the most recent and removing older duplicate(s) is usually correct.'));
+    if(omDupGroups.length===0){ card.appendChild(el('div',{class:'empty-note'},'No duplicates found.')); }
+    omDupGroups.forEach(group=>{
+      const keep = group[group.length-1];
+      const box = el('div',{class:'sop-box'});
+      box.appendChild(el('div',{style:'font-weight:700;margin-bottom:6px;'}, group[0].bmsId+' — '+group.length+' open records'));
+      group.forEach(r=>{
+        const row = el('div',{class:'docket-item'});
+        row.appendChild(el('div',{},[
+          el('div',{}, `Stage ${r.stage} · ${r.status} · visit #${r.visitNumber}`),
+          el('div',{class:'meta'}, `Created ${r.createdAt.slice(0,16).replace('T',' ')}` + (r.id===keep.id ? ' — kept (most recent)' : ''))
+        ]));
+        if(r.id!==keep.id){
+          const rmBtn = el('button',{class:'btn-danger btn-sm', disabled:STATE.integrityBusy}, 'Remove this duplicate');
+          rmBtn.addEventListener('click', async ()=>{
+            STATE.integrityBusy = true; render();
+            const fresh = await loadOm();
+            const updated = fresh.filter(x=>x.id!==r.id);
+            const ok = await saveOm(updated);
+            STATE.integrityBusy = false;
+            if(!ok){ toast('⚠ Could not remove — try again.'); render(); return; }
+            STATE.omRecords = updated;
+            toast(`Removed duplicate record for ${r.bmsId}.`);
+          });
+          row.appendChild(rmBtn);
+        }
+        box.appendChild(row);
+      });
+      card.appendChild(box);
+    });
+    container.appendChild(card);
+  }
+ 
+  if(STATE.plantStockRecords){
+    const oemDups = findDuplicateOemIdOccurrences(STATE.plantStockRecords);
+    const card = el('div',{class:'card'});
+    card.appendChild(el('h3',{},'Duplicate OEM Battery IDs in the Stock Ledger'));
+    card.appendChild(el('div',{class:'sub'},'The same OEM ID logged as received or dispatched on more than one date for the same platform. Keeping the earliest date and removing later duplicate(s) keeps totals accurate.'));
+    if(oemDups.length===0){ card.appendChild(el('div',{class:'empty-note'},'No duplicate OEM IDs found.')); }
+    oemDups.forEach(dup=>{
+      const meta = PLATFORM_META[dup.platform];
+      const box = el('div',{class:'sop-box'});
+      box.appendChild(el('div',{style:'font-weight:700;margin-bottom:6px;'}, `${meta.emoji} ${meta.label} · ${dup.direction==='received'?'Received':'Dispatched'} · ${dup.id}`));
+      dup.occurrences.forEach((occ,idx)=>{
+        const row = el('div',{class:'docket-item'});
+        row.appendChild(el('div',{}, occ.date + (idx===0 ? ' — kept (earliest)' : '')));
+        if(idx>0){
+          const rmBtn = el('button',{class:'btn-danger btn-sm', disabled:STATE.integrityBusy}, 'Remove this duplicate');
+          rmBtn.addEventListener('click', async ()=>{
+            STATE.integrityBusy = true; render();
+            const fresh = await loadPlantStock();
+            const updated = fresh.map(r=>{
+              if(r.id!==occ.recordId) return r;
+              const key = dup.direction==='received' ? 'receivedIds' : 'dispatchedIds';
+              return { ...r, [key]: (r[key]||[]).filter(x=>x!==dup.id) };
+            });
+            const ok = await savePlantStock(updated);
+            STATE.integrityBusy = false;
+            if(!ok){ toast('⚠ Could not remove — try again.'); render(); return; }
+            STATE.plantStockRecords = updated;
+            toast(`Removed duplicate ${dup.id} from ${occ.date}.`);
+          });
+          row.appendChild(rmBtn);
+        }
+        box.appendChild(row);
+      });
+      card.appendChild(box);
+    });
+    container.appendChild(card);
+  }
+ 
+  if(STATE.warrantyRecords){
+    const wDups = findDuplicateActiveWarrantyGroups(STATE.warrantyRecords);
+    const card = el('div',{class:'card'});
+    card.appendChild(el('h3',{},'Duplicate Active Warranty Escalations'));
+    card.appendChild(el('div',{class:'sub'},'Same BMS ID escalated to warranty more than once while still active. Keeping the earliest escalation and removing later duplicate(s) is usually correct.'));
+    if(wDups.length===0){ card.appendChild(el('div',{class:'empty-note'},'No duplicates found.')); }
+    wDups.forEach(group=>{
+      const keep = group[0];
+      const box = el('div',{class:'sop-box'});
+      box.appendChild(el('div',{style:'font-weight:700;margin-bottom:6px;'}, group[0].bmsId+' — '+group.length+' active escalations'));
+      group.forEach(w=>{
+        const row = el('div',{class:'docket-item'});
+        row.appendChild(el('div',{},[
+          el('div',{}, `${w.failureCategory} · ${w.status}`),
+          el('div',{class:'meta'}, `Escalated ${w.dateEscalated}` + (w.id===keep.id ? ' — kept (earliest)' : ''))
+        ]));
+        if(w.id!==keep.id){
+          const rmBtn = el('button',{class:'btn-danger btn-sm', disabled:STATE.integrityBusy}, 'Remove this duplicate');
+          rmBtn.addEventListener('click', async ()=>{
+            STATE.integrityBusy = true; render();
+            const fresh = await loadWarranty();
+            const updated = fresh.filter(x=>x.id!==w.id);
+            const ok = await saveWarranty(updated);
+            STATE.integrityBusy = false;
+            if(!ok){ toast('⚠ Could not remove — try again.'); render(); return; }
+            STATE.warrantyRecords = updated;
+            toast(`Removed duplicate escalation for ${w.bmsId}.`);
+          });
+          row.appendChild(rmBtn);
+        }
+        box.appendChild(row);
+      });
+      card.appendChild(box);
+    });
+    container.appendChild(card);
+  }
+ 
+  return container;
+}
+ 
 /* ==================== INVENTORY MANAGER — separate sector store ==================== */
  
 function emptyNewBatteryDraft(){
@@ -1586,7 +1825,7 @@ function emptyAdjustmentDraft(){
 function NewBatteryView(){
   const d = STATE.newBatteryDraft;
   const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Inventory Sector — stored separately from O&M and Plant'));
+  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — New Battery Intake'));
   const card = el('div',{class:'card'});
   card.appendChild(el('h3',{},'New Battery Intake'));
   card.appendChild(el('div',{class:'sub'},'Log freshly received stock into the warehouse.'));
@@ -1644,7 +1883,7 @@ function NewBatteryView(){
 function AdjustmentView(){
   const d = STATE.adjustmentDraft;
   const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Inventory Sector'));
+  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Stock Movement'));
   const card = el('div',{class:'card'});
   card.appendChild(el('h3',{},'Stock Movement'));
   card.appendChild(el('div',{class:'sub'},'Record stock leaving or being corrected against the warehouse baseline.'));
@@ -1712,7 +1951,7 @@ function stockByPlatform(){
  
 function StockView(){
   const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Inventory Sector'));
+  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Stock Summary'));
   const stock = stockByPlatform();
   const card = el('div',{class:'card'});
   card.appendChild(el('h3',{},'Current Stock by Platform'));
@@ -2222,13 +2461,8 @@ async function restoreSession(){
     if(!s.authenticated){ render(); removeBootLoader(); return; }
     STATE.role=s.user.role; STATE.stage=s.user.stage||null; STATE.techName=s.user.name||'';
     if(STATE.role==='omtech'){STATE.view='main';STATE.omRecords=await loadOm();STATE.intakeDraft=emptyIntakeDraft(STATE.techName);}
-    else if(STATE.role==='omadmin'){STATE.view='dashboard';STATE.omRecords=await loadOm();}
-    else if(STATE.role==='plant'){
-      STATE.view='bulk';
-      STATE.plantRecords=await loadPlant(); STATE.plantStockRecords=await loadPlantStock();
-      STATE.plantDraft=emptyPlantDraft(); STATE.bulkStockDraft=emptyBulkStockDraft(); loadDraftForDate();
-    }
-    else if(STATE.role==='inventory'){STATE.view='intake';STATE.newBatteryRecords=await loadNewBattery();STATE.adjustments=await loadAdjustments();STATE.newBatteryDraft=emptyNewBatteryDraft();STATE.adjustmentDraft=emptyAdjustmentDraft();}
+    else if(STATE.role==='omadmin'){STATE.view='dashboard';STATE.omRecords=await loadOm(); STATE.plantStockRecords=await loadPlantStock(); STATE.warrantyRecords=await loadWarranty();}
+    else if(STATE.role==='plant' || STATE.role==='inventory'){ STATE.view='bulk'; await loadPlantInventorySector(); }
     else if(STATE.role==='quality'){STATE.view='warranty';STATE.warrantyRecords=await loadWarranty();STATE.warrantyDraft=emptyWarrantyDraft();STATE.omRecords=await loadOm();STATE.plantRecords=await loadPlant();STATE.plantStockRecords=await loadPlantStock();STATE.newBatteryRecords=await loadNewBattery();STATE.adjustments=await loadAdjustments();}
     render();
     removeBootLoader();
