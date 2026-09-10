@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Battery QC — Server</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div id="boot-loader" class="boot-loader">
+  <div class="boot-card">
+    <div class="boot-spinner"></div>
+    <div class="boot-text">Connecting to Battery QC server…</div>
+  </div>
+</div>
+<div id="root"></div>
+
+<!-- Third-party libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<!-- Foundations: constants, generic utilities, backend I/O, domain/record model, theme, global state -->
+<script src="js/constants.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/api.js"></script>
+<script src="js/records.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/state.js"></script>
+
+<!-- UI plumbing: DOM builder helpers + the render loop, then shared form-card widgets -->
+<script src="js/dom.js"></script>
+<script src="js/ui-shared.js"></script>
+
+<!-- Shell: login gate, header/nav, top-level router -->
+<script src="js/view-login.js"></script>
+<script src="js/view-header-nav.js"></script>
+<script src="js/router.js"></script>
+
+<!-- Role-specific views -->
+<script src="js/view-om-tech.js"></script>
+<script src="js/view-om-admin.js"></script>
+<script src="js/view-plant-bulk.js"></script>
+<script src="js/view-plant-log.js"></script>
+<script src="js/view-data-integrity.js"></script>
+<script src="js/view-inventory.js"></script>
+<script src="js/view-warranty.js"></script>
+
+<!-- Analytics + reporting -->
+<script src="js/analytics-charts.js"></script>
+<script src="js/view-analytics.js"></script>
+<script src="js/export-excel.js"></script>
+
+<!-- Boot last: kicks off session restore + live polling -->
+<script src="js/app-boot.js"></script>
+</body>
+</html>
