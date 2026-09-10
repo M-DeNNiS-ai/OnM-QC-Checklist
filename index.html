@@ -308,6 +308,14 @@ function detectModelFromBMS(bmsId) {
   const match = BMS_MODEL_PREFIXES.find(p => cleanId.startsWith(p.prefix));
   return match ? match.model : '';
 }
+const CBAK_ID_LENGTH = 18;
+function cbakLengthError(bmsId, model){
+  if(model !== 'CBAK') return null;
+  const len = (bmsId||'').trim().length;
+  if(len === 0) return null;
+  if(len !== CBAK_ID_LENGTH) return `CBAK BMS IDs must be exactly ${CBAK_ID_LENGTH} characters (this one is ${len}).`;
+  return null;
+}
  
 const CHECK_ITEMS = [
   ['foreignObjects','No Foreign Objects / Cables'],
@@ -482,6 +490,14 @@ function stageQueue(records, stage){
   return records.filter(r => r.stage===stage && !r.status.startsWith('CLOSED')).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
 }
 function findRecord(records, id){ return records.find(r=>r.id===id); }
+function isDuplicateOpenBms(records, bmsId){
+  const clean = (bmsId||'').trim().toUpperCase();
+  if(!clean) return false;
+  return records.filter(r => r.bmsId.trim().toUpperCase()===clean && !r.status.startsWith('CLOSED')).length > 1;
+}
+function DuplicateChip(records, bmsId){
+  return isDuplicateOpenBms(records, bmsId) ? el('span',{class:'status-chip FAIL', title:'This BMS ID has more than one open record — flag for Data Integrity cleanup.'}, 'DUPLICATE') : null;
+}
  
 /* ---------- Plant bulk stock ledger model ---------- */
 function emptyBulkStockDraft(){
@@ -1186,6 +1202,7 @@ function NewIntakeCard(){
     d.bmsId=v;
     const detected = detectModelFromBMS(v);
     if(detected) d.model = detected;
+    render();
   }, {mono:true, placeholder:'Scan BMS Barcode', key:'intake-bmsId'});
   bmsInput.addEventListener('blur', ()=>{
     const clean = d.bmsId.trim();
@@ -1203,6 +1220,14 @@ function NewIntakeCard(){
   });
   g1.appendChild(field('Scan BMS ID Barcode', bmsInput));
   g1.appendChild(field('Battery Platform', textInput(d.model, v=>d.model=v, {placeholder:'Auto-detected'})));
+ 
+  const cbakErr = cbakLengthError(d.bmsId, d.model);
+  if(cbakErr){
+    const lenNote = el('div',{class:'id-count over'}, `${d.bmsId.trim().length} / ${CBAK_ID_LENGTH} characters — CBAK IDs must be exactly ${CBAK_ID_LENGTH}.`);
+    g1.appendChild(el('div',{}, lenNote));
+  } else if(d.model==='CBAK' && d.bmsId.trim()){
+    g1.appendChild(el('div',{}, el('div',{class:'id-count ok'}, `${d.bmsId.trim().length} / ${CBAK_ID_LENGTH} characters — OK`)));
+  }
  
   const imeiRequired = isImeiRequired(d);
   const imeiInput = textInput(d.imei, v=>d.imei=v, {mono:true, placeholder: imeiRequired?'Required':'Optional'});
@@ -1233,6 +1258,8 @@ function NewIntakeCard(){
     STATE.intakeError = null;
     STATE.omRecords = await loadOm();
     if(!clean || !d.dateReceived){ STATE.intakeError='BMS ID and intake date are required.'; render(); return; }
+    const cbakCheck = cbakLengthError(clean, d.model);
+    if(cbakCheck){ STATE.intakeError = cbakCheck; render(); return; }
     if(isImeiRequired(d) && !d.imei.trim()){ STATE.intakeError='IMEI is required for the selected issue type.'; render(); return; }
     if(isSwapStationRequired(d) && !d.site.trim()){ STATE.intakeError='Swap Station is required for this defect type.'; render(); return; }
     if(d.issues.missingComponent && !(d.missingComponentNote||'').trim()){ STATE.intakeError='Specify which component is missing.'; render(); return; }
@@ -1325,6 +1352,8 @@ function DocketListCard(){
       el('div',{class:'meta'}, `Visit #${rec.visitNumber} · received ${rec.dateReceived}` + (rec.capaCycles>0 ? ` · Corrective Action Cycle ${rec.capaCycles}` : ''))
     ]);
     const right = el('div',{style:'display:flex;align-items:center;gap:8px;'});
+    const dupChip = DuplicateChip(STATE.omRecords, rec.bmsId);
+    if(dupChip) right.appendChild(dupChip);
     if(rec.capaCycles>0) right.appendChild(el('span',{class:'status-chip CAPA'},'CAPA'));
     right.appendChild(el('span',{class:'status-chip OPEN'}, 'Stage '+rec.stage));
     const openBtn = el('button',{class:'btn-sm btn-primary'},'Open');
@@ -1362,6 +1391,8 @@ function Stage1EditCard(rec){
   sendBtn.addEventListener('click', async ()=>{
     if(STATE.intakeSaving) return;
     STATE.intakeError = null;
+    const cbakCheck = cbakLengthError(rec.bmsId, rec.model);
+    if(cbakCheck){ STATE.intakeError = cbakCheck; render(); return; }
     s1.technician = STATE.techName;
     s1.completedAt = nowIso();
     let bsaRec = null;
@@ -1571,6 +1602,7 @@ function OmDashboardView(){
   const passed = recs.filter(r=>r.status==='CLOSED_PASS').length;
   const scrapped = recs.filter(r=>r.status==='CLOSED_SCRAPPED').length;
   const underCapa = recs.filter(r=>r.capaCycles>0 && !r.status.startsWith('CLOSED')).length;
+  const dupCount = findDuplicateOpenOmGroups(recs).length;
  
   const stats = el('div',{class:'stat-grid'});
   stats.appendChild(statBox(total, 'Total Intakes'));
@@ -1581,6 +1613,9 @@ function OmDashboardView(){
   stats.appendChild(statBox(passed, 'Closed — Passed'));
   stats.appendChild(statBox(scrapped, 'Closed — Scrapped'));
   container.appendChild(stats);
+  if(dupCount>0){
+    container.appendChild(el('div',{class:'reminder-banner'}, `⚠ ${dupCount} BMS ID(s) are open more than once in the pipeline — visit Data Integrity to clean these up so counts stay accurate.`));
+  }
   container.appendChild(OmHistoryView());
   return container;
 }
@@ -1598,10 +1633,11 @@ function OmHistoryView(){
   tbl.appendChild(el('thead',{},[el('tr',{},[
     el('th',{},'Received'), el('th',{},'BMS ID'), el('th',{},'Platform'), el('th',{},'Visit'),
     el('th',{},'Stage 1 By'), el('th',{},'Stage 2 By'), el('th',{},'Stage 3 By'),
-    el('th',{},'CAPA'), el('th',{},'Status')
+    el('th',{},'CAPA'), el('th',{},'Status'), el('th',{},'Flag')
   ])]));
   const tbody = el('tbody');
   filteredOm.forEach(r=>{
+    const dupChip = DuplicateChip(STATE.omRecords, r.bmsId);
     const tr = el('tr',{},[
       el('td',{class:'mono'}, r.dateReceived),
       el('td',{class:'mono',style:'font-weight:700;'}, r.bmsId),
@@ -1611,7 +1647,8 @@ function OmHistoryView(){
       el('td',{}, r.stage2.technician||'—'),
       el('td',{}, r.stage3.technician||'—'),
       el('td',{}, r.capaCycles>0 ? el('span',{class:'status-chip CAPA'},'Cycle '+r.capaCycles) : '—'),
-      el('td',{}, el('span',{class:'status-chip '+r.status}, r.status.replace(/_/g,' ')))
+      el('td',{}, el('span',{class:'status-chip '+r.status}, r.status.replace(/_/g,' '))),
+      el('td',{}, dupChip || '—')
     ]);
     tbody.appendChild(tr);
   });
