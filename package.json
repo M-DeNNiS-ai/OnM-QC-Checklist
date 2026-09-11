@@ -8,39 +8,13 @@
     "build": "vite build",
     "preview": "vite preview"
   },
-  "devDependencies": {
-    "vite": "^7.0.0"
-  },
-  "name": "onm-qc-checklist",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/M-DeNNiS-ai/OnM-QC-Checklist.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/M-DeNNiS-ai/OnM-QC-Checklist/issues"
-  },
-  "homepage": "https://github.com/M-DeNNiS-ai/OnM-QC-Checklist#readme",
-  "devDependencies": {
-    "@vitejs/plugin-react": "^6.1.1",
-    "vite": "^8.3.0"
-  },
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
-"scripts": {
-  "dev": "vite",
-  "build": "vite build",
-  "preview": "vite preview"
-}
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.1",
+    "vite": "^8.3.0"
+  }
 }
