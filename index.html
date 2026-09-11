@@ -1133,12 +1133,13 @@ function View(){
     else if(STATE.view==='integrity') content.appendChild(DataIntegrityView());
     else content.appendChild(BulkStockEntryView());
   } else if(STATE.role==='quality'){
-    wrap.appendChild(Nav(['warranty','bsa','overview','ledger','analytics','daylog'], {warranty:'Warranty & Escalations', bsa:'BSA Escalations', overview:'Sector Overview', ledger:'Stock Ledger', analytics:'Analytics & Reports', daylog:'Day Notes'}));
+    wrap.appendChild(Nav(['warranty','bsa','overview','ledger','analytics','integrity','daylog'], {warranty:'Warranty & Escalations', bsa:'BSA Escalations', overview:'Sector Overview', ledger:'Stock Ledger', analytics:'Analytics & Reports', integrity:'Data Integrity', daylog:'Day Notes'}));
     wrap.appendChild(SearchBar());
     if(STATE.view==='overview') content.appendChild(QualityOverviewView());
     else if(STATE.view==='bsa') content.appendChild(QualityBsaView());
     else if(STATE.view==='ledger') content.appendChild(StockLedgerView());
     else if(STATE.view==='analytics') content.appendChild(QualityAnalyticsView());
+    else if(STATE.view==='integrity') content.appendChild(DataIntegrityView());
     else if(STATE.view==='daylog') content.appendChild(DayLogView());
     else content.appendChild(WarrantyView());
   } else if(STATE.role==='bsa'){
@@ -2927,6 +2928,16 @@ function QualityOverviewView(){
 /* ==================== QUALITY ANALYTICS — FPY charts, inventory charts, Excel export ==================== */
  
 function monthKey(dateStr){ return (dateStr||'').slice(0,7); }
+function weekKey(dateStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr+'T00:00:00');
+  if(isNaN(d.getTime())) return '';
+  const day = (d.getUTCDay()+6)%7; // Monday=0
+  d.setUTCDate(d.getUTCDate()-day+3); // nearest Thursday
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(),0,4));
+  const weekNum = 1 + Math.round(((d-firstThursday)/86400000 - 3 + ((firstThursday.getUTCDay()+6)%7))/7);
+  return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2,'0')}`;
+}
 function cssVar(name){ return (getComputedStyle(document.documentElement).getPropertyValue(name)||'').trim() || '#888'; }
  
 function fpyStats(){
@@ -2955,6 +2966,14 @@ function fpyStats(){
     byDay[dk].total++;
     if(r.capaCycles===0 && r.finalDisposition==='PASS') byDay[dk].firstPass++;
   });
+  const byWeek = {};
+  closed.forEach(r=>{
+    const wk = weekKey(r.closedAt ? r.closedAt.slice(0,10) : r.dateReceived);
+    if(!wk) return;
+    if(!byWeek[wk]) byWeek[wk] = {total:0, firstPass:0};
+    byWeek[wk].total++;
+    if(r.capaCycles===0 && r.finalDisposition==='PASS') byWeek[wk].firstPass++;
+  });
   const byIssue = {};
   closed.forEach(r=>{
     const flagged = ISSUE_ITEMS.filter(([k])=> r.stage1 && r.stage1.issues && r.stage1.issues[k]).map(([,l])=>l);
@@ -2972,7 +2991,14 @@ function fpyStats(){
     byPerson[person].total++;
     if(r.capaCycles===0 && r.finalDisposition==='PASS') byPerson[person].firstPass++;
   });
-  return { overallFPY, total, firstPass, byPlatform, byMonth, byDay, byIssue, byPerson };
+  const bySection = {};
+  closed.forEach(r=>{
+    const section = 'Stage 2 Repair ('+(r.stage2 && r.stage2.sopRef ? r.stage2.sopRef.split(':')[0] : 'No SOP')+')';
+    if(!bySection[section]) bySection[section] = {total:0, firstPass:0};
+    bySection[section].total++;
+    if(r.capaCycles===0 && r.finalDisposition==='PASS') bySection[section].firstPass++;
+  });
+  return { overallFPY, total, firstPass, byPlatform, byMonth, byWeek, byDay, byIssue, byPerson, bySection };
 }
 function newBatteryFpyStats(){
   const rows = newBatteryFpyByDay();
@@ -3042,6 +3068,33 @@ function fpyByPersonConfig(fpy){
   if(people.length===0) return baseBarConfig(['No data'], [{label:'FPY %', data:[0], color:cssVar('--capa')}], {suggestedMax:100, suffix:'%'});
   const data = people.map(p=>{ const s=fpy.byPerson[p]; return s.total?(s.firstPass/s.total*100):0; });
   return baseBarConfig(people, [{label:'FPY %', data, color: cssVar('--capa')}], {suggestedMax:100, suffix:'%'});
+}
+function fpyByWeekConfig(fpy){
+  const weeks = Object.keys(fpy.byWeek).sort().slice(-16);
+  if(weeks.length===0) return baseLineConfig(['No data'], [{label:'FPY %', data:[0], color:cssVar('--accent')}], {suggestedMax:100, suffix:'%'});
+  const data = weeks.map(w=> fpy.byWeek[w].total ? (fpy.byWeek[w].firstPass/fpy.byWeek[w].total*100) : 0);
+  return baseLineConfig(weeks, [{label:'FPY %', data, color: cssVar('--accent')}], {suggestedMax:100, suffix:'%'});
+}
+function fpyBySectionConfig(fpy){
+  const sections = Object.keys(fpy.bySection);
+  if(sections.length===0) return baseBarConfig(['No data'], [{label:'FPY %', data:[0], color:cssVar('--pass')}], {suggestedMax:100, suffix:'%'});
+  const data = sections.map(s=>{ const st=fpy.bySection[s]; return st.total?(st.firstPass/st.total*100):0; });
+  return baseBarConfig(sections, [{label:'FPY %', data, color: cssVar('--pass')}], {suggestedMax:100, suffix:'%'});
+}
+function newBatteryFpyByWeekConfig(){
+  const rows = [...STATE.dailyStockRecords].sort((a,b)=>a.date.localeCompare(b.date));
+  const byWeek = {};
+  rows.forEach(r=>{
+    const wk = weekKey(r.date);
+    if(!wk) return;
+    const healthy = parseInt(r.healthy)||0, qi = parseInt(r.qualityIssues)||0;
+    if(!byWeek[wk]) byWeek[wk] = {healthy:0, qi:0};
+    byWeek[wk].healthy += healthy; byWeek[wk].qi += qi;
+  });
+  const weeks = Object.keys(byWeek).sort().slice(-16);
+  if(weeks.length===0) return baseLineConfig(['No data'], [{label:'New Battery FPY %', data:[0], color:cssVar('--warn')}], {suggestedMax:100, suffix:'%'});
+  const data = weeks.map(w=>{ const s=byWeek[w]; const denom=s.healthy+s.qi; return denom>0 ? (s.healthy/denom*100) : 0; });
+  return baseLineConfig(weeks, [{label:'New Battery FPY %', data, color: cssVar('--warn')}], {suggestedMax:100, suffix:'%'});
 }
 function newBatteryFpyTrendConfig(){
   const stats = newBatteryFpyStats();
@@ -3183,8 +3236,13 @@ function QualityAnalyticsView(){
 
   const row6 = el('div',{class:'chart-row'});
   row6.appendChild(chartCard('O&M FPY by Day (last 30 closed days)', fpyByDayConfig(fpy)));
-  row6.appendChild(chartCard('O&M FPY by Issue Type', fpyByIssueConfig(fpy)));
+  row6.appendChild(chartCard('O&M FPY by Week (last 16 weeks)', fpyByWeekConfig(fpy)));
   container.appendChild(row6);
+
+  const row6b = el('div',{class:'chart-row'});
+  row6b.appendChild(chartCard('O&M FPY by Issue Type', fpyByIssueConfig(fpy)));
+  row6b.appendChild(chartCard('O&M FPY by Section (SOP Used in Stage 2)', fpyBySectionConfig(fpy)));
+  container.appendChild(row6b);
 
   const row7 = el('div',{class:'chart-row'});
   row7.appendChild(chartCard('O&M FPY by Repair Technician', fpyByPersonConfig(fpy)));
@@ -3203,7 +3261,86 @@ function QualityAnalyticsView(){
   nbCard.appendChild(el('div',{class:'stat-grid'},[statBox(nbFpy.overall.toFixed(1)+'%','Overall New Battery FPY'), statBox(nbFpy.totalHealthy,'Total Healthy Logged'), statBox(nbFpy.totalQI,'Total With Quality Issues')]));
   container.appendChild(nbCard);
 
+  const row9 = el('div',{class:'chart-row'});
+  row9.appendChild(chartCard('New Battery FPY by Day', newBatteryFpyTrendConfig()));
+  row9.appendChild(chartCard('New Battery FPY by Week (last 16 weeks)', newBatteryFpyByWeekConfig()));
+  container.appendChild(row9);
+
+  container.appendChild(FullVisibilityTablesCard());
+
   container.appendChild(ExportSelectionCard(fpy));
+
+  return container;
+}
+
+/* ---- Full visibility for the Quality Engineer: every open item across every sector, in one scannable place,
+   with the same global search bar filtering all of them at once ---- */
+function FullVisibilityTablesCard(){
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Full Visibility — every open item across every sector (filters with the search bar above)'));
+
+  const omOpen = searchFilter(STATE.omRecords.filter(r=>!r.status.startsWith('CLOSED')), r=>`${r.bmsId} ${r.model} ${r.status} ${r.stage1.technician} ${r.stage2.technician} ${r.stage3.technician}`);
+  const omCard = el('div',{class:'card'});
+  omCard.appendChild(el('h3',{}, 'O&M Chain — Open Batteries ('+omOpen.length+')'));
+  if(omOpen.length===0){ omCard.appendChild(el('div',{class:'empty-note'},'Nothing open in the O&M chain.')); }
+  else {
+    const wrap = el('div',{class:'table-wrap'});
+    const tbl = el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'BMS ID'),el('th',{},'Platform'),el('th',{},'Stage'),el('th',{},'Status'),el('th',{},'CAPA'),el('th',{},'Flag')])]));
+    const tbody = el('tbody');
+    omOpen.forEach(r=>{
+      const dupChip = DuplicateChip(STATE.omRecords, r.bmsId);
+      tbody.appendChild(el('tr',{},[
+        el('td',{class:'mono',style:'font-weight:700;'}, r.bmsId), el('td',{}, r.model||'Unknown'),
+        el('td',{}, 'Stage '+r.stage), el('td',{}, el('span',{class:'status-chip '+r.status}, r.status.replace(/_/g,' '))),
+        el('td',{}, r.capaCycles>0 ? el('span',{class:'status-chip CAPA'},'Cycle '+r.capaCycles) : '—'),
+        el('td',{}, dupChip || '—')
+      ]));
+    });
+    tbl.appendChild(tbody); wrap.appendChild(tbl); omCard.appendChild(wrap);
+  }
+  container.appendChild(omCard);
+
+  const warrOpen = searchFilter(STATE.warrantyRecords.filter(w=>w.status!=='Scrapped by QC' && w.status!=='Repaired & Returned'), w=>`${w.bmsId} ${w.model} ${w.failureCategory} ${w.status}`);
+  const warrCard = el('div',{class:'card'});
+  warrCard.appendChild(el('h3',{}, 'Active Warranty Escalations ('+warrOpen.length+')'));
+  if(warrOpen.length===0){ warrCard.appendChild(el('div',{class:'empty-note'},'None active.')); }
+  else {
+    const wrap = el('div',{class:'table-wrap'});
+    const tbl = el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'BMS ID'),el('th',{},'Platform'),el('th',{},'Category'),el('th',{},'Status'),el('th',{},'Flag')])]));
+    const tbody = el('tbody');
+    warrOpen.forEach(w=>{
+      const dupChip = DuplicateChip(STATE.warrantyRecords.map(x=>({bmsId:x.bmsId, status: (x.status!=='Scrapped by QC' && x.status!=='Repaired & Returned') ? 'OPEN' : 'CLOSED'})), w.bmsId);
+      tbody.appendChild(el('tr',{},[
+        el('td',{class:'mono',style:'font-weight:700;'}, w.bmsId), el('td',{}, w.model||'Unknown'),
+        el('td',{}, w.failureCategory), el('td',{}, el('span',{class:'badge'}, w.status)),
+        el('td',{}, dupChip || '—')
+      ]));
+    });
+    tbl.appendChild(tbody); wrap.appendChild(tbl); warrCard.appendChild(wrap);
+  }
+  container.appendChild(warrCard);
+
+  const bsaOpen = searchFilter(STATE.bsaRecords.filter(r=>r.status!=='Returned to O&M for Deployment' && r.status!=='Scrapped'), r=>`${r.bmsId} ${r.model} ${r.issueDescription} ${r.status} ${r.source}`);
+  const bsaCard = el('div',{class:'card'});
+  bsaCard.appendChild(el('h3',{}, 'Open BSA Cases ('+bsaOpen.length+')'));
+  if(bsaOpen.length===0){ bsaCard.appendChild(el('div',{class:'empty-note'},'None open.')); }
+  else {
+    const wrap = el('div',{class:'table-wrap'});
+    const tbl = el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'BMS ID'),el('th',{},'Platform'),el('th',{},'Source'),el('th',{},'Status'),el('th',{},'Assigned')])]));
+    const tbody = el('tbody');
+    bsaOpen.forEach(r=>{
+      tbody.appendChild(el('tr',{},[
+        el('td',{class:'mono',style:'font-weight:700;'}, r.bmsId), el('td',{}, r.model||'Unknown'),
+        el('td',{}, r.source.split(' (')[0]), el('td',{}, el('span',{class:'status-chip '+bsaStatusChipClass(r.status)}, r.status)),
+        el('td',{}, r.assignedEngineer||'—')
+      ]));
+    });
+    tbl.appendChild(tbody); wrap.appendChild(tbl); bsaCard.appendChild(wrap);
+  }
+  container.appendChild(bsaCard);
 
   return container;
 }
@@ -3226,6 +3363,8 @@ const EXPORT_SHEETS = [
   ['fpyplatform','FPY by Platform', ()=>buildFpyByPlatformRows(fpyStats())],
   ['fpymonth','FPY by Month', ()=>buildFpyByMonthRows(fpyStats())],
   ['fpyday','FPY by Day', ()=>buildFpyByDayRows(fpyStats())],
+  ['fpyweek','FPY by Week', ()=>buildFpyByWeekRows(fpyStats())],
+  ['fpysection','FPY by Section', ()=>buildFpyBySectionRows(fpyStats())],
   ['fpyissue','FPY by Issue', ()=>buildFpyByIssueRows(fpyStats())],
   ['fpyperson','FPY by Technician', ()=>buildFpyByPersonRows(fpyStats())],
   ['fpynewbattery','New Battery FPY', ()=>buildNewBatteryFpyRows()],
@@ -3383,6 +3522,18 @@ function buildFpyByPersonRows(fpy){
   return rowsOrEmpty(Object.keys(fpy.byPerson).map(p=>{
     const s = fpy.byPerson[p];
     return { Technician:p, 'Total Closed': s.total, 'First-Pass': s.firstPass, 'FPY %': s.total ? (s.firstPass/s.total*100).toFixed(1) : '0.0' };
+  }));
+}
+function buildFpyByWeekRows(fpy){
+  return rowsOrEmpty(Object.keys(fpy.byWeek).sort().map(w=>{
+    const s = fpy.byWeek[w];
+    return { Week:w, 'Total Closed': s.total, 'First-Pass': s.firstPass, 'FPY %': s.total ? (s.firstPass/s.total*100).toFixed(1) : '0.0' };
+  }));
+}
+function buildFpyBySectionRows(fpy){
+  return rowsOrEmpty(Object.keys(fpy.bySection).map(sec=>{
+    const s = fpy.bySection[sec];
+    return { Section:sec, 'Total Closed': s.total, 'First-Pass': s.firstPass, 'FPY %': s.total ? (s.firstPass/s.total*100).toFixed(1) : '0.0' };
   }));
 }
 function buildDailyStockExportRows(){
