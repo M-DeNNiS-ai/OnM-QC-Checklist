@@ -125,7 +125,8 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 .nav button:hover:not(.active) { color: var(--text); }
  
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; margin-bottom: 12px;
-  transition: box-shadow .15s ease; }
+  transition: box-shadow .15s ease, transform .15s ease; }
+.card:hover { box-shadow: 0 3px 12px rgba(0,0,0,.05); }
 .card h3 { margin: 0 0 2px; font-size: 13px; font-weight: 700; color: var(--text); }
 .card .sub { color: var(--muted); font-size: 11px; margin-bottom: 12px; }
  
@@ -136,9 +137,9 @@ label { display: block; font-size: 10px; font-weight: 700; color: var(--muted); 
 input, select, textarea {
   width: 100%; padding: 6px 8px; background: var(--panel); color: var(--text);
   border: 1px solid var(--line-dark); border-radius: 3px; font-size: 12px; font-family: var(--font-sans);
-  transition: border-color .12s ease, box-shadow .12s ease;
+  transition: border-color .12s ease;
 }
-input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
 textarea { resize: vertical; min-height: 50px; }
 .id-textarea { min-height: 72px; font-size: 11px; }
 .id-count { font-size: 10px; color: var(--muted); margin-top: 4px; font-weight: 600; }
@@ -197,7 +198,7 @@ tr:hover td { background: var(--panel2); }
 .footer-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; position: sticky; bottom: 0; background: var(--bg); padding: 10px 0; border-top: 1px solid var(--line-dark); align-items:center; }
 .err { color: var(--fail); font-size: 11px; margin-top: 6px; }
 .sop-box { background: var(--panel2); border: 1px solid var(--line-dark); padding: 8px 12px; border-radius: 3px; margin-bottom: 12px; font-size: 11px; }
-.docket-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); animation: fadeInUp .2s ease; }
+.docket-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .docket-item:last-child { border-bottom: none; }
 .docket-item .meta { font-size: 11px; color: var(--muted); }
 .empty-note { padding: 12px 0; color: var(--muted); font-size: 12px; }
@@ -206,7 +207,8 @@ tr:hover td { background: var(--panel2); }
   text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 12px; border: 1px solid var(--line-dark);
   background: var(--panel2); color: var(--muted);
 }
-.chart-card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; margin-bottom: 12px; animation: fadeInUp .3s ease; }
+.chart-card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; margin-bottom: 12px; animation: fadeInUp .3s ease; transition: box-shadow .15s ease; }
+.chart-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,.05); }
 .chart-card .chart-wrap { position: relative; height: 260px; }
 .chart-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
 .sync-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; background: var(--pass); animation: pulseDot 2.4s ease-in-out infinite; }
@@ -225,29 +227,23 @@ tr:hover td { background: var(--panel2); }
 @keyframes toastIn { from{ opacity:0; transform:translateY(-6px);} to{opacity:1; transform:translateY(0);} }
 @keyframes gradientMove { 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
 @keyframes viewFade { from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
-@keyframes popIn { from{opacity:0; transform:scale(.96);} to{opacity:1; transform:scale(1);} }
-@keyframes softBounce { 0%{transform:scale(1);} 40%{transform:scale(1.06);} 100%{transform:scale(1);} }
 
 .view-fade { animation: viewFade .28s cubic-bezier(.2,.7,.3,1); }
-.nav button { transition: background-color .15s ease, color .15s ease, transform .1s ease; }
-.nav button.active { animation: softBounce .3s ease; }
+.nav button { transition: background-color .15s ease, color .15s ease; }
 .card, .chart-card, .stat { animation: fadeInUp .28s cubic-bezier(.2,.7,.3,1) both; }
-.docket-item, .check-row, tbody tr { animation: fadeInUp .22s ease both; }
-.docket-item:nth-child(n) { animation-delay: calc(var(--i, 0) * 25ms); }
 input, select, textarea, button { transition: transform .1s ease, box-shadow .12s ease, background-color .12s ease, border-color .12s ease, opacity .12s ease; }
-button:active:not(:disabled) { animation: none; transform: scale(.97); }
+button:active:not(:disabled) { transform: scale(.97); }
 .reminder-banner{
   padding:10px 12px; border-radius:4px; font-size:12px; font-weight:600; margin-bottom:12px;
   background: var(--warn-bg); color: var(--warn); border:1px solid var(--warn);
-  display:flex; align-items:center; gap:8px; animation: popIn .3s ease, pulseDot 2.6s ease-in-out infinite;
+  display:flex; align-items:center; gap:8px; animation: fadeInUp .3s ease, pulseDot 2.6s ease-in-out infinite;
 }
-.day-log-item{ border:1px solid var(--line-dark); border-radius:4px; padding:10px 12px; margin-bottom:8px; animation: fadeInUp .22s ease both; }
+.day-log-item{ border:1px solid var(--line-dark); border-radius:4px; padding:10px 12px; margin-bottom:8px; }
 .day-log-item.closed{ opacity:.7; }
 .export-check-row{ display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--line); font-size:12px; }
 .export-check-row input{ width:14px; height:14px; margin:0; accent-color:var(--accent); cursor:pointer; }
 .export-check-row label{ margin:0; text-transform:none; font-weight:400; color:var(--text); font-size:12px; cursor:pointer; }
 .preview-scroll{ max-height:220px; overflow:auto; border:1px solid var(--line-dark); border-radius:3px; }
-.kpi-pulse{ animation: softBounce .5s ease; }
 </style>
 </head>
 <body>
@@ -795,15 +791,16 @@ function animateStatNumbers(){
   nodes.forEach(node=>{
     const target = parseFloat(node.dataset.target);
     if(isNaN(target)) return;
+    const suffix = node.dataset.suffix || '';
     const isInt = Number.isInteger(target);
     const t0 = performance.now(); const duration = 480;
     function step(t){
       const p = Math.min(1, (t-t0)/duration);
       const eased = 1 - Math.pow(1-p, 3);
       const val = target*eased;
-      node.textContent = isInt ? String(Math.round(val)) : val.toFixed(1);
+      node.textContent = (isInt ? String(Math.round(val)) : val.toFixed(1)) + suffix;
       if(p<1) requestAnimationFrame(step);
-      else node.textContent = isInt ? String(target) : target.toFixed(1);
+      else node.textContent = (isInt ? String(target) : target.toFixed(1)) + suffix;
     }
     requestAnimationFrame(step);
   });
@@ -990,7 +987,12 @@ function statBox(num, label){
   const s = el('div',{class:'stat'});
   const n = el('div',{class:'n'});
   const str = String(num);
-  if(/^-?\d+(\.\d+)?$/.test(str)){
+  const pctMatch = str.match(/^(-?\d+(?:\.\d+)?)%$/);
+  if(pctMatch){
+    n.dataset.target = pctMatch[1];
+    n.dataset.suffix = '%';
+    n.textContent = '0%';
+  } else if(/^-?\d+(\.\d+)?$/.test(str)){
     n.dataset.target = str;
     n.textContent = '0';
   } else {
@@ -1223,8 +1225,7 @@ function NewIntakeCard(){
  
   const cbakErr = cbakLengthError(d.bmsId, d.model);
   if(cbakErr){
-    const lenNote = el('div',{class:'id-count over'}, `${d.bmsId.trim().length} / ${CBAK_ID_LENGTH} characters — CBAK IDs must be exactly ${CBAK_ID_LENGTH}.`);
-    g1.appendChild(el('div',{}, lenNote));
+    g1.appendChild(el('div',{}, el('div',{class:'id-count over'}, `${d.bmsId.trim().length} / ${CBAK_ID_LENGTH} characters — CBAK IDs must be exactly ${CBAK_ID_LENGTH}.`)));
   } else if(d.model==='CBAK' && d.bmsId.trim()){
     g1.appendChild(el('div',{}, el('div',{class:'id-count ok'}, `${d.bmsId.trim().length} / ${CBAK_ID_LENGTH} characters — OK`)));
   }
@@ -1776,6 +1777,14 @@ function BulkStockEntryView(){
   d.rows.forEach(row=>{
     container.appendChild(BulkPlatformRowCard(row, d.date));
   });
+
+  container.appendChild(chartCard('Live Preview — Received vs Dispatched by Platform', baseBarConfig(
+    d.rows.map(r=>r.platform),
+    [
+      { label:'Received', data: d.rows.map(r=>parseInt(r.receivedQty)||0), color: cssVar('--pass') },
+      { label:'Dispatched', data: d.rows.map(r=>parseInt(r.dispatchedQty)||0), color: cssVar('--fail') },
+    ]
+  )));
  
   const actions = el('div',{class:'footer-actions'});
   if(STATE.bulkStockSaving) actions.appendChild(el('span',{class:'sync-line'},'Saving…'));
@@ -1955,6 +1964,10 @@ function DailyStockView(){
   });
   card.appendChild(g);
   card.appendChild(el('div',{class:'stat-grid', style:'margin-top:10px;'},[statBox(computeDailyStockGrandTotal(d),'Grand Total (computed)')]));
+  card.appendChild(chartCard('Live Preview — Today\'s Category Breakdown', baseBarConfig(
+    NAMANVE_STOCK_COLUMNS.map(([,l])=>l),
+    [{ label:'Count', data: NAMANVE_STOCK_COLUMNS.map(([k])=>parseInt(d[k])||0), color: cssVar('--accent') }]
+  )));
   card.appendChild(field('Notes (what happened / what is pending today)', textareaInput(d.notes, v=>d.notes=v, {key:'ds-notes'})));
 
   const actions = el('div',{class:'footer-actions'});
@@ -3487,7 +3500,6 @@ async function restoreSession(){
     removeBootLoader();
   }catch(e){ console.error(e); render(); removeBootLoader(); }
 }
- 
 restoreSession();
 </script>
 </body>
