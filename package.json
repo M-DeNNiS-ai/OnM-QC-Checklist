@@ -8,8 +8,8 @@
     "start": "node server.js"
   },
   "engines": {
-    "node": ">=18"
-  },
+  "node": "22.x"
+},
   "dependencies": {
     "better-sqlite3": "^11.3.0",
     "cookie-session": "^2.1.0",
