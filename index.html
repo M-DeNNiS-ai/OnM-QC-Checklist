@@ -6,50 +6,65 @@
 <title>Battery QC — Server</title>
 <style>
 :root {
-  --bg: #f8f9fa;
+  --bg: #f3f5f9;
+  --bg-accent: #eef2ff;
   --panel: #ffffff;
-  --panel2: #f1f3f5;
-  --line: #e9ecef;
-  --line-dark: #ced4da;
-  --text: #111827;
-  --muted: #6b7280;
-  --accent: #0f172a;
-  --pass: #15803d;
-  --pass-bg: #f0fdf4;
-  --fail: #b91c1c;
+  --panel2: #f6f7fb;
+  --line: #e6e9f2;
+  --line-dark: #d7dcec;
+  --text: #10142a;
+  --muted: #667085;
+  --accent: #4f46e5;
+  --accent-soft: #eef0ff;
+  --accent2: #0ea5e9;
+  --pass: #059669;
+  --pass-bg: #ecfdf5;
+  --fail: #dc2626;
   --fail-bg: #fef2f2;
-  --warn: #c2410c;
-  --warn-bg: #fff7ed;
-  --capa: #7c3aed;
-  --capa-bg: #f5f3ff;
+  --warn: #d97706;
+  --warn-bg: #fffbeb;
+  --capa: #9333ea;
+  --capa-bg: #faf5ff;
+  --shadow-sm: 0 1px 2px rgba(16,20,42,.04), 0 1px 1px rgba(16,20,42,.03);
+  --shadow-md: 0 4px 16px rgba(16,20,42,.08), 0 1px 3px rgba(16,20,42,.06);
+  --shadow-lg: 0 12px 32px rgba(16,20,42,.14), 0 3px 8px rgba(16,20,42,.08);
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
  
 [data-theme="dark"] {
-  --bg: #0f172a;
-  --panel: #1e293b;
-  --panel2: #334155;
-  --line: #334155;
-  --line-dark: #475569;
-  --text: #f8fafc;
-  --muted: #94a3b8;
-  --accent: #38bdf8;
+  --bg: #0b1020;
+  --bg-accent: #0f1530;
+  --panel: #161c33;
+  --panel2: #1f2745;
+  --line: #2a3358;
+  --line-dark: #3a4570;
+  --text: #f1f3fb;
+  --muted: #99a3c4;
+  --accent: #818cf8;
+  --accent-soft: rgba(129,140,248,.14);
+  --accent2: #38bdf8;
   --pass: #4ade80;
-  --pass-bg: rgba(74, 222, 128, 0.1);
+  --pass-bg: rgba(74, 222, 128, 0.12);
   --fail: #f87171;
-  --fail-bg: rgba(248, 113, 113, 0.1);
+  --fail-bg: rgba(248, 113, 113, 0.12);
   --warn: #fb923c;
-  --warn-bg: rgba(251, 146, 60, 0.1);
+  --warn-bg: rgba(251, 146, 60, 0.12);
   --capa: #c4b5fd;
-  --capa-bg: rgba(196, 181, 253, 0.12);
+  --capa-bg: rgba(196, 181, 253, 0.14);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.4);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,.5);
 }
  
 * { box-sizing: border-box; }
  
 body {
   margin: 0;
-  background: var(--bg);
+  background: radial-gradient(1200px 800px at 10% -10%, var(--bg-accent), transparent 60%),
+              radial-gradient(1000px 700px at 110% 10%, var(--bg-accent), transparent 55%),
+              var(--bg);
+  background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 13px;
@@ -61,9 +76,9 @@ body {
  
 .header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px; background: var(--panel); border: 1px solid var(--line-dark);
-  border-radius: 4px; margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
-  position: relative; overflow: hidden;
+  padding: 12px 16px; background: var(--panel); border: 1.5px solid var(--line-dark);
+  border-radius: 10px; margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
+  position: relative; overflow: hidden; box-shadow: var(--shadow-md);
 }
 .header::before{
   content:''; position:absolute; top:0; left:0; right:0; height:3px;
@@ -76,26 +91,27 @@ body {
  
 .user-info { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .badge {
-  padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 700;
-  text-transform: uppercase; background: var(--panel2); border: 1px solid var(--line-dark); color: var(--text);
+  padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; background: var(--accent-soft); border: 1.5px solid var(--accent); color: var(--accent);
 }
  
 button {
-  font-family: var(--font-sans); cursor: pointer; border: 1px solid var(--line-dark);
-  background: var(--panel); color: var(--text); border-radius: 3px;
+  font-family: var(--font-sans); cursor: pointer; border: 1.5px solid var(--line-dark);
+  background: var(--panel); color: var(--text); border-radius: 6px;
   padding: 6px 12px; font-size: 12px; font-weight: 600;
-  transition: transform .1s ease, box-shadow .12s ease, background-color .12s ease, opacity .12s ease;
+  transition: transform .14s cubic-bezier(.34,1.56,.64,1), box-shadow .16s ease, background-color .14s ease, opacity .12s ease, border-color .14s ease;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  box-shadow: var(--shadow-sm);
 }
-button:hover:not(:disabled) { background: var(--panel2); transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,.08); }
-button:active:not(:disabled) { transform: translateY(0); box-shadow:none; }
+button:hover:not(:disabled) { background: var(--panel2); border-color: var(--accent); transform: translateY(-1.5px); box-shadow: var(--shadow-md); }
+button:active:not(:disabled) { transform: translateY(0) scale(.96); box-shadow: var(--shadow-sm); }
 button:disabled { opacity: 0.55; cursor: not-allowed; }
-.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-.btn-primary:hover:not(:disabled) { opacity: 0.92; background: var(--accent); }
+.btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border-color: transparent; box-shadow: var(--shadow-md); }
+.btn-primary:hover:not(:disabled) { opacity: 0.94; filter: brightness(1.05); background: linear-gradient(135deg, var(--accent), var(--accent2)); box-shadow: var(--shadow-lg); }
 .btn-danger { background: var(--fail-bg); border-color: var(--fail); color: var(--fail); }
-.btn-danger:hover:not(:disabled) { background: var(--fail); color: #fff; }
+.btn-danger:hover:not(:disabled) { background: var(--fail); color: #fff; border-color: var(--fail); }
 .btn-capa { background: var(--capa-bg); border-color: var(--capa); color: var(--capa); }
-.btn-capa:hover:not(:disabled) { background: var(--capa); color: #fff; }
+.btn-capa:hover:not(:disabled) { background: var(--capa); color: #fff; border-color: var(--capa); }
 .btn-sm { padding: 3px 8px; font-size: 11px; }
 .btn-block { width: 100%; }
  
@@ -119,14 +135,28 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 .gate p { color: var(--muted); font-size: 12px; margin-bottom: 16px; }
 .pin-hint { font-size: 10px; color: var(--muted); margin-top: 4px; }
  
-.nav { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--line-dark); padding-bottom: 8px; flex-wrap: wrap; align-items: center; }
-.nav button { background: transparent; color: var(--muted); border: none; border-radius: 3px; font-size: 12px; font-weight: 600; padding: 6px 12px; }
-.nav button.active { background: var(--panel2); color: var(--text); font-weight: 700; }
-.nav button:hover:not(.active) { color: var(--text); }
+.nav { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1.5px solid var(--line-dark); padding-bottom: 8px; flex-wrap: wrap; align-items: center; }
+.nav button { background: transparent; color: var(--muted); border: none; box-shadow: none; border-radius: 6px; font-size: 12px; font-weight: 600; padding: 7px 13px; position: relative; transition: background-color .15s ease, color .15s ease, transform .1s ease; }
+.nav button.active { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.nav button.active::after {
+  content:''; position:absolute; left:10%; right:10%; bottom:-9px; height:2.5px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 2px;
+  animation: underlineGrow .25s cubic-bezier(.34,1.56,.64,1) both;
+}
+.nav button:hover:not(.active) { color: var(--text); background: var(--panel2); }
  
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; margin-bottom: 12px;
-  transition: box-shadow .15s ease, transform .15s ease; }
-.card:hover { box-shadow: 0 3px 12px rgba(0,0,0,.05); }
+.card { background: var(--panel); border: 1.5px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+  position: relative; overflow: hidden;
+}
+.card::before{
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  opacity: 0; transition: opacity .2s ease;
+}
+.card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); border-color: var(--accent); }
+.card:hover::before { opacity: 1; }
 .card h3 { margin: 0 0 2px; font-size: 13px; font-weight: 700; color: var(--text); }
 .card .sub { color: var(--muted); font-size: 11px; margin-bottom: 12px; }
  
@@ -135,11 +165,15 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
  
 label { display: block; font-size: 10px; font-weight: 700; color: var(--muted); margin: 8px 0 4px; text-transform: uppercase; letter-spacing: 0.3px; }
 input, select, textarea {
-  width: 100%; padding: 6px 8px; background: var(--panel); color: var(--text);
-  border: 1px solid var(--line-dark); border-radius: 3px; font-size: 12px; font-family: var(--font-sans);
-  transition: border-color .12s ease;
+  width: 100%; padding: 7px 9px; background: var(--panel); color: var(--text);
+  border: 1.5px solid var(--line-dark); border-radius: 6px; font-size: 12px; font-family: var(--font-sans);
+  transition: border-color .15s ease, box-shadow .15s ease, transform .1s ease;
 }
-input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+input:hover:not(:focus), select:hover:not(:focus), textarea:hover:not(:focus) { border-color: var(--accent2); }
 textarea { resize: vertical; min-height: 50px; }
 .id-textarea { min-height: 72px; font-size: 11px; }
 .id-count { font-size: 10px; color: var(--muted); margin-top: 4px; font-weight: 600; }
@@ -147,68 +181,75 @@ textarea { resize: vertical; min-height: 50px; }
 .id-count.over { color: var(--warn); }
  
 .banner {
-  padding: 8px 12px; border-radius: 3px; font-size: 11px; margin-bottom: 12px;
-  border: 1px solid var(--warn); background: var(--warn-bg); color: var(--warn); font-weight: 600;
-  animation: toastIn .2s ease;
+  padding: 9px 13px; border-radius: 8px; font-size: 11px; margin-bottom: 12px;
+  border: 1.5px solid var(--warn); background: var(--warn-bg); color: var(--warn); font-weight: 600;
+  animation: toastIn .22s cubic-bezier(.34,1.56,.64,1);
+  box-shadow: var(--shadow-sm);
 }
 .banner.ok { border-color: var(--pass); background: var(--pass-bg); color: var(--pass); }
 .banner.capa { border-color: var(--capa); background: var(--capa-bg); color: var(--capa); }
 .banner.err { border-color: var(--fail); background: var(--fail-bg); color: var(--fail); }
  
-.check-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
+.check-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--line); border-radius: 4px; transition: background-color .12s ease; }
+.check-row:hover { background: var(--panel2); }
 .check-row:last-child { border-bottom: none; }
 .check-row span { font-size: 12px; }
  
-.seg { display: flex; border: 1px solid var(--line-dark); border-radius: 3px; overflow: hidden; }
-.seg button { border-radius: 0; padding: 2px 8px; font-size: 10px; background: var(--panel); color: var(--muted); border: none; border-right: 1px solid var(--line-dark); }
+.seg { display: flex; border: 1.5px solid var(--line-dark); border-radius: 6px; overflow: hidden; }
+.seg button { border-radius: 0; padding: 2px 8px; font-size: 10px; background: var(--panel); color: var(--muted); border: none; border-right: 1px solid var(--line-dark); box-shadow: none; }
 .seg button:hover:not(:disabled){ transform:none; box-shadow:none; }
 .seg button:last-child { border-right: none; }
-.seg button.sel-pass { background: var(--pass-bg); color: var(--pass); font-weight: 700; }
-.seg button.sel-fail { background: var(--fail-bg); color: var(--fail); font-weight: 700; }
+.seg button.sel-pass { background: var(--pass-bg); color: var(--pass); font-weight: 700; animation: chipPop .22s ease both; }
+.seg button.sel-fail { background: var(--fail-bg); color: var(--fail); font-weight: 700; animation: chipPop .22s ease both; }
 .seg button.sel-na { background: var(--panel2); color: var(--text); }
  
-.bool-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
-.bool-row input { width: 14px; height: 14px; margin: 0; cursor: pointer; accent-color: var(--accent); }
+.bool-row { display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-bottom: 1px solid var(--line); border-radius: 4px; transition: background-color .12s ease; }
+.bool-row:hover { background: var(--panel2); }
+.bool-row input { width: 16px; height: 16px; margin: 0; cursor: pointer; accent-color: var(--accent); transition: transform .15s cubic-bezier(.34,1.56,.64,1); }
+.bool-row input:checked { transform: scale(1.15); }
 .bool-row label { margin: 0; color: var(--text); font-size: 12px; text-transform: none; font-weight: 400; cursor: pointer; }
  
 .status-chip {
-  display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 700; text-transform: uppercase;
+  display: inline-block; padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 700; text-transform: uppercase;
+  animation: chipPop .28s cubic-bezier(.34,1.56,.64,1) both;
+  letter-spacing: .2px;
 }
-.status-chip.PASS, .status-chip.CLOSED_PASS { background: var(--pass-bg); color: var(--pass); border: 1px solid var(--pass); }
-.status-chip.FAIL, .status-chip.CLOSED_SCRAPPED { background: var(--fail-bg); color: var(--fail); border: 1px solid var(--fail); }
-.status-chip.INCOMPLETE, .status-chip.NA, .status-chip.PENDING { background: var(--panel2); color: var(--muted); border: 1px solid var(--line-dark); }
-.status-chip.CAPA { background: var(--capa-bg); color: var(--capa); border: 1px solid var(--capa); }
-.status-chip.OPEN { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn); }
-.status-chip.CLOSED_TRANSFERRED_BSA { background: var(--capa-bg); color: var(--capa); border: 1px solid var(--capa); }
+.status-chip.PASS, .status-chip.CLOSED_PASS { background: var(--pass-bg); color: var(--pass); border: 1.5px solid var(--pass); }
+.status-chip.FAIL, .status-chip.CLOSED_SCRAPPED { background: var(--fail-bg); color: var(--fail); border: 1.5px solid var(--fail); }
+.status-chip.INCOMPLETE, .status-chip.NA, .status-chip.PENDING { background: var(--panel2); color: var(--muted); border: 1.5px solid var(--line-dark); }
+.status-chip.CAPA { background: var(--capa-bg); color: var(--capa); border: 1.5px solid var(--capa); }
+.status-chip.OPEN { background: var(--warn-bg); color: var(--warn); border: 1.5px solid var(--warn); }
+.status-chip.CLOSED_TRANSFERRED_BSA { background: var(--capa-bg); color: var(--capa); border: 1.5px solid var(--capa); }
  
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px; }
-.stat { background: var(--panel); border: 1px solid var(--line-dark); border-radius: 4px; padding: 12px; transition: transform .15s ease, box-shadow .15s ease; }
-.stat:hover { transform: translateY(-2px); box-shadow: 0 3px 10px rgba(0,0,0,.06); }
-.stat .n { font-size: 20px; font-weight: 700; color: var(--text); }
+.stat { background: var(--panel); border: 1.5px solid var(--line-dark); border-left: 3px solid var(--accent); border-radius: 8px; padding: 12px; transition: transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s ease, border-color .18s ease; box-shadow: var(--shadow-sm); }
+.stat:hover { transform: translateY(-3px) scale(1.02); box-shadow: var(--shadow-lg); border-color: var(--accent); }
+.stat .n { font-size: 21px; font-weight: 800; color: var(--text); letter-spacing: -.3px; }
 .stat .l { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
  
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
-th, td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
-th { color: var(--muted); font-weight: 700; text-transform: uppercase; font-size: 10px; background: var(--panel2); position: sticky; top: 0; }
-.table-wrap { overflow-x: auto; border: 1px solid var(--line-dark); border-radius: 3px; background: var(--panel); }
-tr { transition: background-color .1s ease; }
-tr:hover td { background: var(--panel2); }
+th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 700; text-transform: uppercase; font-size: 10px; background: var(--panel2); position: sticky; top: 0; border-bottom: 1.5px solid var(--line-dark); }
+.table-wrap { overflow-x: auto; border: 1.5px solid var(--line-dark); border-radius: 8px; background: var(--panel); box-shadow: var(--shadow-sm); }
+tr { transition: background-color .12s ease; animation: fadeInUp .22s ease both; }
+tr:hover td { background: var(--accent-soft); }
 .mono { font-family: var(--font-mono); }
  
-.footer-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; position: sticky; bottom: 0; background: var(--bg); padding: 10px 0; border-top: 1px solid var(--line-dark); align-items:center; }
+.footer-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; position: sticky; bottom: 0; background: var(--bg); padding: 10px 0; border-top: 1.5px solid var(--line-dark); align-items:center; }
 .err { color: var(--fail); font-size: 11px; margin-top: 6px; }
-.sop-box { background: var(--panel2); border: 1px solid var(--line-dark); padding: 8px 12px; border-radius: 3px; margin-bottom: 12px; font-size: 11px; }
-.docket-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.sop-box { background: var(--panel2); border: 1.5px solid var(--line-dark); padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 11px; }
+.docket-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 6px; border-bottom: 1px solid var(--line); border-radius: 6px; transition: background-color .12s ease; }
+.docket-item:hover { background: var(--panel2); }
 .docket-item:last-child { border-bottom: none; }
 .docket-item .meta { font-size: 11px; color: var(--muted); }
 .empty-note { padding: 12px 0; color: var(--muted); font-size: 12px; }
 .sector-tag {
-  display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 10px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 12px; border: 1px solid var(--line-dark);
-  background: var(--panel2); color: var(--muted);
+  display: inline-block; padding: 4px 9px; border-radius: 6px; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 12px; border: 1.5px solid var(--accent);
+  background: var(--accent-soft); color: var(--accent);
 }
-.chart-card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; margin-bottom: 12px; animation: fadeInUp .3s ease; transition: box-shadow .15s ease; }
-.chart-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,.05); }
+.chart-card { background: var(--panel); border: 1.5px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; animation: popIn .3s cubic-bezier(.34,1.56,.64,1) both; transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease; box-shadow: var(--shadow-sm); }
+.chart-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); border-color: var(--accent2); }
 .chart-card .chart-wrap { position: relative; height: 260px; }
 .chart-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
 .sync-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; background: var(--pass); animation: pulseDot 2.4s ease-in-out infinite; }
@@ -224,13 +265,17 @@ tr:hover td { background: var(--panel2); }
 @keyframes fadeInUp { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform:translateY(0);} }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulseDot { 0%,100%{ opacity:1; transform:scale(1);} 50%{ opacity:.5; transform:scale(1.3);} }
-@keyframes toastIn { from{ opacity:0; transform:translateY(-6px);} to{opacity:1; transform:translateY(0);} }
+@keyframes toastIn { from{ opacity:0; transform:translateY(-6px) scale(.96);} to{opacity:1; transform:translateY(0) scale(1);} }
 @keyframes gradientMove { 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
 @keyframes viewFade { from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+@keyframes chipPop { 0%{ opacity:0; transform:scale(.6);} 60%{ transform:scale(1.12);} 100%{ opacity:1; transform:scale(1);} }
+@keyframes underlineGrow { from{ transform:scaleX(0); opacity:0;} to{ transform:scaleX(1); opacity:1;} }
+@keyframes softGlow { 0%,100%{ box-shadow: 0 0 0 0 var(--accent-soft);} 50%{ box-shadow: 0 0 0 6px var(--accent-soft);} }
+@keyframes popIn { from{ opacity:0; transform: scale(.92) translateY(4px);} to{ opacity:1; transform: scale(1) translateY(0);} }
 
 .view-fade { animation: viewFade .28s cubic-bezier(.2,.7,.3,1); }
-.nav button { transition: background-color .15s ease, color .15s ease; }
-.card, .chart-card, .stat { animation: fadeInUp .28s cubic-bezier(.2,.7,.3,1) both; }
+.card, .chart-card, .stat { animation: popIn .3s cubic-bezier(.34,1.56,.64,1) both; }
+tbody tr, .docket-item, .day-log-item { animation-delay: calc(var(--row-i, 0) * 30ms); }
 input, select, textarea, button { transition: transform .1s ease, box-shadow .12s ease, background-color .12s ease, border-color .12s ease, opacity .12s ease; }
 button:active:not(:disabled) { transform: scale(.97); }
 .reminder-banner{
@@ -359,6 +404,18 @@ function bsaIssueSummary(d){
   if(d.otherNote) text += (text?' — ':'') + d.otherNote;
   return text || 'Complex issue flagged at intake';
 }
+/* ---- Defect category classification: Supplier-related (manufacturing / OEM defect) vs Non-Supplier
+   (handling, field damage, tampering, wear). Used for the daily supplier vs non-supplier defect
+   charts and the PPM/NCM analytics below. ---- */
+const SUPPLIER_RELATED_ISSUES = ['bmsFault','cellImbalance','cellFailureSingle','cellFailureMultiple','irFail','canFail','iotFault','lowCapacity'];
+const NON_SUPPLIER_RELATED_ISSUES = ['noPower','chargeFail','dischargeFail','swelling','tampered','connectorDamage','missingComponent','other'];
+function issueCategory(key){ return SUPPLIER_RELATED_ISSUES.includes(key) ? 'Supplier' : 'Non-Supplier'; }
+function recordDefectCategories(issuesMap){
+  const cats = new Set();
+  if(!issuesMap) return cats;
+  ISSUE_ITEMS.forEach(([k])=>{ if(issuesMap[k]) cats.add(issueCategory(k)); });
+  return cats;
+}
 const TEST_BOOLS = [
   ['canEstablished','CAN Established'],
   ['bmsFaultCleared','BMS Fault Cleared'],
@@ -481,6 +538,24 @@ function openRecordForBms(records, bmsId){
   const clean = (bmsId||'').trim().toUpperCase();
   if(!clean) return null;
   return records.find(r => r.bmsId.trim().toUpperCase()===clean && !r.status.startsWith('CLOSED')) || null;
+}
+/* A new intake counts as the "next visit" for a BMS ID. Two visits for the same battery are never
+   allowed to land on the same calendar day — the most recent visit (open or closed) must have
+   happened on a strictly earlier date than the new intake's date. */
+function lastVisitDateForBms(records, bmsId){
+  const clean = (bmsId||'').trim().toUpperCase();
+  if(!clean) return null;
+  const all = records.filter(r => r.bmsId.trim().toUpperCase()===clean);
+  if(all.length===0) return null;
+  const dates = all.map(r => (r.closedAt ? r.closedAt.slice(0,10) : r.dateReceived)).filter(Boolean).sort();
+  return dates.length ? dates[dates.length-1] : null;
+}
+function sameDayVisitError(records, bmsId, newDate){
+  const last = lastVisitDateForBms(records, bmsId);
+  if(last && newDate && last === newDate){
+    return 'This BMS ID already has a visit logged today. The next visit for the same battery must be on a different (later) day.';
+  }
+  return null;
 }
 function stageQueue(records, stage){
   return records.filter(r => r.stage===stage && !r.status.startsWith('CLOSED')).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
@@ -689,7 +764,7 @@ function findDuplicateOpenBsaGroups(records){
     if(!map[key]) map[key]=[];
     map[key].push(r);
   });
-  return Object.values(map).filter(list=>list.length>1).map(list=>list.slice().sort((a,b)=>a.dateFlagged.localeCompare(b.dateFlagged)));
+  return Object.values(map).filter(list=>list.length>1).map(list=>list.slice().sort((a,b)=>a.dateFlagged.localeCompare(a.dateFlagged)));
 }
  
 /* ---------- Daily Stock / IoT Tracker / Day Log / BSA record helpers ---------- */
@@ -771,6 +846,7 @@ let STATE = {
   bsaLinkBmsSearch: '',
   exportSelection: null,
   exportPreview: null,
+  myReportExporting: false,
 };
  
 function toast(msg){ STATE.toast = msg; render(); setTimeout(()=>{ STATE.toast=null; render(); }, 2800); }
@@ -893,7 +969,7 @@ function Toast(){ return el('div',{class:'banner ok'},[STATE.toast]); }
 /* ---------- Global search (available on every screen) ---------- */
 function SearchBar(){
   const wrap = el('div',{style:'margin-bottom:12px;display:flex;align-items:center;gap:8px;'});
-  const inp = textInput(STATE.searchQuery, v=>{ STATE.searchQuery=v; render(); }, {placeholder:'🔎 Search this screen — BMS ID, platform, technician, status, notes…', key:'global-search'});
+  const inp = textInput(STATE.searchQuery, v=>{ STATE.searchQuery=v; render(); }, {placeholder:'🔎 Search by Battery / BMS Number — also matches platform, technician, status, notes…', key:'global-search'});
   inp.style.maxWidth='420px';
   wrap.appendChild(inp);
   if(STATE.searchQuery){
@@ -944,6 +1020,7 @@ function IssuesCard(d){
     cb.addEventListener('change', ()=>{ d.issues[key]=cb.checked; render(); });
     row.appendChild(cb);
     row.appendChild(el('label',{},label));
+    row.appendChild(el('span',{class:'badge', style:'margin-left:auto;opacity:.7;'}, issueCategory(key)));
     card.appendChild(row);
   });
   if(d.issues.missingComponent){
@@ -1066,6 +1143,7 @@ function Header(){
   const user = el('div',{class:'user-info'},[
     el('span',{class:'badge'}, roleTag),
     el('span',{}, STATE.role==='omtech' ? STATE.techName : SECTOR_LABEL[STATE.role]),
+    el('button',{class:'btn-sm', disabled: STATE.myReportExporting, onClick: exportMyReport}, STATE.myReportExporting ? loadingLabel(true,'Preparing…') : '⬇ Download My Report'),
     el('button',{class:'btn-sm', onClick:()=>{
       apiFetch('/api/auth/logout',{method:'POST'}).catch(()=>{});
       STATE.role=null; STATE.stage=null; STATE.view='main'; STATE.openId=null; STATE.serialWarning=null; STATE.searchQuery='';
@@ -1133,12 +1211,13 @@ function View(){
     else if(STATE.view==='integrity') content.appendChild(DataIntegrityView());
     else content.appendChild(BulkStockEntryView());
   } else if(STATE.role==='quality'){
-    wrap.appendChild(Nav(['warranty','bsa','overview','ledger','analytics','daylog'], {warranty:'Warranty & Escalations', bsa:'BSA Escalations', overview:'Sector Overview', ledger:'Stock Ledger', analytics:'Analytics & Reports', daylog:'Day Notes'}));
+    wrap.appendChild(Nav(['warranty','bsa','overview','ledger','analytics','integrity','daylog'], {warranty:'Warranty & Escalations', bsa:'BSA Escalations', overview:'Sector Overview', ledger:'Stock Ledger', analytics:'Analytics & Reports', integrity:'Data Integrity', daylog:'Day Notes'}));
     wrap.appendChild(SearchBar());
     if(STATE.view==='overview') content.appendChild(QualityOverviewView());
     else if(STATE.view==='bsa') content.appendChild(QualityBsaView());
     else if(STATE.view==='ledger') content.appendChild(StockLedgerView());
     else if(STATE.view==='analytics') content.appendChild(QualityAnalyticsView());
+    else if(STATE.view==='integrity') content.appendChild(DataIntegrityView());
     else if(STATE.view==='daylog') content.appendChild(DayLogView());
     else content.appendChild(WarrantyView());
   } else if(STATE.role==='bsa'){
@@ -1187,7 +1266,7 @@ function NewIntakeCard(){
   const d = STATE.intakeDraft;
   const card = el('div',{class:'card'});
   card.appendChild(el('h3',{},'Receive Battery — New Intake'));
-  card.appendChild(el('div',{class:'sub'},'Log a battery arriving at Stage 1. Once sent, it moves to the Stage 2 repair docket.'));
+  card.appendChild(el('div',{class:'sub'},'Log a battery arriving at Stage 1. Once sent, it moves to the Stage 2 repair docket. A given battery can only have one visit per day — the next visit for the same BMS ID must be on a later day.'));
  
   if(STATE.serialWarning){
     container_warn(card);
@@ -1215,7 +1294,11 @@ function NewIntakeCard(){
         STATE.serialWarning = `This BMS ID is already in the pipeline (Stage ${openRec.stage}). Use that docket instead of creating a new intake.`;
       } else {
         const closed = closedRecordsForBms(STATE.omRecords, clean);
-        if(closed.length>0) STATE.serialWarning = `Notice: BMS ID has ${closed.length} prior closed service visit(s).`;
+        if(closed.length>0){
+          STATE.serialWarning = `Notice: BMS ID has ${closed.length} prior closed service visit(s).`;
+          const sameDay = sameDayVisitError(STATE.omRecords, clean, d.dateReceived);
+          if(sameDay) STATE.serialWarning += ' ' + sameDay;
+        }
       }
     }
     render();
@@ -1265,6 +1348,8 @@ function NewIntakeCard(){
     if(isSwapStationRequired(d) && !d.site.trim()){ STATE.intakeError='Swap Station is required for this defect type.'; render(); return; }
     if(d.issues.missingComponent && !(d.missingComponentNote||'').trim()){ STATE.intakeError='Specify which component is missing.'; render(); return; }
     if(openRecordForBms(STATE.omRecords, clean)){ STATE.intakeError='This BMS ID is already open in the pipeline. Use that docket instead of creating a new intake.'; render(); return; }
+    const sameDayErr = sameDayVisitError(STATE.omRecords, clean, d.dateReceived);
+    if(sameDayErr){ STATE.intakeError = sameDayErr; render(); return; }
     const visitNumber = closedRecordsForBms(STATE.omRecords, clean).length + 1;
     const rec = newOmRecord(d, visitNumber, STATE.techName);
     let bsaRec = null;
@@ -2927,7 +3012,25 @@ function QualityOverviewView(){
 /* ==================== QUALITY ANALYTICS — FPY charts, inventory charts, Excel export ==================== */
  
 function monthKey(dateStr){ return (dateStr||'').slice(0,7); }
+function yearKey(dateStr){ return (dateStr||'').slice(0,4); }
+function weekKey(dateStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr+'T00:00:00');
+  if(isNaN(d.getTime())) return '';
+  const day = (d.getUTCDay()+6)%7; // Monday=0
+  d.setUTCDate(d.getUTCDate()-day+3); // nearest Thursday
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(),0,4));
+  const weekNum = 1 + Math.round(((d-firstThursday)/86400000 - 3 + ((firstThursday.getUTCDay()+6)%7))/7);
+  return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2,'0')}`;
+}
 function cssVar(name){ return (getComputedStyle(document.documentElement).getPropertyValue(name)||'').trim() || '#888'; }
+/* ---- YTD / MTD / WTD range helpers — every analytics number below can be recomputed for any of
+   these rolling periods so the Quality Engineer always sees "as of today" figures. ---- */
+function inYTD(dateStr){ return dateStr && yearKey(dateStr)===yearKey(todayStr()); }
+function inMTD(dateStr){ return dateStr && monthKey(dateStr)===monthKey(todayStr()); }
+function inWTD(dateStr){ return dateStr && weekKey(dateStr)===weekKey(todayStr()); }
+function inToday(dateStr){ return dateStr===todayStr(); }
+function ppmRating(nonConforming, total){ return total>0 ? Math.round((nonConforming/total)*1000000) : 0; }
  
 function fpyStats(){
   const closed = STATE.omRecords.filter(r=>r.status.startsWith('CLOSED'));
@@ -2955,6 +3058,14 @@ function fpyStats(){
     byDay[dk].total++;
     if(r.capaCycles===0 && r.finalDisposition==='PASS') byDay[dk].firstPass++;
   });
+  const byWeek = {};
+  closed.forEach(r=>{
+    const wk = weekKey(r.closedAt ? r.closedAt.slice(0,10) : r.dateReceived);
+    if(!wk) return;
+    if(!byWeek[wk]) byWeek[wk] = {total:0, firstPass:0};
+    byWeek[wk].total++;
+    if(r.capaCycles===0 && r.finalDisposition==='PASS') byWeek[wk].firstPass++;
+  });
   const byIssue = {};
   closed.forEach(r=>{
     const flagged = ISSUE_ITEMS.filter(([k])=> r.stage1 && r.stage1.issues && r.stage1.issues[k]).map(([,l])=>l);
@@ -2972,7 +3083,73 @@ function fpyStats(){
     byPerson[person].total++;
     if(r.capaCycles===0 && r.finalDisposition==='PASS') byPerson[person].firstPass++;
   });
-  return { overallFPY, total, firstPass, byPlatform, byMonth, byDay, byIssue, byPerson };
+  const bySection = {};
+  closed.forEach(r=>{
+    const section = 'Stage 2 Repair ('+(r.stage2 && r.stage2.sopRef ? r.stage2.sopRef.split(':')[0] : 'No SOP')+')';
+    if(!bySection[section]) bySection[section] = {total:0, firstPass:0};
+    bySection[section].total++;
+    if(r.capaCycles===0 && r.finalDisposition==='PASS') bySection[section].firstPass++;
+  });
+  return { overallFPY, total, firstPass, byPlatform, byMonth, byWeek, byDay, byIssue, byPerson, bySection };
+}
+/* ---- Rolling-period analytics (Today / WTD / MTD / YTD): FPY, PPM, NCM, and defect-category
+   (supplier vs non-supplier) counts — all recomputed live from STATE.omRecords on every render,
+   so any new intake, repair, or QC disposition immediately shifts these numbers. ---- */
+function periodBucket(records, predicate){
+  const closed = records.filter(r=>r.status.startsWith('CLOSED') && predicate(r.closedAt ? r.closedAt.slice(0,10) : r.dateReceived));
+  const total = closed.length;
+  const firstPass = closed.filter(r=>r.capaCycles===0 && r.finalDisposition==='PASS').length;
+  const nonConforming = closed.filter(r=>r.finalDisposition==='SCRAPPED' || r.capaCycles>0).length;
+  let supplierDefects = 0, nonSupplierDefects = 0;
+  closed.forEach(r=>{
+    const cats = recordDefectCategories(r.stage1 && r.stage1.issues);
+    if(cats.has('Supplier')) supplierDefects++;
+    if(cats.has('Non-Supplier')) nonSupplierDefects++;
+  });
+  return {
+    total, firstPass, nonConforming,
+    fpy: total>0 ? (firstPass/total*100) : 0,
+    ppm: ppmRating(nonConforming, total),
+    ncmRate: total>0 ? (nonConforming/total*100) : 0,
+    supplierDefects, nonSupplierDefects,
+  };
+}
+function computePeriodAnalytics(){
+  const recs = STATE.omRecords;
+  return {
+    today: periodBucket(recs, inToday),
+    wtd: periodBucket(recs, inWTD),
+    mtd: periodBucket(recs, inMTD),
+    ytd: periodBucket(recs, inYTD),
+  };
+}
+/* Daily defect-category counts (Supplier vs Non-Supplier) for the last N closed days — feeds the
+   "defect category daily supplier / non-supplier" chart. */
+function defectCategoryByDay(days=30){
+  const closed = STATE.omRecords.filter(r=>r.status.startsWith('CLOSED'));
+  const byDay = {};
+  closed.forEach(r=>{
+    const dk = r.closedAt ? r.closedAt.slice(0,10) : r.dateReceived;
+    if(!byDay[dk]) byDay[dk] = { supplier:0, nonSupplier:0 };
+    const cats = recordDefectCategories(r.stage1 && r.stage1.issues);
+    if(cats.has('Supplier')) byDay[dk].supplier++;
+    if(cats.has('Non-Supplier')) byDay[dk].nonSupplier++;
+  });
+  const dates = Object.keys(byDay).sort().slice(-days);
+  return { dates, byDay };
+}
+function warrantySummaryStats(){
+  const recs = STATE.warrantyRecords;
+  const active = recs.filter(w=>w.status!=='Scrapped by QC' && w.status!=='Repaired & Returned');
+  const scrapped = recs.filter(w=>w.status==='Scrapped by QC');
+  const repaired = recs.filter(w=>w.status==='Repaired & Returned');
+  const closedOm = STATE.omRecords.filter(r=>r.status.startsWith('CLOSED')).length;
+  const withDate = key => recs.filter(w=>key(w.dateEscalated));
+  return {
+    total: recs.length, active: active.length, scrapped: scrapped.length, repaired: repaired.length,
+    ppm: ppmRating(recs.length, closedOm||recs.length),
+    today: withDate(inToday).length, wtd: withDate(inWTD).length, mtd: withDate(inMTD).length, ytd: withDate(inYTD).length,
+  };
 }
 function newBatteryFpyStats(){
   const rows = newBatteryFpyByDay();
@@ -2991,8 +3168,8 @@ function chartBaseOptions(opts={}){
     animation: { duration: 500, easing: 'easeOutCubic' },
     plugins:{ legend:{ display: !!opts.legend, position:'bottom', labels:{color:textColor, font:{size:11}, boxWidth:12} } },
     scales: opts.noScales ? {} : {
-      x:{ ticks:{color:textColor, font:{size:10}}, grid:{color:gridColor} },
-      y:{ ticks:{color:textColor, font:{size:10}, callback: v=> (opts.suffix ? v+opts.suffix : v)}, grid:{color:gridColor}, suggestedMax: opts.suggestedMax, beginAtZero:true }
+      x:{ ticks:{color:textColor, font:{size:10}}, grid:{color:gridColor}, stacked: !!opts.stacked },
+      y:{ ticks:{color:textColor, font:{size:10}, callback: v=> (opts.suffix ? v+opts.suffix : v)}, grid:{color:gridColor}, suggestedMax: opts.suggestedMax, beginAtZero:true, stacked: !!opts.stacked }
     }
   };
 }
@@ -3001,6 +3178,12 @@ function baseBarConfig(labels, datasets, opts={}){
 }
 function baseLineConfig(labels, datasets, opts={}){
   return { type:'line', data:{ labels, datasets: datasets.map(d=>({ label:d.label, data:d.data, borderColor:d.color, backgroundColor:d.color, tension:0.3, fill:false, pointRadius:3 })) }, options: chartBaseOptions({...opts, legend: datasets.length>1}) };
+}
+function basePieConfig(labels, data, colors, opts={}){
+  if(labels.length===0 || data.every(v=>!v)){
+    return { type:'pie', data:{labels:['No data'], datasets:[{data:[1], backgroundColor:[cssVar('--line-dark')]}]}, options: chartBaseOptions({legend:true, noScales:true}) };
+  }
+  return { type:'pie', data:{ labels, datasets:[{ data, backgroundColor: colors }] }, options: chartBaseOptions({legend:true, noScales:true, ...opts}) };
 }
 function chartCard(title, config){
   const card = el('div',{class:'chart-card'});
@@ -3043,6 +3226,78 @@ function fpyByPersonConfig(fpy){
   const data = people.map(p=>{ const s=fpy.byPerson[p]; return s.total?(s.firstPass/s.total*100):0; });
   return baseBarConfig(people, [{label:'FPY %', data, color: cssVar('--capa')}], {suggestedMax:100, suffix:'%'});
 }
+function fpyByWeekConfig(fpy){
+  const weeks = Object.keys(fpy.byWeek).sort().slice(-16);
+  if(weeks.length===0) return baseLineConfig(['No data'], [{label:'FPY %', data:[0], color:cssVar('--accent')}], {suggestedMax:100, suffix:'%'});
+  const data = weeks.map(w=> fpy.byWeek[w].total ? (fpy.byWeek[w].firstPass/fpy.byWeek[w].total*100) : 0);
+  return baseLineConfig(weeks, [{label:'FPY %', data, color: cssVar('--accent')}], {suggestedMax:100, suffix:'%'});
+}
+function fpyBySectionConfig(fpy){
+  const sections = Object.keys(fpy.bySection);
+  if(sections.length===0) return baseBarConfig(['No data'], [{label:'FPY %', data:[0], color:cssVar('--pass')}], {suggestedMax:100, suffix:'%'});
+  const data = sections.map(s=>{ const st=fpy.bySection[s]; return st.total?(st.firstPass/st.total*100):0; });
+  return baseBarConfig(sections, [{label:'FPY %', data, color: cssVar('--pass')}], {suggestedMax:100, suffix:'%'});
+}
+/* ---- Daily analysis: combined FPY % and PPM trend on the same day axis ---- */
+function dailyAnalysisConfig(){
+  const closed = STATE.omRecords.filter(r=>r.status.startsWith('CLOSED'));
+  const byDay = {};
+  closed.forEach(r=>{
+    const dk = r.closedAt ? r.closedAt.slice(0,10) : r.dateReceived;
+    if(!byDay[dk]) byDay[dk] = { total:0, firstPass:0, nonConforming:0 };
+    byDay[dk].total++;
+    if(r.capaCycles===0 && r.finalDisposition==='PASS') byDay[dk].firstPass++;
+    if(r.finalDisposition==='SCRAPPED' || r.capaCycles>0) byDay[dk].nonConforming++;
+  });
+  const days = Object.keys(byDay).sort().slice(-30);
+  if(days.length===0) return baseLineConfig(['No data'], [{label:'FPY %', data:[0], color:cssVar('--pass')}], {suggestedMax:100, suffix:'%'});
+  const fpyData = days.map(d=> byDay[d].total ? (byDay[d].firstPass/byDay[d].total*100) : 0);
+  const ppmData = days.map(d=> ppmRating(byDay[d].nonConforming, byDay[d].total) / 10000); // scaled to 0-100 band for shared axis
+  return baseLineConfig(days, [
+    { label:'FPY %', data: fpyData, color: cssVar('--pass') },
+    { label:'PPM (÷10,000 for scale)', data: ppmData, color: cssVar('--fail') },
+  ], {suggestedMax:100, suffix:'%'});
+}
+/* ---- Daily stock bar graph: grand total logged per day from Daily Stock Data ---- */
+function dailyStockBarConfig(){
+  const rows = [...STATE.dailyStockRecords].sort((a,b)=>a.date.localeCompare(b.date)).slice(-30);
+  if(rows.length===0) return baseBarConfig(['No data'], [{label:'Grand Total', data:[0], color:cssVar('--accent')}], {});
+  return baseBarConfig(rows.map(r=>r.date), [{label:'Grand Total Stock', data: rows.map(r=>computeDailyStockGrandTotal(r)), color: cssVar('--accent')}], {});
+}
+/* ---- Defect category (Supplier vs Non-Supplier) — daily grouped bar + overall pie ---- */
+function defectCategoryDailyConfig(){
+  const { dates, byDay } = defectCategoryByDay(30);
+  if(dates.length===0) return baseBarConfig(['No data'], [{label:'Supplier', data:[0], color:cssVar('--fail')}], {});
+  return baseBarConfig(dates, [
+    { label:'Supplier-Related', data: dates.map(d=>byDay[d].supplier), color: cssVar('--fail') },
+    { label:'Non-Supplier-Related', data: dates.map(d=>byDay[d].nonSupplier), color: cssVar('--warn') },
+  ], {});
+}
+function defectCategoryPieConfig(){
+  const closed = STATE.omRecords.filter(r=>r.status.startsWith('CLOSED'));
+  let supplier=0, nonSupplier=0;
+  closed.forEach(r=>{
+    const cats = recordDefectCategories(r.stage1 && r.stage1.issues);
+    if(cats.has('Supplier')) supplier++;
+    if(cats.has('Non-Supplier')) nonSupplier++;
+  });
+  return basePieConfig(['Supplier-Related','Non-Supplier-Related'], [supplier, nonSupplier], [cssVar('--fail'), cssVar('--warn')]);
+}
+function newBatteryFpyByWeekConfig(){
+  const rows = [...STATE.dailyStockRecords].sort((a,b)=>a.date.localeCompare(b.date));
+  const byWeek = {};
+  rows.forEach(r=>{
+    const wk = weekKey(r.date);
+    if(!wk) return;
+    const healthy = parseInt(r.healthy)||0, qi = parseInt(r.qualityIssues)||0;
+    if(!byWeek[wk]) byWeek[wk] = {healthy:0, qi:0};
+    byWeek[wk].healthy += healthy; byWeek[wk].qi += qi;
+  });
+  const weeks = Object.keys(byWeek).sort().slice(-16);
+  if(weeks.length===0) return baseLineConfig(['No data'], [{label:'New Battery FPY %', data:[0], color:cssVar('--warn')}], {suggestedMax:100, suffix:'%'});
+  const data = weeks.map(w=>{ const s=byWeek[w]; const denom=s.healthy+s.qi; return denom>0 ? (s.healthy/denom*100) : 0; });
+  return baseLineConfig(weeks, [{label:'New Battery FPY %', data, color: cssVar('--warn')}], {suggestedMax:100, suffix:'%'});
+}
 function newBatteryFpyTrendConfig(){
   const stats = newBatteryFpyStats();
   if(stats.rows.length===0) return baseLineConfig(['No data'], [{label:'New Battery FPY %', data:[0], color:cssVar('--accent')}], {suggestedMax:100, suffix:'%'});
@@ -3060,8 +3315,7 @@ function bsaByStatusConfig(){
   STATE.bsaRecords.forEach(r=>{ counts[r.status]=(counts[r.status]||0)+1; });
   const labels = Object.keys(counts).filter(l=>counts[l]>0);
   const palette = [cssVar('--warn'), cssVar('--capa'), cssVar('--accent'), cssVar('--fail'), cssVar('--pass')];
-  if(labels.length===0) return { type:'pie', data:{labels:['No data'], datasets:[{data:[1], backgroundColor:[cssVar('--line-dark')]}]}, options: chartBaseOptions({legend:true, noScales:true}) };
-  return { type:'pie', data:{ labels, datasets:[{ data: labels.map(l=>counts[l]), backgroundColor: labels.map((_,i)=>palette[i%palette.length]) }] }, options: chartBaseOptions({legend:true, noScales:true}) };
+  return basePieConfig(labels, labels.map(l=>counts[l]), labels.map((_,i)=>palette[i%palette.length]));
 }
 function bsaBySourceConfig(){
   const counts = {}; BSA_SOURCES.forEach(s=>counts[s]=0);
@@ -3072,11 +3326,7 @@ function dispositionConfig(){
   const closed = STATE.omRecords.filter(r=>r.status.startsWith('CLOSED'));
   const passed = closed.filter(r=>r.finalDisposition==='PASS').length;
   const scrapped = closed.filter(r=>r.finalDisposition==='SCRAPPED').length;
-  return {
-    type:'doughnut',
-    data:{ labels:['Passed','Scrapped'], datasets:[{ data:[passed,scrapped], backgroundColor:[cssVar('--pass'), cssVar('--fail')] }] },
-    options: chartBaseOptions({legend:true, noScales:true})
-  };
+  return basePieConfig(['Passed','Scrapped'], [passed, scrapped], [cssVar('--pass'), cssVar('--fail')]);
 }
 function capaDistributionConfig(){
   const buckets = {'0 (First Pass)':0,'1':0,'2':0,'3+':0};
@@ -3092,6 +3342,11 @@ function capaDistributionConfig(){
 function stockByPlatformConfig(){
   const stock = stockByPlatform();
   return baseBarConfig(PLATFORMS, [{label:'Units in Stock', data: PLATFORMS.map(p=>stock[p]), color: cssVar('--accent')}], {});
+}
+function stockByPlatformPieConfig(){
+  const stock = stockByPlatform();
+  const palette = [cssVar('--accent'), cssVar('--pass'), cssVar('--warn'), cssVar('--capa')];
+  return basePieConfig(PLATFORMS, PLATFORMS.map(p=>Math.max(0,stock[p])), PLATFORMS.map((_,i)=>palette[i%palette.length]));
 }
 function movementsByMonthConfig(){
   const months = new Set();
@@ -3122,8 +3377,7 @@ function warrantyByStatusConfig(){
   STATE.warrantyRecords.forEach(w=>{ counts[w.status]=(counts[w.status]||0)+1; });
   const labels = Object.keys(counts);
   const palette = [cssVar('--warn'), cssVar('--capa'), cssVar('--fail'), cssVar('--pass')];
-  if(labels.length===0) return { type:'pie', data:{labels:['No data'], datasets:[{data:[1], backgroundColor:[cssVar('--line-dark')]}]}, options: chartBaseOptions({legend:true, noScales:true}) };
-  return { type:'pie', data:{ labels, datasets:[{ data: labels.map(l=>counts[l]), backgroundColor: labels.map((_,i)=>palette[i%palette.length]) }] }, options: chartBaseOptions({legend:true, noScales:true}) };
+  return basePieConfig(labels, labels.map(l=>counts[l]), labels.map((_,i)=>palette[i%palette.length]));
 }
 function stockLedgerTrendConfig(){
   const ledger = computeStockLedger(STATE.plantStockRecords);
@@ -3135,9 +3389,11 @@ function stockLedgerTrendConfig(){
 /* ---- Quality Analytics view ---- */
 function QualityAnalyticsView(){
   const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Quality Analytics — computed live from all sector stores'));
+  container.appendChild(el('div',{class:'sector-tag'},'Quality Analytics — computed live from all sector stores; every new battery entry updates these numbers immediately'));
  
   const fpy = fpyStats();
+  const periods = computePeriodAnalytics();
+  const warrSummary = warrantySummaryStats();
  
   const headerCard = el('div',{class:'card'});
   const headerTop = el('div',{style:'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;'});
@@ -3146,7 +3402,7 @@ function QualityAnalyticsView(){
   exportBtn.addEventListener('click', ()=>{ exportAllDataToExcel(); });
   headerTop.appendChild(exportBtn);
   headerCard.appendChild(headerTop);
-  headerCard.appendChild(el('div',{class:'sub'},'FPY = packs that passed final QC on the first attempt (zero corrective-action cycles) out of all closed packs. All charts and the export below refresh from live sector data on every visit to this tab.'));
+  headerCard.appendChild(el('div',{class:'sub'},'FPY = packs that passed final QC on the first attempt (zero corrective-action cycles) out of all closed packs. PPM = non-conforming packs (scrapped or ever under corrective action) per million closed. All charts and the export below refresh from live sector data on every visit to this tab.'));
   const stats = el('div',{class:'stat-grid'});
   stats.appendChild(statBox(fpy.overallFPY.toFixed(1)+'%', 'Overall FPY'));
   stats.appendChild(statBox(fpy.total, 'Total Closed Packs'));
@@ -3155,25 +3411,79 @@ function QualityAnalyticsView(){
   stats.appendChild(statBox(STATE.warrantyRecords.length, 'Warranty Escalations'));
   headerCard.appendChild(stats);
   container.appendChild(headerCard);
+
+  /* ---- Rolling period summary: Today / WTD / MTD / YTD FPY, PPM and NCM ---- */
+  const periodCard = el('div',{class:'card'});
+  periodCard.appendChild(el('h3',{},'Rolling Period Summary — Today / WTD / MTD / YTD'));
+  periodCard.appendChild(el('div',{class:'sub'},'Recomputed on every render from live closed O&M records, so the moment a new battery entry closes out, these figures shift.'));
+  const periodWrap = el('div',{class:'table-wrap'});
+  const periodTbl = el('table');
+  periodTbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Period'),el('th',{},'Closed'),el('th',{},'FPY %'),el('th',{},'PPM'),el('th',{},'NCM %'),el('th',{},'Supplier Defects'),el('th',{},'Non-Supplier Defects')])]));
+  const periodTbody = el('tbody');
+  [['Today',periods.today],['Week to Date',periods.wtd],['Month to Date',periods.mtd],['Year to Date',periods.ytd]].forEach(([label,p])=>{
+    periodTbody.appendChild(el('tr',{},[
+      el('td',{style:'font-weight:700;'},label), el('td',{class:'mono'},String(p.total)),
+      el('td',{class:'mono'},p.fpy.toFixed(1)+'%'), el('td',{class:'mono'},String(p.ppm)),
+      el('td',{class:'mono'},p.ncmRate.toFixed(1)+'%'), el('td',{class:'mono'},String(p.supplierDefects)), el('td',{class:'mono'},String(p.nonSupplierDefects))
+    ]));
+  });
+  periodTbl.appendChild(periodTbody); periodWrap.appendChild(periodTbl); periodCard.appendChild(periodWrap);
+  container.appendChild(periodCard);
+
+  /* ---- Warranty Summary Report ---- */
+  const warrCard = el('div',{class:'card'});
+  warrCard.appendChild(el('h3',{},'Warranty Summary Report'));
+  warrCard.appendChild(el('div',{class:'sub'},'Live snapshot of all warranty escalations, with rolling-period counts and a PPM rate against total closed O&M packs.'));
+  const warrStats = el('div',{class:'stat-grid'});
+  warrStats.appendChild(statBox(warrSummary.total,'Total Escalations'));
+  warrStats.appendChild(statBox(warrSummary.active,'Active'));
+  warrStats.appendChild(statBox(warrSummary.repaired,'Repaired & Returned'));
+  warrStats.appendChild(statBox(warrSummary.scrapped,'Scrapped'));
+  warrStats.appendChild(statBox(warrSummary.ppm,'Warranty PPM'));
+  warrCard.appendChild(warrStats);
+  const warrPeriodWrap = el('div',{class:'table-wrap'});
+  const warrPeriodTbl = el('table');
+  warrPeriodTbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Today'),el('th',{},'WTD'),el('th',{},'MTD'),el('th',{},'YTD')])]));
+  warrPeriodTbl.appendChild(el('tbody',{},[el('tr',{},[
+    el('td',{class:'mono'},String(warrSummary.today)), el('td',{class:'mono'},String(warrSummary.wtd)),
+    el('td',{class:'mono'},String(warrSummary.mtd)), el('td',{class:'mono'},String(warrSummary.ytd))
+  ])]));
+  warrPeriodWrap.appendChild(warrPeriodTbl); warrCard.appendChild(warrPeriodWrap);
+  container.appendChild(warrCard);
  
   const row1 = el('div',{class:'chart-row'});
   row1.appendChild(chartCard('FPY Trend by Month', fpyTrendConfig(fpy)));
   row1.appendChild(chartCard('FPY by Platform', fpyByPlatformConfig(fpy)));
   container.appendChild(row1);
+
+  const rowDaily = el('div',{class:'chart-row'});
+  rowDaily.appendChild(chartCard('Daily Analysis — FPY % & PPM Trend (last 30 closed days)', dailyAnalysisConfig()));
+  rowDaily.appendChild(chartCard('Daily Stock Bar Graph (Grand Total, last 30 days)', dailyStockBarConfig()));
+  container.appendChild(rowDaily);
+
+  const rowDefect = el('div',{class:'chart-row'});
+  rowDefect.appendChild(chartCard('Defect Category — Daily Supplier vs Non-Supplier', defectCategoryDailyConfig()));
+  rowDefect.appendChild(chartCard('Defect Category — Overall Split (Pie)', defectCategoryPieConfig()));
+  container.appendChild(rowDefect);
  
   const row2 = el('div',{class:'chart-row'});
-  row2.appendChild(chartCard('Final Disposition Breakdown', dispositionConfig()));
+  row2.appendChild(chartCard('Final Disposition Breakdown (Pie)', dispositionConfig()));
   row2.appendChild(chartCard('Corrective Action (CAPA) Cycles', capaDistributionConfig()));
   container.appendChild(row2);
  
   const row3 = el('div',{class:'chart-row'});
   row3.appendChild(chartCard('Current Stock by Platform', stockByPlatformConfig()));
-  row3.appendChild(chartCard('Inventory Movements by Month', movementsByMonthConfig()));
+  row3.appendChild(chartCard('Current Stock by Platform (Pie)', stockByPlatformPieConfig()));
   container.appendChild(row3);
+
+  const row3b = el('div',{class:'chart-row'});
+  row3b.appendChild(chartCard('Inventory Movements by Month', movementsByMonthConfig()));
+  row3b.appendChild(chartCard('Warranty Escalations by Status (Pie)', warrantyByStatusConfig()));
+  container.appendChild(row3b);
  
   const row4 = el('div',{class:'chart-row'});
   row4.appendChild(chartCard('Warranty Escalations by Failure Category', warrantyByCategoryConfig()));
-  row4.appendChild(chartCard('Warranty Escalations by Status', warrantyByStatusConfig()));
+  row4.appendChild(chartCard('Warranty Escalations by Brand', warrantyByBrandConfig()));
   container.appendChild(row4);
  
   const row5 = el('div',{class:'chart-row'});
@@ -3183,16 +3493,20 @@ function QualityAnalyticsView(){
 
   const row6 = el('div',{class:'chart-row'});
   row6.appendChild(chartCard('O&M FPY by Day (last 30 closed days)', fpyByDayConfig(fpy)));
-  row6.appendChild(chartCard('O&M FPY by Issue Type', fpyByIssueConfig(fpy)));
+  row6.appendChild(chartCard('O&M FPY by Week (last 16 weeks)', fpyByWeekConfig(fpy)));
   container.appendChild(row6);
+
+  const row6b = el('div',{class:'chart-row'});
+  row6b.appendChild(chartCard('O&M FPY by Issue Type', fpyByIssueConfig(fpy)));
+  row6b.appendChild(chartCard('O&M FPY by Section (SOP Used in Stage 2)', fpyBySectionConfig(fpy)));
+  container.appendChild(row6b);
 
   const row7 = el('div',{class:'chart-row'});
   row7.appendChild(chartCard('O&M FPY by Repair Technician', fpyByPersonConfig(fpy)));
-  row7.appendChild(chartCard('Warranty Escalations by Brand', warrantyByBrandConfig()));
+  row7.appendChild(chartCard('BSA Cases by Status (Pie)', bsaByStatusConfig()));
   container.appendChild(row7);
 
   const row8 = el('div',{class:'chart-row'});
-  row8.appendChild(chartCard('BSA Cases by Status', bsaByStatusConfig()));
   row8.appendChild(chartCard('BSA Cases by Source', bsaBySourceConfig()));
   container.appendChild(row8);
 
@@ -3203,7 +3517,86 @@ function QualityAnalyticsView(){
   nbCard.appendChild(el('div',{class:'stat-grid'},[statBox(nbFpy.overall.toFixed(1)+'%','Overall New Battery FPY'), statBox(nbFpy.totalHealthy,'Total Healthy Logged'), statBox(nbFpy.totalQI,'Total With Quality Issues')]));
   container.appendChild(nbCard);
 
+  const row9 = el('div',{class:'chart-row'});
+  row9.appendChild(chartCard('New Battery FPY by Day', newBatteryFpyTrendConfig()));
+  row9.appendChild(chartCard('New Battery FPY by Week (last 16 weeks)', newBatteryFpyByWeekConfig()));
+  container.appendChild(row9);
+
+  container.appendChild(FullVisibilityTablesCard());
+
   container.appendChild(ExportSelectionCard(fpy));
+
+  return container;
+}
+
+/* ---- Full visibility for the Quality Engineer: every open item across every sector, in one scannable place,
+   with the same global search bar filtering all of them at once ---- */
+function FullVisibilityTablesCard(){
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Full Visibility — every open item across every sector (filters with the search bar above by battery/BMS number)'));
+
+  const omOpen = searchFilter(STATE.omRecords.filter(r=>!r.status.startsWith('CLOSED')), r=>`${r.bmsId} ${r.model} ${r.status} ${r.stage1.technician} ${r.stage2.technician} ${r.stage3.technician}`);
+  const omCard = el('div',{class:'card'});
+  omCard.appendChild(el('h3',{}, 'O&M Chain — Open Batteries ('+omOpen.length+')'));
+  if(omOpen.length===0){ omCard.appendChild(el('div',{class:'empty-note'},'Nothing open in the O&M chain.')); }
+  else {
+    const wrap = el('div',{class:'table-wrap'});
+    const tbl = el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'BMS ID'),el('th',{},'Platform'),el('th',{},'Stage'),el('th',{},'Status'),el('th',{},'CAPA'),el('th',{},'Flag')])]));
+    const tbody = el('tbody');
+    omOpen.forEach(r=>{
+      const dupChip = DuplicateChip(STATE.omRecords, r.bmsId);
+      tbody.appendChild(el('tr',{},[
+        el('td',{class:'mono',style:'font-weight:700;'}, r.bmsId), el('td',{}, r.model||'Unknown'),
+        el('td',{}, 'Stage '+r.stage), el('td',{}, el('span',{class:'status-chip '+r.status}, r.status.replace(/_/g,' '))),
+        el('td',{}, r.capaCycles>0 ? el('span',{class:'status-chip CAPA'},'Cycle '+r.capaCycles) : '—'),
+        el('td',{}, dupChip || '—')
+      ]));
+    });
+    tbl.appendChild(tbody); wrap.appendChild(tbl); omCard.appendChild(wrap);
+  }
+  container.appendChild(omCard);
+
+  const warrOpen = searchFilter(STATE.warrantyRecords.filter(w=>w.status!=='Scrapped by QC' && w.status!=='Repaired & Returned'), w=>`${w.bmsId} ${w.model} ${w.failureCategory} ${w.status}`);
+  const warrCard = el('div',{class:'card'});
+  warrCard.appendChild(el('h3',{}, 'Active Warranty Escalations ('+warrOpen.length+')'));
+  if(warrOpen.length===0){ warrCard.appendChild(el('div',{class:'empty-note'},'None active.')); }
+  else {
+    const wrap = el('div',{class:'table-wrap'});
+    const tbl = el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'BMS ID'),el('th',{},'Platform'),el('th',{},'Category'),el('th',{},'Status'),el('th',{},'Flag')])]));
+    const tbody = el('tbody');
+    warrOpen.forEach(w=>{
+      const dupChip = DuplicateChip(STATE.warrantyRecords.map(x=>({bmsId:x.bmsId, status: (x.status!=='Scrapped by QC' && x.status!=='Repaired & Returned') ? 'OPEN' : 'CLOSED'})), w.bmsId);
+      tbody.appendChild(el('tr',{},[
+        el('td',{class:'mono',style:'font-weight:700;'}, w.bmsId), el('td',{}, w.model||'Unknown'),
+        el('td',{}, w.failureCategory), el('td',{}, el('span',{class:'badge'}, w.status)),
+        el('td',{}, dupChip || '—')
+      ]));
+    });
+    tbl.appendChild(tbody); wrap.appendChild(tbl); warrCard.appendChild(wrap);
+  }
+  container.appendChild(warrCard);
+
+  const bsaOpen = searchFilter(STATE.bsaRecords.filter(r=>r.status!=='Returned to O&M for Deployment' && r.status!=='Scrapped'), r=>`${r.bmsId} ${r.model} ${r.issueDescription} ${r.status} ${r.source}`);
+  const bsaCard = el('div',{class:'card'});
+  bsaCard.appendChild(el('h3',{}, 'Open BSA Cases ('+bsaOpen.length+')'));
+  if(bsaOpen.length===0){ bsaCard.appendChild(el('div',{class:'empty-note'},'None open.')); }
+  else {
+    const wrap = el('div',{class:'table-wrap'});
+    const tbl = el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'BMS ID'),el('th',{},'Platform'),el('th',{},'Source'),el('th',{},'Status'),el('th',{},'Assigned')])]));
+    const tbody = el('tbody');
+    bsaOpen.forEach(r=>{
+      tbody.appendChild(el('tr',{},[
+        el('td',{class:'mono',style:'font-weight:700;'}, r.bmsId), el('td',{}, r.model||'Unknown'),
+        el('td',{}, r.source.split(' (')[0]), el('td',{}, el('span',{class:'status-chip '+bsaStatusChipClass(r.status)}, r.status)),
+        el('td',{}, r.assignedEngineer||'—')
+      ]));
+    });
+    tbl.appendChild(tbody); wrap.appendChild(tbl); bsaCard.appendChild(wrap);
+  }
+  container.appendChild(bsaCard);
 
   return container;
 }
@@ -3219,6 +3612,7 @@ const EXPORT_SHEETS = [
   ['movements','Stock Movements', ()=>buildAdjustmentExportRows()],
   ['stocksummary','Stock Summary', ()=>buildStockSummaryRows()],
   ['warranty','Warranty Escalations', ()=>buildWarrantyExportRows()],
+  ['warrantysummary','Warranty Summary Report', ()=>buildWarrantySummaryRows()],
   ['iot','IoT Upgrade Tracker', ()=>buildIotExportRows()],
   ['daylog','Day Notes', ()=>buildDayLogExportRows()],
   ['bsa','BSA Cases', ()=>buildBsaExportRows()],
@@ -3226,9 +3620,13 @@ const EXPORT_SHEETS = [
   ['fpyplatform','FPY by Platform', ()=>buildFpyByPlatformRows(fpyStats())],
   ['fpymonth','FPY by Month', ()=>buildFpyByMonthRows(fpyStats())],
   ['fpyday','FPY by Day', ()=>buildFpyByDayRows(fpyStats())],
+  ['fpyweek','FPY by Week', ()=>buildFpyByWeekRows(fpyStats())],
+  ['fpysection','FPY by Section', ()=>buildFpyBySectionRows(fpyStats())],
   ['fpyissue','FPY by Issue', ()=>buildFpyByIssueRows(fpyStats())],
   ['fpyperson','FPY by Technician', ()=>buildFpyByPersonRows(fpyStats())],
   ['fpynewbattery','New Battery FPY', ()=>buildNewBatteryFpyRows()],
+  ['periods','Rolling Period Summary (Today/WTD/MTD/YTD)', ()=>buildPeriodSummaryRows()],
+  ['defectcat','Defect Category by Day', ()=>buildDefectCategoryRows()],
 ];
 function ExportSelectionCard(){
   if(!STATE.exportSelection){
@@ -3348,6 +3746,21 @@ function buildWarrantyExportRows(){
     'Status': r.status, 'Comments': r.comments||''
   })));
 }
+function buildWarrantySummaryRows(){
+  const s = warrantySummaryStats();
+  return [{ 'Total Escalations': s.total, 'Active': s.active, 'Repaired & Returned': s.repaired, 'Scrapped': s.scrapped, 'Warranty PPM': s.ppm, 'Today': s.today, 'WTD': s.wtd, 'MTD': s.mtd, 'YTD': s.ytd }];
+}
+function buildPeriodSummaryRows(){
+  const p = computePeriodAnalytics();
+  return [['Today',p.today],['WTD',p.wtd],['MTD',p.mtd],['YTD',p.ytd]].map(([label,x])=>({
+    Period: label, 'Closed Packs': x.total, 'FPY %': x.fpy.toFixed(1), 'PPM': x.ppm, 'NCM %': x.ncmRate.toFixed(1),
+    'Supplier Defects': x.supplierDefects, 'Non-Supplier Defects': x.nonSupplierDefects
+  }));
+}
+function buildDefectCategoryRows(){
+  const { dates, byDay } = defectCategoryByDay(3650);
+  return rowsOrEmpty(dates.map(d=>({ Date:d, 'Supplier-Related': byDay[d].supplier, 'Non-Supplier-Related': byDay[d].nonSupplier })));
+}
 function buildStockSummaryRows(){
   const stock = stockByPlatform();
   return rowsOrEmpty(Object.keys(stock).map(p=>({ Platform:p, 'Current Stock': stock[p] })));
@@ -3383,6 +3796,18 @@ function buildFpyByPersonRows(fpy){
   return rowsOrEmpty(Object.keys(fpy.byPerson).map(p=>{
     const s = fpy.byPerson[p];
     return { Technician:p, 'Total Closed': s.total, 'First-Pass': s.firstPass, 'FPY %': s.total ? (s.firstPass/s.total*100).toFixed(1) : '0.0' };
+  }));
+}
+function buildFpyByWeekRows(fpy){
+  return rowsOrEmpty(Object.keys(fpy.byWeek).sort().map(w=>{
+    const s = fpy.byWeek[w];
+    return { Week:w, 'Total Closed': s.total, 'First-Pass': s.firstPass, 'FPY %': s.total ? (s.firstPass/s.total*100).toFixed(1) : '0.0' };
+  }));
+}
+function buildFpyBySectionRows(fpy){
+  return rowsOrEmpty(Object.keys(fpy.bySection).map(sec=>{
+    const s = fpy.bySection[sec];
+    return { Section:sec, 'Total Closed': s.total, 'First-Pass': s.firstPass, 'FPY %': s.total ? (s.firstPass/s.total*100).toFixed(1) : '0.0' };
   }));
 }
 function buildDailyStockExportRows(){
@@ -3447,6 +3872,57 @@ async function exportSelectedToExcel(){
   XLSX.writeFile(wb, filename);
   STATE.exportingExcel = false;
   toast('Excel report downloaded: '+filename+` (${chosen.length} sheet${chosen.length===1?'':'s'})`);
+}
+
+/* ---- Per-role "Download My Report" — every docket (om tech, om admin, plant & inventory, quality,
+   bsa) can export its own slice of the data; the Quality Engineer's button downloads everything. ---- */
+function buildOmTechMyWorkRows(){
+  const stage = STATE.stage;
+  const key = `stage${stage}`;
+  return rowsOrEmpty(STATE.omRecords.filter(r=>r[key] && r[key].technician===STATE.techName).map(r=>({
+    'BMS ID': r.bmsId, 'Platform': r.model||'', 'Visit #': r.visitNumber, 'Stage Completed': stage,
+    'CAPA Cycles': r.capaCycles, 'Current Status': r.status, 'Date Received': r.dateReceived,
+  })));
+}
+async function exportMyReport(){
+  if(STATE.myReportExporting) return;
+  if(typeof XLSX === 'undefined'){ toast('Excel library failed to load — check your connection and try again.'); return; }
+  STATE.myReportExporting = true; render();
+  await refreshAllStoresForExport();
+  const wb = XLSX.utils.book_new();
+  let filename = `my-report-${todayStr()}.xlsx`;
+  if(STATE.role==='omtech'){
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildOmTechMyWorkRows()), ('Stage '+STATE.stage+' Work').slice(0,31));
+    filename = `${STATE.techName||'technician'}-stage${STATE.stage}-report-${todayStr()}.xlsx`;
+  } else if(STATE.role==='omadmin'){
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildOmExportRows()), 'OM Chain Records');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildWarrantyExportRows()), 'Warranty Escalations');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildBsaExportRows()), 'BSA Cases');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildDayLogExportRows()), 'Day Notes');
+    filename = `om-manager-report-${todayStr()}.xlsx`;
+  } else if(STATE.role==='plantinv'){
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildStockLedgerExportRows()), 'OEM Stock Ledger');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildOemIdLogExportRows()), 'OEM ID Log');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildDailyStockExportRows()), 'Daily Stock Data');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildNewBatteryExportRows()), 'New Battery Intake');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildAdjustmentExportRows()), 'Stock Movements');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildStockSummaryRows()), 'Stock Summary');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildIotExportRows()), 'IoT Upgrade Tracker');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildDayLogExportRows()), 'Day Notes');
+    filename = `plant-inventory-report-${todayStr()}.xlsx`;
+  } else if(STATE.role==='bsa'){
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildBsaExportRows()), 'BSA Cases');
+    filename = `bsa-report-${todayStr()}.xlsx`;
+  } else if(STATE.role==='quality'){
+    // Quality Engineer gets everything, same as the full Analytics export.
+    EXPORT_SHEETS.forEach(([key,label,fn])=>{
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fn()), label.slice(0,31));
+    });
+    filename = `quality-full-report-${todayStr()}.xlsx`;
+  }
+  XLSX.writeFile(wb, filename);
+  STATE.myReportExporting = false;
+  toast('Report downloaded: '+filename);
 }
  
 /* ---------- Live docket refresh ----------

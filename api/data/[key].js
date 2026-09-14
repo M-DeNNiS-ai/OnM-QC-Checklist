@@ -84,6 +84,22 @@ function authenticate(req) {
   }
 }
 
+// 'plantinv' is the single combined Plant & Inventory role the frontend
+// logs in as (STATE.role === 'plantinv') — it needs the union of every
+// store the old split 'plant'/'inventory' roles could touch, so nothing
+// it saves gets silently rejected or read back as empty.
+const PLANTINV_STORES = [
+  "plant_records",
+  "plant_stock_records",
+  "new_battery_records",
+  "inventory_adjustments",
+  "warranty_records",
+  "daily_stock_records",
+  "iot_given_records",
+  "iot_returned_records",
+  "day_log_records"
+];
+
 function canRead(user, store) {
   if (user.role === "omadmin") return true;
 
@@ -97,32 +113,8 @@ function canRead(user, store) {
     ].includes(store);
   }
 
-  if (user.role === "plant") {
-    return [
-      "plant_records",
-      "plant_stock_records",
-      "new_battery_records",
-      "inventory_adjustments",
-      "warranty_records",
-      "daily_stock_records",
-      "iot_given_records",
-      "iot_returned_records",
-      "day_log_records"
-    ].includes(store);
-  }
-
-  if (user.role === "inventory") {
-    return [
-      "plant_records",
-      "plant_stock_records",
-      "new_battery_records",
-      "inventory_adjustments",
-      "warranty_records",
-      "daily_stock_records",
-      "iot_given_records",
-      "iot_returned_records",
-      "day_log_records"
-    ].includes(store);
+  if (user.role === "plantinv") {
+    return PLANTINV_STORES.includes(store);
   }
 
   if (user.role === "omtech") {
@@ -147,27 +139,8 @@ function canWrite(user, store) {
     ].includes(store);
   }
 
-  if (user.role === "plant") {
-    return [
-      "plant_records",
-      "plant_stock_records",
-      "new_battery_records",
-      "daily_stock_records",
-      "iot_given_records",
-      "iot_returned_records",
-      "day_log_records"
-    ].includes(store);
-  }
-
-  if (user.role === "inventory") {
-    return [
-      "plant_stock_records",
-      "new_battery_records",
-      "inventory_adjustments",
-      "daily_stock_records",
-      "iot_given_records",
-      "iot_returned_records"
-    ].includes(store);
+  if (user.role === "plantinv") {
+    return PLANTINV_STORES.includes(store);
   }
 
   if (user.role === "omtech") {
@@ -335,6 +308,33 @@ export default async function handler(req, res) {
       const idsToDelete = (existing || [])
         .map(row => String(row.id))
         .filter(id => !incomingIds.has(id));
+
+      /*
+       * SAFETY GUARDRAIL: this endpoint does a full replace of the store —
+       * anything not in the incoming array gets deleted. That's exactly how
+       * a race condition (saving before the initial GET has finished), a
+       * dropped network response treated as "empty", or any other bug that
+       * hands this endpoint a too-small array can silently wipe real data
+       * with no error shown to the user. If a write would delete most of an
+       * existing, non-trivial store, refuse it unless the caller explicitly
+       * confirms via the x-confirm-wipe header — this turns silent data loss
+       * into a visible error instead.
+       */
+      const existingCount = (existing || []).length;
+      const wipingMost = existingCount >= 5 && idsToDelete.length >= existingCount * 0.8;
+      if (wipingMost && req.headers["x-confirm-wipe"] !== "true") {
+        console.error(
+          `Refused suspicious write to ${store}: would delete ${idsToDelete.length} of ${existingCount} existing records (user: ${user.name || user.role})`
+        );
+        await audit(supabase, user, "PUT_STORE_BLOCKED", store, null, {
+          existingCount,
+          incomingCount: records.length,
+          wouldDelete: idsToDelete.length
+        });
+        return res.status(409).json({
+          error: `This save would delete ${idsToDelete.length} of ${existingCount} existing records in "${store}". Refused as a safety check. Refresh the page to reload the latest data before retrying — if this deletion is really intended, contact an admin.`
+        });
+      }
 
       /*
        * Delete records removed by the frontend.

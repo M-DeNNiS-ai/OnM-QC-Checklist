@@ -1,53 +1,64 @@
 import crypto from "crypto";
 
+/*
+ * pinEnv is the NAME of the environment variable holding this account's PIN.
+ * defaultPin is only used if that env var is not set, so existing
+ * deployments keep working without requiring immediate env var changes —
+ * but you should set real env vars in production and remove the defaults.
+ *
+ * IMPORTANT: 'plantinv' is a single combined role (matches the frontend's
+ * login dropdown and STATE.role model) with access to every plant +
+ * inventory store — see canRead/canWrite in api/data/[key].js.
+ */
 const USERS = {
   omadmin: {
-    pinEnv: "5634",
+    pinEnv: "OMADMIN_PIN",
+    defaultPin: "5634",
     role: "omadmin",
     name: "OM Admin"
   },
 
-  plant: {
-    pinEnv: "9876",
-    role: "plant",
-    name: "Plant"
-  },
-
-  inventory: {
-    pinEnv: "2312",
-    role: "inventory",
-    name: "Inventory"
+  plantinv: {
+    pinEnv: "PLANTINV_PIN",
+    defaultPin: "9876",
+    role: "plantinv",
+    name: "Plant & Inventory"
   },
 
   quality: {
-    pinEnv: "6396",
+    pinEnv: "QUALITY_PIN",
+    defaultPin: "6396",
     role: "quality",
     name: "Quality Engineer"
   },
 
   stage1: {
-    pinEnv: "1101",
+    pinEnv: "STAGE1_PIN",
+    defaultPin: "1101",
     role: "omtech",
     stage: 1,
     name: "Stage 1 Technician"
   },
 
   stage2: {
-    pinEnv: "1202",
+    pinEnv: "STAGE2_PIN",
+    defaultPin: "1202",
     role: "omtech",
     stage: 2,
     name: "Stage 2 Technician"
   },
 
   stage3: {
-    pinEnv: "1303",
+    pinEnv: "STAGE3_PIN",
+    defaultPin: "1303",
     role: "omtech",
     stage: 3,
     name: "Stage 3 Technician"
   },
 
   bsa: {
-    pinEnv: "7521",
+    pinEnv: "BSA_PIN",
+    defaultPin: "7521",
     role: "bsa",
     name: "BSA Engineer"
   }
@@ -88,11 +99,13 @@ export default async function handler(req, res) {
       });
     }
 
-    const expectedPin = process.env[account.pinEnv];
+    // Real env var takes priority; the shipped default keeps existing
+    // deployments working until you set proper secrets in production.
+    const expectedPin = process.env[account.pinEnv] || account.defaultPin;
 
     if (!expectedPin) {
       console.error(
-        `Missing environment variable: ${account.pinEnv}`
+        `No PIN configured for ${mode} (set env var ${account.pinEnv})`
       );
 
       return res.status(500).json({
