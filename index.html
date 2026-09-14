@@ -289,6 +289,23 @@ button:active:not(:disabled) { transform: scale(.97); }
 .export-check-row input{ width:14px; height:14px; margin:0; accent-color:var(--accent); cursor:pointer; }
 .export-check-row label{ margin:0; text-transform:none; font-weight:400; color:var(--text); font-size:12px; cursor:pointer; }
 .preview-scroll{ max-height:220px; overflow:auto; border:1px solid var(--line-dark); border-radius:3px; }
+
+/* Silent background refresh: suppress entrance animations so polling never causes a visible
+   "blink" when the underlying data hasn't meaningfully changed the layout. Only applied for the
+   brief instant a background poll re-renders the page — normal user-driven renders keep their
+   animations. */
+body.silent-refresh .card,
+body.silent-refresh .chart-card,
+body.silent-refresh .stat,
+body.silent-refresh tr,
+body.silent-refresh .docket-item,
+body.silent-refresh .day-log-item,
+body.silent-refresh .status-chip,
+body.silent-refresh .seg button,
+body.silent-refresh .view-fade {
+  animation: none !important;
+  transition: none !important;
+}
 </style>
 </head>
 <body>
@@ -799,6 +816,7 @@ let STATE = {
   view: 'main',
   toast: null,
   searchQuery: '',
+  deepDiveId: '',
  
   omRecords: [],
   plantRecords: [],
@@ -1182,20 +1200,23 @@ function View(){
   const content = el('div',{class:'view-fade'});
  
   if(STATE.role==='omtech'){
-    wrap.appendChild(Nav(['main','myclosed'], {main:'My Docket', myclosed:'My Completed Work'}));
+    wrap.appendChild(Nav(['main','myclosed','analytics'], {main:'My Docket', myclosed:'My Completed Work', analytics:'My Analytics'}));
     wrap.appendChild(SearchBar());
-    content.appendChild(STATE.view==='myclosed' ? OmTechClosedView() : OmTechDocketView());
+    if(STATE.view==='myclosed') content.appendChild(OmTechClosedView());
+    else if(STATE.view==='analytics') content.appendChild(OmTechAnalyticsView());
+    else content.appendChild(OmTechDocketView());
   } else if(STATE.role==='omadmin'){
-    wrap.appendChild(Nav(['dashboard','integrity','history','daylog'], {dashboard:'Pipeline Oversight', integrity:'Data Integrity', history:'Full Chain History', daylog:'Day Notes'}));
+    wrap.appendChild(Nav(['dashboard','analytics','integrity','history','daylog'], {dashboard:'Pipeline Oversight', analytics:'Analytics', integrity:'Data Integrity', history:'Full Chain History', daylog:'Day Notes'}));
     wrap.appendChild(SearchBar());
-    if(STATE.view==='integrity') content.appendChild(DataIntegrityView());
+    if(STATE.view==='analytics') content.appendChild(OmAdminAnalyticsView());
+    else if(STATE.view==='integrity') content.appendChild(DataIntegrityView());
     else if(STATE.view==='history') content.appendChild(OmHistoryView());
     else if(STATE.view==='daylog') content.appendChild(DayLogView());
     else content.appendChild(OmDashboardView());
   } else if(STATE.role==='plantinv'){
-    wrap.appendChild(Nav(['bulk','ledger','dailystock','warrantystock','newintake','adjust','stock','iot','daylog','history','integrity'], {
+    wrap.appendChild(Nav(['bulk','ledger','dailystock','warrantystock','newintake','adjust','stock','iot','analytics','daylog','history','integrity'], {
       bulk:'Bulk OEM Stock', ledger:'OEM Stock Ledger', dailystock:'Daily Stock Data', warrantystock:'Warranty & Scrap Stock',
-      newintake:'New Battery Intake', adjust:'Stock Movement', stock:'Stock Summary', iot:'IoT Upgrade Tracker',
+      newintake:'New Battery Intake', adjust:'Stock Movement', stock:'Stock Summary', iot:'IoT Upgrade Tracker', analytics:'Analytics',
       daylog:'Day Notes', history:'Daily Stock History', integrity:'Data Integrity'
     }));
     wrap.appendChild(SearchBar());
@@ -1206,6 +1227,7 @@ function View(){
     else if(STATE.view==='adjust') content.appendChild(AdjustmentView());
     else if(STATE.view==='stock') content.appendChild(StockView());
     else if(STATE.view==='iot') content.appendChild(IotTrackerView());
+    else if(STATE.view==='analytics') content.appendChild(PlantInvAnalyticsView());
     else if(STATE.view==='daylog') content.appendChild(DayLogView());
     else if(STATE.view==='history') content.appendChild(DailyStockHistoryView());
     else if(STATE.view==='integrity') content.appendChild(DataIntegrityView());
@@ -1221,14 +1243,103 @@ function View(){
     else if(STATE.view==='daylog') content.appendChild(DayLogView());
     else content.appendChild(WarrantyView());
   } else if(STATE.role==='bsa'){
-    wrap.appendChild(Nav(['activity','newcase','history'], {activity:'My Activity', newcase:'Log New Case', history:'Closed Cases'}));
+    wrap.appendChild(Nav(['activity','newcase','analytics','history'], {activity:'My Activity', newcase:'Log New Case', analytics:'Analytics', history:'Closed Cases'}));
     wrap.appendChild(SearchBar());
     if(STATE.view==='newcase') content.appendChild(BsaNewCaseView());
+    else if(STATE.view==='analytics') content.appendChild(BsaAnalyticsView());
     else if(STATE.view==='history') content.appendChild(BsaHistoryView());
     else content.appendChild(BsaActivityView());
   }
   wrap.appendChild(content);
   return wrap;
+}
+
+/* ==================== SHARED — Battery Deep Dive (every role) ====================
+   Pull together everything on file about one battery (BMS or OEM ID) from whichever
+   sector stores are loaded for the current role, so anyone can trace a pack's full
+   history without switching sectors. */
+function BatteryDeepDiveCard(){
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Battery Deep Dive'));
+  card.appendChild(el('div',{class:'sub'},'Look up one battery (BMS or OEM ID) to see everything on file about it across the sectors visible to you.'));
+
+  const row = el('div',{style:'display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:4px;'});
+  const inp = textInput(STATE.deepDiveId, v=>{ STATE.deepDiveId=v; }, {mono:true, placeholder:'e.g. C7245AC2AA...', key:'deepdive-id'});
+  inp.style.maxWidth='260px';
+  row.appendChild(field('Battery / BMS / OEM ID', inp));
+  const goBtn = el('button',{class:'btn-primary'},'Look Up');
+  goBtn.addEventListener('click', ()=> render());
+  row.appendChild(goBtn);
+  card.appendChild(row);
+
+  const q = (STATE.deepDiveId||'').trim().toUpperCase();
+  if(!q){ card.appendChild(el('div',{class:'empty-note'},'Enter a BMS or OEM battery ID above to see its full history.')); return card; }
+
+  let found = false;
+
+  const omMatches = (STATE.omRecords||[]).filter(r=>r.bmsId && r.bmsId.trim().toUpperCase()===q).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
+  if(omMatches.length){
+    found = true;
+    card.appendChild(el('div',{style:'font-weight:700;margin-top:10px;'}, 'O&M Chain — '+omMatches.length+' visit(s)'));
+    omMatches.forEach(r=>{
+      const box = el('div',{class:'sop-box'});
+      box.appendChild(el('div',{style:'display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;'},[
+        el('div',{style:'font-weight:700;'}, `Visit #${r.visitNumber} · received ${r.dateReceived}`),
+        el('span',{class:'status-chip '+r.status}, r.status.replace(/_/g,' '))
+      ]));
+      box.appendChild(el('div',{class:'meta'}, `Stage1: ${r.stage1.technician||'—'} · Stage2: ${r.stage2.technician||'—'} (${r.stage2.sopRef||'—'}) · Stage3: ${r.stage3.technician||'—'}`));
+      if(r.capaCycles>0) box.appendChild(el('div',{class:'meta'}, `Corrective Action cycles: ${r.capaCycles}`));
+      if(r.stage3 && r.stage3.qcNote) box.appendChild(el('div',{class:'meta'}, 'QC notes: '+r.stage3.qcNote));
+      card.appendChild(box);
+    });
+  }
+
+  const wMatches = (STATE.warrantyRecords||[]).filter(w=>w.bmsId && w.bmsId.trim().toUpperCase()===q);
+  if(wMatches.length){
+    found = true;
+    card.appendChild(el('div',{style:'font-weight:700;margin-top:10px;'}, 'Warranty Escalations — '+wMatches.length));
+    wMatches.forEach(w=>{
+      card.appendChild(el('div',{class:'sop-box'},[
+        el('div',{},[ `${w.dateEscalated} · ${w.failureCategory} · `, el('span',{class:'badge'}, w.status) ]),
+        w.comments ? el('div',{class:'meta'}, w.comments) : null
+      ]));
+    });
+  }
+
+  const bMatches = (STATE.bsaRecords||[]).filter(r=>r.bmsId && r.bmsId.trim().toUpperCase()===q);
+  if(bMatches.length){
+    found = true;
+    card.appendChild(el('div',{style:'font-weight:700;margin-top:10px;'}, 'BSA Cases — '+bMatches.length));
+    bMatches.forEach(r=>{
+      card.appendChild(el('div',{class:'sop-box'},[
+        el('div',{},[ `${r.dateFlagged} · ${r.source.split(' (')[0]} · `, el('span',{class:'status-chip '+bsaStatusChipClass(r.status)}, r.status) ]),
+        el('div',{class:'meta'}, r.issueDescription||'')
+      ]));
+    });
+  }
+
+  if(STATE.plantStockRecords && STATE.plantStockRecords.length){
+    const moves = [];
+    STATE.plantStockRecords.forEach(r=>{
+      if((r.receivedIds||[]).includes(q)) moves.push({date:r.date, platform:r.platform, dir:'Received'});
+      if((r.dispatchedIds||[]).includes(q)) moves.push({date:r.date, platform:r.platform, dir:'Dispatched'});
+    });
+    if(moves.length){
+      found = true;
+      card.appendChild(el('div',{style:'font-weight:700;margin-top:10px;'}, 'OEM Stock Ledger Movements — '+moves.length));
+      const wrap = el('div',{class:'table-wrap'});
+      const tbl = el('table');
+      tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'Platform'),el('th',{},'Direction')])]));
+      const tbody = el('tbody');
+      moves.sort((a,b)=>a.date.localeCompare(b.date)).forEach(m=> tbody.appendChild(el('tr',{},[el('td',{class:'mono'},m.date), el('td',{},m.platform), el('td',{},m.dir)])));
+      tbl.appendChild(tbody); wrap.appendChild(tbl); card.appendChild(wrap);
+    }
+  }
+
+  if(!found){
+    card.appendChild(el('div',{class:'banner err', style:'margin-top:8px;'}, `No record found for "${q}" in the data visible to this view.`));
+  }
+  return card;
 }
  
 /* ==================== O&M TECHNICIAN — 3-STAGE CHAIN ==================== */
@@ -1671,6 +1782,59 @@ function OmTechClosedView(){
   card.appendChild(wrap);
   return card;
 }
+
+/* ---- My Analytics (O&M Technician): my own throughput trend, outcome mix, and a battery deep dive ---- */
+function OmTechAnalyticsView(){
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'}, 'My Analytics — Stage '+STATE.stage+' · '+(STATE.techName||'')));
+  const stage = STATE.stage;
+  const key = 'stage'+stage;
+  const mine = STATE.omRecords.filter(r=> r[key] && r[key].technician===STATE.techName);
+  const completedDateOf = r=> (r[key] && r[key].completedAt) ? r[key].completedAt.slice(0,10) : null;
+  const byDay = {};
+  mine.forEach(r=>{ const d=completedDateOf(r); if(!d) return; byDay[d]=(byDay[d]||0)+1; });
+  const days = Object.keys(byDay).sort().slice(-30);
+
+  const overview = el('div',{class:'card'});
+  overview.appendChild(el('h3',{},'Overview'));
+  const stats = el('div',{class:'stat-grid'});
+  stats.appendChild(statBox(mine.length, 'Total Completed'));
+  if(stage===3){
+    const firstPass = mine.filter(r=>r.finalDisposition==='PASS' && r.capaCycles===0).length;
+    const scrapped = mine.filter(r=>r.finalDisposition==='SCRAPPED').length;
+    stats.appendChild(statBox(mine.length ? (firstPass/mine.length*100).toFixed(1)+'%' : '0.0%', 'My First-Pass Rate'));
+    stats.appendChild(statBox(scrapped, 'Scrapped'));
+  } else {
+    stats.appendChild(statBox(mine.filter(r=>r.capaCycles>0).length, 'Involved in Corrective Action'));
+  }
+  overview.appendChild(stats);
+  container.appendChild(overview);
+
+  container.appendChild(chartCard('My Daily Throughput (last 30 days)',
+    baseLineConfig(days.length?days:['No data'], [{label:'Completed', data: days.length?days.map(d=>byDay[d]):[0], color: cssVar('--accent')}], {})));
+
+  if(stage===3){
+    const counts = {PASS:0, SCRAPPED:0, CAPA:0};
+    mine.forEach(r=>{
+      if(r.finalDisposition==='PASS' && r.capaCycles===0) counts.PASS++;
+      else if(r.finalDisposition==='SCRAPPED') counts.SCRAPPED++;
+      else counts.CAPA++;
+    });
+    container.appendChild(chartCard('My QC Outcomes',
+      basePieConfig(['First-Pass','Scrapped','Returned for Corrective Action'], [counts.PASS, counts.SCRAPPED, counts.CAPA], [cssVar('--pass'), cssVar('--fail'), cssVar('--capa')])));
+  } else {
+    const issueCounts = {};
+    mine.forEach(r=>{
+      ISSUE_ITEMS.forEach(([k,l])=>{ if(r.stage1 && r.stage1.issues && r.stage1.issues[k]) issueCounts[l]=(issueCounts[l]||0)+1; });
+    });
+    const labels = Object.keys(issueCounts);
+    container.appendChild(chartCard('Issue Types I\'ve Handled',
+      labels.length ? baseBarConfig(labels, [{label:'Count', data: labels.map(l=>issueCounts[l]), color: cssVar('--warn')}], {}) : baseBarConfig(['No data'], [{label:'Count', data:[0], color:cssVar('--warn')}], {})));
+  }
+
+  container.appendChild(BatteryDeepDiveCard());
+  return container;
+}
  
 /* ==================== O&M ADMIN — oversight of the chain ==================== */
  
@@ -1742,6 +1906,46 @@ function OmHistoryView(){
   wrap.appendChild(tbl);
   card.appendChild(wrap);
   return card;
+}
+
+/* ---- O&M Manager Analytics: pipeline-wide FPY / CAPA / BSA trends + battery deep dive ---- */
+function OmAdminAnalyticsView(){
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'O&M Analytics — pipeline trends and per-battery deep dive'));
+  const fpy = fpyStats();
+
+  const headCard = el('div',{class:'card'});
+  headCard.appendChild(el('h3',{},'Overview'));
+  const stats = el('div',{class:'stat-grid'});
+  stats.appendChild(statBox(fpy.overallFPY.toFixed(1)+'%','Overall FPY'));
+  stats.appendChild(statBox(fpy.total,'Total Closed'));
+  stats.appendChild(statBox(STATE.omRecords.filter(r=>r.capaCycles>0).length,'Ever Under Corrective Action'));
+  stats.appendChild(statBox(STATE.bsaRecords ? STATE.bsaRecords.length : 0,'BSA Cases'));
+  headCard.appendChild(stats);
+  container.appendChild(headCard);
+
+  const row1 = el('div',{class:'chart-row'});
+  row1.appendChild(chartCard('FPY Trend by Day (last 30 closed days)', fpyByDayConfig(fpy)));
+  row1.appendChild(chartCard('FPY by Platform', fpyByPlatformConfig(fpy)));
+  container.appendChild(row1);
+
+  const row2 = el('div',{class:'chart-row'});
+  row2.appendChild(chartCard('FPY by Technician', fpyByPersonConfig(fpy)));
+  row2.appendChild(chartCard('Final Disposition (Pie)', dispositionConfig()));
+  container.appendChild(row2);
+
+  const row3 = el('div',{class:'chart-row'});
+  row3.appendChild(chartCard('Corrective Action (CAPA) Cycle Distribution', capaDistributionConfig()));
+  row3.appendChild(chartCard('BSA Cases by Status', STATE.bsaRecords ? bsaByStatusConfig() : basePieConfig(['No data'],[1],[cssVar('--line-dark')])));
+  container.appendChild(row3);
+
+  const row4 = el('div',{class:'chart-row'});
+  row4.appendChild(chartCard('FPY by Issue Type', fpyByIssueConfig(fpy)));
+  row4.appendChild(chartCard('FPY by Section (SOP Used in Stage 2)', fpyBySectionConfig(fpy)));
+  container.appendChild(row4);
+
+  container.appendChild(BatteryDeepDiveCard());
+  return container;
 }
  
 /* ==================== PLANT ADMIN — separate sector store ==================== */
@@ -2703,6 +2907,37 @@ function StockView(){
   container.appendChild(card);
   return container;
 }
+
+/* ---- Plant & Inventory Analytics: stock trends and a battery deep dive ---- */
+function PlantInvAnalyticsView(){
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory Analytics — stock trends and per-battery deep dive'));
+  const stock = stockByPlatform();
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Overview'));
+  const stats = el('div',{class:'stat-grid'});
+  PLATFORMS.forEach(p=>stats.appendChild(statBox(stock[p], p)));
+  stats.appendChild(statBox(Object.values(stock).reduce((a,b)=>a+b,0),'Total Stock'));
+  card.appendChild(stats);
+  container.appendChild(card);
+
+  const row1 = el('div',{class:'chart-row'});
+  row1.appendChild(chartCard('Total Closing Stock Trend (Bulk Ledger)', stockLedgerTrendConfig()));
+  row1.appendChild(chartCard('Stock by Platform (Pie)', stockByPlatformPieConfig()));
+  container.appendChild(row1);
+
+  const row2 = el('div',{class:'chart-row'});
+  row2.appendChild(chartCard('Daily Stock Grand Total (last 30 days)', dailyStockBarConfig()));
+  row2.appendChild(chartCard('New Battery FPY Trend (Daily Stock Data)', newBatteryFpyTrendConfig()));
+  container.appendChild(row2);
+
+  const row3 = el('div',{class:'chart-row'});
+  row3.appendChild(chartCard('Inventory Movements by Month', movementsByMonthConfig()));
+  container.appendChild(row3);
+
+  container.appendChild(BatteryDeepDiveCard());
+  return container;
+}
  
 /* ==================== QUALITY ENGINEER — warranty store + read-only overview ==================== */
  
@@ -2953,6 +3188,36 @@ function BsaHistoryView(){
   const closed = searchFilter(STATE.bsaRecords.filter(r=>r.status==='Returned to O&M for Deployment' || r.status==='Scrapped').sort((a,b)=>(b.dateClosed||'').localeCompare(a.dateClosed||'')), r=>`${r.bmsId} ${r.model} ${r.status} ${r.rcaSummary} ${r.repairNotes}`);
   if(closed.length===0){ container.appendChild(el('div',{class:'card'},[el('div',{class:'empty-note'},'No closed cases yet.')])); return container; }
   closed.forEach(r=> container.appendChild(BsaCaseCard(r, false)));
+  return container;
+}
+
+/* ---- BSA Analytics: case trends and a battery deep dive ---- */
+function BsaAnalyticsView(){
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'BSA Analytics — case trends and per-battery deep dive'));
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Overview'));
+  const stats = el('div',{class:'stat-grid'});
+  const open = STATE.bsaRecords.filter(r=>r.status!=='Returned to O&M for Deployment' && r.status!=='Scrapped');
+  stats.appendChild(statBox(STATE.bsaRecords.length,'Total Cases'));
+  stats.appendChild(statBox(open.length,'Open Cases'));
+  stats.appendChild(statBox(STATE.bsaRecords.filter(r=>r.status==='Returned to O&M for Deployment').length,'Returned to O&M'));
+  stats.appendChild(statBox(STATE.bsaRecords.filter(r=>r.status==='Scrapped').length,'Scrapped'));
+  card.appendChild(stats);
+  container.appendChild(card);
+
+  const byDay = {};
+  STATE.bsaRecords.forEach(r=>{ const d=r.dateFlagged; if(!d) return; byDay[d]=(byDay[d]||0)+1; });
+  const days = Object.keys(byDay).sort().slice(-30);
+  container.appendChild(chartCard('Cases Flagged per Day (last 30 days)',
+    baseLineConfig(days.length?days:['No data'], [{label:'Cases', data: days.length?days.map(d=>byDay[d]):[0], color: cssVar('--capa')}], {})));
+
+  const row = el('div',{class:'chart-row'});
+  row.appendChild(chartCard('Cases by Status (Pie)', bsaByStatusConfig()));
+  row.appendChild(chartCard('Cases by Source', bsaBySourceConfig()));
+  container.appendChild(row);
+
+  container.appendChild(BatteryDeepDiveCard());
   return container;
 }
 
@@ -3524,6 +3789,8 @@ function QualityAnalyticsView(){
 
   container.appendChild(FullVisibilityTablesCard());
 
+  container.appendChild(BatteryDeepDiveCard());
+
   container.appendChild(ExportSelectionCard(fpy));
 
   return container;
@@ -3928,26 +4195,49 @@ async function exportMyReport(){
 /* ---------- Live docket refresh ----------
    Polls the shared store in the background and re-renders the docket list so a battery sent
    from Stage 1 appears for a Stage 2 technician without them having to sign out and back in.
-   Skips refreshing while the user is actively typing so it never yanks focus mid-entry. */
+   Skips refreshing while the user is actively typing so it never yanks focus mid-entry, and only
+   re-renders when the fetched data actually differs from what's on screen — so a poll that finds
+   nothing new causes no re-render, no animation replay, and no visible "blink" at all. When a
+   render IS needed because something changed, entrance animations are suppressed for that single
+   render pass so the update lands quietly instead of flashing. */
 function userIsTypingInForm(){
   const active = document.activeElement;
   if(!active || !root.contains(active)) return false;
   const tag = active.tagName;
   return tag==='INPUT' || tag==='TEXTAREA' || tag==='SELECT';
 }
+function omRecordsChanged(fresh){
+  try{ return JSON.stringify(fresh) !== JSON.stringify(STATE.omRecords); }
+  catch(e){ return true; }
+}
+function silentRender(){
+  document.body.classList.add('silent-refresh');
+  render();
+  // Give the browser two frames to paint with animations off before restoring them, so the
+  // suppressed state actually applies to this render's paint instead of the next one.
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{ document.body.classList.remove('silent-refresh'); });
+  });
+}
 async function autoRefreshDocket(){
   try{
     if(userIsTypingInForm()) return;
     if(STATE.role==='omtech' && STATE.openId===null && STATE.view==='main'){
-      STATE.omRecords = await loadOm();
-      STATE.omLastRefreshed = nowTime();
+      const fresh = await loadOm();
       STATE.omSyncOk = true;
-      render();
+      STATE.omLastRefreshed = nowTime();
+      if(omRecordsChanged(fresh)){
+        STATE.omRecords = fresh;
+        silentRender();
+      }
     } else if(STATE.role==='omadmin' && (STATE.view==='dashboard' || STATE.view==='history')){
-      STATE.omRecords = await loadOm();
-      STATE.omLastRefreshed = nowTime();
+      const fresh = await loadOm();
       STATE.omSyncOk = true;
-      render();
+      STATE.omLastRefreshed = nowTime();
+      if(omRecordsChanged(fresh)){
+        STATE.omRecords = fresh;
+        silentRender();
+      }
     }
   }catch(e){
     console.error('Auto-refresh failed', e);
