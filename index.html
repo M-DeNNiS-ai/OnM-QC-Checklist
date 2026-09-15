@@ -467,13 +467,104 @@ function movementLabel(type){
    only UI state; records are loaded/saved through authenticated /api/data endpoints.
 */
 async function apiFetch(path, options={}){
-  const res = await fetch(path, { credentials:'include', headers:{'Content-Type':'application/json', ...(options.headers||{})}, ...options });
+  const res = await fetch(path, {
+    credentials:'include',
+    headers:{'Content-Type':'application/json', ...(options.headers||{})},
+    ...options
+  });
   let body=null; try { body=await res.json(); } catch(e) {}
-  if(!res.ok){ const msg = body && body.error ? body.error : `Server error (${res.status})`; throw new Error(msg); }
+  if(!res.ok){
+    const msg = body && body.error ? body.error : `Server error (${res.status})`;
+    throw new Error(`${res.status}: ${msg}`);
+  }
   return body;
 }
-async function loadStore(key){ try { const r=await apiFetch('/api/data/'+encodeURIComponent(key)); return Array.isArray(r.data)?r.data:[]; } catch(e){ console.error('loadStore failed', key, e); return []; } }
-async function saveStore(key,list){ try { await apiFetch('/api/data/'+encodeURIComponent(key), {method:'PUT', body:JSON.stringify({data:list})}); return true; } catch(e){ console.error('saveStore failed', key, e); return false; } }
+async function loadStore(key){
+  try {
+    const r=await apiFetch('/api/data/'+encodeURIComponent(key));
+    return Array.isArray(r.data)?r.data:[];
+  } catch(e){
+    console.error('loadStore failed', key, e);
+    return [];
+  }
+}
+function stableStoreValue(value){
+  if(value === null || typeof value !== 'object') return value;
+  if(Array.isArray(value)) return value.map(stableStoreValue);
+  return Object.keys(value).sort().reduce((o,k)=>{
+    o[k]=stableStoreValue(value[k]);
+    return o;
+  },{});
+}
+function sameStoreRecord(a,b){
+  return JSON.stringify(stableStoreValue(a)) === JSON.stringify(stableStoreValue(b));
+}
+/*
+ * Multi-device save:
+ * 1. Read the latest server state.
+ * 2. Create new records individually.
+ * 3. Patch changed records individually.
+ * 4. Delete records removed by this user.
+ *
+ * This avoids replacing the whole database store with one device's
+ * stale snapshot and prevents one phone/PC from wiping another device's work.
+ */
+async function saveStore(key,list){
+  try {
+    if(!Array.isArray(list)) throw new Error('Save data must be an array');
+
+    const latest = await loadStore(key);
+    const latestById = new Map(latest.filter(r=>r && r.id).map(r=>[String(r.id),r]));
+    const localById = new Map(list.filter(r=>r && r.id).map(r=>[String(r.id),r]));
+
+    const requests=[];
+
+    for(const record of list){
+      if(!record || typeof record !== 'object') continue;
+      const id = record.id ? String(record.id) : null;
+
+      if(!id){
+        requests.push(apiFetch('/api/data/'+encodeURIComponent(key), {
+          method:'POST',
+          body:JSON.stringify({record})
+        }));
+        continue;
+      }
+
+      const previous = latestById.get(id);
+      if(!previous){
+        requests.push(apiFetch('/api/data/'+encodeURIComponent(key), {
+          method:'POST',
+          body:JSON.stringify({record})
+        }));
+      } else if(!sameStoreRecord(previous, record)){
+        requests.push(apiFetch('/api/data/'+encodeURIComponent(key), {
+          method:'PATCH',
+          body:JSON.stringify({record})
+        }));
+      }
+    }
+
+    for(const previous of latest){
+      if(!previous || !previous.id) continue;
+      if(!localById.has(String(previous.id))){
+        requests.push(apiFetch(
+          '/api/data/'+encodeURIComponent(key)+'?id='+encodeURIComponent(previous.id),
+          {method:'DELETE'}
+        ));
+      }
+    }
+
+    if(requests.length) await Promise.all(requests);
+    return true;
+  } catch(e){
+    console.error('saveStore failed', key, e);
+    if(typeof showToast === 'function'){
+      showToast(`Save failed: ${e.message}`, 'error');
+    }
+    return false;
+  }
+}
 async function loadOm(){ return loadStore('om_chain_records'); }
 async function saveOm(list){ return saveStore('om_chain_records',list); }
 async function loadPlant(){ return loadStore('plant_records'); }
