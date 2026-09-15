@@ -1,28 +1,24 @@
--- Run this once in your Supabase project's SQL Editor before deploying.
--- This replaces the local SQLite file with a real, persistent Postgres
--- database that survives Render restarts, redeploys, and spin-downs.
-
+-- Run once in your Supabase project: SQL Editor -> New query -> Run
 create table if not exists bqc_records (
-  id text primary key,
-  store_key text not null,
-  payload jsonb not null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  updated_by text
+  id          text primary key,
+  store_key   text not null,
+  payload     jsonb not null,
+  deleted     boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  updated_by  text
 );
+create index if not exists bqc_records_store_idx on bqc_records (store_key, deleted);
 
-create index if not exists bqc_records_store_key_idx on bqc_records (store_key);
+alter table bqc_records enable row level security;
 
-create table if not exists bqc_audit_log (
-  id bigint generated always as identity primary key,
-  username text,
-  role text,
-  action text,
-  store_key text,
-  record_id text,
-  details jsonb,
-  created_at timestamptz not null default now()
-);
+drop policy if exists bqc_read on bqc_records;
+drop policy if exists bqc_insert on bqc_records;
+drop policy if exists bqc_update on bqc_records;
 
-create index if not exists bqc_audit_log_store_key_idx on bqc_audit_log (store_key);
-create index if not exists bqc_audit_log_created_at_idx on bqc_audit_log (created_at);
+create policy bqc_read   on bqc_records for select to anon using (true);
+create policy bqc_insert on bqc_records for insert to anon with check (true);
+create policy bqc_update on bqc_records for update to anon using (true) with check (true);
+-- note: no delete policy on purpose. Records are only ever soft-deleted
+-- (deleted = true), so anything removed by mistake can be brought back with
+--   update bqc_records set deleted = false where id = '...';

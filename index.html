@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Battery QC — Server</title>
+<title>Battery QC — Namanve</title>
 <style>
 :root {
   --bg: #f3f5f9;
@@ -306,16 +306,67 @@ body.silent-refresh .view-fade {
   animation: none !important;
   transition: none !important;
 }
+
+/* ---------- Sync badge & connection panel ---------- */
+.sync-badge{
+  position:fixed; right:14px; bottom:14px; z-index:9000;
+  display:inline-flex; align-items:center; gap:7px;
+  padding:7px 12px; border-radius:999px; cursor:pointer;
+  font-family:var(--font-sans); font-size:11.5px; font-weight:600; letter-spacing:.01em;
+  background:var(--panel); color:var(--text);
+  border:1.5px solid var(--line-dark); box-shadow:var(--shadow-md);
+}
+.sync-badge:hover{ border-color:var(--accent); }
+.sync-badge .sync-dot{ width:8px; height:8px; border-radius:50%; background:var(--pass); flex:none; }
+.sync-badge.warn .sync-dot{ background:var(--warn); }
+.sync-badge.bad .sync-dot{ background:var(--fail); }
+.sync-badge.local .sync-dot{ background:var(--muted); }
+.sync-badge.busy .sync-dot{ background:var(--accent2); animation:syncPulse 1s ease-in-out infinite; }
+@keyframes syncPulse{ 0%,100%{opacity:1} 50%{opacity:.25} }
+
+#cloud-panel{ position:fixed; inset:0; z-index:9500; display:none; align-items:center; justify-content:center;
+  background:rgba(10,14,30,.55); padding:16px; }
+.cp-card{ width:min(560px,100%); max-height:88vh; overflow:auto; background:var(--panel);
+  border:1.5px solid var(--line-dark); border-radius:12px; box-shadow:var(--shadow-lg); }
+.cp-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+  padding:14px 16px; border-bottom:1.5px solid var(--line); }
+.cp-title{ font-size:15px; font-weight:700; }
+.cp-sub{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+.cp-x{ background:none; border:none; color:var(--muted); font-size:15px; cursor:pointer; padding:2px 4px; }
+.cp-body{ padding:14px 16px 18px; }
+.cp-label{ display:block; font-size:11px; font-weight:600; color:var(--muted); margin:10px 0 4px; }
+.cp-input{ width:100%; padding:8px 10px; font-family:var(--font-mono); font-size:12px;
+  border:1.5px solid var(--line-dark); border-radius:8px; background:var(--panel2); color:var(--text); }
+.cp-input:focus{ outline:none; border-color:var(--accent); }
+.cp-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.cp-btn{ padding:8px 12px; font-size:12px; font-weight:600; cursor:pointer;
+  background:var(--panel2); color:var(--text); border:1.5px solid var(--line-dark); border-radius:8px; }
+.cp-btn:hover{ border-color:var(--accent); }
+.cp-btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+.cp-btn.file{ display:inline-block; }
+.cp-status{ margin-top:10px; font-size:11.5px; color:var(--muted); }
+.cp-alert{ padding:8px 10px; border-radius:8px; background:var(--fail-bg); color:var(--fail);
+  font-size:11.5px; font-weight:600; margin-bottom:8px; }
+.cp-det{ margin-top:14px; border-top:1.5px solid var(--line); padding-top:10px; }
+.cp-det summary{ cursor:pointer; font-size:12px; font-weight:600; }
+.cp-sql{ width:100%; height:190px; margin-top:8px; padding:8px; font-family:var(--font-mono); font-size:10.5px;
+  border:1.5px solid var(--line-dark); border-radius:8px; background:var(--panel2); color:var(--text); resize:vertical; }
+.cp-table{ width:100%; margin-top:8px; border-collapse:collapse; font-size:11.5px; }
+.cp-table td{ padding:4px 6px; border-bottom:1px solid var(--line); }
+.cp-table td.num{ text-align:right; font-family:var(--font-mono); }
+.cp-note{ margin-top:12px; font-size:11px; color:var(--muted); line-height:1.5; }
 </style>
 </head>
 <body>
 <div id="boot-loader" class="boot-loader">
   <div class="boot-card">
     <div class="boot-spinner"></div>
-    <div class="boot-text">Connecting to Battery QC server…</div>
+    <div class="boot-text">Starting Battery QC…</div>
   </div>
 </div>
 <div id="root"></div>
+<div id="sync-badge" class="sync-badge" onclick="openPanel()" title="Storage & connection"><span class="sync-dot"></span>Starting…</div>
+<div id="cloud-panel"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
@@ -462,18 +513,223 @@ function movementLabel(type){
   return f ? f[1] : type;
 }
  
-/* ---------- Server-backed storage ----------
-   All persistent data is stored in the backend SQLite database. The browser keeps
-   only UI state; records are loaded/saved through authenticated /api/data endpoints.
-*/
-async function apiFetch(path, options={}){
-  const res = await fetch(path, { credentials:'include', headers:{'Content-Type':'application/json', ...(options.headers||{})}, ...options });
-  let body=null; try { body=await res.json(); } catch(e) {}
-  if(!res.ok){ const msg = body && body.error ? body.error : `Server error (${res.status})`; throw new Error(msg); }
-  return body;
+/* =====================================================================
+   CLOUD STORAGE LAYER  —  everything lives in this single index.html
+   ---------------------------------------------------------------------
+   Data is stored per-record in a Supabase (Postgres) table and cached in
+   this browser so the app keeps working with no connection. Writes are
+   queued in an outbox and pushed as individual record upserts / soft
+   deletes, so a bad connection can never wipe a whole store.
+
+   Setup: open the app, the connection panel asks for your Supabase
+   Project URL + anon key (or fill DEFAULT_CLOUD in below to ship it
+   pre-configured). The SQL to create the table is inside the panel.
+   ===================================================================== */
+
+/* Fill these two in to ship the app already connected (optional). */
+const DEFAULT_CLOUD = { url: '', key: '' };
+
+const BQC_TABLE = 'bqc_records';
+const BQC_STORES = [
+  'om_chain_records','plant_records','plant_stock_records','new_battery_records',
+  'inventory_adjustments','warranty_records','daily_stock_records','iot_given_records',
+  'iot_returned_records','day_log_records','bsa_records'
+];
+const STORE_LABEL = {
+  om_chain_records:'O&M repair chain', plant_records:'Plant records', plant_stock_records:'Plant stock',
+  new_battery_records:'New batteries', inventory_adjustments:'Inventory adjustments',
+  warranty_records:'Warranty', daily_stock_records:'Daily stock', iot_given_records:'IoT given',
+  iot_returned_records:'IoT returned', day_log_records:'Day log', bsa_records:'BSA'
+};
+
+/* ---- Access rules (same matrix the old server enforced) ---- */
+const PLANTINV_STORES = ['plant_records','plant_stock_records','new_battery_records','inventory_adjustments','warranty_records','daily_stock_records','iot_given_records','iot_returned_records','day_log_records'];
+function roleCanRead(role, store){
+  if(role==='omadmin'||role==='quality') return true;
+  if(role==='bsa') return ['om_chain_records','warranty_records','bsa_records'].includes(store);
+  if(role==='plantinv') return PLANTINV_STORES.includes(store);
+  if(role==='omtech') return store==='om_chain_records';
+  return false;
 }
-async function loadStore(key){ try { const r=await apiFetch('/api/data/'+encodeURIComponent(key)); return Array.isArray(r.data)?r.data:[]; } catch(e){ console.error('loadStore failed', key, e); return []; } }
-async function saveStore(key,list){ try { await apiFetch('/api/data/'+encodeURIComponent(key), {method:'PUT', body:JSON.stringify({data:list})}); return true; } catch(e){ console.error('saveStore failed', key, e); return false; } }
+function roleCanWrite(role, store){
+  if(role==='omadmin'||role==='quality') return true;
+  if(role==='bsa') return ['bsa_records','om_chain_records','warranty_records'].includes(store);
+  if(role==='plantinv') return PLANTINV_STORES.includes(store);
+  if(role==='omtech') return store==='om_chain_records';
+  return false;
+}
+
+/* ---- Local keys ---- */
+const CFG_KEY='bqc_cloud_cfg', CACHE_PREFIX='bqc_cache_', OUTBOX_KEY='bqc_outbox', SESSION_KEY='bqc_session';
+
+function lsRead(key, fallback){ try{ const v=localStorage.getItem(key); return v==null?fallback:JSON.parse(v); }catch(e){ return fallback; } }
+function lsWrite(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); return true; }catch(e){ console.error('localStorage write failed', key, e); Cloud.storageFull=true; return false; } }
+function clone(v){ return JSON.parse(JSON.stringify(v)); }
+function stableStr(v){
+  if(v===null||typeof v!=='object') return JSON.stringify(v);
+  if(Array.isArray(v)) return '['+v.map(stableStr).join(',')+']';
+  return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+stableStr(v[k])).join(',')+'}';
+}
+
+const Cloud = {
+  cfg: lsRead(CFG_KEY, null) || (DEFAULT_CLOUD.url ? {url:DEFAULT_CLOUD.url, key:DEFAULT_CLOUD.key} : null),
+  localOnly: lsRead('bqc_local_only', false),
+  online: navigator.onLine,
+  flushing: false,
+  lastError: null,
+  lastSync: lsRead('bqc_last_sync', null),
+  storageFull: false
+};
+function cloudReady(){ return !!(Cloud.cfg && Cloud.cfg.url && Cloud.cfg.key); }
+
+/* ---- Cache + outbox ---- */
+const LAST_SERVED = {};
+function cacheGet(store){ const v=lsRead(CACHE_PREFIX+store, []); return Array.isArray(v)?v:[]; }
+function cacheSet(store, list){ lsWrite(CACHE_PREFIX+store, list); }
+function outbox(){ const v=lsRead(OUTBOX_KEY, []); return Array.isArray(v)?v:[]; }
+function outboxSet(list){ lsWrite(OUTBOX_KEY, list); syncBadge(); }
+function outboxPush(ops){ if(!ops.length) return; outboxSet(outbox().concat(ops)); }
+function pendingCount(){ return outbox().length; }
+function applyPending(store, rows){
+  const ops = outbox().filter(o=>o.store===store);
+  if(!ops.length) return rows;
+  const map = new Map(rows.map(r=>[String(r.id), r]));
+  ops.forEach(o=>{ if(o.type==='upsert') map.set(String(o.id), Object.assign({}, o.payload, {id:o.id})); else map.delete(String(o.id)); });
+  return Array.from(map.values());
+}
+
+/* ---- Supabase REST ---- */
+async function cloudReq(path, options={}){
+  if(!cloudReady()) throw new Error('Cloud storage is not configured');
+  const base = Cloud.cfg.url.replace(/\/+$/,'');
+  const res = await fetch(base+'/rest/v1/'+path, Object.assign({}, options, {
+    headers: Object.assign({
+      'apikey': Cloud.cfg.key,
+      'Authorization': 'Bearer '+Cloud.cfg.key,
+      'Content-Type': 'application/json'
+    }, options.headers||{})
+  }));
+  if(!res.ok){
+    let detail=''; try{ const b=await res.json(); detail=b.message||b.error||b.hint||''; }catch(e){}
+    throw new Error(detail || ('Cloud error '+res.status));
+  }
+  if(res.status===204) return null;
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function cloudPull(store){
+  const rows = await cloudReq(BQC_TABLE+'?store_key=eq.'+encodeURIComponent(store)+'&deleted=is.false&select=id,payload&order=created_at.asc');
+  return (rows||[]).map(r=>Object.assign({}, r.payload||{}, {id:r.id}));
+}
+
+async function flushOutbox(){
+  if(Cloud.localOnly || !cloudReady()) return false;
+  const queued = outbox();
+  if(!queued.length){ return true; }
+  if(Cloud.flushing) return false;
+  Cloud.flushing = true; syncBadge();
+  const taken = queued.length;
+  try{
+    const upserts = new Map(), deletes = new Map();
+    queued.forEach(op=>{
+      const k = op.store+'|'+op.id;
+      if(op.type==='upsert'){ upserts.set(k, op); deletes.delete(k); }
+      else { deletes.set(k, op); upserts.delete(k); }
+    });
+    const who = (currentSession()||{}).name || '';
+    const stamp = new Date().toISOString();
+    const rows = Array.from(upserts.values()).map(op=>({
+      id: String(op.id), store_key: op.store, payload: op.payload,
+      deleted: false, updated_at: stamp, updated_by: op.by || who
+    }));
+    for(let i=0;i<rows.length;i+=50){
+      await cloudReq(BQC_TABLE, { method:'POST', headers:{'Prefer':'resolution=merge-duplicates,return=minimal'}, body: JSON.stringify(rows.slice(i,i+50)) });
+    }
+    for(const op of deletes.values()){
+      await cloudReq(BQC_TABLE+'?id=eq.'+encodeURIComponent(op.id)+'&store_key=eq.'+encodeURIComponent(op.store),
+        { method:'PATCH', headers:{'Prefer':'return=minimal'}, body: JSON.stringify({deleted:true, updated_at:stamp, updated_by:op.by||who}) });
+    }
+    outboxSet(outbox().slice(taken));   /* keep anything queued during the flush */
+    Cloud.lastError = null; Cloud.online = true;
+    Cloud.lastSync = Date.now(); lsWrite('bqc_last_sync', Cloud.lastSync);
+    return true;
+  }catch(e){
+    Cloud.lastError = e.message;
+    if(!navigator.onLine) Cloud.online = false;
+    console.error('Sync failed:', e);
+    return false;
+  }finally{
+    Cloud.flushing = false; syncBadge();
+  }
+}
+
+/* ---- Public store API (unchanged signatures) ---- */
+async function loadStore(key){
+  if(!BQC_STORES.includes(key)) return [];
+  if(!Cloud.localOnly && cloudReady() && navigator.onLine){
+    try{
+      await flushOutbox();
+      let rows = await cloudPull(key);
+      rows = applyPending(key, rows);
+      cacheSet(key, rows); LAST_SERVED[key] = rows;
+      Cloud.lastError = null; Cloud.online = true;
+      Cloud.lastSync = Date.now(); lsWrite('bqc_last_sync', Cloud.lastSync);
+      syncBadge();
+      return clone(rows);
+    }catch(e){
+      Cloud.lastError = e.message;
+      if(!navigator.onLine) Cloud.online = false;
+      console.error('loadStore fell back to local cache:', key, e);
+      syncBadge();
+    }
+  }
+  const cached = applyPending(key, cacheGet(key));
+  LAST_SERVED[key] = cached;
+  return clone(cached);
+}
+
+async function saveStore(key, list){
+  if(!BQC_STORES.includes(key)){ console.error('Unknown store', key); return false; }
+  const session = currentSession();
+  if(session && !roleCanWrite(session.role, key)){
+    console.error('Role '+session.role+' may not write '+key);
+    alert('Your role does not have permission to change '+(STORE_LABEL[key]||key)+'.');
+    return false;
+  }
+  const incoming = (Array.isArray(list)?list:[]).map(r=>{
+    const rec = clone(r);
+    if(!rec.id) rec.id = uid();
+    rec.id = String(rec.id);
+    return rec;
+  });
+  const base = LAST_SERVED[key] || cacheGet(key);
+  const baseMap = new Map(base.map(r=>[String(r.id), r]));
+  const nextIds = new Set(incoming.map(r=>r.id));
+  const removed = base.map(r=>String(r.id)).filter(id=>!nextIds.has(id));
+
+  /* Guardrail: a bulk deletion is almost always a bug, not an intention. */
+  if(removed.length >= 5 && removed.length >= base.length*0.5){
+    const ok = confirm('This save would remove '+removed.length+' of '+base.length+' records from "'+(STORE_LABEL[key]||key)+'".\n\nIf you did not intend to delete them, click Cancel and refresh the page to reload the latest data.');
+    if(!ok) return false;
+  }
+
+  const who = session ? session.name : '';
+  const ops = [];
+  incoming.forEach(rec=>{
+    const prev = baseMap.get(rec.id);
+    const { id, ...payload } = rec;
+    if(!prev || stableStr(prev) !== stableStr(rec)) ops.push({type:'upsert', store:key, id:rec.id, payload, by:who, at:Date.now()});
+  });
+  removed.forEach(id=> ops.push({type:'delete', store:key, id, by:who, at:Date.now()}));
+
+  cacheSet(key, incoming);
+  LAST_SERVED[key] = incoming;
+  outboxPush(ops);
+  flushOutbox();       /* fire and forget — data is already safe locally */
+  return true;
+}
+
 async function loadOm(){ return loadStore('om_chain_records'); }
 async function saveOm(list){ return saveStore('om_chain_records',list); }
 async function loadPlant(){ return loadStore('plant_records'); }
@@ -496,6 +752,232 @@ async function loadDayLog(){ return loadStore('day_log_records'); }
 async function saveDayLog(list){ return saveStore('day_log_records',list); }
 async function loadBsa(){ return loadStore('bsa_records'); }
 async function saveBsa(list){ return saveStore('bsa_records',list); }
+
+/* =====================================================================
+   SIGN-IN  —  PINs are checked in the browser now that there is no
+   server. Change them here before you deploy. This gates the roles for
+   your team; it is not a defence against someone reading the page source.
+   ===================================================================== */
+const ROLE_ACCOUNTS = {
+  omadmin:  { pin:'5634', name:'O&M Manager' },
+  plantinv: { pin:'9876', name:'Plant & Inventory' },
+  quality:  { pin:'6396', name:'Quality Engineer' },
+  bsa:      { pin:'7521', name:'BSA Engineer' }
+};
+const STAGE_PINS = { '1101':1, '1202':2, '1303':3 };
+const SESSION_HOURS = 12;
+
+function currentSession(){
+  const s = lsRead(SESSION_KEY, null);
+  if(!s || !s.issuedAt) return null;
+  if(Date.now() - s.issuedAt > SESSION_HOURS*3600*1000){ localStorage.removeItem(SESSION_KEY); return null; }
+  return s;
+}
+function signIn(mode, pin, name){
+  pin = String(pin||'').trim();
+  if(mode==='omtech'){
+    const stage = STAGE_PINS[pin];
+    if(!stage) throw new Error('Invalid PIN or role');
+    const who = (name||'').trim() || ('Stage '+stage+' Technician');
+    const s = { role:'omtech', stage, name:who, issuedAt:Date.now() };
+    lsWrite(SESSION_KEY, s); return s;
+  }
+  const acct = ROLE_ACCOUNTS[mode];
+  if(!acct || pin !== acct.pin) throw new Error('Invalid PIN or role');
+  const s = { role:mode, stage:null, name:acct.name, issuedAt:Date.now() };
+  lsWrite(SESSION_KEY, s); return s;
+}
+function signOut(){ localStorage.removeItem(SESSION_KEY); }
+
+/* The rest of the app still speaks to /api/... — this router answers those
+   calls locally so nothing else had to change. */
+async function apiFetch(path, options={}){
+  const body = options.body ? JSON.parse(options.body) : {};
+  if(path === '/api/auth/login'){
+    const user = signIn(body.mode, body.pin, body.name);
+    return { ok:true, user:{ role:user.role, stage:user.stage, name:user.name } };
+  }
+  if(path === '/api/auth/logout'){ signOut(); return { ok:true }; }
+  if(path === '/api/auth/me'){
+    const s = currentSession();
+    return s ? { authenticated:true, user:{role:s.role, stage:s.stage, name:s.name} } : { authenticated:false };
+  }
+  if(path.startsWith('/api/data/')){
+    const key = decodeURIComponent(path.replace('/api/data/',''));
+    if(options.method === 'PUT') return { success: await saveStore(key, body.data||[]) };
+    return { success:true, data: await loadStore(key) };
+  }
+  throw new Error('Unknown endpoint '+path);
+}
+
+/* =====================================================================
+   SYNC BADGE + CONNECTION PANEL
+   ===================================================================== */
+const SCHEMA_SQL = `-- Run once in your Supabase project: SQL Editor -> New query -> Run
+create table if not exists bqc_records (
+  id          text primary key,
+  store_key   text not null,
+  payload     jsonb not null,
+  deleted     boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  updated_by  text
+);
+create index if not exists bqc_records_store_idx on bqc_records (store_key, deleted);
+
+alter table bqc_records enable row level security;
+
+drop policy if exists bqc_read on bqc_records;
+drop policy if exists bqc_insert on bqc_records;
+drop policy if exists bqc_update on bqc_records;
+
+create policy bqc_read   on bqc_records for select to anon using (true);
+create policy bqc_insert on bqc_records for insert to anon with check (true);
+create policy bqc_update on bqc_records for update to anon using (true) with check (true);
+-- note: no delete policy on purpose. Records are only ever soft-deleted
+-- (deleted = true), so anything removed by mistake can be brought back with
+--   update bqc_records set deleted = false where id = '...';`;
+
+function syncBadge(){
+  const el = document.getElementById('sync-badge');
+  if(!el) return;
+  const pending = pendingCount();
+  let cls='ok', text='Cloud synced';
+  if(Cloud.localOnly){ cls='local'; text='This device only'; }
+  else if(!cloudReady()){ cls='warn'; text='Cloud not connected'; }
+  else if(Cloud.flushing){ cls='busy'; text='Saving…'; }
+  else if(!navigator.onLine){ cls='warn'; text = pending ? 'Offline — '+pending+' waiting' : 'Offline'; }
+  else if(pending){ cls='warn'; text = pending+' change'+(pending===1?'':'s')+' waiting'; }
+  else if(Cloud.lastError){ cls='bad'; text='Sync problem'; }
+  else if(Cloud.lastSync){ text='Cloud synced '+new Date(Cloud.lastSync).toTimeString().slice(0,5); }
+  el.className = 'sync-badge '+cls;
+  el.innerHTML = '<span class="sync-dot"></span>'+text;
+}
+
+function panelHtml(){
+  const cfg = Cloud.cfg||{url:'',key:''};
+  const counts = BQC_STORES.map(s=>'<tr><td>'+(STORE_LABEL[s]||s)+'</td><td class="num">'+cacheGet(s).length+'</td></tr>').join('');
+  return `
+  <div class="cp-card">
+    <div class="cp-head">
+      <div>
+        <div class="cp-title">Storage &amp; connection</div>
+        <div class="cp-sub">${Cloud.localOnly ? 'Saving to this device only' : (cloudReady() ? 'Supabase cloud storage' : 'No cloud connected yet')}</div>
+      </div>
+      <button class="cp-x" onclick="closePanel()">✕</button>
+    </div>
+    <div class="cp-body">
+      ${Cloud.lastError ? '<div class="cp-alert">'+Cloud.lastError+'</div>' : ''}
+      ${Cloud.storageFull ? '<div class="cp-alert">This browser’s storage is full. Export a backup and clear old data.</div>' : ''}
+      <label class="cp-label">Supabase Project URL</label>
+      <input class="cp-input" id="cp-url" placeholder="https://xxxxxxxx.supabase.co" value="${(cfg.url||'').replace(/"/g,'&quot;')}">
+      <label class="cp-label">Anon / publishable key</label>
+      <input class="cp-input" id="cp-key" placeholder="eyJhbGciOi..." value="${(cfg.key||'').replace(/"/g,'&quot;')}">
+      <div class="cp-row">
+        <button class="cp-btn primary" onclick="connectCloud()">Test &amp; connect</button>
+        <button class="cp-btn" onclick="syncNow()">Sync now</button>
+        <button class="cp-btn" onclick="useLocalOnly()">Use this device only</button>
+      </div>
+      <div class="cp-status" id="cp-status">${pendingCount() ? pendingCount()+' change(s) waiting to upload.' : 'Nothing waiting to upload.'}</div>
+
+      <details class="cp-det"><summary>Database setup (run this SQL once)</summary>
+        <textarea class="cp-sql" readonly>${SCHEMA_SQL}</textarea>
+        <button class="cp-btn" onclick="copySql()">Copy SQL</button>
+      </details>
+
+      <details class="cp-det"><summary>Records held on this device</summary>
+        <table class="cp-table">${counts}</table>
+      </details>
+
+      <div class="cp-row">
+        <button class="cp-btn" onclick="exportBackup()">Export backup</button>
+        <label class="cp-btn file">Import backup<input type="file" accept="application/json" onchange="importBackup(this)" hidden></label>
+      </div>
+      <div class="cp-note">Records are never hard-deleted in the cloud, so a mistaken removal can be restored from Supabase.</div>
+    </div>
+  </div>`;
+}
+function openPanel(){ const o=document.getElementById('cloud-panel'); o.innerHTML=panelHtml(); o.style.display='flex'; }
+function closePanel(){ const o=document.getElementById('cloud-panel'); o.style.display='none'; o.innerHTML=''; }
+function cpStatus(msg){ const el=document.getElementById('cp-status'); if(el) el.textContent=msg; }
+function copySql(){ navigator.clipboard.writeText(SCHEMA_SQL).then(()=>cpStatus('SQL copied.'), ()=>cpStatus('Copy failed — select the text manually.')); }
+
+async function connectCloud(){
+  const url = (document.getElementById('cp-url').value||'').trim().replace(/\/+$/,'');
+  const key = (document.getElementById('cp-key').value||'').trim();
+  if(!/^https?:\/\//.test(url) || !key){ cpStatus('Enter a full https:// project URL and the anon key.'); return; }
+  cpStatus('Testing connection…');
+  const prev = Cloud.cfg;
+  Cloud.cfg = {url, key};
+  try{
+    await cloudReq(BQC_TABLE+'?select=id&limit=1');
+    Cloud.localOnly = false; lsWrite('bqc_local_only', false);
+    lsWrite(CFG_KEY, Cloud.cfg);
+    Cloud.lastError = null;
+    cpStatus('Connected. Uploading anything held locally…');
+    await flushOutbox();
+    cpStatus('Connected and synced. Reloading…');
+    setTimeout(()=>location.reload(), 700);
+  }catch(e){
+    Cloud.cfg = prev;
+    cpStatus('Could not connect: '+e.message+' — check the URL, the key, and that the SQL above has been run.');
+  }
+  syncBadge();
+}
+function useLocalOnly(){
+  Cloud.localOnly = true; lsWrite('bqc_local_only', true);
+  closePanel(); syncBadge();
+}
+async function syncNow(){
+  if(Cloud.localOnly){ cpStatus('This device is in local-only mode. Connect a project to sync.'); return; }
+  if(!cloudReady()){ cpStatus('Connect a Supabase project first.'); return; }
+  cpStatus('Syncing…');
+  const ok = await flushOutbox();
+  cpStatus(ok ? 'All changes uploaded.' : ('Sync failed: '+(Cloud.lastError||'unknown error')));
+}
+function exportBackup(){
+  const dump = { exportedAt:new Date().toISOString(), stores:{} };
+  BQC_STORES.forEach(s=> dump.stores[s]=cacheGet(s));
+  const blob = new Blob([JSON.stringify(dump,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'battery-qc-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function importBackup(input){
+  const file = input.files && input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async ()=>{
+    try{
+      const dump = JSON.parse(reader.result);
+      const stores = dump.stores || dump;
+      let added = 0;
+      for(const key of BQC_STORES){
+        const incoming = Array.isArray(stores[key]) ? stores[key] : null;
+        if(!incoming || !incoming.length) continue;
+        const existing = cacheGet(key);
+        const byId = new Map(existing.map(r=>[String(r.id), r]));
+        incoming.forEach(r=>{ const rec=clone(r); if(!rec.id) rec.id=uid(); if(!byId.has(String(rec.id))){ byId.set(String(rec.id), rec); added++; } });
+        await saveStore(key, Array.from(byId.values()));
+      }
+      cpStatus('Imported '+added+' new record(s). Reloading…');
+      setTimeout(()=>location.reload(), 900);
+    }catch(e){ cpStatus('Could not read that file: '+e.message); }
+  };
+  reader.readAsText(file);
+}
+
+/* First-run: ask for a connection before anyone starts typing records. */
+function maybeShowSetup(){
+  if(cloudReady() || Cloud.localOnly) return;
+  openPanel();
+}
+
+window.addEventListener('online', ()=>{ Cloud.online=true; syncBadge(); flushOutbox(); });
+window.addEventListener('offline', ()=>{ Cloud.online=false; syncBadge(); });
+window.addEventListener('beforeunload', (e)=>{ if(pendingCount()>0 && !Cloud.localOnly){ e.preventDefault(); e.returnValue=''; } });
+setInterval(()=>{ if(pendingCount()>0 && navigator.onLine) flushOutbox(); }, 15000);
+setInterval(syncBadge, 30000);
  
 /* ---------- Utilities ---------- */
 function todayStr(){ return new Date().toISOString().slice(0,10); }
@@ -1115,7 +1597,7 @@ function LoginView(){
       const nameInp=el('input',{placeholder:'Name'}); body.appendChild(nameInp);
       body.appendChild(el('label',{},'Stage PIN'));
       const pinInp=el('input',{type:'password',placeholder:'••••'}); body.appendChild(pinInp);
-      body.appendChild(el('div',{class:'pin-hint'},'Stage PIN is validated by the server.'));
+      body.appendChild(el('div',{class:'pin-hint'},'Stage PIN decides which stage you sign in to.'));
       const errBox=el('div',{class:'err'}); body.appendChild(errBox);
       const go=el('button',{class:'btn-primary btn-block',style:'margin-top:12px;'},'Sign In');
       go.addEventListener('click',async()=>{
@@ -4244,7 +4726,7 @@ async function autoRefreshDocket(){
     STATE.omSyncOk = false;
   }
 }
-setInterval(autoRefreshDocket, 4000);
+setInterval(autoRefreshDocket, 8000);
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && !userIsTypingInForm()) autoRefreshDocket(); });
  
 /* ---------- Boot ---------- */
@@ -4266,6 +4748,8 @@ async function restoreSession(){
     removeBootLoader();
   }catch(e){ console.error(e); render(); removeBootLoader(); }
 }
+syncBadge();
+maybeShowSetup();
 restoreSession();
 </script>
 </body>
