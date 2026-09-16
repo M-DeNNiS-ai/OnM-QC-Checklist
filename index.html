@@ -290,6 +290,42 @@ button:active:not(:disabled) { transform: scale(.97); }
 .export-check-row label{ margin:0; text-transform:none; font-weight:400; color:var(--text); font-size:12px; cursor:pointer; }
 .preview-scroll{ max-height:220px; overflow:auto; border:1px solid var(--line-dark); border-radius:3px; }
 
+.smart-id{display:flex;flex-direction:column;gap:6px;}
+.smart-id-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.smart-id-platform{width:auto;min-width:112px;flex:0 0 auto;}
+.id-prefix{display:inline-flex;align-items:center;padding:7px 9px;border:1.5px solid var(--accent);border-radius:6px;background:var(--accent-soft);color:var(--accent);font:700 11px var(--font-mono);white-space:nowrap;}
+.id-suffix{font-family:var(--font-mono)!important;}
+.smart-id-hint{font-size:10px;color:var(--muted);line-height:1.35;}
+.smart-id-hint strong{color:var(--text);}
+.id-count-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:5px;}
+.id-count-row .id-count{margin-top:0;}
+.bulk-id-box{position:relative;}
+.bulk-id-box textarea{min-height:96px;padding-right:12px;}
+.id-token-preview{margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;max-height:70px;overflow:auto;}
+.id-token{font:600 9px var(--font-mono);padding:3px 5px;border:1px solid var(--line-dark);border-radius:4px;background:var(--panel2);}
+.battery-link{border:none;background:transparent;color:var(--accent);font:700 11px var(--font-mono);padding:0;text-decoration:underline;text-decoration-style:dotted;box-shadow:none;cursor:pointer;}
+.battery-link:hover{color:var(--accent2);transform:none;box-shadow:none;background:transparent;}
+.chart-card .chart-wrap{cursor:pointer;}
+.chart-card .chart-wrap::after{content:'Click a segment/bar for details';position:absolute;right:6px;bottom:2px;font-size:9px;color:var(--muted);opacity:.7;pointer-events:none;}
+#battery-modal,#chart-modal{position:fixed;inset:0;z-index:9700;display:none;align-items:center;justify-content:center;background:rgba(10,14,30,.58);padding:16px;}
+.modal-card{width:min(900px,100%);max-height:90vh;overflow:auto;background:var(--panel);border:1.5px solid var(--line-dark);border-radius:12px;box-shadow:var(--shadow-lg);}
+.modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1.5px solid var(--line);}
+.modal-title{font-size:15px;font-weight:800;}
+.modal-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.modal-body{padding:14px 16px 18px;}
+.modal-close{border:none;background:transparent;color:var(--muted);font-size:18px;padding:2px 6px;box-shadow:none;}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:12px;}
+.detail-kv{padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--panel2);}
+.detail-kv .k{font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;}
+.detail-kv .v{font-size:12px;font-weight:700;margin-top:2px;word-break:break-word;}
+.detail-section{border-top:1px solid var(--line);padding-top:10px;margin-top:10px;}
+.detail-section h4{margin:0 0 6px;font-size:11px;}
+.selection-list{display:grid;gap:5px;max-height:360px;overflow:auto;}
+.selection-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel2);}
+.selection-row .meta{font-size:10px;color:var(--muted);}
+@media(max-width:620px){.smart-id-top{align-items:stretch}.smart-id-platform{width:100%;}.id-prefix{flex:1;}.chart-card .chart-wrap::after{display:none;}}
+
+
 /* Silent background refresh: suppress entrance animations so polling never causes a visible
    "blink" when the underlying data hasn't meaningfully changed the layout. Only applied for the
    brief instant a background poll re-renders the page — normal user-driven renders keep their
@@ -367,6 +403,8 @@ body.silent-refresh .view-fade {
 <div id="root"></div>
 <div id="sync-badge" class="sync-badge" onclick="openPanel()" title="Storage & connection"><span class="sync-dot"></span>Starting…</div>
 <div id="cloud-panel"></div>
+<div id="battery-modal"></div>
+<div id="chart-modal"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
@@ -989,6 +1027,37 @@ function parseIdList(text){
   const parts = text.split(/[\n,]+/).map(s=>s.trim().toUpperCase()).filter(Boolean);
   return Array.from(new Set(parts));
 }
+function prefixForPlatform(platform){
+  const p = String(platform||'').trim().toUpperCase();
+  const found = BMS_MODEL_PREFIXES.find(x=>x.model===p);
+  return found ? found.prefix : '';
+}
+function platformForId(id){
+  const clean = String(id||'').trim().toUpperCase();
+  const found = BMS_MODEL_PREFIXES.find(x=>clean.startsWith(x.prefix));
+  return found ? found.model : '';
+}
+function normalizeBatteryId(token, platform){
+  const raw = String(token||'').trim().toUpperCase();
+  if(!raw) return '';
+  const detected = platformForId(raw);
+  if(detected) return raw;
+  const prefix = prefixForPlatform(platform);
+  return prefix ? prefix + raw : raw;
+}
+function parseBatteryIdList(text, platform){
+  return Array.from(new Set(parseIdList(text).map(x=>normalizeBatteryId(x, platform)).filter(Boolean)));
+}
+function idSuffix(id, platform){
+  const clean = String(id||'').trim().toUpperCase();
+  const detected = platformForId(clean);
+  const prefix = prefixForPlatform(platform) || (detected ? prefixForPlatform(detected) : '');
+  return prefix && clean.startsWith(prefix) ? clean.slice(prefix.length) : clean;
+}
+function smartIdHint(platform){
+  const prefix = prefixForPlatform(platform);
+  return prefix ? `Prefix <strong>${prefix}</strong> is added automatically. Paste a full ID or enter only the remaining characters.` : 'Select the battery platform; the standard prefix will be added automatically.';
+}
  
 function checklistResult(map, items){
   const vals = items.map(([k])=>map[k]);
@@ -1084,8 +1153,8 @@ function findStockRecord(records, date, platform){
   return records.find(r=> r.date===date && r.platform===platform) || null;
 }
 function buildStockRecordFromRow(existing, date, row, enteredBy, skipIdsSet){
-  let newReceivedIds = parseIdList(row.receivedIds);
-  let newDispatchedIds = parseIdList(row.dispatchedIds);
+  let newReceivedIds = parseBatteryIdList(row.receivedIds, row.platform);
+  let newDispatchedIds = parseBatteryIdList(row.dispatchedIds, row.platform);
   let skippedCount = 0;
   if(skipIdsSet && skipIdsSet.size){
     const beforeR = newReceivedIds.length, beforeD = newDispatchedIds.length;
@@ -1299,6 +1368,8 @@ let STATE = {
   toast: null,
   searchQuery: '',
   deepDiveId: '',
+  batteryModalId: '',
+  chartModal: null,
  
   omRecords: [],
   plantRecords: [],
@@ -1353,6 +1424,11 @@ function toast(msg){ STATE.toast = msg; render(); setTimeout(()=>{ STATE.toast=n
  
 const root = document.getElementById('root');
 let pendingCharts = [];
+root.addEventListener('click', e=>{
+  const target=e.target.closest('[data-battery-id]');
+  if(target) openBatteryModal(target.getAttribute('data-battery-id'));
+});
+
 function loadingLabel(isLoading, label){
   if(!isLoading) return label;
   const wrap = document.createElement('span');
@@ -1395,9 +1471,19 @@ function render(){
   pendingCharts = [];
   root.innerHTML='';
   root.appendChild(View());
-  pendingCharts.forEach(({canvas, config})=>{
-    try{ if(typeof Chart!=='undefined') new Chart(canvas.getContext('2d'), config); }
-    catch(e){ console.error('Chart render error', e); }
+  pendingCharts.forEach(({canvas, config, title})=>{
+    try{
+      if(typeof Chart!=='undefined'){
+        const chart = new Chart(canvas.getContext('2d'), config);
+        canvas.style.cursor='pointer';
+        canvas.addEventListener('click', evt=>{
+          const pts = chart.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
+          if(!pts.length) return;
+          const p=pts[0], label=chart.data.labels?.[p.index] ?? '', value=chart.data.datasets?.[p.datasetIndex]?.data?.[p.index] ?? 0;
+          openChartSelection(title,label,value);
+        });
+      }
+    }catch(e){ console.error('Chart render error', e); }
   });
   pendingCharts = [];
   animateStatNumbers();
@@ -1433,6 +1519,77 @@ function field(label, inputEl){
   w.appendChild(inputEl);
   return w;
 }
+function smartBatteryIdInput(value, onChange, opts={}){
+  const wrap = el('div',{class:'smart-id'});
+  let current = String(value||'').trim().toUpperCase();
+  let platform = opts.platform || platformForId(current) || '';
+  const top = el('div',{class:'smart-id-top'});
+  const sel = el('select',{class:'smart-id-platform'});
+  [['','Platform'],...PLATFORMS.map(p=>[p,p])].forEach(([v,l])=>{
+    const o=el('option',{value:v},l); if(v===platform) o.setAttribute('selected','true'); sel.appendChild(o);
+  });
+  const prefix = el('span',{class:'id-prefix'},prefixForPlatform(platform)||'PREFIX');
+  const inp = el('input',{type:'text',class:'id-suffix',value:idSuffix(current,platform)});
+  if(opts.placeholder) inp.setAttribute('placeholder',opts.placeholder);
+  if(opts.key) inp.dataset.fkey=opts.key;
+  if(opts.readonly) inp.setAttribute('readonly','true');
+  top.appendChild(sel); top.appendChild(prefix); top.appendChild(inp);
+  wrap.appendChild(top);
+  const hint = el('div',{class:'smart-id-hint'});
+  hint.innerHTML = smartIdHint(platform);
+  wrap.appendChild(hint);
+  function commit(raw){
+    const full = normalizeBatteryId(raw, platform);
+    const detected = platformForId(full);
+    if(detected && detected!==platform){
+      platform=detected; sel.value=detected; prefix.textContent=prefixForPlatform(detected);
+      hint.innerHTML=smartIdHint(detected);
+    }
+    current=full;
+    onChange(full, platform);
+  }
+  sel.addEventListener('change',()=>{
+    platform=sel.value;
+    prefix.textContent=prefixForPlatform(platform)||'PREFIX';
+    hint.innerHTML=smartIdHint(platform);
+    const raw=inp.value.trim().toUpperCase();
+    if(raw) commit(raw);
+  });
+  inp.addEventListener('input',()=>commit(inp.value));
+  return wrap;
+}
+function smartBatteryIdListInput(value, platform, onChange, opts={}){
+  const wrap=el('div',{class:'bulk-id-box'});
+  const t=el('textarea',{});
+  t.value=String(value||'');
+  t.className='mono id-textarea';
+  if(opts.key) t.dataset.fkey=opts.key;
+  if(opts.placeholder) t.setAttribute('placeholder',opts.placeholder);
+  wrap.appendChild(t);
+  const info=el('div',{class:'id-count-row'});
+  const count=el('div',{class:'id-count'});
+  info.appendChild(count);
+  wrap.appendChild(info);
+  const prefix=prefixForPlatform(platform);
+  wrap.appendChild(el('div',{class:'smart-id-hint'}, prefix ? `Full IDs or suffixes accepted. <strong>${prefix}</strong> is added to suffix-only entries.` : 'Full IDs accepted; suffix-only entries require a platform.'));
+  const preview=el('div',{class:'id-token-preview'});
+  wrap.appendChild(preview);
+  function refresh(){
+    const ids=parseBatteryIdList(t.value,platform);
+    const raw=parseIdList(t.value);
+    const duplicates=Math.max(0,raw.length-ids.length);
+    count.textContent=`${ids.length} unique ID${ids.length===1?'':'s'} entered`+(duplicates?` · ${duplicates} duplicate token${duplicates===1?'':'s'} ignored`:'');
+    count.className='id-count '+(ids.length?'ok':'');
+    preview.innerHTML='';
+    ids.slice(0,12).forEach(id=>preview.appendChild(el('span',{class:'id-token'},id)));
+    if(ids.length>12) preview.appendChild(el('span',{class:'id-token'},`+${ids.length-12} more`));
+    onChange(t.value);
+  }
+  t.addEventListener('input',refresh);
+  refresh();
+  return wrap;
+}
+
 function textInput(value, onChange, opts={}){
   const i = el('input',{type:opts.type||'text', value: value||''});
   if(opts.mono) i.className = 'mono';
@@ -1537,29 +1694,39 @@ function IssuesCard(d){
 function TestsCard(d){
   const card = el('div',{class:'card'});
   const res = testsResult(d);
-  card.appendChild(el('div',{style:'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'},[
-    el('h3',{},'Verification Tests'),
-    el('span',{class:'status-chip '+res}, res)
-  ]));
+  const head = el('div',{style:'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'});
+  head.appendChild(el('h3',{},'Verification Tests'));
+  const resultChip=el('span',{class:'status-chip '+res},res);
+  head.appendChild(resultChip);
+  card.appendChild(head);
   const grid = el('div',{class:'grid narrow'});
   grid.appendChild(field('Pack Voltage (V)', textInput(d.tests.packVoltage, v=>d.tests.packVoltage=v, {type:'number', mono:true, step:'0.01', key:'s3-packVoltage'})));
   grid.appendChild(field('Min Cell (V)', textInput(d.tests.minCell, v=>d.tests.minCell=v, {type:'number', mono:true, step:'0.01', key:'s3-minCell'})));
   grid.appendChild(field('Max Cell (V)', textInput(d.tests.maxCell, v=>d.tests.maxCell=v, {type:'number', mono:true, step:'0.01', key:'s3-maxCell'})));
-  grid.appendChild(field('IR Measured (MΩ)', textInput(d.tests.irMeasured, v=>{d.tests.irMeasured=v; render();}, {type:'number', mono:true, step:'0.1', key:'s3-irMeasured'})));
-  grid.appendChild(field('IR Threshold (MΩ)', textInput(d.tests.irThreshold, v=>{d.tests.irThreshold=v; render();}, {type:'number', mono:true, step:'0.1', key:'s3-irThreshold'})));
-  card.appendChild(grid);
-  card.appendChild(el('div',{style:'margin-top:8px;'}));
+  const irWrap=el('div'); irWrap.appendChild(el('label',{},'IR Measured (MΩ)'));
+  const irInput=textInput(d.tests.irMeasured, v=>{d.tests.irMeasured=v; updateIrFeedback();}, {type:'number', mono:true, step:'0.1', key:'s3-irMeasured', placeholder:'e.g. 650'});
+  irWrap.appendChild(irInput); const irFeedback=el('div',{class:'id-count'}); irWrap.appendChild(irFeedback); grid.appendChild(irWrap);
+  const thWrap=el('div'); thWrap.appendChild(el('label',{},'IR Threshold (MΩ)'));
+  const thInput=textInput(d.tests.irThreshold, v=>{d.tests.irThreshold=v; updateIrFeedback();}, {type:'number', mono:true, step:'0.1', key:'s3-irThreshold'});
+  thWrap.appendChild(thInput); grid.appendChild(thWrap); card.appendChild(grid);
+  function updateIrFeedback(){
+    const ir=parseFloat(d.tests.irMeasured), thr=parseFloat(d.tests.irThreshold);
+    if(isNaN(ir)){irFeedback.textContent='Enter measured insulation resistance'; irFeedback.className='id-count';}
+    else if(isNaN(thr)){irFeedback.textContent=`Measured: ${ir} MΩ · threshold not set`; irFeedback.className='id-count';}
+    else {const ok=ir>=thr; irFeedback.textContent=ok?`✓ ${ir} MΩ — PASS (≥ ${thr} MΩ)`:`✕ ${ir} MΩ — FAIL (< ${thr} MΩ)`; irFeedback.className='id-count '+(ok?'ok':'over');}
+    const r=testsResult(d); resultChip.textContent=r; resultChip.className='status-chip '+r;
+  }
+  updateIrFeedback();
+  card.appendChild(el('div',{style:'margin-top:8px;'},''));
   TEST_BOOLS.forEach(([key,label])=>{
-    const row = el('div',{class:'bool-row'});
-    const cb = el('input',{type:'checkbox'});
-    cb.checked = !!d.testBools[key];
-    cb.addEventListener('change', ()=>{ d.testBools[key]=cb.checked; render(); });
-    row.appendChild(cb);
-    row.appendChild(el('label',{},label));
-    card.appendChild(row);
+    const row=el('div',{class:'bool-row'}); const cb=el('input',{type:'checkbox'}); cb.checked=!!d.testBools[key];
+    cb.addEventListener('change',()=>{d.testBools[key]=cb.checked; const r=testsResult(d); resultChip.textContent=r; resultChip.className='status-chip '+r;});
+    row.appendChild(cb); row.appendChild(el('label',{},label)); card.appendChild(row);
   });
   return card;
 }
+
+
 function statBox(num, label){
   const s = el('div',{class:'stat'});
   const n = el('div',{class:'n'});
@@ -1824,6 +1991,157 @@ function BatteryDeepDiveCard(){
   return card;
 }
  
+function batteryIdButton(id, extraClass=''){
+  const clean=String(id||'').trim().toUpperCase();
+  const b=el('button',{class:('battery-link '+extraClass).trim(),'data-battery-id':clean,title:'Open battery details'},clean);
+  b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openBatteryModal(clean);});
+  return b;
+}
+function modalShell(id,title,subtitle,body){
+  const host=document.getElementById(id); if(!host) return;
+  host.innerHTML='';
+  const card=el('div',{class:'modal-card'});
+  const head=el('div',{class:'modal-head'});
+  const left=el('div');
+  left.appendChild(el('div',{class:'modal-title'},title));
+  if(subtitle) left.appendChild(el('div',{class:'modal-sub'},subtitle));
+  const close=el('button',{class:'modal-close'},'✕');
+  close.addEventListener('click',()=>{host.style.display='none';host.innerHTML='';});
+  head.appendChild(left); head.appendChild(close);
+  card.appendChild(head);
+  const b=el('div',{class:'modal-body'}); if(body) b.appendChild(body); card.appendChild(b);
+  host.appendChild(card); host.style.display='flex';
+  host.onclick=e=>{if(e.target===host){host.style.display='none';host.innerHTML='';}};
+}
+function addDetailKV(grid,key,value){
+  const box=el('div',{class:'detail-kv'});
+  box.appendChild(el('div',{class:'k'},key));
+  box.appendChild(el('div',{class:'v'},String(value??'—')));
+  grid.appendChild(box);
+}
+function openBatteryModal(id){
+  const q=String(id||'').trim().toUpperCase(); if(!q) return;
+  STATE.batteryModalId=q;
+  const body=el('div');
+  const platform=platformForId(q) || ((STATE.omRecords||[]).find(r=>String(r.bmsId||'').toUpperCase()===q)||{}).model || 'Unknown';
+  const summary=el('div',{class:'detail-grid'});
+  addDetailKV(summary,'Battery / BMS ID',q);
+  addDetailKV(summary,'Platform',platform);
+  const om=(STATE.omRecords||[]).filter(r=>String(r.bmsId||'').trim().toUpperCase()===q);
+  const warranty=(STATE.warrantyRecords||[]).filter(r=>String(r.bmsId||'').trim().toUpperCase()===q);
+  const bsa=(STATE.bsaRecords||[]).filter(r=>String(r.bmsId||'').trim().toUpperCase()===q);
+  const stock=[];
+  (STATE.plantStockRecords||[]).forEach(r=>{
+    if((r.receivedIds||[]).map(x=>String(x).toUpperCase()).includes(q)) stock.push({date:r.date,platform:r.platform,direction:'Received'});
+    if((r.dispatchedIds||[]).map(x=>String(x).toUpperCase()).includes(q)) stock.push({date:r.date,platform:r.platform,direction:'Dispatched'});
+  });
+  const iotGiven=(STATE.iotGiven||[]).filter(r=>(r.bmsIds||[]).map(x=>String(x).toUpperCase()).includes(q));
+  const iotReturned=(STATE.iotReturned||[]).filter(r=>(r.bmsIds||[]).map(x=>String(x).toUpperCase()).includes(q));
+  addDetailKV(summary,'O&M Visits',om.length);
+  addDetailKV(summary,'Warranty Records',warranty.length);
+  addDetailKV(summary,'BSA Cases',bsa.length);
+  addDetailKV(summary,'Stock Movements',stock.length);
+  addDetailKV(summary,'IoT Handovers',iotGiven.length+iotReturned.length);
+  body.appendChild(summary);
+
+  function section(title,items,renderer){
+    if(!items.length) return;
+    const sec=el('div',{class:'detail-section'});
+    sec.appendChild(el('h4',{},title+' — '+items.length));
+    items.forEach(x=>sec.appendChild(renderer(x)));
+    body.appendChild(sec);
+  }
+  section('O&M Service History',om,r=>{
+    const box=el('div',{class:'selection-row'});
+    box.appendChild(el('div',{},[
+      el('div',{},`Visit #${r.visitNumber||'—'} · ${r.status||'—'}`),
+      el('div',{class:'meta'},`${r.dateReceived||'—'} · Stage ${r.stage||'—'} · CAPA ${r.capaCycles||0}`)
+    ]));
+    return box;
+  });
+  section('Warranty History',warranty,w=>{
+    const box=el('div',{class:'selection-row'});
+    box.appendChild(el('div',{},[
+      el('div',{},`${w.dateEscalated||'—'} · ${w.failureCategory||'—'}`),
+      el('div',{class:'meta'},w.status||'—')
+    ])); return box;
+  });
+  section('BSA Cases',bsa,r=>{
+    const box=el('div',{class:'selection-row'});
+    box.appendChild(el('div',{},[
+      el('div',{},`${r.dateFlagged||'—'} · ${r.status||'—'}`),
+      el('div',{class:'meta'},r.issueDescription||'')
+    ])); return box;
+  });
+  section('OEM Stock Movements',stock.sort((a,b)=>a.date.localeCompare(b.date)),r=>{
+    const box=el('div',{class:'selection-row'});
+    box.appendChild(el('div',{},`${r.date} · ${r.platform}`));
+    box.appendChild(el('div',{class:'meta'},r.direction)); return box;
+  });
+  section('IoT Given',iotGiven,r=>{
+    const box=el('div',{class:'selection-row'}); box.appendChild(el('div',{},`${r.date} · ${r.quantity} battery${r.quantity==1?'':'ies'}`)); box.appendChild(el('div',{class:'meta'},r.givenBy||'—')); return box;
+  });
+  section('IoT Returned',iotReturned,r=>{
+    const box=el('div',{class:'selection-row'}); box.appendChild(el('div',{},`${r.date} · ${r.quantity} upgraded / returned`)); box.appendChild(el('div',{class:'meta'},r.receivedBy||'—')); return box;
+  });
+  if(!om.length&&!warranty.length&&!bsa.length&&!stock.length&&!iotGiven.length&&!iotReturned.length)
+    body.appendChild(el('div',{class:'banner err'},`No detailed record found for "${q}" in the data loaded for this role.`));
+  modalShell('battery-modal','Battery Details',`Click-through history for ${q}`,body);
+}
+function chartSelectionRecords(title,label){
+  const t=String(title||'').toLowerCase(), l=String(label||'').trim();
+  const out=new Map();
+  const add=(id,meta)=>{const q=String(id||'').trim().toUpperCase(); if(q&&!out.has(q)) out.set(q,meta||'');};
+  const om=STATE.omRecords||[], warr=STATE.warrantyRecords||[], bsa=STATE.bsaRecords||[];
+  if(PLATFORMS.includes(l.toUpperCase())){
+    om.filter(r=>(r.model||'').toUpperCase()===l.toUpperCase()).forEach(r=>add(r.bmsId,`O&M · ${r.status}`));
+    warr.filter(r=>(r.model||'').toUpperCase()===l.toUpperCase()).forEach(r=>add(r.bmsId,`Warranty · ${r.status}`));
+    bsa.filter(r=>(r.model||'').toUpperCase()===l.toUpperCase()).forEach(r=>add(r.bmsId,`BSA · ${r.status}`));
+    (STATE.plantStockRecords||[]).filter(r=>r.platform===l.toUpperCase()).forEach(r=>[...(r.receivedIds||[]),...(r.dispatchedIds||[])].forEach(id=>add(id,`Stock · ${r.date}`)));
+  } else if(t.includes('final disposition')||t.includes('qc outcomes')){
+    const target=l.toUpperCase().replace('PASSED','PASS').replace('SCRAPPED','SCRAPPED');
+    om.filter(r=>String(r.finalDisposition||'').toUpperCase()===target).forEach(r=>add(r.bmsId,`O&M · ${r.status}`));
+  } else if(t.includes('warranty') && t.includes('status')){
+    warr.filter(r=>String(r.status||'')===l).forEach(r=>add(r.bmsId,`Warranty · ${r.failureCategory||''}`));
+  } else if(t.includes('warranty') && t.includes('failure category')){
+    warr.filter(r=>String(r.failureCategory||'')===l).forEach(r=>add(r.bmsId,`Warranty · ${r.status||''}`));
+  } else if(t.includes('bsa') && t.includes('status')){
+    bsa.filter(r=>String(r.status||'')===l).forEach(r=>add(r.bmsId,`BSA · ${r.issueDescription||''}`));
+  } else if(t.includes('bsa') && t.includes('source')){
+    bsa.filter(r=>String(r.source||'').split(' (')[0]===l).forEach(r=>add(r.bmsId,`BSA · ${r.status||''}`));
+  } else if(t.includes('issue type')){
+    om.forEach(r=>ISSUE_ITEMS.forEach(([k,name])=>{if(name===l&&r.stage1?.issues?.[k]) add(r.bmsId,`O&M · ${r.status}`);}));
+  } else if(t.includes('technician')){
+    om.forEach(r=>{if((r.stage1?.technician||r.stage3?.technician||'')===l) add(r.bmsId,`O&M · ${r.status}`);});
+  } else if(t.includes('defect category')){
+    om.filter(r=>recordDefectCategories(r.stage1?.issues).has(l.includes('Supplier')?'Supplier':'Non-Supplier')).forEach(r=>add(r.bmsId,`O&M · ${r.status}`));
+  } else if(t.includes('capa')){
+    om.filter(r=>{const c=r.capaCycles||0; return (l.startsWith('0')?c===0:l==='1'?c===1:l==='2'?c===2:c>=3);}).forEach(r=>add(r.bmsId,`CAPA ${r.capaCycles||0}`));
+  }
+  return Array.from(out.entries()).map(([id,meta])=>({id,meta}));
+}
+function openChartSelection(title,label,value){
+  const body=el('div');
+  const summary=el('div',{class:'detail-grid'});
+  addDetailKV(summary,'Chart',title); addDetailKV(summary,'Selected',label); addDetailKV(summary,'Value',value);
+  body.appendChild(summary);
+  const records=chartSelectionRecords(title,label);
+  if(records.length){
+    const sec=el('div',{class:'detail-section'}); sec.appendChild(el('h4',{},`Related batteries — ${records.length}`));
+    const list=el('div',{class:'selection-list'});
+    records.slice(0,150).forEach(r=>{
+      const row=el('div',{class:'selection-row'});
+      row.appendChild(batteryIdButton(r.id));
+      row.appendChild(el('div',{class:'meta'},r.meta));
+      list.appendChild(row);
+    });
+    sec.appendChild(list); body.appendChild(sec);
+  } else {
+    body.appendChild(el('div',{class:'empty-note'},'This chart selection is informational; no battery-level drill-down is available for this chart.'));
+  }
+  modalShell('chart-modal','Chart Selection',`${title} · click a battery ID to open its history`,body);
+}
+
 /* ==================== O&M TECHNICIAN — 3-STAGE CHAIN ==================== */
  
 function OmTechDocketView(){
@@ -1872,13 +2190,11 @@ function NewIntakeCard(){
   g1.appendChild(field('Date Received', textInput(d.dateReceived, v=>d.dateReceived=v, {type:'date'})));
   g1.appendChild(field('Time Received', textInput(d.timeReceived, v=>d.timeReceived=v, {type:'time'})));
  
-  const bmsInput = textInput(d.bmsId, v=>{
+  const bmsInput = smartBatteryIdInput(d.bmsId,(v,platform)=>{
     d.bmsId=v;
-    const detected = detectModelFromBMS(v);
-    if(detected) d.model = detected;
-    render();
-  }, {mono:true, placeholder:'Scan BMS Barcode', key:'intake-bmsId'});
-  bmsInput.addEventListener('blur', ()=>{
+    if(platform) d.model=platform;
+  },{placeholder:'Scan or enter suffix',key:'intake-bmsId'});
+  bmsInput.querySelector('input').addEventListener('blur', ()=>{
     const clean = d.bmsId.trim();
     STATE.serialWarning = null;
     if(clean){
@@ -2251,7 +2567,7 @@ function OmTechClosedView(){
   const tbody = el('tbody');
   list.forEach(r=>{
     const tr = el('tr',{},[
-      el('td',{class:'mono'}, r.bmsId),
+      el('td',{class:'mono'}, batteryIdButton(r.bmsId)),
       el('td',{}, r.model||'Unknown'),
       el('td',{class:'mono'}, '#'+r.visitNumber),
       el('td',{}, r.capaCycles>0 ? el('span',{class:'status-chip CAPA'},'Cycle '+r.capaCycles) : '—'),
@@ -2372,7 +2688,7 @@ function OmHistoryView(){
     const dupChip = DuplicateChip(STATE.omRecords, r.bmsId);
     const tr = el('tr',{},[
       el('td',{class:'mono'}, r.dateReceived),
-      el('td',{class:'mono',style:'font-weight:700;'}, r.bmsId),
+      el('td',{class:'mono',style:'font-weight:700;'}, batteryIdButton(r.bmsId)),
       el('td',{}, r.model||'Unknown'),
       el('td',{class:'mono'}, '#'+r.visitNumber),
       el('td',{}, r.stage1.technician||'—'),
@@ -2438,53 +2754,35 @@ function emptyPlantDraft(){
  
 /* ---- Bulk OEM stock intake / dispatch entry (received & dispatched, per platform, per date) ---- */
 function BulkPlatformRowCard(row, date){
-  const meta = PLATFORM_META[row.platform];
-  const existingRec = findStockRecord(STATE.plantStockRecords, date, row.platform);
-  const card = el('div',{class:'card'});
-  const head = el('div',{style:'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px;'});
-  head.appendChild(el('h3',{}, meta.emoji+' '+meta.label));
+  const meta=PLATFORM_META[row.platform], existingRec=findStockRecord(STATE.plantStockRecords,date,row.platform);
+  const card=el('div',{class:'card'}), head=el('div',{style:'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px;'});
+  head.appendChild(el('h3',{},meta.emoji+' '+meta.label));
   if(existingRec) head.appendChild(el('span',{class:'badge'},'Entry exists — saving merges with it'));
   card.appendChild(head);
- 
-  const g = el('div',{class:'grid'});
-  g.appendChild(field('Received Qty', textInput(row.receivedQty, v=>{row.receivedQty=v; render();}, {type:'number', mono:true, key:'bulk-'+row.platform+'-recvQty'})));
-  g.appendChild(field('Dispatched Qty', textInput(row.dispatchedQty, v=>{row.dispatchedQty=v; render();}, {type:'number', mono:true, key:'bulk-'+row.platform+'-dispQty'})));
+  const g=el('div',{class:'grid'});
+  g.appendChild(field('Received Qty',textInput(row.receivedQty,v=>{row.receivedQty=v;updateBulkCounts();},{type:'number',mono:true,key:'bulk-'+row.platform+'-recvQty'})));
+  g.appendChild(field('Dispatched Qty',textInput(row.dispatchedQty,v=>{row.dispatchedQty=v;updateBulkCounts();},{type:'number',mono:true,key:'bulk-'+row.platform+'-dispQty'})));
   card.appendChild(g);
- 
-  const idGrid = el('div',{class:'grid'});
- 
-  const recvWrap = el('div');
-  recvWrap.appendChild(el('label',{},'Received OEM IDs — one per line or comma-separated (optional, can add later)'));
-  recvWrap.appendChild(textareaInput(row.receivedIds, v=>{row.receivedIds=v; render();}, {mono:true, extraClass:'id-textarea', key:'bulk-'+row.platform+'-recvIds'}));
-  const recvNew = parseIdList(row.receivedIds).length;
-  const recvExisting = (row._existingReceivedIds||[]).length;
-  const recvTarget = parseInt(row.receivedQty)||0;
-  const recvTotal = recvNew + recvExisting;
-  let recvClass = '';
-  if(recvTarget>0 && recvTotal===recvTarget) recvClass='ok';
-  else if(recvTarget>0 && recvTotal>recvTarget) recvClass='over';
-  recvWrap.appendChild(el('div',{class:'id-count '+recvClass},
-    `${recvTotal} / ${recvTarget||'?'} IDs logged` + (recvExisting? ` (${recvExisting} already saved)`:'')));
-  idGrid.appendChild(recvWrap);
- 
-  const dispWrap = el('div');
-  dispWrap.appendChild(el('label',{},'Dispatched OEM IDs — one per line or comma-separated (optional, can add later)'));
-  dispWrap.appendChild(textareaInput(row.dispatchedIds, v=>{row.dispatchedIds=v; render();}, {mono:true, extraClass:'id-textarea', key:'bulk-'+row.platform+'-dispIds'}));
-  const dispNew = parseIdList(row.dispatchedIds).length;
-  const dispExisting = (row._existingDispatchedIds||[]).length;
-  const dispTarget = parseInt(row.dispatchedQty)||0;
-  const dispTotal = dispNew + dispExisting;
-  let dispClass = '';
-  if(dispTarget>0 && dispTotal===dispTarget) dispClass='ok';
-  else if(dispTarget>0 && dispTotal>dispTarget) dispClass='over';
-  dispWrap.appendChild(el('div',{class:'id-count '+dispClass},
-    `${dispTotal} / ${dispTarget||'?'} IDs logged` + (dispExisting? ` (${dispExisting} already saved)`:'')));
-  idGrid.appendChild(dispWrap);
- 
+  const idGrid=el('div',{class:'grid'});
+  const recvWrap=el('div'); recvWrap.appendChild(el('label',{},'Received Battery IDs — full ID or suffix only'));
+  recvWrap.appendChild(smartBatteryIdListInput(row.receivedIds,row.platform,v=>{row.receivedIds=v},{key:'bulk-'+row.platform+'-recvIds',placeholder:'Enter suffixes, one per line / comma-separated'}));
+  const recvCount=el('div',{class:'id-count'}); recvWrap.appendChild(recvCount); idGrid.appendChild(recvWrap);
+  const dispWrap=el('div'); dispWrap.appendChild(el('label',{},'Dispatched Battery IDs — full ID or suffix only'));
+  dispWrap.appendChild(smartBatteryIdListInput(row.dispatchedIds,row.platform,v=>{row.dispatchedIds=v},{key:'bulk-'+row.platform+'-dispIds',placeholder:'Enter suffixes, one per line / comma-separated'}));
+  const dispCount=el('div',{class:'id-count'}); dispWrap.appendChild(dispCount); idGrid.appendChild(dispWrap);
   card.appendChild(idGrid);
-  return card;
+  function updateBulkCounts(){
+    const rn=parseBatteryIdList(row.receivedIds,row.platform).length,dn=parseBatteryIdList(row.dispatchedIds,row.platform).length;
+    const re=(row._existingReceivedIds||[]).length,de=(row._existingDispatchedIds||[]).length,rt=parseInt(row.receivedQty)||0,dt=parseInt(row.dispatchedQty)||0;
+    recvCount.textContent=`${rn+re} / ${rt||'?'} received IDs`+(re?` · ${re} already saved`:'' );
+    dispCount.textContent=`${dn+de} / ${dt||'?'} dispatched IDs`+(de?` · ${de} already saved`:'' );
+    recvCount.className='id-count '+(rt>0&&rn+re===rt?'ok':rt>0&&rn+re>rt?'over':'');
+    dispCount.className='id-count '+(dt>0&&dn+de===dt?'ok':dt>0&&dn+de>dt?'over':'');
+  }
+  updateBulkCounts(); return card;
 }
- 
+
+
 function renderLedgerDayTable(entry){
   const wrap = el('div',{class:'table-wrap'});
   const tbl = el('table');
@@ -3435,11 +3733,7 @@ function WarrantyView(){
   form.appendChild(el('h3',{},'Escalate Pack to Warranty'));
  
   const g = el('div',{class:'grid'});
-  const bmsInp = textInput(d.bmsId, v=>{
-    d.bmsId=v;
-    const detected = detectModelFromBMS(v);
-    if(detected) d.model=detected;
-  }, {mono:true, placeholder:'Scan BMS Barcode'});
+  const bmsInp = smartBatteryIdInput(d.bmsId,(v,platform)=>{ d.bmsId=v; if(platform) d.model=platform; },{placeholder:'Scan or enter suffix',key:'warranty-bms'});
   g.appendChild(field('BMS ID', bmsInp));
   g.appendChild(field('Platform', textInput(d.model, v=>d.model=v)));
   g.appendChild(field('Failure Category', selectInput(d.failureCategory,
@@ -3481,7 +3775,7 @@ function WarrantyView(){
     warrantyFiltered.forEach(w=>{
       const tr = el('tr',{},[
         el('td',{class:'mono'}, w.dateEscalated),
-        el('td',{class:'mono',style:'font-weight:700;'}, w.bmsId),
+        el('td',{class:'mono',style:'font-weight:700;'}, batteryIdButton(w.bmsId)),
         el('td',{}, w.model||'Unknown'),
         el('td',{}, w.failureCategory),
         el('td',{}, el('span',{class:'badge'}, w.status)),
@@ -3524,7 +3818,7 @@ function QualityBsaView(){
   card.appendChild(el('h3',{},'Escalate a Battery to BSA'));
   card.appendChild(el('div',{class:'sub'},'For batteries O&M technicians cannot resolve, or where no SOP applies. Give the BSA team everything they need: what failed and what was already tried.'));
   const g = el('div',{class:'grid'});
-  const bmsInp = textInput(d.bmsId, v=>{ d.bmsId=v; const det=detectModelFromBMS(v); if(det) d.model=det; }, {mono:true, placeholder:'Scan BMS Barcode'});
+  const bmsInp = smartBatteryIdInput(d.bmsId,(v,platform)=>{ d.bmsId=v; if(platform) d.model=platform; },{placeholder:'Scan or enter suffix',key:'bsa-bms'});
   g.appendChild(field('BMS ID', bmsInp));
   g.appendChild(field('Platform', textInput(d.model, v=>d.model=v)));
   g.appendChild(field('Source', selectInput(d.source, BSA_SOURCES.map(s=>[s,s]), v=>d.source=v)));
@@ -3563,7 +3857,7 @@ function QualityBsaView(){
     const tbody = el('tbody');
     mine.forEach(r=>{
       tbody.appendChild(el('tr',{},[
-        el('td',{class:'mono'},r.dateFlagged), el('td',{class:'mono',style:'font-weight:700;'},r.bmsId), el('td',{},r.model||'Unknown'),
+        el('td',{class:'mono'},r.dateFlagged), el('td',{class:'mono',style:'font-weight:700;'},batteryIdButton(r.bmsId)), el('td',{},r.model||'Unknown'),
         el('td',{style:'white-space:normal;max-width:300px;'},r.issueDescription), el('td',{},el('span',{class:'status-chip '+bsaStatusChipClass(r.status)},r.status))
       ]));
     });
@@ -3577,7 +3871,7 @@ function QualityBsaView(){
 function BsaCaseCard(r, editable){
   const card = el('div',{class:'card'});
   card.appendChild(el('div',{style:'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;'},[
-    el('h3',{}, `${r.bmsId} — ${r.model||'Unknown'}`),
+    el('h3',{}, [batteryIdButton(r.bmsId), ` — ${r.model||'Unknown'}`]),
     el('span',{class:'status-chip '+bsaStatusChipClass(r.status)}, r.status)
   ]));
   card.appendChild(el('div',{class:'sub'}, `${r.source} · flagged ${r.dateFlagged} by ${r.flaggedBy||'—'}`));
@@ -3635,7 +3929,7 @@ function BsaNewCaseView(){
   const card = el('div',{class:'card'});
   card.appendChild(el('h3',{},'Log New Case'));
   const g = el('div',{class:'grid'});
-  const bmsInp = textInput(d.bmsId, v=>{ d.bmsId=v; const det=detectModelFromBMS(v); if(det) d.model=det; }, {mono:true, placeholder:'Scan BMS Barcode'});
+  const bmsInp = smartBatteryIdInput(d.bmsId,(v,platform)=>{ d.bmsId=v; if(platform) d.model=platform; },{placeholder:'Scan or enter suffix',key:'bsa-new-bms'});
   g.appendChild(field('BMS ID', bmsInp));
   g.appendChild(field('Platform', textInput(d.model, v=>d.model=v)));
   g.appendChild(field('Source', selectInput(d.source, [BSA_SOURCES[1],BSA_SOURCES[2]].map(s=>[s,s]), v=>d.source=v)));
@@ -3939,7 +4233,7 @@ function chartCard(title, config){
   const canvas = el('canvas');
   wrap.appendChild(canvas);
   card.appendChild(wrap);
-  pendingCharts.push({canvas, config});
+  pendingCharts.push({canvas, config, title});
   return card;
 }
  
@@ -4296,7 +4590,7 @@ function FullVisibilityTablesCard(){
     omOpen.forEach(r=>{
       const dupChip = DuplicateChip(STATE.omRecords, r.bmsId);
       tbody.appendChild(el('tr',{},[
-        el('td',{class:'mono',style:'font-weight:700;'}, r.bmsId), el('td',{}, r.model||'Unknown'),
+        el('td',{class:'mono',style:'font-weight:700;'}, batteryIdButton(r.bmsId)), el('td',{}, r.model||'Unknown'),
         el('td',{}, 'Stage '+r.stage), el('td',{}, el('span',{class:'status-chip '+r.status}, r.status.replace(/_/g,' '))),
         el('td',{}, r.capaCycles>0 ? el('span',{class:'status-chip CAPA'},'Cycle '+r.capaCycles) : '—'),
         el('td',{}, dupChip || '—')
@@ -4318,7 +4612,7 @@ function FullVisibilityTablesCard(){
     warrOpen.forEach(w=>{
       const dupChip = DuplicateChip(STATE.warrantyRecords.map(x=>({bmsId:x.bmsId, status: (x.status!=='Scrapped by QC' && x.status!=='Repaired & Returned') ? 'OPEN' : 'CLOSED'})), w.bmsId);
       tbody.appendChild(el('tr',{},[
-        el('td',{class:'mono',style:'font-weight:700;'}, w.bmsId), el('td',{}, w.model||'Unknown'),
+        el('td',{class:'mono',style:'font-weight:700;'}, batteryIdButton(w.bmsId)), el('td',{}, w.model||'Unknown'),
         el('td',{}, w.failureCategory), el('td',{}, el('span',{class:'badge'}, w.status)),
         el('td',{}, dupChip || '—')
       ]));
@@ -4338,7 +4632,7 @@ function FullVisibilityTablesCard(){
     const tbody = el('tbody');
     bsaOpen.forEach(r=>{
       tbody.appendChild(el('tr',{},[
-        el('td',{class:'mono',style:'font-weight:700;'}, r.bmsId), el('td',{}, r.model||'Unknown'),
+        el('td',{class:'mono',style:'font-weight:700;'}, batteryIdButton(r.bmsId)), el('td',{}, r.model||'Unknown'),
         el('td',{}, r.source.split(' (')[0]), el('td',{}, el('span',{class:'status-chip '+bsaStatusChipClass(r.status)}, r.status)),
         el('td',{}, r.assignedEngineer||'—')
       ]));
