@@ -586,14 +586,20 @@ function roleCanRead(role, store){
   if(role==='omadmin'||role==='quality') return true;
   if(role==='bsa') return ['om_chain_records','warranty_records','bsa_records'].includes(store);
   if(role==='plantinv') return PLANTINV_STORES.includes(store);
-  if(role==='omtech') return store==='om_chain_records';
+  if(role==='omtech') {
+    const s = currentSession();
+    return store==='om_chain_records' || (store==='bsa_records' && s && s.stage===3);
+  }
   return false;
 }
 function roleCanWrite(role, store){
   if(role==='omadmin'||role==='quality') return true;
   if(role==='bsa') return ['bsa_records','om_chain_records','warranty_records'].includes(store);
   if(role==='plantinv') return PLANTINV_STORES.includes(store);
-  if(role==='omtech') return store==='om_chain_records';
+  if(role==='omtech') {
+    const s = currentSession();
+    return store==='om_chain_records' || (store==='bsa_records' && s && s.stage===3);
+  }
   return false;
 }
 
