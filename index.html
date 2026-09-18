@@ -406,6 +406,7 @@ body.silent-refresh .view-fade {
 <div id="battery-modal"></div>
 <div id="chart-modal"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 /* ---------- Theme ---------- */
@@ -1477,20 +1478,30 @@ function render(){
   pendingCharts = [];
   root.innerHTML='';
   root.appendChild(View());
-  pendingCharts.forEach(({canvas, config, title})=>{
-    try{
-      if(typeof Chart!=='undefined'){
-        const chart = new Chart(canvas.getContext('2d'), config);
-        canvas.style.cursor='pointer';
-        canvas.addEventListener('click', evt=>{
-          const pts = chart.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
-          if(!pts.length) return;
-          const p=pts[0], label=chart.data.labels?.[p.index] ?? '', value=chart.data.datasets?.[p.datasetIndex]?.data?.[p.index] ?? 0;
-          openChartSelection(title,label,value);
-        });
+  const chartJobs = pendingCharts.slice();
+  pendingCharts = [];
+  const initCharts = ()=>{
+    chartJobs.forEach(({canvas, config, title})=>{
+      try{
+        if(typeof Chart!=='undefined'){
+          const chart = new Chart(canvas.getContext('2d'), config);
+          canvas.style.cursor='pointer';
+          canvas.addEventListener('click', evt=>{
+            const pts = chart.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
+            if(!pts.length) return;
+            const p=pts[0], label=chart.data.labels?.[p.index] ?? '', value=chart.data.datasets?.[p.datasetIndex]?.data?.[p.index] ?? 0;
+            openChartSelection(title,label,value);
+          });
+        } else {
+          renderChartFallback(canvas, config, title);
+        }
+      }catch(e){
+        console.error('Chart render error:', title, e);
+        try{ renderChartFallback(canvas, config, title); }catch(fallbackError){ console.error('Chart fallback error:', title, fallbackError); }
       }
-    }catch(e){ console.error('Chart render error', e); }
-  });
+    });
+  };
+  requestAnimationFrame(()=>requestAnimationFrame(initCharts));
   pendingCharts = [];
   animateStatNumbers();
   if(focusInfo){
@@ -1505,6 +1516,147 @@ function render(){
   }
 }
  
+
+/* ---- Native canvas fallback: charts still render when the external Chart.js CDN is unavailable
+   or a particular Chart.js configuration cannot initialize. ---- */
+function renderChartFallback(canvas, config, title=''){
+  const ctx = canvas.getContext && canvas.getContext('2d');
+  if(!ctx) return;
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const width = Math.max(320, Math.round(rect.width || canvas.parentElement?.clientWidth || 640));
+  const height = Math.max(220, Math.round(rect.height || canvas.parentElement?.clientHeight || 260));
+  canvas.width = width*dpr; canvas.height = height*dpr;
+  canvas.style.width = width+'px'; canvas.style.height = height+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,width,height);
+
+  const text = cssVar('--text'), muted = cssVar('--muted'), line = cssVar('--line');
+  const palette = [
+    cssVar('--accent'), cssVar('--pass'), cssVar('--warn'), cssVar('--fail'),
+    cssVar('--capa'), cssVar('--accent2')
+  ];
+  const labels = (config && config.data && Array.isArray(config.data.labels)) ? config.data.labels : ['No data'];
+  const datasets = (config && config.data && Array.isArray(config.data.datasets)) ? config.data.datasets : [];
+  const safeData = datasets.length ? datasets.map(ds => (ds.data||[]).map(v=>{
+    const n=Number(v); return Number.isFinite(n)?n:0;
+  })) : [[0]];
+  const type = String(config?.type||'bar').toLowerCase();
+  const pad={l:44,r:18,t:18,b:46};
+  const pw=width-pad.l-pad.r, ph=height-pad.t-pad.b;
+
+  ctx.font='11px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif';
+  ctx.fillStyle=text;
+
+  if(type==='pie' || type==='doughnut'){
+    const data=safeData[0], total=data.reduce((a,v)=>a+Math.max(0,v),0);
+    const cx=width/2, cy=height/2-8, radius=Math.min(pw,ph)*0.33;
+    if(total<=0){
+      ctx.strokeStyle=line; ctx.lineWidth=18; ctx.beginPath(); ctx.arc(cx,cy,radius,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle=muted; ctx.textAlign='center'; ctx.fillText('No data',cx,cy+4);
+      return;
+    }
+    let a0=-Math.PI/2;
+    data.forEach((v,i)=>{
+      const a1=a0+(Math.max(0,v)/total)*Math.PI*2;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,radius,a0,a1); ctx.closePath();
+      ctx.fillStyle=palette[i%palette.length]; ctx.fill();
+      a0=a1;
+    });
+    ctx.textAlign='left';
+    labels.slice(0,10).forEach((lab,i)=>{
+      const y=height-20-(Math.min(labels.length,10)-1-i)*14;
+      ctx.fillStyle=palette[i%palette.length]; ctx.fillRect(pad.l+i*0, y-8, 8, 8);
+      ctx.fillStyle=muted; ctx.fillText(`${lab}: ${data[i]??0}`, pad.l+12, y);
+    });
+    return;
+  }
+
+  const all = safeData.flat();
+  const maxVal = Math.max(1, ...all);
+  const minVal = Math.min(0, ...all);
+  const range = Math.max(1, maxVal-minVal);
+  const x0=pad.l, y0=pad.t+ph;
+  ctx.strokeStyle=line; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(x0,pad.t); ctx.lineTo(x0,y0); ctx.lineTo(width-pad.r,y0); ctx.stroke();
+
+  for(let g=0;g<=4;g++){
+    const y=pad.t+ph*(g/4);
+    ctx.strokeStyle=line; ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(width-pad.r,y); ctx.stroke();
+    const val=maxVal-(range*g/4);
+    ctx.fillStyle=muted; ctx.textAlign='right'; ctx.fillText(String(Math.round(val*10)/10),x0-6,y+4);
+  }
+
+  const n=labels.length;
+  const groupW = pw/Math.max(1,n);
+  const barW = Math.min(42, groupW/(Math.max(1,safeData.length)+0.7));
+  const pointsByDataset=[];
+
+  safeData.forEach((data,di)=>{
+    const pts=[];
+    data.forEach((v,i)=>{
+      const x = x0 + groupW*i + groupW/2;
+      const y = pad.t + (maxVal-v)/range*ph;
+      if(type==='line'){
+        pts.push({x,y,value:v,label:labels[i]});
+      } else {
+        const offset=(di-(safeData.length-1)/2)*(barW+2);
+        ctx.fillStyle = datasets[di]?.backgroundColor || palette[di%palette.length];
+        const top = pad.t + (maxVal-v)/range*ph;
+        const base = y0;
+        ctx.fillRect(x+offset-barW/2, top, barW, Math.max(1,base-top));
+      }
+    });
+    pointsByDataset.push(pts);
+  });
+
+  if(type==='line'){
+    safeData.forEach((data,di)=>{
+      ctx.strokeStyle=datasets[di]?.borderColor || palette[di%palette.length];
+      ctx.lineWidth=2; ctx.beginPath();
+      data.forEach((v,i)=>{
+        const x=x0+groupW*i+groupW/2, y=pad.t+(maxVal-v)/range*ph;
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+      data.forEach((v,i)=>{
+        const x=x0+groupW*i+groupW/2, y=pad.t+(maxVal-v)/range*ph;
+        ctx.fillStyle=datasets[di]?.backgroundColor || palette[di%palette.length];
+        ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+      });
+    });
+  }
+
+  ctx.fillStyle=muted; ctx.textAlign='center';
+  labels.slice(0,20).forEach((lab,i)=>{
+    const x=x0+groupW*i+groupW/2;
+    let label=String(lab);
+    if(label.length>14) label=label.slice(0,13)+'…';
+    ctx.fillText(label,x,height-23);
+  });
+
+  canvas.onclick = (evt)=>{
+    const r=canvas.getBoundingClientRect();
+    const x=evt.clientX-r.left, y=evt.clientY-r.top;
+    let best=null, bestDist=Infinity;
+    if(type==='line'){
+      pointsByDataset.forEach((pts,di)=>pts.forEach(pt=>{
+        const dist=(pt.x-x)**2+(pt.y-y)**2;
+        if(dist<bestDist){bestDist=dist;best={label:pt.label,value:pt.value};}
+      }));
+    } else {
+      safeData.forEach((data,di)=>data.forEach((v,i)=>{
+        const center=x0+groupW*i+groupW/2;
+        const offset=(di-(safeData.length-1)/2)*(barW+2);
+        const left=center+offset-barW/2, right=center+offset+barW/2;
+        const top=pad.t+(maxVal-v)/range*ph;
+        if(x>=left&&x<=right&&y>=top&&y<=y0) best={label:labels[i],value:v};
+      }));
+    }
+    if(best) openChartSelection(title,best.label,best.value);
+  };
+}
+
 function el(tag, attrs={}, children=[]){
   const e = document.createElement(tag);
   for(const k in attrs){
@@ -2057,12 +2209,59 @@ function openBatteryModal(id){
     items.forEach(x=>sec.appendChild(renderer(x)));
     body.appendChild(sec);
   }
-  section('O&M Service History',om,r=>{
-    const box=el('div',{class:'selection-row'});
-    box.appendChild(el('div',{},[
-      el('div',{},`Visit #${r.visitNumber||'—'} · ${r.status||'—'}`),
-      el('div',{class:'meta'},`${r.dateReceived||'—'} · Stage ${r.stage||'—'} · CAPA ${r.capaCycles||0}`)
+  section('O&M Service History — Reason & Parameters for Every Visit',om,r=>{
+    const box=el('div',{class:'selection-row',style:'display:block;'});
+    const head=el('div',{style:'display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;'});
+    head.appendChild(el('div',{},[
+      el('div',{style:'font-weight:800;'},`Visit #${r.visitNumber||'—'} · ${r.status||'—'}`),
+      el('div',{class:'meta'},`${r.dateReceived||'—'} ${r.timeReceived||''} · ${r.site||'—'} · CAPA ${r.capaCycles||0}`)
     ]));
+    box.appendChild(head);
+
+    const visitGrid=el('div',{class:'detail-grid',style:'margin-top:8px;'});
+    const issueLabels=ISSUE_ITEMS
+      .filter(([k])=>r.stage1?.issues?.[k])
+      .map(([,label])=>label);
+    const reasonParts=[];
+    if(issueLabels.length) reasonParts.push(issueLabels.join(', '));
+    if(r.stage1?.issues?.missingComponent && r.stage1?.missingComponentNote) reasonParts.push(`Missing: ${r.stage1.missingComponentNote}`);
+    if(r.stage1?.otherNote) reasonParts.push(r.stage1.otherNote);
+    const reason=reasonParts.join(' — ') || 'No defect reason recorded';
+
+    addDetailKV(visitGrid,'Reason for Repair',reason);
+    addDetailKV(visitGrid,'Stage 1 Technician',r.stage1?.technician||'—');
+    addDetailKV(visitGrid,'Stage 2 Technician',r.stage2?.technician||'—');
+    addDetailKV(visitGrid,'Stage 3 Technician',r.stage3?.technician||'—');
+    addDetailKV(visitGrid,'Stage 2 SOP',r.stage2?.sopRef||'—');
+    addDetailKV(visitGrid,'Repair Action',r.stage2?.repairAction||'—');
+    addDetailKV(visitGrid,'Parts Replaced',r.stage2?.partsReplaced||'—');
+    addDetailKV(visitGrid,'Stage 2 Completed',r.stage2?.completedAt ? new Date(r.stage2.completedAt).toLocaleString() : '—');
+    box.appendChild(visitGrid);
+
+    const p=r.stage3?.tests||{};
+    const testGrid=el('div',{class:'detail-grid'});
+    addDetailKV(testGrid,'Pack Voltage (V)',p.packVoltage!==''&&p.packVoltage!=null?p.packVoltage:'—');
+    addDetailKV(testGrid,'Min Cell (V)',p.minCell!==''&&p.minCell!=null?p.minCell:'—');
+    addDetailKV(testGrid,'Max Cell (V)',p.maxCell!==''&&p.maxCell!=null?p.maxCell:'—');
+    addDetailKV(testGrid,'IR Measured (MΩ)',p.irMeasured!==''&&p.irMeasured!=null?p.irMeasured:'—');
+    addDetailKV(testGrid,'IR Threshold (MΩ)',p.irThreshold!==''&&p.irThreshold!=null?p.irThreshold:'—');
+
+    const bools=r.stage3?.testBools||{};
+    TEST_BOOLS.forEach(([k,label])=>addDetailKV(testGrid,label,bools[k]===true?'PASS':bools[k]===false?'FAIL':'—'));
+    addDetailKV(testGrid,'QC Disposition',r.finalDisposition||r.stage3?.qcPassed||'—');
+    addDetailKV(testGrid,'QC Notes',r.stage3?.qcNote||'—');
+    box.appendChild(testGrid);
+
+    const notes=[];
+    if(r.stage1?.pre) {
+      const failedPre=CHECK_ITEMS.filter(([k,l])=>r.stage1.pre[k]==='FAIL').map(([,l])=>l);
+      if(failedPre.length) notes.push('Pre-check failures: '+failedPre.join(', '));
+    }
+    if(r.stage2?.post) {
+      const failedPost=POST_ITEMS.filter(([k,l])=>r.stage2.post[k]==='FAIL').map(([,l])=>l);
+      if(failedPost.length) notes.push('Post-service failures: '+failedPost.join(', '));
+    }
+    if(notes.length) box.appendChild(el('div',{class:'meta',style:'margin-top:4px;'},notes.join(' · ')));
     return box;
   });
   section('Warranty History',warranty,w=>{
@@ -4273,6 +4472,17 @@ function chartCard(title, config){
   pendingCharts.push({canvas, config, title});
   return card;
 }
+
+window.addEventListener('resize', ()=>{
+  document.querySelectorAll('.chart-wrap canvas').forEach(canvas=>{
+    if(typeof Chart!=='undefined'){
+      try{
+        const c=Chart.getChart(canvas);
+        if(c) c.resize();
+      }catch(e){}
+    }
+  });
+});
  
 function fpyTrendConfig(fpy){
   const months = Object.keys(fpy.byMonth).sort();
