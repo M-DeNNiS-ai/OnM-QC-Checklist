@@ -3838,6 +3838,11 @@ function NewBatteryView(){
 }
  
 function AdjustmentView(){
+  /* Defensive initialization for the Stock Movement screen only.
+     If session restoration or a failed background load leaves the draft unset,
+     opening this tab must still render normally. */
+  if(!STATE.adjustmentDraft) STATE.adjustmentDraft = emptyAdjustmentDraft();
+  if(!Array.isArray(STATE.adjustments)) STATE.adjustments = [];
   const d = STATE.adjustmentDraft;
   const container = el('div');
   container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Stock Movement'));
@@ -3876,7 +3881,7 @@ function AdjustmentView(){
  
   const listCard = el('div',{class:'card'});
   listCard.appendChild(el('h3',{},'Recent Movements'));
-  const adjFiltered = searchFilter([...STATE.adjustments].reverse(), r=>`${r.date} ${r.platform} ${movementLabel(r.type)} ${r.reference} ${r.loggedBy}`);
+  const adjFiltered = searchFilter([...STATE.adjustments].reverse(), r=>`${r.date||''} ${r.platform||''} ${movementLabel(r.type||'')} ${r.reference||''} ${r.loggedBy||''}`);
   if(STATE.adjustments.length===0){
     listCard.appendChild(el('div',{class:'empty-note'},'No movements yet.'));
   } else if(adjFiltered.length===0){
