@@ -1407,6 +1407,7 @@ let STATE = {
   newBatterySaving: false,
   adjustmentDraft: null,
   adjustmentSaving: false,
+  adjustmentError: null,
   warrantyDraft: null,
   warrantySaving: false,
   integrityBusy: false,
@@ -3838,63 +3839,105 @@ function NewBatteryView(){
 }
  
 function AdjustmentView(){
-  /* Defensive initialization for the Stock Movement screen only.
-     If session restoration or a failed background load leaves the draft unset,
-     opening this tab must still render normally. */
-  if(!STATE.adjustmentDraft) STATE.adjustmentDraft = emptyAdjustmentDraft();
+  /* Stock Movement is intentionally self-contained so this screen cannot fail to render because
+     a draft/cache value is missing or malformed. Existing fields, labels, records and save logic
+     are preserved. */
+  const defaults = emptyAdjustmentDraft();
+  if(!STATE.adjustmentDraft || typeof STATE.adjustmentDraft!=='object') STATE.adjustmentDraft = defaults;
+  else {
+    Object.keys(defaults).forEach(k=>{
+      if(STATE.adjustmentDraft[k]===undefined || STATE.adjustmentDraft[k]===null) STATE.adjustmentDraft[k]=defaults[k];
+    });
+  }
   if(!Array.isArray(STATE.adjustments)) STATE.adjustments = [];
+
   const d = STATE.adjustmentDraft;
   const container = el('div');
   container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Stock Movement'));
+
   const card = el('div',{class:'card'});
   card.appendChild(el('h3',{},'Stock Movement'));
   card.appendChild(el('div',{class:'sub'},'Record stock leaving or being corrected against the warehouse baseline.'));
- 
+
   const g = el('div',{class:'grid'});
-  g.appendChild(field('Date', textInput(d.date, v=>d.date=v, {type:'date'})));
-  g.appendChild(field('Platform', selectInput(d.platform, PLATFORMS.map(p=>[p,p]), v=>d.platform=v)));
-  g.appendChild(field('Movement Type', selectInput(d.type, MOVEMENT_TYPES, v=>d.type=v)));
-  g.appendChild(field('Quantity', textInput(d.quantity, v=>d.quantity=v, {type:'number', mono:true})));
-  g.appendChild(field('Reference', textInput(d.reference, v=>d.reference=v)));
-  g.appendChild(field('Logged By', textInput(d.loggedBy, v=>d.loggedBy=v)));
+  g.appendChild(field('Date', textInput(String(d.date||''), v=>{d.date=v;} , {type:'date',key:'stock-movement-date'})));
+  g.appendChild(field('Platform', selectInput(d.platform||PLATFORMS[0], PLATFORMS.map(p=>[p,p]), v=>{d.platform=v;} , {key:'stock-movement-platform'})));
+  g.appendChild(field('Movement Type', selectInput(d.type||MOVEMENT_TYPES[0][0], MOVEMENT_TYPES, v=>{d.type=v;} , {key:'stock-movement-type'})));
+  g.appendChild(field('Quantity', textInput(String(d.quantity??''), v=>{d.quantity=v;} , {type:'number',mono:true,key:'stock-movement-quantity'})));
+  g.appendChild(field('Reference', textInput(String(d.reference||''), v=>{d.reference=v;} , {key:'stock-movement-reference'})));
+  g.appendChild(field('Logged By', textInput(String(d.loggedBy||''), v=>{d.loggedBy=v;} , {key:'stock-movement-logged-by'})));
   card.appendChild(g);
-  card.appendChild(field('Notes', textareaInput(d.notes, v=>d.notes=v)));
- 
+  card.appendChild(field('Notes', textareaInput(String(d.notes||''), v=>{d.notes=v;} , {key:'stock-movement-notes'})));
+
+  if(STATE.adjustmentError){
+    card.appendChild(el('div',{class:'banner err'},'⚠ '+STATE.adjustmentError));
+  }
+
   const actions = el('div',{class:'footer-actions'});
-  const saveBtn = el('button',{class:'btn-primary', disabled: STATE.adjustmentSaving}, STATE.adjustmentSaving ? loadingLabel(true,'Saving…') : 'Save Movement');
+  const saveBtn = el('button',{class:'btn-primary', disabled:!!STATE.adjustmentSaving}, STATE.adjustmentSaving ? loadingLabel(true,'Saving…') : 'Save Movement');
   saveBtn.addEventListener('click', async ()=>{
     if(STATE.adjustmentSaving) return;
-    if(!d.date || !d.quantity){ toast('Date and quantity are required.'); return; }
-    const entry = { id: uid(), createdAt: nowIso(), ...JSON.parse(JSON.stringify(d)), quantity: parseInt(d.quantity)||0 };
-    const updated = [...STATE.adjustments, entry];
-    STATE.adjustmentSaving = true; render();
+    STATE.adjustmentError = null;
+    const quantity = parseInt(d.quantity,10);
+    if(!d.date || !Number.isFinite(quantity) || quantity<=0){
+      STATE.adjustmentError='Date and a quantity greater than 0 are required.';
+      render();
+      return;
+    }
+    const entry = {
+      id: uid(),
+      createdAt: nowIso(),
+      date: String(d.date),
+      platform: d.platform || PLATFORMS[0],
+      type: d.type || MOVEMENT_TYPES[0][0],
+      quantity,
+      reference: String(d.reference||''),
+      notes: String(d.notes||''),
+      loggedBy: String(d.loggedBy||'')
+    };
+    const updated = STATE.adjustments.concat(entry);
+    STATE.adjustmentSaving = true;
+    render();
     const ok = await saveAdjustments(updated);
     STATE.adjustmentSaving = false;
-    if(!ok){ toast('⚠ Could not save — check your connection and try again.'); render(); return; }
+    if(!ok){
+      STATE.adjustmentError='Could not save — check your connection and try again.';
+      render();
+      return;
+    }
     STATE.adjustments = updated;
     STATE.adjustmentDraft = emptyAdjustmentDraft();
+    STATE.adjustmentError = null;
     toast('Stock movement recorded.');
   });
   actions.appendChild(saveBtn);
   card.appendChild(actions);
   container.appendChild(card);
- 
+
   const listCard = el('div',{class:'card'});
   listCard.appendChild(el('h3',{},'Recent Movements'));
-  const adjFiltered = searchFilter([...STATE.adjustments].reverse(), r=>`${r.date||''} ${r.platform||''} ${movementLabel(r.type||'')} ${r.reference||''} ${r.loggedBy||''}`);
-  if(STATE.adjustments.length===0){
+  const allRows = Array.isArray(STATE.adjustments) ? STATE.adjustments : [];
+  const adjFiltered = searchFilter(allRows.slice().reverse(), r=>`${r.date||''} ${r.platform||''} ${movementLabel(r.type||'')} ${r.reference||''} ${r.loggedBy||''}`);
+  if(allRows.length===0){
     listCard.appendChild(el('div',{class:'empty-note'},'No movements yet.'));
   } else if(adjFiltered.length===0){
     listCard.appendChild(el('div',{class:'empty-note'},'No records match your search.'));
   } else {
     const wrap = el('div',{class:'table-wrap'});
     const tbl = el('table');
-    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'Platform'),el('th',{},'Type'),el('th',{},'Qty'),el('th',{},'Reference'),el('th',{},'By')])]));
+    tbl.appendChild(el('thead',{},[el('tr',{},[
+      el('th',{},'Date'),el('th',{},'Platform'),el('th',{},'Type'),el('th',{},'Qty'),el('th',{},'Reference'),el('th',{},'By')
+    ])]));
     const tbody = el('tbody');
     adjFiltered.forEach(r=>{
+      const type = r.type || '';
       tbody.appendChild(el('tr',{},[
-        el('td',{class:'mono'}, r.date), el('td',{}, r.platform), el('td',{}, movementLabel(r.type)),
-        el('td',{class:'mono'}, r.quantity), el('td',{}, r.reference||'—'), el('td',{}, r.loggedBy||'—')
+        el('td',{class:'mono'}, String(r.date||'')),
+        el('td',{}, String(r.platform||'')),
+        el('td',{}, movementLabel(type)),
+        el('td',{class:'mono'}, String(r.quantity??0)),
+        el('td',{}, String(r.reference||'—')),
+        el('td',{}, String(r.loggedBy||'—'))
       ]));
     });
     tbl.appendChild(tbody); wrap.appendChild(tbl); listCard.appendChild(wrap);
@@ -3902,7 +3945,7 @@ function AdjustmentView(){
   container.appendChild(listCard);
   return container;
 }
- 
+
 function allInventoryMovements(){
   const received = STATE.newBatteryRecords.map(r=>({ date:r.date, platform:r.platform, qty:r.quantity, direction:1 }));
   const adjusted = STATE.adjustments.map(r=>({ date:r.date, platform:r.platform, qty:r.quantity, direction: movementDirection(r.type) }));
