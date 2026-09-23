@@ -421,7 +421,7 @@ function setTheme(theme) {
  
 /* ---------- Credentials ---------- */
 const STAGE_LABEL = { 1: 'Stage 1 — Intake & Pre-Check', 2: 'Stage 2 — Repair & Reassembly', 3: 'Stage 3 — Final Test & QC Sign-off' };
-const SECTOR_LABEL = { omadmin: 'O&M Manager', plantinv: 'Plant & Inventory', quality: 'Quality Engineer', bsa: 'BSA Engineer' };
+const SECTOR_LABEL = { omadmin: 'O&M Manager', plantinv: 'Plant & Inventory', quality: 'Quality Engineer', bsa: 'BSA Technician' };
 const BSA_SOURCES = ['Quality Escalation (O&M Pipeline)','Customer Experience Team Flag','Battery Engineering Team Flag'];
 const BSA_STATUSES = ['Open — Awaiting Retrieval','Retrieved','RCA In Progress','RCA Complete','Repaired','Returned to O&M for Deployment','Scrapped'];
 const NAMANVE_STOCK_COLUMNS = [
@@ -2030,7 +2030,7 @@ function LoginView(){
   gate.appendChild(el('p',{},'Sign in to the secure Battery QC server.'));
   let mode='omtech';
   const modeSel=el('select',{style:'margin-bottom:12px;'});
-  [['omtech','Quality Technician (chain inspection)'],['omadmin','O&M Manager (pipeline oversight)'],['plantinv','Plant & Inventory'],['quality','Quality Engineer'],['bsa','BSA Engineer']].forEach(([v,l])=>modeSel.appendChild(el('option',{value:v},l)));
+  [['omtech','Quality Technician (chain inspection)'],['omadmin','O&M Manager (pipeline oversight)'],['plantinv','Plant & Inventory'],['quality','Quality Engineer'],['bsa','BSA Technician']].forEach(([v,l])=>modeSel.appendChild(el('option',{value:v},l)));
   gate.appendChild(modeSel);
   const body=el('div'); gate.appendChild(body);
   function renderBody(){
@@ -2139,24 +2139,20 @@ function View(){
     else if(STATE.view==='daylog') content.appendChild(DayLogView());
     else content.appendChild(OmDashboardView());
   } else if(STATE.role==='plantinv'){
-    wrap.appendChild(Nav(['bulk','ledger','dailystock','warrantystock','newintake','adjust','stock','iot','analytics','daylog','history','integrity'], {
-      bulk:'Bulk OEM Stock', ledger:'OEM Stock Ledger', dailystock:'Daily Stock Data', warrantystock:'Warranty & Scrap Stock',
-      newintake:'New Battery Intake', adjust:'Stock Movement', stock:'Stock Summary', iot:'IoT Upgrade Tracker', analytics:'Analytics',
-      daylog:'Day Notes', history:'Daily Stock History', integrity:'Data Integrity'
+    const legacyToCombined = {main:'dashboard',bulk:'stock',ledger:'stock',dailystock:'daily',warrantystock:'operations',newintake:'operations',adjust:'stock',stock:'stock',iot:'operations',analytics:'dashboard',history:'daily'};
+    if(legacyToCombined[STATE.view]) STATE.view = legacyToCombined[STATE.view];
+    if(!['dashboard','daily','stock','operations','daylog','integrity'].includes(STATE.view)) STATE.view='dashboard';
+    wrap.appendChild(Nav(['dashboard','daily','stock','operations','daylog','integrity'], {
+      dashboard:'Plant Dashboard', daily:'Daily Stock', stock:'Stock & Movement', operations:'Battery Operations',
+      daylog:'Day Notes', integrity:'Data Integrity'
     }));
     wrap.appendChild(SearchBar());
-    if(STATE.view==='ledger') content.appendChild(StockLedgerView());
-    else if(STATE.view==='dailystock') content.appendChild(DailyStockView());
-    else if(STATE.view==='warrantystock') content.appendChild(WarrantyStockView());
-    else if(STATE.view==='newintake') content.appendChild(NewBatteryView());
-    else if(STATE.view==='adjust') content.appendChild(AdjustmentView());
-    else if(STATE.view==='stock') content.appendChild(StockView());
-    else if(STATE.view==='iot') content.appendChild(IotTrackerView());
-    else if(STATE.view==='analytics') content.appendChild(PlantInvAnalyticsView());
+    if(STATE.view==='dashboard') content.appendChild(PlantDashboardView());
+    else if(STATE.view==='daily') content.appendChild(PlantDailyCombinedView());
+    else if(STATE.view==='stock') content.appendChild(PlantStockOperationsView());
+    else if(STATE.view==='operations') content.appendChild(PlantOperationsCombinedView());
     else if(STATE.view==='daylog') content.appendChild(DayLogView());
-    else if(STATE.view==='history') content.appendChild(DailyStockHistoryView());
     else if(STATE.view==='integrity') content.appendChild(DataIntegrityView());
-    else content.appendChild(BulkStockEntryView());
   } else if(STATE.role==='quality'){
     wrap.appendChild(Nav(['warranty','bsa','overview','ledger','analytics','integrity','daylog'], {warranty:'Warranty & Escalations', bsa:'BSA Escalations', overview:'Sector Overview', ledger:'Stock Ledger', analytics:'Analytics & Reports', integrity:'Data Integrity', daylog:'Day Notes'}));
     wrap.appendChild(SearchBar());
@@ -2168,7 +2164,7 @@ function View(){
     else if(STATE.view==='daylog') content.appendChild(DayLogView());
     else content.appendChild(WarrantyView());
   } else if(STATE.role==='bsa'){
-    wrap.appendChild(Nav(['activity','newcase','analytics','history'], {activity:'My Activity', newcase:'Log New Case', analytics:'Analytics', history:'Closed Cases'}));
+    wrap.appendChild(Nav(['activity','newcase','analytics','history'], {activity:'BSA Queue', newcase:'Log New Case', analytics:'Analytics', history:'Completed Cases'}));
     wrap.appendChild(SearchBar());
     if(STATE.view==='newcase') content.appendChild(BsaNewCaseView());
     else if(STATE.view==='analytics') content.appendChild(BsaAnalyticsView());
@@ -3291,6 +3287,218 @@ function StockLedgerView(){
   return container;
 }
  
+
+/* ==================== Namanve Plant A — consolidated dashboard / operations ==================== */
+const BSA_TECH_STATUS_OPTIONS = [
+  ['Received by BSA','Received by BSA'],
+  ['Work in Progress','Work in Progress'],
+  ['Worked On','Worked On'],
+  ['Warranty','Warranty'],
+  ['Scrapped','Scrapped'],
+  ['Returned to O&M for Deployment','Returned to O&M for Deployment']
+];
+function bsaTechStatus(r){
+  if(r && r.technicianStatus) return r.technicianStatus;
+  if(r && r.status==='Scrapped') return 'Scrapped';
+  if(r && r.status==='Returned to O&M for Deployment') return 'Returned to O&M for Deployment';
+  if(r && r.status==='Repaired') return 'Worked On';
+  if(r && r.bsaReceivedAt) return 'Received by BSA';
+  return 'Awaiting BSA Receipt';
+}
+function bsaTechStatusClass(status){
+  if(status==='Worked On' || status==='Returned to O&M for Deployment') return 'PASS';
+  if(status==='Scrapped') return 'FAIL';
+  if(status==='Work in Progress' || status==='Warranty') return 'CAPA';
+  return 'OPEN';
+}
+function bsaLegacyStatusForTech(status){
+  if(status==='Worked On') return 'Repaired';
+  if(status==='Scrapped') return 'Scrapped';
+  if(status==='Returned to O&M for Deployment') return 'Returned to O&M for Deployment';
+  if(status==='Work in Progress') return 'RCA In Progress';
+  if(status==='Warranty') return 'RCA In Progress';
+  if(status==='Received by BSA') return 'Retrieved';
+  return 'Open — Awaiting Retrieval';
+}
+function latestNamanveDailyStock(){
+  const rows=Array.isArray(STATE.dailyStockRecords)?STATE.dailyStockRecords:[];
+  return rows.slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')))[rows.length-1] || null;
+}
+function dailyStockTrendConfig(fields, titleLabel){
+  const rows=[...(STATE.dailyStockRecords||[])].sort((a,b)=>a.date.localeCompare(b.date)).slice(-30);
+  if(!rows.length) return baseLineConfig(['No data'],[{label:titleLabel,data:[0],color:cssVar('--accent')}],{});
+  const labels=rows.map(r=>formatNamanveDate(r.date));
+  return baseLineConfig(labels,fields.map(([k,label,color])=>({label,data:rows.map(r=>parseInt(r[k])||0),color:color||cssVar('--accent')})),{legend:fields.length>1});
+}
+function latestDailyCategoryConfig(){
+  const r=latestNamanveDailyStock();
+  if(!r) return baseBarConfig(['No data'],[{label:'Count',data:[0],color:cssVar('--accent')}],{});
+  return baseBarConfig(
+    NAMANVE_STOCK_COLUMNS.map(([,label])=>label),
+    [{label:formatNamanveDate(r.date)+' latest daily physical count',data:NAMANVE_STOCK_COLUMNS.map(([k])=>parseInt(r[k])||0),color:cssVar('--accent')}],{}
+  );
+}
+function qualityIssueTrendFromDailyConfig(){
+  const rows=[...(STATE.dailyStockRecords||[])].sort((a,b)=>a.date.localeCompare(b.date)).slice(-30);
+  if(!rows.length) return baseLineConfig(['No data'],[{label:'Quality Issues',data:[0],color:cssVar('--fail')}],{});
+  return baseLineConfig(rows.map(r=>formatNamanveDate(r.date)),[
+    {label:'Daily Physical Quality Issues',data:rows.map(r=>parseInt(r.qualityIssues)||0),color:cssVar('--fail')}
+  ],{});
+}
+function plantStockSnapshotCard(){
+  const r=latestNamanveDailyStock();
+  const card=el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Namanve Plant A — Latest Daily Stock Snapshot'));
+  card.appendChild(el('div',{class:'sub'},r?`${formatNamanveDate(r.date)} · values pulled directly from Daily Stock History`:'No Daily Stock History recorded yet.'));
+  if(!r){card.appendChild(el('div',{class:'empty-note'},'No daily stock row is available.'));return card;}
+  const stats=el('div',{class:'stat-grid'});
+  NAMANVE_STOCK_COLUMNS.forEach(([k,label])=>{
+    const st=statBox(parseInt(r[k])||0,label);
+    if(k==='qualityIssues'){
+      st.style.cursor='pointer'; st.title='Click for detailed Quality Issue Breakdown'; st.addEventListener('click',openQualityIssueBreakdownModal);
+    }
+    stats.appendChild(st);
+  });
+  stats.appendChild(statBox(computeDailyStockGrandTotal(r),'Grand Total'));
+  card.appendChild(stats);
+  if(r.notes) card.appendChild(el('div',{class:'sop-box',style:'margin-top:8px;'},r.notes));
+  return card;
+}
+function collapseSection(title, content){
+  const d=el('details',{class:'card',style:'margin-bottom:12px;'});
+  d.appendChild(el('summary',{style:'cursor:pointer;font-size:13px;font-weight:800;'},title));
+  const body=el('div',{style:'margin-top:12px;'});
+  body.appendChild(content);
+  d.appendChild(body);
+  return d;
+}
+function PlantDashboardView(){
+  const container=el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Namanve Plant A — Plant & Inventory Dashboard'));
+
+  /* Charts first, as requested. */
+  const row1=el('div',{class:'chart-row'});
+  row1.appendChild(chartCard('Daily Stock Grand Total Trend',dailyStockBarConfig()));
+  row1.appendChild(chartCard('Daily Physical Stock Category Trend',dailyStockTrendConfig([
+    ['healthy','Healthy',cssVar('--pass')],['qualityIssues','Quality Issues',cssVar('--fail')],['offline','Offline',cssVar('--warn')]
+  ],'Stock')));
+  container.appendChild(row1);
+  const row2=el('div',{class:'chart-row'});
+  row2.appendChild(chartCard('Quality Issues Trend — Daily Stock History',qualityIssueTrendFromDailyConfig()));
+  row2.appendChild(chartCard('Current Detailed Quality Issues — Breakdown',qualityIssueByCauseConfig()));
+  container.appendChild(row2);
+  const row3=el('div',{class:'chart-row'});
+  row3.appendChild(chartCard('OEM Stock Closing Trend',stockLedgerTrendConfig()));
+  row3.appendChild(chartCard('OEM Stock by Platform',stockByPlatformPieConfig()));
+  container.appendChild(row3);
+  const row4=el('div',{class:'chart-row'});
+  row4.appendChild(chartCard('Latest Daily Stock Category Breakdown',latestDailyCategoryConfig()));
+  row4.appendChild(chartCard('Quality Issues Breakdown — Pie',qualityIssuePieConfig()));
+  container.appendChild(row4);
+
+  container.appendChild(plantStockSnapshotCard());
+
+  const qiCard=el('div',{class:'card'});
+  qiCard.appendChild(el('h3',{},'Quality Issue Tracker'));
+  qiCard.appendChild(el('div',{class:'sub'},'The physical daily Quality Issues count remains separate from the detailed cause tracker. Dispatching against a selected quality issue updates the detailed tracker.'));
+  const qiStats=el('div',{class:'stat-grid'});
+  qiStats.appendChild(statBox(latestNamanveDailyStock()?.qualityIssues||0,'Latest Daily Physical Quality Issues'));
+  const qTotal=statBox(qualityIssueTotal(STATE.qualityIssueRecords),'Detailed Tracked Quality Issues');
+  qTotal.style.cursor='pointer'; qTotal.title='Click for detailed issue breakdown'; qTotal.addEventListener('click',openQualityIssueBreakdownModal); qiStats.appendChild(qTotal);
+  qiCard.appendChild(qiStats);
+  const qbtn=el('button',{class:'btn-capa'},'Open Quality Issue Breakdown'); qbtn.addEventListener('click',openQualityIssueBreakdownModal); qiCard.appendChild(qbtn);
+  container.appendChild(qiCard);
+
+  /* Existing information pages are retained and grouped below rather than deleted. */
+  container.appendChild(collapseSection('Plant Log / Existing Plant Information',PlantEntryView()));
+  container.appendChild(collapseSection('Warranty & Scrap Stock',WarrantyStockView()));
+  return container;
+}
+function PlantDailyCombinedView(){
+  const container=el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Namanve Plant A — Daily Stock'));
+  const top=el('div',{class:'chart-row'});
+  top.appendChild(chartCard('Daily Stock Grand Total Trend',dailyStockBarConfig()));
+  top.appendChild(chartCard('Daily Stock Categories — Last 30 Days',dailyStockTrendConfig([
+    ['healthy','Healthy',cssVar('--pass')],['qualityIssues','Quality Issues',cssVar('--fail')],['offline','Offline',cssVar('--warn')],['batteriesInBikes','Batteries in Bikes',cssVar('--accent2')]
+  ],'Daily Stock')));
+  container.appendChild(top);
+  const qi=el('div',{class:'chart-row'});
+  qi.appendChild(chartCard('Daily Quality Issues Trend',qualityIssueTrendFromDailyConfig()));
+  qi.appendChild(chartCard('Detailed Quality Issues by Cause',qualityIssueByCauseConfig()));
+  container.appendChild(qi);
+  container.appendChild(plantStockSnapshotCard());
+  const hist=el('div',{class:'card'});
+  hist.appendChild(el('h3',{},'Daily Stock History — Namanve Plant A'));
+  hist.appendChild(el('div',{class:'sub'},'Complete history currently loaded into the system.'));
+  const rows=searchFilter([...(STATE.dailyStockRecords||[])].sort((a,b)=>b.date.localeCompare(a.date)),r=>`${r.date} ${r.plant} ${r.notes}`);
+  if(!rows.length) hist.appendChild(el('div',{class:'empty-note'},'No daily stock entries recorded yet.'));
+  else {
+    const wrap=el('div',{class:'table-wrap'}),tbl=el('table');
+    const head=['Date','Plant',...NAMANVE_STOCK_COLUMNS.map(([,l])=>l),'Grand Total','Notes'];
+    tbl.appendChild(el('thead',{},[el('tr',{},head.map(h=>el('th',{},h)))]));
+    const tb=el('tbody');
+    rows.forEach(r=>{
+      const cells=[el('td',{class:'mono'},formatNamanveDate(r.date)),el('td',{},r.plant||'Namanve Plant A')];
+      NAMANVE_STOCK_COLUMNS.forEach(([k])=>cells.push(el('td',{class:'mono'},String(r[k]??0))));
+      cells.push(el('td',{class:'mono',style:'font-weight:800;'},String(computeDailyStockGrandTotal(r))));
+      cells.push(el('td',{},r.notes||'—'));
+      tb.appendChild(el('tr',{},cells));
+    });
+    tbl.appendChild(tb);wrap.appendChild(tbl);hist.appendChild(wrap);
+  }
+  container.appendChild(hist);
+  container.appendChild(collapseSection('Input — Add / Update Daily Stock Entry',DailyStockView()));
+  return container;
+}
+function PlantStockOperationsView(){
+  const container=el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Stock, Movement & Ledger'));
+  /* Charts first. */
+  const row1=el('div',{class:'chart-row'});
+  row1.appendChild(chartCard('OEM Stock Closing Trend',stockLedgerTrendConfig()));
+  row1.appendChild(chartCard('OEM Stock by Platform',stockByPlatformPieConfig()));
+  container.appendChild(row1);
+  const row2=el('div',{class:'chart-row'});
+  row2.appendChild(chartCard('Inventory Movements by Month',movementsByMonthConfig()));
+  row2.appendChild(chartCard('Daily Physical Stock Trend',dailyStockBarConfig()));
+  container.appendChild(row2);
+  container.appendChild(plantStockSnapshotCard());
+  container.appendChild(collapseSection('Input — Bulk OEM Stock Intake / Dispatch',BulkStockEntryView()));
+  container.appendChild(collapseSection('Input — Stock Movement / Corrections',AdjustmentView()));
+  const ledgerWrap=el('div',{class:'card'});
+  ledgerWrap.appendChild(el('h3',{},'Stock Ledger & Current OEM Stock'));
+  const ledger=computeStockLedger(STATE.plantStockRecords);
+  const latest=ledger[ledger.length-1];
+  if(latest) ledgerWrap.appendChild(renderLedgerDayTable(latest));
+  else ledgerWrap.appendChild(el('div',{class:'empty-note'},'No OEM bulk stock entries recorded yet.'));
+  const stock=stockByPlatform();
+  ledgerWrap.appendChild(el('div',{class:'stat-grid',style:'margin-top:10px;'},PLATFORMS.map(p=>statBox(stock[p],p)).concat([statBox(Object.values(stock).reduce((a,b)=>a+b,0),'Total OEM Ledger Stock')])));
+  const details=el('details',{style:'margin-top:10px;'});details.appendChild(el('summary',{style:'cursor:pointer;font-size:11px;font-weight:700;color:var(--muted);'},'Open full Stock Ledger history'));details.appendChild(StockLedgerView());ledgerWrap.appendChild(details);
+  container.appendChild(ledgerWrap);
+  return container;
+}
+function PlantOperationsCombinedView(){
+  const container=el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Battery Operations'));
+  const row=el('div',{class:'chart-row'});
+  const intakeByDay={};
+  STATE.newBatteryRecords.forEach(r=>{const d=r.date;intakeByDay[d]=(intakeByDay[d]||0)+(parseInt(r.quantity)||0);});
+  const days=Object.keys(intakeByDay).sort().slice(-30);
+  row.appendChild(chartCard('New Battery Intake — Daily',baseBarConfig(days.length?days.map(formatNamanveDate):['No data'],[{label:'New Batteries',data:days.length?days.map(d=>intakeByDay[d]):[0],color:cssVar('--pass')}],{})));
+  const bal=iotBalance();
+  row.appendChild(chartCard('IoT Handover Balance',baseBarConfig(['Given','Returned','With IoT'],[{label:'Batteries',data:[bal.given,bal.returned,bal.balance],color:cssVar('--accent')}],{})));
+  container.appendChild(row);
+  const qrow=el('div',{class:'chart-row'});
+  qrow.appendChild(chartCard('Quality Issues — Current Cause Breakdown',qualityIssueByCauseConfig()));
+  qrow.appendChild(chartCard('Warranty by Brand',warrantyByBrandConfig()));
+  container.appendChild(qrow);
+  container.appendChild(collapseSection('Input / History — New Battery Intake',NewBatteryView()));
+  container.appendChild(collapseSection('Input / History — IoT Upgrade Tracker',IotTrackerView()));
+  container.appendChild(collapseSection('Warranty & Scrap Stock',WarrantyStockView()));
+  return container;
+}
+
 function PlantEntryView(){
   const d = STATE.plantDraft;
   const container = el('div');
@@ -4301,100 +4509,91 @@ function QualityBsaView(){
 }
 
 /* ---- BSA Engineer views ---- */
+/* ---- BSA Technician views ---- */
 function BsaCaseCard(r, editable){
   const card = el('div',{class:'card'});
-  card.appendChild(el('div',{style:'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;'},[
+  const techStatus = bsaTechStatus(r);
+  const header = el('div',{style:'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;'},[
     el('h3',{}, [batteryIdButton(r.bmsId), ` — ${r.model||'Unknown'}`]),
-    el('span',{class:'status-chip '+bsaStatusChipClass(r.status)}, r.status)
-  ]));
-  card.appendChild(el('div',{class:'sub'}, `${r.source} · flagged ${r.dateFlagged} by ${r.flaggedBy||'—'}`));
+    el('span',{class:'status-chip '+bsaTechStatusClass(techStatus)}, techStatus)
+  ]);
+  card.appendChild(header);
+  card.appendChild(el('div',{class:'sub'}, `${r.source||'BSA escalation'} · escalated ${r.dateFlagged||'—'} · by ${r.flaggedBy||'—'}`));
+  if(r.bsaReceivedAt){
+    card.appendChild(el('div',{class:'banner ok'},`✓ Received by BSA: ${new Date(r.bsaReceivedAt).toLocaleString()} · ${r.bsaReceivedBy||'—'}`));
+  } else if(editable){
+    const receiveBtn=el('button',{class:'btn-capa',style:'margin-bottom:8px;'},'Receive Battery');
+    receiveBtn.addEventListener('click',async()=>{
+      const fresh=await loadBsa(); const idx=fresh.findIndex(x=>x.id===r.id); if(idx<0){toast('⚠ BSA case no longer exists — refresh.');return;}
+      fresh[idx]={...fresh[idx],bsaReceivedAt:nowIso(),bsaReceivedBy:STATE.techName||'BSA Technician',technicianStatus:'Received by BSA',receivedByBsa:true};
+      const ok=await saveBsa(fresh); if(!ok){toast('⚠ Could not save receipt — try again.');return;}
+      STATE.bsaRecords=fresh; toast(`✓ ${r.bmsId} received by BSA.`); render();
+    });
+    card.appendChild(receiveBtn);
+  } else {
+    card.appendChild(el('div',{class:'banner'},'Awaiting BSA receipt acknowledgement.'));
+  }
   card.appendChild(el('div',{class:'sop-box'},[
     el('div',{style:'font-weight:700;margin-bottom:4px;'},'Reported Issue'),
-    el('div',{}, r.issueDescription||'—'),
+    el('div',{},r.issueDescription||'—'),
     el('div',{style:'font-weight:700;margin:6px 0 4px;'},'SOPs Already Attempted'),
-    el('div',{}, r.sopAttempted||'—'),
+    el('div',{},r.sopAttempted||'—'),
   ]));
   if(!editable) return card;
-  const g = el('div',{class:'grid'});
-  g.appendChild(field('Assigned Engineer', textInput(r.assignedEngineer||'', v=>r.assignedEngineer=v)));
-  g.appendChild(field('Status', selectInput(r.status, BSA_STATUSES.map(s=>[s,s]), v=>{r.status=v; render();})));
+
+  const g=el('div',{class:'grid'});
+  g.appendChild(field('BSA Status',selectInput(techStatus==='Awaiting BSA Receipt'?'':techStatus,BSA_TECH_STATUS_OPTIONS,v=>{r.technicianStatus=v; r.status=bsaLegacyStatusForTech(v); render();})));
+  g.appendChild(field('Assigned BSA Technician',textInput(r.assignedEngineer||'',v=>r.assignedEngineer=v)));
   card.appendChild(g);
-  card.appendChild(field('RCA Summary', textareaInput(r.rcaSummary||'', v=>r.rcaSummary=v)));
-  card.appendChild(field('Repair Notes', textareaInput(r.repairNotes||'', v=>r.repairNotes=v)));
-  const saveBtn = el('button',{class:'btn-primary', style:'margin-top:8px;'},'Save Case Update');
-  saveBtn.addEventListener('click', async ()=>{
-    if(r.status==='Returned to O&M for Deployment' && !r.dateClosed) r.dateClosed = nowIso();
-    if(r.status==='Scrapped' && !r.dateClosed) r.dateClosed = nowIso();
-    const fresh = await loadBsa();
-    const idx = fresh.findIndex(x=>x.id===r.id);
-    if(idx===-1){ toast('⚠ Case no longer exists — refresh.'); return; }
-    fresh[idx] = r;
-    const ok = await saveBsa(fresh);
-    if(!ok){ toast('⚠ Could not save — try again.'); return; }
-    STATE.bsaRecords = fresh;
-    toast(`✓ Case ${r.bmsId} updated — ${r.status}.` + (r.status==='Returned to O&M for Deployment' ? ' Ready for O&M to deploy to the Energy team.' : ''));
-    render();
+  card.appendChild(field('Progress / Action',textareaInput(r.bsaProgress||'',v=>r.bsaProgress=v)));
+  card.appendChild(field('RCA Summary',textareaInput(r.rcaSummary||'',v=>r.rcaSummary=v)));
+  card.appendChild(field('Repair Notes',textareaInput(r.repairNotes||'',v=>r.repairNotes=v)));
+  const saveBtn=el('button',{class:'btn-primary',style:'margin-top:8px;'},'Save BSA Update');
+  saveBtn.addEventListener('click',async()=>{
+    if(!r.technicianStatus){toast('Select a BSA status first.');return;}
+    if(r.technicianStatus==='Scrapped' || r.technicianStatus==='Returned to O&M for Deployment') r.dateClosed=r.dateClosed||nowIso();
+    if(r.technicianStatus==='Worked On') r.status='Repaired';
+    else if(r.technicianStatus==='Scrapped') r.status='Scrapped';
+    else if(r.technicianStatus==='Returned to O&M for Deployment') r.status='Returned to O&M for Deployment';
+    else if(r.technicianStatus==='Work in Progress' || r.technicianStatus==='Warranty') r.status='RCA In Progress';
+    else if(r.technicianStatus==='Received by BSA') r.status='Retrieved';
+    const fresh=await loadBsa(); const idx=fresh.findIndex(x=>x.id===r.id); if(idx<0){toast('⚠ Case no longer exists — refresh.');return;}
+    fresh[idx]=r;
+    const ok=await saveBsa(fresh); if(!ok){toast('⚠ Could not save BSA update — try again.');return;}
+    STATE.bsaRecords=fresh; toast(`✓ BMS ${r.bmsId} updated — ${r.technicianStatus}.`); render();
   });
   card.appendChild(saveBtn);
   return card;
 }
 function BsaActivityView(){
-  const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'BSA Engineer — my active cases (from O&M/Quality escalations, Customer Experience flags, and Battery Engineering flags)'));
-  const open = STATE.bsaRecords.filter(r=>r.status!=='Returned to O&M for Deployment' && r.status!=='Scrapped');
-  const stats = el('div',{class:'stat-grid'});
-  stats.appendChild(statBox(open.length,'Open Cases'));
-  stats.appendChild(statBox(STATE.bsaRecords.filter(r=>r.status==='Returned to O&M for Deployment').length,'Returned to O&M'));
-  stats.appendChild(statBox(STATE.bsaRecords.filter(r=>r.status==='Scrapped').length,'Scrapped'));
-  stats.appendChild(statBox(STATE.bsaRecords.filter(r=>r.source===BSA_SOURCES[1]).length,'From CX Team'));
-  stats.appendChild(statBox(STATE.bsaRecords.filter(r=>r.source===BSA_SOURCES[2]).length,'From Battery Engineering'));
-  const statsCard = el('div',{class:'card'}); statsCard.appendChild(el('h3',{},'Overview')); statsCard.appendChild(stats);
-  container.appendChild(statsCard);
-  const filtered = searchFilter(open.sort((a,b)=>b.dateFlagged.localeCompare(a.dateFlagged)), r=>`${r.bmsId} ${r.model} ${r.issueDescription} ${r.status} ${r.source}`);
-  if(filtered.length===0) container.appendChild(el('div',{class:'card'},[el('div',{class:'empty-note'},'No open BSA cases right now.')]));
-  filtered.forEach(r=> container.appendChild(BsaCaseCard(r, true)));
-  return container;
-}
-function BsaNewCaseView(){
-  const d = STATE.bsaDraft;
-  const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'BSA Engineer — log a case flagged directly by Customer Experience or Battery Engineering'));
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Log New Case'));
-  const g = el('div',{class:'grid'});
-  const bmsInp = smartBatteryIdInput(d.bmsId,(v,platform)=>{ d.bmsId=v; if(platform) d.model=platform; },{placeholder:'Scan or enter suffix',key:'bsa-new-bms'});
-  g.appendChild(field('BMS ID', bmsInp));
-  g.appendChild(field('Platform', textInput(d.model, v=>d.model=v)));
-  g.appendChild(field('Source', selectInput(d.source, [BSA_SOURCES[1],BSA_SOURCES[2]].map(s=>[s,s]), v=>d.source=v)));
-  g.appendChild(field('Date Flagged', textInput(d.dateFlagged, v=>d.dateFlagged=v, {type:'date'})));
-  g.appendChild(field('Flagged By (name / team contact)', textInput(d.flaggedBy, v=>d.flaggedBy=v)));
-  g.appendChild(field('Assigned Engineer', textInput(d.assignedEngineer, v=>d.assignedEngineer=v)));
-  card.appendChild(g);
-  card.appendChild(field('Reported Misbehaviour / Issue', textareaInput(d.issueDescription, v=>d.issueDescription=v)));
-  const addBtn = el('button',{class:'btn-primary', style:'margin-top:8px;', disabled: STATE.bsaSaving}, STATE.bsaSaving?loadingLabel(true,'Saving…'):'Log Case');
-  addBtn.addEventListener('click', async ()=>{
-    if(STATE.bsaSaving) return;
-    if(!d.bmsId.trim() || !d.issueDescription.trim()){ toast('BMS ID and issue description are required.'); return; }
-    const entry = { id:uid(), createdAt:nowIso(), status: BSA_STATUSES[0], rcaSummary:'', repairNotes:'', sopAttempted:'', ...JSON.parse(JSON.stringify(d)) };
-    const fresh = await loadBsa();
-    const updated = [...fresh, entry];
-    STATE.bsaSaving = true; render();
-    const ok = await saveBsa(updated);
-    STATE.bsaSaving = false;
-    if(!ok){ toast('⚠ Could not save — try again.'); render(); return; }
-    STATE.bsaRecords = updated;
-    STATE.bsaDraft = emptyBsaDraft();
-    STATE.view = 'activity';
-    toast(`✓ Case logged for BMS ${entry.bmsId}. Retrieve, RCA and repair, then return it to O&M for deployment.`);
+  const container=el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'BSA Technician — all escalated batteries received from O&M, Quality and other BSA sources'));
+  const all=[...(STATE.bsaRecords||[])].sort((a,b)=>{
+    const ar=b.bsaReceivedAt?1:0, br=a.bsaReceivedAt?1:0;
+    if(ar!==br) return ar-br;
+    return String(b.dateFlagged||'').localeCompare(String(a.dateFlagged||''));
   });
-  card.appendChild(addBtn);
-  container.appendChild(card);
+  const awaiting=all.filter(r=>!r.bsaReceivedAt).length;
+  const wip=all.filter(r=>bsaTechStatus(r)==='Work in Progress').length;
+  const warranty=all.filter(r=>bsaTechStatus(r)==='Warranty').length;
+  const worked=all.filter(r=>bsaTechStatus(r)==='Worked On').length;
+  const scrapped=all.filter(r=>bsaTechStatus(r)==='Scrapped').length;
+  const stats=el('div',{class:'stat-grid'},[
+    statBox(all.length,'All BSA Escalations'),statBox(awaiting,'Awaiting BSA Receipt'),statBox(wip,'Work in Progress'),
+    statBox(warranty,'Warranty'),statBox(worked,'Worked On'),statBox(scrapped,'Scrapped')
+  ]);
+  const sc=el('div',{class:'card'}); sc.appendChild(el('h3',{},'BSA Queue Overview')); sc.appendChild(stats); container.appendChild(sc);
+  if(all.length===0){container.appendChild(el('div',{class:'card'},[el('div',{class:'empty-note'},'No BSA escalated batteries yet.')]));return container;}
+  const filtered=searchFilter(all,r=>`${r.bmsId} ${r.model} ${r.issueDescription} ${r.status} ${bsaTechStatus(r)} ${r.source}`);
+  if(filtered.length===0){container.appendChild(el('div',{class:'card'},[el('div',{class:'empty-note'},'No BSA cases match your search.')]));return container;}
+  filtered.forEach(r=>container.appendChild(BsaCaseCard(r,true)));
   return container;
 }
+
 function BsaHistoryView(){
   const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'BSA Engineer — closed cases (returned to O&M or scrapped)'));
-  const closed = searchFilter(STATE.bsaRecords.filter(r=>r.status==='Returned to O&M for Deployment' || r.status==='Scrapped').sort((a,b)=>(b.dateClosed||'').localeCompare(a.dateClosed||'')), r=>`${r.bmsId} ${r.model} ${r.status} ${r.rcaSummary} ${r.repairNotes}`);
+  container.appendChild(el('div',{class:'sector-tag'},'BSA Technician — completed BSA cases'));
+  const closed = searchFilter(STATE.bsaRecords.filter(r=>['Returned to O&M for Deployment','Scrapped'].includes(r.status) || ['Worked On','Warranty','Scrapped','Returned to O&M for Deployment'].includes(bsaTechStatus(r))).sort((a,b)=>(b.dateClosed||b.dateFlagged||'').localeCompare(a.dateClosed||a.dateFlagged||'')), r=>`${r.bmsId} ${r.model} ${r.status} ${bsaTechStatus(r)} ${r.rcaSummary} ${r.repairNotes}`);
   if(closed.length===0){ container.appendChild(el('div',{class:'card'},[el('div',{class:'empty-note'},'No closed cases yet.')])); return container; }
   closed.forEach(r=> container.appendChild(BsaCaseCard(r, false)));
   return container;
@@ -4407,7 +4606,7 @@ function BsaAnalyticsView(){
   const card = el('div',{class:'card'});
   card.appendChild(el('h3',{},'Overview'));
   const stats = el('div',{class:'stat-grid'});
-  const open = STATE.bsaRecords.filter(r=>r.status!=='Returned to O&M for Deployment' && r.status!=='Scrapped');
+  const open = STATE.bsaRecords.filter(r=>!['Returned to O&M for Deployment','Scrapped'].includes(r.status) && !['Scrapped','Returned to O&M for Deployment'].includes(bsaTechStatus(r)));
   stats.appendChild(statBox(STATE.bsaRecords.length,'Total Cases'));
   stats.appendChild(statBox(open.length,'Open Cases'));
   stats.appendChild(statBox(STATE.bsaRecords.filter(r=>r.status==='Returned to O&M for Deployment').length,'Returned to O&M'));
@@ -5331,7 +5530,7 @@ function buildDayLogExportRows(){
 function buildBsaExportRows(){
   return rowsOrEmpty(STATE.bsaRecords.map(r=>({
     'Date Flagged': r.dateFlagged, 'BMS ID': r.bmsId, Platform: r.model||'', Source: r.source, 'Flagged By': r.flaggedBy||'',
-    'Assigned Engineer': r.assignedEngineer||'', Status: r.status, 'Issue Description': r.issueDescription||'', 'SOP Attempted': r.sopAttempted||'',
+    'Assigned Engineer': r.assignedEngineer||'', 'BSA Technician Status': bsaTechStatus(r), Status: r.status, 'Issue Description': r.issueDescription||'', 'SOP Attempted': r.sopAttempted||'',
     'RCA Summary': r.rcaSummary||'', 'Repair Notes': r.repairNotes||'', 'Date Closed': r.dateClosed||''
   })));
 }
