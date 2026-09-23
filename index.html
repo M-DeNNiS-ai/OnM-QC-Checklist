@@ -431,6 +431,7 @@ const NAMANVE_STOCK_COLUMNS = [
   ['incomingNewHealthy','Incoming New Healthy'], ['incomingHealthyEnergy','Incoming Healthy - Energy'],
 ];
 function computeDailyStockGrandTotal(d){
+  if(d && d.grandTotal!==undefined && d.grandTotal!==null && String(d.grandTotal)!=='') return parseInt(d.grandTotal)||0;
   const n = k=> parseInt(d[k])||0;
   return n('healthy')+n('qualityIssues')+n('offline')+n('boxed')+n('testBatteries');
 }
@@ -572,17 +573,17 @@ const BQC_TABLE = 'bqc_records';
 const BQC_STORES = [
   'om_chain_records','plant_records','plant_stock_records','new_battery_records',
   'inventory_adjustments','warranty_records','daily_stock_records','iot_given_records',
-  'iot_returned_records','day_log_records','bsa_records'
+  'iot_returned_records','day_log_records','bsa_records','quality_issue_records'
 ];
 const STORE_LABEL = {
   om_chain_records:'O&M repair chain', plant_records:'Plant records', plant_stock_records:'Plant stock',
   new_battery_records:'New batteries', inventory_adjustments:'Inventory adjustments',
   warranty_records:'Warranty', daily_stock_records:'Daily stock', iot_given_records:'IoT given',
-  iot_returned_records:'IoT returned', day_log_records:'Day log', bsa_records:'BSA'
+  iot_returned_records:'IoT returned', day_log_records:'Day log', bsa_records:'BSA', quality_issue_records:'Quality Issue Breakdown'
 };
 
 /* ---- Access rules (same matrix the old server enforced) ---- */
-const PLANTINV_STORES = ['plant_records','plant_stock_records','new_battery_records','inventory_adjustments','warranty_records','daily_stock_records','iot_given_records','iot_returned_records','day_log_records'];
+const PLANTINV_STORES = ['plant_records','plant_stock_records','new_battery_records','inventory_adjustments','warranty_records','daily_stock_records','iot_given_records','iot_returned_records','day_log_records','quality_issue_records'];
 function roleCanRead(role, store){
   if(role==='omadmin'||role==='quality') return true;
   if(role==='bsa') return ['om_chain_records','warranty_records','bsa_records'].includes(store);
@@ -797,6 +798,8 @@ async function loadDayLog(){ return loadStore('day_log_records'); }
 async function saveDayLog(list){ return saveStore('day_log_records',list); }
 async function loadBsa(){ return loadStore('bsa_records'); }
 async function saveBsa(list){ return saveStore('bsa_records',list); }
+async function loadQualityIssues(){ return loadStore('quality_issue_records'); }
+async function saveQualityIssues(list){ return saveStore('quality_issue_records',list); }
 
 /* =====================================================================
    SIGN-IN  —  PINs are checked in the browser now that there is no
@@ -1227,7 +1230,8 @@ async function loadPlantInventorySector(){
   STATE.newBatteryRecords = await loadNewBattery();
   STATE.adjustments = await loadAdjustments();
   STATE.warrantyRecords = await loadWarranty();
-  STATE.dailyStockRecords = await loadDailyStock();
+  STATE.dailyStockRecords = await ensureNamanvePlantData();
+  STATE.qualityIssueRecords = await ensureQualityIssueSeed();
   STATE.iotGiven = await loadIotGiven();
   STATE.iotReturned = await loadIotReturned();
   STATE.dayLogRecords = await loadDayLog();
@@ -1258,6 +1262,7 @@ async function loadQualitySector(){
   STATE.newBatteryRecords = await loadNewBattery();
   STATE.adjustments = await loadAdjustments();
   STATE.dailyStockRecords = await loadDailyStock();
+  STATE.qualityIssueRecords = await loadQualityIssues();
   STATE.bsaRecords = await loadBsa();
   STATE.bsaDraft = emptyBsaDraft();
   STATE.dayLogRecords = await loadDayLog();
@@ -1343,6 +1348,117 @@ function findDuplicateOpenBsaGroups(records){
 }
  
 /* ---------- Daily Stock / IoT Tracker / Day Log / BSA record helpers ---------- */
+/* ---------- Namanve Plant A daily stock / detailed quality issue tracker ---------- */
+const NAMANVE_DAILY_STOCK_SEED = [
+  ['2026-08-26',412,75,288,1548,1548,0,12,0,0,0,0,0,0,0,2335],
+  ['2026-08-27',396,75,288,1548,1548,0,12,22,0,0,0,0,0,0,2319],
+  ['2026-08-28',340,75,288,1548,1548,29,12,50,0,0,0,0,0,0,2263],
+  ['2026-08-31',340,75,324,1512,1512,29,12,0,0,0,0,0,0,0,2263],
+  ['2026-09-01',340,81,389,1440,1440,22,13,0,0,0,0,0,0,0,2263],
+  ['2026-09-02',260,42,389,1440,1440,22,12,80,0,40,0,0,0,0,2143],
+  ['2026-09-03',260,42,389,1440,1440,25,12,0,0,0,0,0,0,0,2143],
+  ['2026-09-04',260,42,380,1440,1440,25,21,100,0,0,0,0,0,0,2043],
+  ['2026-09-05',260,42,380,1440,1440,25,21,100,0,0,0,0,0,0,2043],
+  ['2026-09-06',260,42,380,1440,1440,25,21,100,0,0,0,0,0,0,2043],
+  ['2026-09-07',479,58,119,1363,1363,25,21,2,0,0,2,0,0,0,2043],
+  ['2026-09-08',380,65,253,1224,1224,25,21,100,0,0,0,0,0,0,1943],
+  ['2026-09-09',380,88,253,1080,1080,25,21,100,0,0,0,0,0,0,1843],
+  ['2026-09-10',428,87,416,900,900,25,12,0,0,0,0,0,0,0,1843],
+  ['2026-09-11',430,42,418,900,900,25,6,0,0,45,0,0,0,0,1798],
+  ['2026-09-12',430,42,418,900,900,25,6,0,0,0,0,0,0,0,1798],
+  ['2026-09-13',430,42,418,900,900,25,6,0,0,0,0,0,0,0,1798],
+  ['2026-09-14',430,42,526,792,828,25,6,0,0,0,0,0,0,0,1798],
+  ['2026-09-15',526,42,430,792,792,25,6,0,0,0,0,0,0,0,1798],
+  ['2026-09-16',526,42,430,792,792,20,6,0,0,0,0,0,0,0,1798],
+  ['2026-09-17',645,48,313,756,756,28,6,28,0,0,0,0,0,0,1770],
+  ['2026-09-18',588,57,384,648,648,114,7,84,0,0,0,0,0,0,1686],
+  ['2026-09-19',440,66,479,540,540,262,13,148,0,0,0,0,0,0,1538],
+  ['2026-09-20',0,0,0,0,0,0,13,0,0,0,0,0,0,0,1538],
+  ['2026-09-21',413,74,436,396,396,468,13,206,0,0,0,0,0,0,1332],
+  ['2026-09-22',566,92,240,180,180,714,8,246,0,0,0,0,0,0,1086],
+];
+function namanveSeedDailyStock(){
+  return NAMANVE_DAILY_STOCK_SEED.map(r=>({
+    id:'namanve-seed-'+r[0], createdAt:nowIso(), updatedAt:nowIso(),
+    date:r[0], plant:'Namanve Plant A', healthy:r[1], qualityIssues:r[2], offline:r[3], boxed:r[4], uncharged:r[5],
+    batteriesInBikes:r[6], testBatteries:r[7], deployment:r[8], energy:r[9], qualityIssuesOut:r[10],
+    returnsHealthy:r[11], returnsFaulty:r[12], incomingNewHealthy:r[13], incomingHealthyEnergy:r[14],
+    grandTotal:r[15], notes:'', enteredBy:'Imported Namanve daily stock sheet'
+  }));
+}
+const QUALITY_ISSUE_SEED = [
+  {id:'qic-irf-new-cbak', label:'98 IRF New batch — CBAK', count:98, platform:'CBAK'},
+  {id:'qic-irf-old-batch', label:'2 Old batch IRF', count:2, platform:'CBAK'},
+  {id:'qic-not-charging-cbak-new', label:'1 Not charging CBAK new', count:1, platform:'CBAK'},
+  {id:'qic-missing-bolt-cbak-new', label:'1 Missing bolt CBAK new stock', count:1, platform:'CBAK'},
+  {id:'qic-irf-cbak-today', label:'9 IRF CBAK today', count:9, platform:'CBAK'},
+];
+function qualityIssueTotal(records){ return (records||[]).reduce((a,r)=>a+(parseInt(r.count)||0),0); }
+async function ensureNamanvePlantData(){
+  const existing=await loadDailyStock();
+  const seed=namanveSeedDailyStock();
+  const seen=new Set(existing.map(r=>`${r.date}|${r.plant||'Namanve Plant A'}`));
+  const missing=seed.filter(r=>!seen.has(`${r.date}|${r.plant}`));
+  if(!missing.length) return existing;
+  const merged=[...existing,...missing];
+  return (await saveDailyStock(merged)) ? merged : existing;
+}
+async function ensureQualityIssueSeed(){
+  const existing=await loadQualityIssues();
+  if(existing.length) return existing;
+  const seed=QUALITY_ISSUE_SEED.map(r=>({...r,createdAt:nowIso(),updatedAt:nowIso(),updatedBy:'Imported Namanve quality issue sheet'}));
+  return (await saveQualityIssues(seed)) ? seed : existing;
+}
+async function adjustQualityIssue(id,delta){
+  const rows=clone(STATE.qualityIssueRecords||[]);
+  const i=rows.findIndex(r=>r.id===id); if(i<0) return;
+  const next=(parseInt(rows[i].count)||0)+delta;
+  if(next<0){toast('Quality Issue quantity cannot go below zero.');return;}
+  rows[i]={...rows[i],count:next,updatedAt:nowIso(),updatedBy:(currentSession()||{}).name||''};
+  if(await saveQualityIssues(rows)){STATE.qualityIssueRecords=rows;openQualityIssueBreakdownModal();}
+}
+function openQualityIssueBreakdownModal(){
+  const records=[...(STATE.qualityIssueRecords||[])];
+  const body=el('div');
+  const summary=el('div',{class:'detail-grid'});
+  addDetailKV(summary,'Detailed Quality Issues',qualityIssueTotal(records));
+  addDetailKV(summary,'Tracked Causes',records.length);
+  body.appendChild(summary);
+  body.appendChild(el('div',{class:'banner'},'Quality Issue Breakdown is separate from the daily physical stock count. Use − / + for corrections; selecting a category during an outbound Stock Movement subtracts the dispatched quantity automatically.'));
+  const wrap=el('div',{class:'table-wrap'}),tbl=el('table');
+  tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Issue'),el('th',{},'Platform'),el('th',{},'Qty'),el('th',{},'Adjust')])]));
+  const tb=el('tbody');
+  records.forEach(r=>{
+    const minus=el('button',{class:'btn-sm'},'−'); minus.addEventListener('click',()=>adjustQualityIssue(r.id,-1));
+    const plus=el('button',{class:'btn-sm'},'+'); plus.addEventListener('click',()=>adjustQualityIssue(r.id,1));
+    const controls=el('div',{style:'display:flex;gap:5px;'});controls.appendChild(minus);controls.appendChild(plus);
+    tb.appendChild(el('tr',{},[
+      el('td',{},r.label||r.id),el('td',{},r.platform||'—'),el('td',{class:'mono',style:'font-weight:800;'},String(parseInt(r.count)||0)),el('td',{},controls)
+    ]));
+  });
+  tbl.appendChild(tb);wrap.appendChild(tbl);body.appendChild(wrap);
+  modalShell('chart-modal','Quality Issues Breakdown','Namanve Plant A · current tracked quality issues',body);
+}
+function qualityIssueButton(value){
+  const b=el('button',{class:'battery-link',style:'text-decoration:none;font-family:var(--font-sans);font-weight:800;'},String(value??0));
+  b.title='Click to view Quality Issue Breakdown';
+  b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openQualityIssueBreakdownModal();});
+  return b;
+}
+function qualityIssueCategoryOptions(){
+  return [['','— Not a Quality Issue Dispatch —'],...(STATE.qualityIssueRecords||[]).map(r=>[r.id,r.label||r.id])];
+}
+async function applyQualityIssueDelta(categoryId,delta,who,reference=''){
+  if(!categoryId||!delta) return true;
+  const rows=clone(STATE.qualityIssueRecords||[]),idx=rows.findIndex(r=>r.id===categoryId);
+  if(idx<0) throw new Error('Quality issue category not found');
+  const next=(parseInt(rows[idx].count)||0)+delta;
+  if(next<0) throw new Error(`Quality issue quantity cannot go below 0 for ${rows[idx].label}.`);
+  rows[idx]={...rows[idx],count:next,updatedAt:nowIso(),updatedBy:who||'',lastAdjustment:delta,reference:reference||''};
+  const ok=await saveQualityIssues(rows); if(!ok) throw new Error('Could not save the Quality Issue Breakdown.');
+  STATE.qualityIssueRecords=rows; return true;
+}
+
 function emptyDailyStockDraft(){
   const d = { date: todayStr(), plant:'Namanve Plant A', notes:'', enteredBy:'' };
   NAMANVE_STOCK_COLUMNS.forEach(([k])=> d[k]='');
@@ -1389,6 +1505,7 @@ let STATE = {
   iotReturned: [],
   dayLogRecords: [],
   bsaRecords: [],
+  qualityIssueRecords: [],
  
   intakeDraft: emptyIntakeDraft(''),
   openId: null,
@@ -3269,7 +3386,12 @@ function DailyStockView(){
     g.appendChild(field(label, textInput(d[k], v=>{d[k]=v; render();}, {type:'number', mono:true, key:'ds-'+k})));
   });
   card.appendChild(g);
-  card.appendChild(el('div',{class:'stat-grid', style:'margin-top:10px;'},[statBox(computeDailyStockGrandTotal(d),'Grand Total (computed)')]));
+  const stockStats=el('div',{class:'stat-grid',style:'margin-top:10px;'});
+  stockStats.appendChild(statBox(computeDailyStockGrandTotal(d),'Grand Total'));
+  const qiStat=statBox(qualityIssueTotal(STATE.qualityIssueRecords),'Detailed Quality Issues');
+  qiStat.style.cursor='pointer'; qiStat.title='Click for the detailed Quality Issue Breakdown'; qiStat.addEventListener('click',openQualityIssueBreakdownModal);
+  stockStats.appendChild(qiStat);
+  card.appendChild(stockStats);
   card.appendChild(chartCard('Live Preview — Today\'s Category Breakdown', baseBarConfig(
     NAMANVE_STOCK_COLUMNS.map(([,l])=>l),
     [{ label:'Count', data: NAMANVE_STOCK_COLUMNS.map(([k])=>parseInt(d[k])||0), color: cssVar('--accent') }]
@@ -3298,6 +3420,12 @@ function DailyStockView(){
   return container;
 }
 
+function formatNamanveDate(dateStr){
+  if(!dateStr) return '—';
+  const d=new Date(dateStr+'T00:00:00');
+  if(Number.isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
+}
 function newBatteryFpyByDay(){
   const rows = [...STATE.dailyStockRecords].sort((a,b)=>a.date.localeCompare(b.date));
   return rows.map(r=>{
@@ -3320,8 +3448,8 @@ function DailyStockHistoryView(){
   tbl.appendChild(el('thead',{},[el('tr',{}, headCells.map(h=>el('th',{},h)))]));
   const tbody = el('tbody');
   rows.forEach(r=>{
-    const cells = [el('td',{class:'mono'},r.date), el('td',{},r.plant)];
-    NAMANVE_STOCK_COLUMNS.forEach(([k])=> cells.push(el('td',{class:'mono'}, String(r[k]||0))));
+    const cells = [el('td',{class:'mono'},formatNamanveDate(r.date)), el('td',{},r.plant)];
+    NAMANVE_STOCK_COLUMNS.forEach(([k])=> { if(k==='qualityIssues') cells.push(el('td',{class:'mono'},qualityIssueButton(r[k]||0))); else cells.push(el('td',{class:'mono'},String(r[k]||0))); });
     cells.push(el('td',{class:'mono',style:'font-weight:700;'}, String(computeDailyStockGrandTotal(r))));
     cells.push(el('td',{}, r.notes||'—'));
     tbody.appendChild(el('tr',{}, cells));
@@ -3774,7 +3902,7 @@ function emptyNewBatteryDraft(){
   return { date: todayStr(), platform: PLATFORMS[0], quantity:'', batchLot:'', source:'', notes:'', loggedBy:'' };
 }
 function emptyAdjustmentDraft(){
-  return { date: todayStr(), platform: PLATFORMS[0], type: MOVEMENT_TYPES[0][0], quantity:'', reference:'', notes:'', loggedBy:'' };
+  return { date: todayStr(), platform: PLATFORMS[0], type: MOVEMENT_TYPES[0][0], quantity:'', reference:'', notes:'', loggedBy:'', qualityIssueCategory:'' };
 }
  
 function NewBatteryView(){
@@ -3867,6 +3995,9 @@ function AdjustmentView(){
   g.appendChild(field('Reference', textInput(String(d.reference||''), v=>{d.reference=v;} , {key:'stock-movement-reference'})));
   g.appendChild(field('Logged By', textInput(String(d.loggedBy||''), v=>{d.loggedBy=v;} , {key:'stock-movement-logged-by'})));
   card.appendChild(g);
+  card.appendChild(field('Quality Issue Category (only when dispatching a quality issue)', selectInput(d.qualityIssueCategory||'',qualityIssueCategoryOptions(),v=>{d.qualityIssueCategory=v;})));
+  card.appendChild(el('div',{class:'smart-id-hint'},'For an outbound movement, selecting a Quality Issue Category subtracts the movement quantity from that quality-issue count. Leave it unselected for normal stock dispatches.'));
+
   card.appendChild(field('Notes', textareaInput(String(d.notes||''), v=>{d.notes=v;} , {key:'stock-movement-notes'})));
 
   if(STATE.adjustmentError){
@@ -3893,22 +4024,33 @@ function AdjustmentView(){
       quantity,
       reference: String(d.reference||''),
       notes: String(d.notes||''),
-      loggedBy: String(d.loggedBy||'')
+      loggedBy: String(d.loggedBy||''),
+      qualityIssueCategory: String(d.qualityIssueCategory||'')
     };
     const updated = STATE.adjustments.concat(entry);
     STATE.adjustmentSaving = true;
     render();
     const ok = await saveAdjustments(updated);
-    STATE.adjustmentSaving = false;
     if(!ok){
+      STATE.adjustmentSaving = false;
       STATE.adjustmentError='Could not save — check your connection and try again.';
       render();
       return;
     }
-    STATE.adjustments = updated;
-    STATE.adjustmentDraft = emptyAdjustmentDraft();
-    STATE.adjustmentError = null;
-    toast('Stock movement recorded.');
+    try{
+      if(entry.qualityIssueCategory && movementDirection(entry.type)<0) await applyQualityIssueDelta(entry.qualityIssueCategory,-quantity,entry.loggedBy,entry.reference);
+    }catch(e){
+      STATE.adjustmentSaving=false;
+      STATE.adjustments=updated;
+      STATE.adjustmentError='Stock movement saved, but Quality Issue count was not updated: '+e.message;
+      render();
+      return;
+    }
+    STATE.adjustmentSaving=false;
+    STATE.adjustments=updated;
+    STATE.adjustmentDraft=emptyAdjustmentDraft();
+    STATE.adjustmentError=null;
+    toast(entry.qualityIssueCategory && movementDirection(entry.type)<0 ? 'Stock movement recorded and Quality Issue count reduced.' : 'Stock movement recorded.');
   });
   actions.appendChild(saveBtn);
   card.appendChild(actions);
@@ -3982,6 +4124,9 @@ function PlantInvAnalyticsView(){
   const stats = el('div',{class:'stat-grid'});
   PLATFORMS.forEach(p=>stats.appendChild(statBox(stock[p], p)));
   stats.appendChild(statBox(Object.values(stock).reduce((a,b)=>a+b,0),'Total Stock'));
+  const qiAnalytics=statBox(qualityIssueTotal(STATE.qualityIssueRecords),'Detailed Quality Issues');
+  qiAnalytics.style.cursor='pointer'; qiAnalytics.title='Click for Quality Issue Breakdown'; qiAnalytics.addEventListener('click',openQualityIssueBreakdownModal);
+  stats.appendChild(qiAnalytics);
   card.appendChild(stats);
   container.appendChild(card);
 
@@ -3997,7 +4142,11 @@ function PlantInvAnalyticsView(){
 
   const row3 = el('div',{class:'chart-row'});
   row3.appendChild(chartCard('Inventory Movements by Month', movementsByMonthConfig()));
+  row3.appendChild(chartCard('Quality Issues by Cause', qualityIssueByCauseConfig()));
   container.appendChild(row3);
+  const row4 = el('div',{class:'chart-row'});
+  row4.appendChild(chartCard('Quality Issues Breakdown (Pie)', qualityIssuePieConfig()));
+  container.appendChild(row4);
 
   container.appendChild(BatteryDeepDiveCard());
   return container;
@@ -4600,6 +4749,15 @@ function dailyStockBarConfig(){
   if(rows.length===0) return baseBarConfig(['No data'], [{label:'Grand Total', data:[0], color:cssVar('--accent')}], {});
   return baseBarConfig(rows.map(r=>r.date), [{label:'Grand Total Stock', data: rows.map(r=>computeDailyStockGrandTotal(r)), color: cssVar('--accent')}], {});
 }
+function qualityIssueByCauseConfig(){
+  const rows=[...(STATE.qualityIssueRecords||[])].filter(r=>(parseInt(r.count)||0)>0);
+  if(!rows.length) return baseBarConfig(['No data'],[{label:'Quality Issues',data:[0],color:cssVar('--fail')}],{});
+  return baseBarConfig(rows.map(r=>r.label),[{label:'Current Quality Issues',data:rows.map(r=>parseInt(r.count)||0),color:cssVar('--fail')}],{});
+}
+function qualityIssuePieConfig(){
+  const rows=[...(STATE.qualityIssueRecords||[])].filter(r=>(parseInt(r.count)||0)>0);
+  return basePieConfig(rows.map(r=>r.label),rows.map(r=>parseInt(r.count)||0),rows.map((_,i)=>[cssVar('--fail'),cssVar('--warn'),cssVar('--capa'),cssVar('--accent'),cssVar('--pass')][i%5]));
+}
 /* ---- Defect category (Supplier vs Non-Supplier) — daily grouped bar + overall pie ---- */
 function defectCategoryDailyConfig(){
   const { dates, byDay } = defectCategoryByDay(30);
@@ -4944,6 +5102,7 @@ const EXPORT_SHEETS = [
   ['om','OM Chain Records', ()=>buildOmExportRows()],
   ['plant','Plant Logs', ()=>buildPlantExportRows()],
   ['dailystock','Daily Stock Data', ()=>buildDailyStockExportRows()],
+  ['qualityissues','Quality Issue Breakdown', ()=>rowsOrEmpty((STATE.qualityIssueRecords||[]).map(r=>({'Issue':r.label||r.id,'Platform':r.platform||'','Current Qty':parseInt(r.count)||0,'Last Updated':r.updatedAt||'','Updated By':r.updatedBy||''})))],
   ['ledger','OEM Stock Ledger', ()=>buildStockLedgerExportRows()],
   ['oemid','OEM ID Log', ()=>buildOemIdLogExportRows()],
   ['newbattery','New Battery Intake', ()=>buildNewBatteryExportRows()],
@@ -5242,6 +5401,7 @@ async function exportMyReport(){
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildStockLedgerExportRows()), 'OEM Stock Ledger');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildOemIdLogExportRows()), 'OEM ID Log');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildDailyStockExportRows()), 'Daily Stock Data');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet((STATE.qualityIssueRecords||[]).map(r=>({'Issue':r.label||r.id,'Platform':r.platform||'','Current Qty':parseInt(r.count)||0,'Last Updated':r.updatedAt||'','Updated By':r.updatedBy||''}))), 'Quality Issue Breakdown');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildNewBatteryExportRows()), 'New Battery Intake');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildAdjustmentExportRows()), 'Stock Movements');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildStockSummaryRows()), 'Stock Summary');
