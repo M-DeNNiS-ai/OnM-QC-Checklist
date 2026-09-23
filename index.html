@@ -801,6 +801,52 @@ async function saveBsa(list){ return saveStore('bsa_records',list); }
 async function loadQualityIssues(){ return loadStore('quality_issue_records'); }
 async function saveQualityIssues(list){ return saveStore('quality_issue_records',list); }
 
+/* ---------- Shared live-data loader ----------
+   One mapping keeps every sector reading the same underlying stores.  Sector loaders and the
+   background refresh use this same path so a change made in Plant, O&M, Quality, or BSA reaches
+   every role that is allowed to see it without maintaining separate copy/paste load lists. */
+const STORE_STATE_KEYS = {
+  om_chain_records:'omRecords',
+  plant_records:'plantRecords',
+  plant_stock_records:'plantStockRecords',
+  new_battery_records:'newBatteryRecords',
+  inventory_adjustments:'adjustments',
+  warranty_records:'warrantyRecords',
+  daily_stock_records:'dailyStockRecords',
+  iot_given_records:'iotGiven',
+  iot_returned_records:'iotReturned',
+  day_log_records:'dayLogRecords',
+  bsa_records:'bsaRecords',
+  quality_issue_records:'qualityIssueRecords',
+};
+
+async function loadStoresIntoState(keys=BQC_STORES, options={}){
+  const session=currentSession();
+  const readable=(keys||[]).filter(k=> !session || roleCanRead(session.role,k));
+  const loaded=await Promise.all(readable.map(async key=>[key,await loadStore(key)]));
+  loaded.forEach(([key,rows])=>{
+    const stateKey=STORE_STATE_KEYS[key];
+    if(stateKey) STATE[stateKey]=rows;
+  });
+  if(options.ensureNamanve && readable.includes('daily_stock_records')){
+    STATE.dailyStockRecords=await ensureNamanvePlantData();
+  }
+  if(options.ensureQualityIssues && readable.includes('quality_issue_records')){
+    STATE.qualityIssueRecords=await ensureQualityIssueSeed();
+  }
+  return readable;
+}
+
+function visibleStoreKeys(){
+  const session=currentSession();
+  return session ? BQC_STORES.filter(k=>roleCanRead(session.role,k)) : [];
+}
+
+function visibleStateChanged(before, after){
+  try{ return stableStr(before)!==stableStr(after); }catch(e){ return true; }
+}
+
+
 /* =====================================================================
    SIGN-IN  —  PINs are checked in the browser now that there is no
    server. Change them here before you deploy. This gates the roles for
@@ -1225,16 +1271,7 @@ function loadDraftForDate(){
   });
 }
 async function loadPlantInventorySector(){
-  STATE.plantRecords = await loadPlant();
-  STATE.plantStockRecords = await loadPlantStock();
-  STATE.newBatteryRecords = await loadNewBattery();
-  STATE.adjustments = await loadAdjustments();
-  STATE.warrantyRecords = await loadWarranty();
-  STATE.dailyStockRecords = await ensureNamanvePlantData();
-  STATE.qualityIssueRecords = await ensureQualityIssueSeed();
-  STATE.iotGiven = await loadIotGiven();
-  STATE.iotReturned = await loadIotReturned();
-  STATE.dayLogRecords = await loadDayLog();
+  await loadStoresIntoState(BQC_STORES,{ensureNamanve:true,ensureQualityIssues:true});
   STATE.plantDraft = emptyPlantDraft();
   STATE.newBatteryDraft = emptyNewBatteryDraft();
   STATE.adjustmentDraft = emptyAdjustmentDraft();
@@ -1246,32 +1283,18 @@ async function loadPlantInventorySector(){
   loadDraftForDate();
 }
 async function loadOmAdminSector(){
-  STATE.omRecords = await loadOm();
-  STATE.plantStockRecords = await loadPlantStock();
-  STATE.warrantyRecords = await loadWarranty();
-  STATE.dayLogRecords = await loadDayLog();
-  STATE.bsaRecords = await loadBsa();
+  await loadStoresIntoState(BQC_STORES,{ensureNamanve:true,ensureQualityIssues:true});
   STATE.dayLogDraft = emptyDayLogDraft();
 }
 async function loadQualitySector(){
-  STATE.warrantyRecords = await loadWarranty();
+  await loadStoresIntoState(BQC_STORES,{ensureNamanve:true,ensureQualityIssues:true});
   STATE.warrantyDraft = emptyWarrantyDraft();
-  STATE.omRecords = await loadOm();
-  STATE.plantRecords = await loadPlant();
-  STATE.plantStockRecords = await loadPlantStock();
-  STATE.newBatteryRecords = await loadNewBattery();
-  STATE.adjustments = await loadAdjustments();
-  STATE.dailyStockRecords = await loadDailyStock();
-  STATE.qualityIssueRecords = await loadQualityIssues();
-  STATE.bsaRecords = await loadBsa();
   STATE.bsaDraft = emptyBsaDraft();
-  STATE.dayLogRecords = await loadDayLog();
   STATE.dayLogDraft = emptyDayLogDraft();
 }
 async function loadBsaSector(){
-  STATE.bsaRecords = await loadBsa();
+  await loadStoresIntoState(BQC_STORES);
   STATE.bsaDraft = emptyBsaDraft();
-  STATE.omRecords = await loadOm();
 }
 function allIdsForPlatform(records, platform, excludeRecordId){
   const set = new Set();
@@ -2049,7 +2072,7 @@ function LoginView(){
         try{
           const auth=await apiFetch('/api/auth/login',{method:'POST',body:JSON.stringify({mode,name:nameInp.value.trim(),pin:pinInp.value})});
           STATE.techName=auth.user.name||nameInp.value.trim(); STATE.role='omtech'; STATE.stage=auth.user.stage; STATE.view='main';
-          STATE.omRecords=await loadOm(); STATE.intakeDraft=emptyIntakeDraft(STATE.techName); render();
+          await loadStoresIntoState(BQC_STORES); STATE.intakeDraft=emptyIntakeDraft(STATE.techName); render();
         }catch(e){errBox.textContent=e.message;}
       }); body.appendChild(go);
     }else{
@@ -4358,58 +4381,7 @@ function stockByPlatform(){
   return stock;
 }
  
-function StockView(){
-  const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Stock Summary'));
-  const stock = stockByPlatform();
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Current Stock by Platform'));
-  card.appendChild(el('div',{class:'sub'},'Computed from all intake and movement records logged in this sector.'));
-  const stats = el('div',{class:'stat-grid'});
-  PLATFORMS.forEach(p=> stats.appendChild(statBox(stock[p], p)));
-  stats.appendChild(statBox(Object.values(stock).reduce((a,b)=>a+b,0), 'Total Stock'));
-  card.appendChild(stats);
-  container.appendChild(card);
-  return container;
-}
-
 /* ---- Plant & Inventory Analytics: stock trends and a battery deep dive ---- */
-function PlantInvAnalyticsView(){
-  const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory Analytics — stock trends and per-battery deep dive'));
-  const stock = stockByPlatform();
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Overview'));
-  const stats = el('div',{class:'stat-grid'});
-  PLATFORMS.forEach(p=>stats.appendChild(statBox(stock[p], p)));
-  stats.appendChild(statBox(Object.values(stock).reduce((a,b)=>a+b,0),'Total Stock'));
-  const qiAnalytics=statBox(qualityIssueTotal(STATE.qualityIssueRecords),'Detailed Quality Issues');
-  qiAnalytics.style.cursor='pointer'; qiAnalytics.title='Click for Quality Issue Breakdown'; qiAnalytics.addEventListener('click',openQualityIssueBreakdownModal);
-  stats.appendChild(qiAnalytics);
-  card.appendChild(stats);
-  container.appendChild(card);
-
-  const row1 = el('div',{class:'chart-row'});
-  row1.appendChild(chartCard('Total Closing Stock Trend (Bulk Ledger)', stockLedgerTrendConfig()));
-  row1.appendChild(chartCard('Stock by Platform (Pie)', stockByPlatformPieConfig()));
-  container.appendChild(row1);
-
-  const row2 = el('div',{class:'chart-row'});
-  row2.appendChild(chartCard('Daily Stock Grand Total (last 30 days)', dailyStockBarConfig()));
-  row2.appendChild(chartCard('New Battery FPY Trend (Daily Stock Data)', newBatteryFpyTrendConfig()));
-  container.appendChild(row2);
-
-  const row3 = el('div',{class:'chart-row'});
-  row3.appendChild(chartCard('Inventory Movements by Month', movementsByMonthConfig()));
-  row3.appendChild(chartCard('Quality Issues by Cause', qualityIssueByCauseConfig()));
-  container.appendChild(row3);
-  const row4 = el('div',{class:'chart-row'});
-  row4.appendChild(chartCard('Quality Issues Breakdown (Pie)', qualityIssuePieConfig()));
-  container.appendChild(row4);
-
-  container.appendChild(BatteryDeepDiveCard());
-  return container;
-}
  
 /* ==================== QUALITY ENGINEER — warranty store + read-only overview ==================== */
  
@@ -5587,17 +5559,7 @@ function buildBsaExportRows(){
 }
  
 async function refreshAllStoresForExport(){
-  STATE.omRecords = await loadOm();
-  STATE.plantRecords = await loadPlant();
-  STATE.plantStockRecords = await loadPlantStock();
-  STATE.newBatteryRecords = await loadNewBattery();
-  STATE.adjustments = await loadAdjustments();
-  STATE.warrantyRecords = await loadWarranty();
-  STATE.dailyStockRecords = await loadDailyStock();
-  STATE.iotGiven = await loadIotGiven();
-  STATE.iotReturned = await loadIotReturned();
-  STATE.dayLogRecords = await loadDayLog();
-  STATE.bsaRecords = await loadBsa();
+  await loadStoresIntoState(BQC_STORES);
 }
 async function exportAllDataToExcel(){
   if(!STATE.exportSelection){ STATE.exportSelection = {}; EXPORT_SHEETS.forEach(([k])=>STATE.exportSelection[k]=true); }
@@ -5700,29 +5662,34 @@ function silentRender(){
     requestAnimationFrame(()=>{ document.body.classList.remove('silent-refresh'); });
   });
 }
+function overlayIsOpen(){
+  return !!(STATE.batteryModalId || STATE.chartModal);
+}
+
+function liveStoreSnapshot(){
+  const snapshot={};
+  visibleStoreKeys().forEach(key=>{
+    const stateKey=STORE_STATE_KEYS[key];
+    snapshot[key]=stateKey ? STATE[stateKey] : [];
+  });
+  return snapshot;
+}
+
 async function autoRefreshDocket(){
+  if(userIsTypingInForm()) return;
   try{
-    if(userIsTypingInForm()) return;
-    if(STATE.role==='omtech' && STATE.openId===null && STATE.view==='main'){
-      const fresh = await loadOm();
-      STATE.omSyncOk = true;
-      STATE.omLastRefreshed = nowTime();
-      if(omRecordsChanged(fresh)){
-        STATE.omRecords = fresh;
-        silentRender();
-      }
-    } else if(STATE.role==='omadmin' && (STATE.view==='dashboard' || STATE.view==='history')){
-      const fresh = await loadOm();
-      STATE.omSyncOk = true;
-      STATE.omLastRefreshed = nowTime();
-      if(omRecordsChanged(fresh)){
-        STATE.omRecords = fresh;
-        silentRender();
-      }
-    }
+    const before=liveStoreSnapshot();
+    await loadStoresIntoState(visibleStoreKeys());
+    const after=liveStoreSnapshot();
+    const changed=visibleStoreKeys().some(key=>visibleStateChanged(before[key],after[key]));
+    STATE.omSyncOk=true;
+    STATE.omLastRefreshed=nowTime();
+    STATE.globalLastRefreshed=nowTime();
+    if(changed && !overlayIsOpen()) silentRender();
   }catch(e){
     console.error('Auto-refresh failed', e);
-    STATE.omSyncOk = false;
+    STATE.omSyncOk=false;
+    STATE.globalSyncError=e.message||'Live refresh failed';
   }
 }
 setInterval(autoRefreshDocket, 8000);
@@ -5738,7 +5705,7 @@ async function restoreSession(){
     const s=await apiFetch('/api/auth/me');
     if(!s.authenticated){ render(); removeBootLoader(); return; }
     STATE.role=s.user.role; STATE.stage=s.user.stage||null; STATE.techName=s.user.name||'';
-    if(STATE.role==='omtech'){STATE.view='main';STATE.omRecords=await loadOm();STATE.intakeDraft=emptyIntakeDraft(STATE.techName);}
+    if(STATE.role==='omtech'){STATE.view='main';await loadStoresIntoState(BQC_STORES);STATE.intakeDraft=emptyIntakeDraft(STATE.techName);}
     else if(STATE.role==='omadmin'){STATE.view='dashboard'; await loadOmAdminSector();}
     else if(STATE.role==='plantinv' || STATE.role==='plant' || STATE.role==='inventory'){ STATE.role='plantinv'; STATE.view='bulk'; await loadPlantInventorySector(); }
     else if(STATE.role==='quality'){STATE.view='warranty'; await loadQualitySector();}
