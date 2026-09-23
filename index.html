@@ -2143,8 +2143,8 @@ function View(){
     if(legacyToCombined[STATE.view]) STATE.view = legacyToCombined[STATE.view];
     if(!['dashboard','daily','stock','operations','daylog','integrity'].includes(STATE.view)) STATE.view='dashboard';
     wrap.appendChild(Nav(['dashboard','daily','stock','operations','daylog','integrity'], {
-      dashboard:'Plant Dashboard', daily:'Daily Stock', stock:'Stock & Movement', operations:'Battery Operations',
-      daylog:'Day Notes', integrity:'Data Integrity'
+      dashboard:'Plant Dashboard', daily:'Daily Stock & Quality', stock:'Stock & Movement',
+      operations:'Battery Operations & Warranty', daylog:'Day Notes', integrity:'Data Integrity'
     }));
     wrap.appendChild(SearchBar());
     if(STATE.view==='dashboard') content.appendChild(PlantDashboardView());
@@ -3372,100 +3372,120 @@ function collapseSection(title, content){
   d.appendChild(body);
   return d;
 }
+
 function PlantDashboardView(){
   const container=el('div');
   container.appendChild(el('div',{class:'sector-tag'},'Namanve Plant A — Plant & Inventory Dashboard'));
 
-  /* Charts first, as requested. */
+  /* High-level dashboard charts only. Detailed trend charts live on their relevant operational pages. */
   const row1=el('div',{class:'chart-row'});
   row1.appendChild(chartCard('Daily Stock Grand Total Trend',dailyStockBarConfig()));
-  row1.appendChild(chartCard('Daily Physical Stock Category Trend',dailyStockTrendConfig([
-    ['healthy','Healthy',cssVar('--pass')],['qualityIssues','Quality Issues',cssVar('--fail')],['offline','Offline',cssVar('--warn')]
-  ],'Stock')));
+  row1.appendChild(chartCard('Daily Quality Issues Trend',qualityIssueTrendFromDailyConfig()));
   container.appendChild(row1);
+
   const row2=el('div',{class:'chart-row'});
-  row2.appendChild(chartCard('Quality Issues Trend — Daily Stock History',qualityIssueTrendFromDailyConfig()));
-  row2.appendChild(chartCard('Current Detailed Quality Issues — Breakdown',qualityIssueByCauseConfig()));
+  row2.appendChild(chartCard('OEM Stock Closing Trend',stockLedgerTrendConfig()));
+  row2.appendChild(chartCard('Latest Daily Stock Category Breakdown',latestDailyCategoryConfig()));
   container.appendChild(row2);
-  const row3=el('div',{class:'chart-row'});
-  row3.appendChild(chartCard('OEM Stock Closing Trend',stockLedgerTrendConfig()));
-  row3.appendChild(chartCard('OEM Stock by Platform',stockByPlatformPieConfig()));
-  container.appendChild(row3);
-  const row4=el('div',{class:'chart-row'});
-  row4.appendChild(chartCard('Latest Daily Stock Category Breakdown',latestDailyCategoryConfig()));
-  row4.appendChild(chartCard('Quality Issues Breakdown — Pie',qualityIssuePieConfig()));
-  container.appendChild(row4);
 
-  container.appendChild(plantStockSnapshotCard());
+  const latest=latestNamanveDailyStock();
+  const snap=el('div',{class:'card'});
+  snap.appendChild(el('h3',{},'Namanve Plant A — Latest Daily Stock Snapshot'));
+  snap.appendChild(el('div',{class:'sub'},latest?`${formatNamanveDate(latest.date)} · values pulled directly from Daily Stock History`:'No Daily Stock History recorded yet.'));
+  if(latest){
+    const stats=el('div',{class:'stat-grid'});
+    NAMANVE_STOCK_COLUMNS.forEach(([k,label])=>{
+      const val=String(latest[k]??0);
+      const box=statBox(val,label);
+      if(k==='qualityIssues'){
+        box.style.cursor='pointer';
+        box.title='Click to view detailed Quality Issue Breakdown';
+        box.addEventListener('click',openQualityIssueBreakdownModal);
+      }
+      stats.appendChild(box);
+    });
+    stats.appendChild(statBox(computeDailyStockGrandTotal(latest),'Grand Total'));
+    snap.appendChild(stats);
+  } else {
+    snap.appendChild(el('div',{class:'empty-note'},'No daily stock history is available.'));
+  }
+  container.appendChild(snap);
 
-  const qiCard=el('div',{class:'card'});
-  qiCard.appendChild(el('h3',{},'Quality Issue Tracker'));
-  qiCard.appendChild(el('div',{class:'sub'},'The physical daily Quality Issues count remains separate from the detailed cause tracker. Dispatching against a selected quality issue updates the detailed tracker.'));
-  const qiStats=el('div',{class:'stat-grid'});
-  qiStats.appendChild(statBox(latestNamanveDailyStock()?.qualityIssues||0,'Latest Daily Physical Quality Issues'));
-  const qTotal=statBox(qualityIssueTotal(STATE.qualityIssueRecords),'Detailed Tracked Quality Issues');
-  qTotal.style.cursor='pointer'; qTotal.title='Click for detailed issue breakdown'; qTotal.addEventListener('click',openQualityIssueBreakdownModal); qiStats.appendChild(qTotal);
-  qiCard.appendChild(qiStats);
-  const qbtn=el('button',{class:'btn-capa'},'Open Quality Issue Breakdown'); qbtn.addEventListener('click',openQualityIssueBreakdownModal); qiCard.appendChild(qbtn);
-  container.appendChild(qiCard);
+  const info=el('div',{class:'card'});
+  info.appendChild(el('h3',{},'Plant Pages'));
+  info.appendChild(el('div',{class:'sub'},'Detailed entries and histories are grouped into Daily Stock & Quality, Stock & Movement, and Battery Operations so the same chart or information is not repeated on multiple pages.'));
+  container.appendChild(info);
 
-  /* Existing information pages are retained and grouped below rather than deleted. */
-  container.appendChild(collapseSection('Plant Log / Existing Plant Information',PlantEntryView()));
-  container.appendChild(collapseSection('Warranty & Scrap Stock',WarrantyStockView()));
   return container;
 }
+
 function PlantDailyCombinedView(){
   const container=el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Namanve Plant A — Daily Stock'));
+  container.appendChild(el('div',{class:'sector-tag'},'Namanve Plant A — Daily Stock & Quality'));
+
+  /* Daily-specific charts only. */
   const top=el('div',{class:'chart-row'});
-  top.appendChild(chartCard('Daily Stock Grand Total Trend',dailyStockBarConfig()));
   top.appendChild(chartCard('Daily Stock Categories — Last 30 Days',dailyStockTrendConfig([
-    ['healthy','Healthy',cssVar('--pass')],['qualityIssues','Quality Issues',cssVar('--fail')],['offline','Offline',cssVar('--warn')],['batteriesInBikes','Batteries in Bikes',cssVar('--accent2')]
+    ['healthy','Healthy',cssVar('--pass')],
+    ['qualityIssues','Quality Issues',cssVar('--fail')],
+    ['offline','Offline',cssVar('--warn')],
+    ['batteriesInBikes','Batteries in Bikes',cssVar('--accent2')]
   ],'Daily Stock')));
+  top.appendChild(chartCard('Quality Issues — Daily Physical Count',qualityIssueTrendFromDailyConfig()));
   container.appendChild(top);
-  const qi=el('div',{class:'chart-row'});
-  qi.appendChild(chartCard('Daily Quality Issues Trend',qualityIssueTrendFromDailyConfig()));
-  qi.appendChild(chartCard('Detailed Quality Issues by Cause',qualityIssueByCauseConfig()));
-  container.appendChild(qi);
-  container.appendChild(plantStockSnapshotCard());
-  const hist=el('div',{class:'card'});
-  hist.appendChild(el('h3',{},'Daily Stock History — Namanve Plant A'));
-  hist.appendChild(el('div',{class:'sub'},'Complete history currently loaded into the system.'));
-  const rows=searchFilter([...(STATE.dailyStockRecords||[])].sort((a,b)=>b.date.localeCompare(a.date)),r=>`${r.date} ${r.plant} ${r.notes}`);
-  if(!rows.length) hist.appendChild(el('div',{class:'empty-note'},'No daily stock entries recorded yet.'));
-  else {
-    const wrap=el('div',{class:'table-wrap'}),tbl=el('table');
-    const head=['Date','Plant',...NAMANVE_STOCK_COLUMNS.map(([,l])=>l),'Grand Total','Notes'];
-    tbl.appendChild(el('thead',{},[el('tr',{},head.map(h=>el('th',{},h)))]));
-    const tb=el('tbody');
-    rows.forEach(r=>{
-      const cells=[el('td',{class:'mono'},formatNamanveDate(r.date)),el('td',{},r.plant||'Namanve Plant A')];
-      NAMANVE_STOCK_COLUMNS.forEach(([k])=>cells.push(el('td',{class:'mono'},String(r[k]??0))));
-      cells.push(el('td',{class:'mono',style:'font-weight:800;'},String(computeDailyStockGrandTotal(r))));
-      cells.push(el('td',{},r.notes||'—'));
-      tb.appendChild(el('tr',{},cells));
-    });
-    tbl.appendChild(tb);wrap.appendChild(tbl);hist.appendChild(wrap);
-  }
-  container.appendChild(hist);
+
+  /* Full history first, then the data-entry points. */
+  container.appendChild(DailyStockHistoryView());
   container.appendChild(collapseSection('Input — Add / Update Daily Stock Entry',DailyStockView()));
+
+  /* Existing Plant Log information is kept, but combined into the same operational page. */
+  const logSection=el('div',{class:'card'});
+  logSection.appendChild(el('h3',{},'Plant Daily Log — Additional Plant Information'));
+  logSection.appendChild(el('div',{class:'sub'},'This remains the separate Plant Log record set and is grouped here instead of occupying another page.'));
+  const details=el('details',{open:false});
+  details.appendChild(el('summary',{style:'cursor:pointer;font-weight:700;color:var(--muted);'},'Open Plant Log input and history'));
+  details.appendChild(PlantEntryView());
+  details.appendChild(PlantHistoryView());
+  logSection.appendChild(details);
+  container.appendChild(logSection);
+
+  const quality=el('div',{class:'card'});
+  quality.appendChild(el('h3',{},'Quality Issue Tracker'));
+  quality.appendChild(el('div',{class:'sub'},'The physical daily Quality Issues count remains tied to Daily Stock History, while the detailed cause tracker can be adjusted separately.'));
+  const qgrid=el('div',{class:'stat-grid'});
+  qgrid.appendChild(statBox(latestNamanveDailyStock()?.qualityIssues||0,'Latest Physical Quality Issues'));
+  const tracked=statBox(qualityIssueTotal(STATE.qualityIssueRecords),'Detailed Tracked Quality Issues');
+  tracked.style.cursor='pointer';
+  tracked.title='Click for detailed issue breakdown';
+  tracked.addEventListener('click',openQualityIssueBreakdownModal);
+  qgrid.appendChild(tracked);
+  quality.appendChild(qgrid);
+  const qbtn=el('button',{class:'btn-capa'},'Open Quality Issue Breakdown');
+  qbtn.addEventListener('click',openQualityIssueBreakdownModal);
+  quality.appendChild(qbtn);
+  container.appendChild(quality);
+
   return container;
 }
+
 function PlantStockOperationsView(){
   const container=el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Stock, Movement & Ledger'));
-  /* Charts first. */
+  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Stock & Movement'));
+
+  /* Stock-specific charts only. */
   const row1=el('div',{class:'chart-row'});
-  row1.appendChild(chartCard('OEM Stock Closing Trend',stockLedgerTrendConfig()));
   row1.appendChild(chartCard('OEM Stock by Platform',stockByPlatformPieConfig()));
+  row1.appendChild(chartCard('Inventory Movements by Month',movementsByMonthConfig()));
   container.appendChild(row1);
+
   const row2=el('div',{class:'chart-row'});
-  row2.appendChild(chartCard('Inventory Movements by Month',movementsByMonthConfig()));
-  row2.appendChild(chartCard('Daily Physical Stock Trend',dailyStockBarConfig()));
+  row2.appendChild(chartCard('OEM Stock Closing Trend',stockLedgerTrendConfig()));
+  row2.appendChild(chartCard('Daily Stock Grand Total',dailyStockBarConfig()));
   container.appendChild(row2);
-  container.appendChild(plantStockSnapshotCard());
+
   container.appendChild(collapseSection('Input — Bulk OEM Stock Intake / Dispatch',BulkStockEntryView()));
   container.appendChild(collapseSection('Input — Stock Movement / Corrections',AdjustmentView()));
+
   const ledgerWrap=el('div',{class:'card'});
   ledgerWrap.appendChild(el('h3',{},'Stock Ledger & Current OEM Stock'));
   const ledger=computeStockLedger(STATE.plantStockRecords);
@@ -3473,31 +3493,62 @@ function PlantStockOperationsView(){
   if(latest) ledgerWrap.appendChild(renderLedgerDayTable(latest));
   else ledgerWrap.appendChild(el('div',{class:'empty-note'},'No OEM bulk stock entries recorded yet.'));
   const stock=stockByPlatform();
-  ledgerWrap.appendChild(el('div',{class:'stat-grid',style:'margin-top:10px;'},PLATFORMS.map(p=>statBox(stock[p],p)).concat([statBox(Object.values(stock).reduce((a,b)=>a+b,0),'Total OEM Ledger Stock')])));
-  const details=el('details',{style:'margin-top:10px;'});details.appendChild(el('summary',{style:'cursor:pointer;font-size:11px;font-weight:700;color:var(--muted);'},'Open full Stock Ledger history'));details.appendChild(StockLedgerView());ledgerWrap.appendChild(details);
+  ledgerWrap.appendChild(el('div',{class:'stat-grid',style:'margin-top:10px;'},
+    PLATFORMS.map(p=>statBox(stock[p],p)).concat([
+      statBox(Object.values(stock).reduce((a,b)=>a+b,0),'Total OEM Ledger Stock')
+    ])
+  ));
+  const details=el('details',{style:'margin-top:10px;'});
+  details.appendChild(el('summary',{style:'cursor:pointer;font-size:11px;font-weight:700;color:var(--muted);'},'Open full Stock Ledger history'));
+  details.appendChild(StockLedgerView());
+  ledgerWrap.appendChild(details);
   container.appendChild(ledgerWrap);
+
   return container;
 }
+
 function PlantOperationsCombinedView(){
   const container=el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Battery Operations'));
+  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Battery Operations & Warranty'));
+
+  /* Battery-operations-specific charts only. */
   const row=el('div',{class:'chart-row'});
   const intakeByDay={};
-  STATE.newBatteryRecords.forEach(r=>{const d=r.date;intakeByDay[d]=(intakeByDay[d]||0)+(parseInt(r.quantity)||0);});
+  STATE.newBatteryRecords.forEach(r=>{
+    const d=r.date;
+    intakeByDay[d]=(intakeByDay[d]||0)+(parseInt(r.quantity)||0);
+  });
   const days=Object.keys(intakeByDay).sort().slice(-30);
-  row.appendChild(chartCard('New Battery Intake — Daily',baseBarConfig(days.length?days.map(formatNamanveDate):['No data'],[{label:'New Batteries',data:days.length?days.map(d=>intakeByDay[d]):[0],color:cssVar('--pass')}],{})));
+  row.appendChild(chartCard(
+    'New Battery Intake — Daily',
+    baseBarConfig(
+      days.length?days.map(formatNamanveDate):['No data'],
+      [{label:'New Batteries',data:days.length?days.map(d=>intakeByDay[d]):[0],color:cssVar('--pass')}],
+      {}
+    )
+  ));
+
   const bal=iotBalance();
-  row.appendChild(chartCard('IoT Handover Balance',baseBarConfig(['Given','Returned','With IoT'],[{label:'Batteries',data:[bal.given,bal.returned,bal.balance],color:cssVar('--accent')}],{})));
+  row.appendChild(chartCard(
+    'IoT Handover Balance',
+    baseBarConfig(
+      ['Given','Returned','With IoT'],
+      [{label:'Batteries',data:[bal.given,bal.returned,bal.balance],color:cssVar('--accent')}],
+      {}
+    )
+  ));
   container.appendChild(row);
-  const qrow=el('div',{class:'chart-row'});
-  qrow.appendChild(chartCard('Quality Issues — Current Cause Breakdown',qualityIssueByCauseConfig()));
-  qrow.appendChild(chartCard('Warranty by Brand',warrantyByBrandConfig()));
-  container.appendChild(qrow);
+
+  container.appendChild(chartCard('Warranty by Brand',warrantyByBrandConfig()));
+
+  /* Inputs and histories follow the charts. */
   container.appendChild(collapseSection('Input / History — New Battery Intake',NewBatteryView()));
   container.appendChild(collapseSection('Input / History — IoT Upgrade Tracker',IotTrackerView()));
   container.appendChild(collapseSection('Warranty & Scrap Stock',WarrantyStockView()));
+
   return container;
 }
+
 
 function PlantEntryView(){
   const d = STATE.plantDraft;
