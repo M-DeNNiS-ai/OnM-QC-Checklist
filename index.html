@@ -1552,6 +1552,7 @@ let STATE = {
   warrantySaving: false,
   integrityBusy: false,
   exportingExcel: false,
+  navLoading: false,
 
   dailyStockDraft: null,
   dailyStockSaving: false,
@@ -2132,7 +2133,23 @@ function Nav(items, labels){
   const nav = el('div',{class:'nav'});
   items.forEach(k=>{
     const b = el('button',{class: STATE.view===k?'active':''}, labels[k]);
-    b.addEventListener('click', ()=>{ STATE.view=k; STATE.openId=null; render(); });
+    b.addEventListener('click', async ()=>{
+      if(STATE.navLoading) return;
+      STATE.navLoading = true;
+      STATE.view=k; STATE.openId=null;
+      try{
+        /* Every page navigation pulls the same shared stores before rendering.
+           This prevents one dashboard from showing an older snapshot than another. */
+        await loadStoresIntoState(visibleStoreKeys(), {ensureNamanve:true, ensureQualityIssues:true});
+        STATE.omLastRefreshed=nowTime();
+        STATE.globalLastRefreshed=nowTime();
+      }catch(e){
+        STATE.globalSyncError=e.message||'Could not refresh shared data';
+      }finally{
+        STATE.navLoading=false;
+        render();
+      }
+    });
     nav.appendChild(b);
   });
   return nav;
@@ -3396,6 +3413,53 @@ function collapseSection(title, content){
   return d;
 }
 
+/* ---------- Shared cross-sector data snapshot ----------
+   These values are deliberately derived from the same live stores used by the
+   operational pages and charts. They are read-only: no data is copied into a
+   second store, so dashboards cannot drift apart. */
+function sharedOperationalSnapshot(){
+  const om=STATE.omRecords||[];
+  const warranty=STATE.warrantyRecords||[];
+  const bsa=STATE.bsaRecords||[];
+  const ledger=computeStockLedger(STATE.plantStockRecords||[]);
+  const latestDaily=latestNamanveDailyStock();
+  const activeWarranty=warranty.filter(w=>w.status!=='Scrapped by QC' && w.status!=='Repaired & Returned');
+  const openBsa=bsa.filter(r=>!['Returned to O&M for Deployment','Scrapped'].includes(r.status));
+  const openOm=om.filter(r=>!String(r.status||'').startsWith('CLOSED'));
+  return {
+    openOm:openOm.length,
+    activeWarranty:activeWarranty.length,
+    openBsa:openBsa.length,
+    warrantyTotal:warranty.length,
+    bsaTotal:bsa.length,
+    latestDaily,
+    latestLedger:ledger.length?ledger[ledger.length-1]:null,
+    ledgerTotal:ledger.length?ledger[ledger.length-1].totals.closing:0,
+  };
+}
+function SharedOperationalSnapshotCard(title='Shared Operational Snapshot'){
+  const x=sharedOperationalSnapshot();
+  const card=el('div',{class:'card'});
+  card.appendChild(el('h3',{},title));
+  card.appendChild(el('div',{class:'sub'},'Read-only live values from the same underlying sector stores used by the operational pages and charts. These figures are not duplicated or manually maintained.'));
+  const stats=el('div',{class:'stat-grid'});
+  stats.appendChild(statBox(x.openOm,'O&M Open Pipeline'));
+  stats.appendChild(statBox(x.activeWarranty,'Active Warranty'));
+  stats.appendChild(statBox(x.openBsa,'Open BSA Cases'));
+  stats.appendChild(statBox(x.ledgerTotal,'OEM Ledger Closing Stock'));
+  if(x.latestDaily){
+    stats.appendChild(statBox(computeDailyStockGrandTotal(x.latestDaily),'Latest Daily Stock Grand Total'));
+    stats.appendChild(statBox(x.latestDaily.qualityIssues||0,'Latest Daily Quality Issues'));
+  }
+  card.appendChild(stats);
+  const note=[];
+  if(x.latestDaily) note.push('Daily Stock: '+formatNamanveDate(x.latestDaily.date));
+  if(x.latestLedger) note.push('OEM Ledger: '+formatNamanveDate(x.latestLedger.date));
+  note.push('Warranty records: '+x.warrantyTotal,'BSA records: '+x.bsaTotal);
+  card.appendChild(el('div',{class:'sync-line'},note.join(' · ')));
+  return card;
+}
+
 function PlantDashboardView(){
   const container=el('div');
   container.appendChild(el('div',{class:'sector-tag'},'Namanve Plant A — Plant & Inventory Dashboard'));
@@ -3438,6 +3502,7 @@ function PlantDashboardView(){
   info.appendChild(el('h3',{},'Plant Pages'));
   info.appendChild(el('div',{class:'sub'},'Detailed entries and histories are grouped into Daily Stock & Quality, Stock & Movement, and Battery Operations so the same chart or information is not repeated on multiple pages.'));
   container.appendChild(info);
+  container.appendChild(SharedOperationalSnapshotCard('Plant-wide Shared Data Snapshot'));
 
   return container;
 }
@@ -3487,6 +3552,7 @@ function PlantDailyCombinedView(){
   qbtn.addEventListener('click',openQualityIssueBreakdownModal);
   quality.appendChild(qbtn);
   container.appendChild(quality);
+  container.appendChild(SharedOperationalSnapshotCard('Plant-wide Shared Data Snapshot'));
 
   return container;
 }
@@ -3526,6 +3592,7 @@ function PlantStockOperationsView(){
   details.appendChild(StockLedgerView());
   ledgerWrap.appendChild(details);
   container.appendChild(ledgerWrap);
+  container.appendChild(SharedOperationalSnapshotCard('Stock & Movement Shared Snapshot'));
 
   return container;
 }
@@ -4588,6 +4655,102 @@ function BsaCaseCard(r, editable){
   card.appendChild(saveBtn);
   return card;
 }
+function BsaNewCaseView(){
+  const d = STATE.bsaDraft || (STATE.bsaDraft = emptyBsaDraft());
+  const container = el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'BSA Technician — log a new BSA case'));
+
+  const card = el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Log New BSA Case'));
+  card.appendChild(el('div',{class:'sub'},'Create a new BSA case directly from the technician queue. Record the battery identity, source, issue and any SOP already attempted.'));
+
+  const g = el('div',{class:'grid'});
+  const bmsInp = smartBatteryIdInput(d.bmsId,(v,platform)=>{
+    d.bmsId=v;
+    if(platform) d.model=platform;
+  },{placeholder:'Scan or enter suffix',key:'bsa-newcase-bms'});
+  g.appendChild(field('BMS ID', bmsInp));
+  g.appendChild(field('Platform', textInput(d.model, v=>d.model=v)));
+  g.appendChild(field('Source', selectInput(d.source, BSA_SOURCES.map(s=>[s,s]), v=>d.source=v)));
+  g.appendChild(field('Date Flagged', textInput(d.dateFlagged, v=>d.dateFlagged=v, {type:'date'})));
+  g.appendChild(field('Flagged By', textInput(d.flaggedBy || STATE.techName || '', v=>d.flaggedBy=v)));
+  g.appendChild(field('Assign To (optional)', textInput(d.assignedEngineer, v=>d.assignedEngineer=v)));
+  card.appendChild(g);
+
+  card.appendChild(field('What Failed / Issue Description',
+    textareaInput(d.issueDescription, v=>d.issueDescription=v, {})));
+  card.appendChild(field('SOPs Already Attempted (or "None applicable")',
+    textareaInput(d.sopAttempted, v=>d.sopAttempted=v, {})));
+
+  const addBtn = el('button',{
+    class:'btn-primary',
+    style:'margin-top:8px;',
+    disabled: STATE.bsaSaving
+  }, STATE.bsaSaving ? loadingLabel(true,'Saving…') : 'Log New Case');
+
+  addBtn.addEventListener('click', async ()=>{
+    if(STATE.bsaSaving) return;
+    if(!d.bmsId.trim() || !d.issueDescription.trim()){
+      toast('BMS ID and issue description are required.');
+      return;
+    }
+
+    const entry = {
+      id:uid(),
+      createdAt:nowIso(),
+      status:BSA_STATUSES[0],
+      rcaSummary:'',
+      repairNotes:'',
+      technicianStatus:'',
+      bsaReceivedAt:'',
+      bsaReceivedBy:'',
+      bsaProgress:'',
+      ...JSON.parse(JSON.stringify(d))
+    };
+
+    const fresh = await loadBsa();
+    const updated = [...fresh, entry];
+
+    STATE.bsaSaving = true;
+    render();
+
+    const ok = await saveBsa(updated);
+    STATE.bsaSaving = false;
+
+    if(!ok){
+      toast('⚠ Could not save — try again.');
+      render();
+      return;
+    }
+
+    STATE.bsaRecords = updated;
+    STATE.bsaDraft = emptyBsaDraft();
+    toast(`✓ BMS ${entry.bmsId} logged as a new BSA case.`);
+    render();
+  });
+
+  card.appendChild(addBtn);
+  container.appendChild(card);
+
+  const recentCard = el('div',{class:'card'});
+  recentCard.appendChild(el('h3',{},'Recently Logged BSA Cases'));
+
+  const recent = searchFilter(
+    [...(STATE.bsaRecords||[])]
+      .sort((a,b)=>String(b.createdAt||b.dateFlagged||'').localeCompare(String(a.createdAt||a.dateFlagged||''))),
+    r=>`${r.bmsId} ${r.model} ${r.issueDescription} ${r.status} ${r.source}`
+  ).slice(0,20);
+
+  if(recent.length===0){
+    recentCard.appendChild(el('div',{class:'empty-note'},'No BSA cases logged yet.'));
+  } else {
+    recent.forEach(r=>recentCard.appendChild(BsaCaseCard(r,true)));
+  }
+
+  container.appendChild(recentCard);
+  return container;
+}
+
 function BsaActivityView(){
   const container=el('div');
   container.appendChild(el('div',{class:'sector-tag'},'BSA Technician — all escalated batteries received from O&M, Quality and other BSA sources'));
@@ -4610,6 +4773,7 @@ function BsaActivityView(){
   const filtered=searchFilter(all,r=>`${r.bmsId} ${r.model} ${r.issueDescription} ${r.status} ${bsaTechStatus(r)} ${r.source}`);
   if(filtered.length===0){container.appendChild(el('div',{class:'card'},[el('div',{class:'empty-note'},'No BSA cases match your search.')]));return container;}
   filtered.forEach(r=>container.appendChild(BsaCaseCard(r,true)));
+  container.appendChild(SharedOperationalSnapshotCard('BSA Shared Operational Snapshot'));
   return container;
 }
 
@@ -4649,6 +4813,7 @@ function BsaAnalyticsView(){
   container.appendChild(row);
 
   container.appendChild(BatteryDeepDiveCard());
+  container.appendChild(SharedOperationalSnapshotCard('BSA Shared Operational Snapshot'));
   return container;
 }
 
@@ -5315,6 +5480,7 @@ function FullVisibilityTablesCard(){
     tbl.appendChild(tbody); wrap.appendChild(tbl); bsaCard.appendChild(wrap);
   }
   container.appendChild(bsaCard);
+  container.appendChild(SharedOperationalSnapshotCard('Cross-Sector Shared Data Snapshot'));
 
   return container;
 }
