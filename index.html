@@ -431,9 +431,15 @@ const NAMANVE_STOCK_COLUMNS = [
   ['incomingNewHealthy','Incoming New Healthy'], ['incomingHealthyEnergy','Incoming Healthy - Energy'],
 ];
 function computeDailyStockGrandTotal(d){
-  if(d && d.grandTotal!==undefined && d.grandTotal!==null && String(d.grandTotal)!=='') return parseInt(d.grandTotal)||0;
-  const n = k=> parseInt(d[k])||0;
-  return n('healthy')+n('qualityIssues')+n('offline')+n('boxed')+n('testBatteries');
+  if(!d) return 0;
+  /* Namanve Inventory Tracker rule:
+     Grand Total = Healthy + Quality Issues + Offline + Boxed + Test Batteries.
+     Uncharged and Batteries in Bikes are operational states and are not added
+     separately because they overlap the physical stock categories. */
+  const keys=['healthy','qualityIssues','offline','boxed','testBatteries'];
+  const hasComponents=keys.some(k=>d[k]!==undefined && d[k]!==null && String(d[k])!=='');
+  if(hasComponents) return keys.reduce((sum,k)=>sum+(parseInt(d[k])||0),0);
+  return parseInt(d.grandTotal)||0;
 }
  
 /* ---------- Domain constants ---------- */
@@ -848,6 +854,9 @@ async function loadStoresIntoState(keys=BQC_STORES, options={}){
   if(options.ensureQualityIssues && readable.includes('quality_issue_records')){
     STATE.qualityIssueRecords=await ensureQualityIssueSeed();
   }
+  if(readable.includes('warranty_records')){
+    STATE.warrantyRecords=(STATE.warrantyRecords||[]).map(w=>w.warehouse ? w : {...w,warehouse:'Kyebando Warehouse'});
+  }
   return readable;
 }
 
@@ -1255,19 +1264,27 @@ function computeStockLedger(records){
     const rows = PLATFORMS.map(p=>{
       const rec = findStockRecord(records, date, p);
       const opening = running[p];
-      const received = rec ? rec.receivedQty : 0;
-      const dispatched = rec ? rec.dispatchedQty : 0;
+      const received = rec ? parseInt(rec.receivedQty)||0 : 0;
+      const dispatched = rec ? parseInt(rec.dispatchedQty)||0 : 0;
       const closing = opening + received - dispatched;
+      const shortage = Math.max(0,-closing);
       running[p] = closing;
-      return { platform:p, opening, received, dispatched, closing, rec };
+      return { platform:p, opening, received, dispatched, closing, shortage, rec };
     });
     const totals = rows.reduce((acc,r)=>({
       opening: acc.opening+r.opening, received: acc.received+r.received,
-      dispatched: acc.dispatched+r.dispatched, closing: acc.closing+r.closing
-    }), {opening:0, received:0, dispatched:0, closing:0});
+      dispatched: acc.dispatched+r.dispatched, closing: acc.closing+r.closing,
+      shortage: acc.shortage+r.shortage
+    }), {opening:0, received:0, dispatched:0, closing:0, shortage:0});
     table.push({ date, rows, totals });
   });
   return table;
+}
+function oemLedgerDataIssueSummary(){
+  const ledger=computeStockLedger(STATE.plantStockRecords||[]);
+  const issues=[];
+  ledger.forEach(e=>e.rows.forEach(r=>{if(r.shortage>0)issues.push({date:e.date,platform:r.platform,shortage:r.shortage});}));
+  return issues;
 }
 function loadDraftForDate(){
   const d = STATE.bulkStockDraft;
@@ -1413,6 +1430,10 @@ const NAMANVE_DAILY_STOCK_SEED = [
   ['2026-09-20',0,0,0,0,0,0,13,0,0,0,0,0,0,0,1538],
   ['2026-09-21',413,74,436,396,396,468,13,206,0,0,0,0,0,0,1332],
   ['2026-09-22',566,92,240,180,180,714,8,246,0,0,0,0,0,0,1086],
+  ['2026-09-23',189,107,465,0,0,1031,8,317,0,0,0,0,0,0,769],
+  ['2026-09-24',88,8,262,504,574,1055,8,301,0,102,0,0,720,0,870],
+  ['2026-09-25',223,15,432,108,108,1055,1,307,0,0,0,0,0,0,779],
+  ['2026-09-26',223,15,432,108,108,1055,1,0,0,0,0,0,0,0,779],
 ];
 function namanveSeedDailyStock(){
   return NAMANVE_DAILY_STOCK_SEED.map(r=>({
@@ -1434,10 +1455,23 @@ function qualityIssueTotal(records){ return (records||[]).reduce((a,r)=>a+(parse
 async function ensureNamanvePlantData(){
   const existing=await loadDailyStock();
   const seed=namanveSeedDailyStock();
-  const seen=new Set(existing.map(r=>`${r.date}|${r.plant||'Namanve Plant A'}`));
-  const missing=seed.filter(r=>!seen.has(`${r.date}|${r.plant}`));
-  if(!missing.length) return existing;
-  const merged=[...existing,...missing];
+  const byKey=new Map(existing.map(r=>[`${r.date}|${r.plant||'Namanve Plant A'}`,r]));
+  let changed=false;
+  seed.forEach(s=>{
+    const key=`${s.date}|${s.plant}`;
+    const old=byKey.get(key);
+    if(!old){
+      byKey.set(key,s); changed=true; return;
+    }
+    /* Only refresh rows previously created by this app's imported reference seed.
+       User-entered daily records are never overwritten. */
+    if(String(old.id||'').startsWith('namanve-seed-') || old.enteredBy==='Imported Namanve daily stock sheet'){
+      const merged={...old,...s,id:old.id||s.id,createdAt:old.createdAt||s.createdAt,updatedAt:nowIso()};
+      if(stableStr(merged)!==stableStr(old)){ byKey.set(key,merged); changed=true; }
+    }
+  });
+  if(!changed) return existing;
+  const merged=[...byKey.values()].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
   return (await saveDailyStock(merged)) ? merged : existing;
 }
 async function ensureQualityIssueSeed(){
@@ -2515,6 +2549,46 @@ function openChartSelection(title,label,value){
   modalShell('chart-modal','Chart Selection',`${title} · click a battery ID to open its history`,body);
 }
 
+/* ==================== O&M TECHNICIAN — TEAM WORKLOAD / TAKEOVER ==================== */
+function stageTechnicianName(rec,stage){const key='stage'+stage;return rec&&rec[key]?(rec[key].technician||'Unassigned'):'Unassigned';}
+function openRecordsAtStage(stage){return (STATE.omRecords||[]).filter(r=>r.stage===stage&&!String(r.status||'').startsWith('CLOSED'));}
+function stageWorkload(stage){const counts={};openRecordsAtStage(stage).forEach(r=>{const who=stageTechnicianName(r,stage);counts[who]=(counts[who]||0)+1;});return counts;}
+async function takeOverStageRecord(recordId,stage){
+  const fresh=await loadOm(); const rec=fresh.find(r=>r.id===recordId);
+  if(!rec||rec.stage!==stage||String(rec.status||'').startsWith('CLOSED')){toast('This work item is no longer available for takeover. Refreshing the docket.');STATE.omRecords=fresh;render();return;}
+  const key='stage'+stage; const previous=rec[key]&&rec[key].technician?rec[key].technician:'Unassigned';
+  if(previous===STATE.techName){toast('This work is already assigned to you.');return;}
+  if(!window.confirm(`Take over ${rec.bmsId} at Stage ${stage} from ${previous}?`))return;
+  rec[key]=rec[key]||{}; rec[key].technician=STATE.techName; rec[key].takenOverAt=nowIso(); rec[key].takenOverFrom=previous; rec.updatedAt=nowIso();
+  const saved=await saveOm(fresh); if(!saved){toast('Could not take over this work item. Check the connection and try again.');return;}
+  STATE.omRecords=fresh; toast(`✓ ${rec.bmsId} is now assigned to you at Stage ${stage}.`); render();
+}
+function OmTechTeamWorkloadCard(){
+  const container=el('div',{class:'card'});
+  container.appendChild(el('h3',{},'Team Work in Progress — Take Over Work'));
+  container.appendChild(el('div',{class:'sub'},"Live workload across Stage 1, Stage 2 and Stage 3. You can take over another technician's open work at your signed-in stage after confirmation. Other stages are visible for workload awareness but cannot be taken over from this screen."));
+  const current=openRecordsAtStage(STATE.stage); const allOpen=[1,2,3].map(stage=>({stage,count:openRecordsAtStage(stage).length}));
+  const stats=el('div',{class:'stat-grid'}); allOpen.forEach(x=>stats.appendChild(statBox(x.count,`Stage ${x.stage} WIP`)));
+  stats.appendChild(statBox(current.filter(r=>stageTechnicianName(r,STATE.stage)===STATE.techName).length,'My Current-Stage WIP'));
+  stats.appendChild(statBox(current.filter(r=>stageTechnicianName(r,STATE.stage)!==STATE.techName).length,'Other / Unassigned at My Stage')); container.appendChild(stats);
+  const counts=stageWorkload(STATE.stage), labels=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]||a.localeCompare(b));
+  container.appendChild(chartCard(`Stage ${STATE.stage} WIP by Technician`,baseBarConfig(labels.length?labels:['No WIP'],[{label:'Open Batteries',data:labels.length?labels.map(l=>counts[l]):[0],color:cssVar('--accent')}],{})));
+  [1,2,3].forEach(stage=>{
+    const list=openRecordsAtStage(stage), card=el('div',{class:'card',style:'margin-top:10px;'}); card.appendChild(el('h4',{},`Stage ${stage} — ${list.length} open item(s)`));
+    if(!list.length){card.appendChild(el('div',{class:'empty-note'},'No work in progress at this stage.'));container.appendChild(card);return;}
+    const wrap=el('div',{class:'table-wrap'}),tbl=el('table'); tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'BMS ID'),el('th',{},'Platform'),el('th',{},'Assigned Technician'),el('th',{},'Status'),el('th',{},'Action')])]));
+    const tbody=el('tbody'); list.forEach(r=>{
+      const who=stageTechnicianName(r,stage), action=el('td',{});
+      if(stage!==STATE.stage)action.appendChild(el('span',{class:'meta'},'Switch to Stage '+stage+' to take over'));
+      else if(who===STATE.techName)action.appendChild(el('span',{class:'status-chip PASS'},'Assigned to you'));
+      else{const b=el('button',{class:'btn-sm btn-primary'},who==='Unassigned'?'Take Work':'Take Over');b.addEventListener('click',()=>takeOverStageRecord(r.id,stage));action.appendChild(b);}
+      tbody.appendChild(el('tr',{},[el('td',{class:'mono',style:'font-weight:700;'},batteryIdButton(r.bmsId)),el('td',{},r.model||'Unknown'),el('td',{},who),el('td',{},el('span',{class:'status-chip OPEN'},String(r.status||'').replace(/_/g,' '))),action]));
+    });
+    tbl.appendChild(tbody);wrap.appendChild(tbl);card.appendChild(wrap);container.appendChild(card);
+  });
+  return container;
+}
+
 /* ==================== O&M TECHNICIAN — 3-STAGE CHAIN ==================== */
  
 function OmTechDocketView(){
@@ -3042,6 +3116,7 @@ function OmTechAnalyticsView(){
       labels.length ? baseBarConfig(labels, [{label:'Count', data: labels.map(l=>issueCounts[l]), color: cssVar('--warn')}], {}) : baseBarConfig(['No data'], [{label:'Count', data:[0], color:cssVar('--warn')}], {})));
   }
 
+  container.appendChild(OmTechTeamWorkloadCard());
   container.appendChild(BatteryDeepDiveCard());
   return container;
 }
@@ -3207,12 +3282,15 @@ function renderLedgerDayTable(entry){
   const tbody = el('tbody');
   entry.rows.forEach(r=>{
     const meta = PLATFORM_META[r.platform];
+    const closingCell = r.shortage>0
+      ? el('td',{class:'mono',style:'font-weight:700;color:var(--fail);'}, `0 ⚠ short ${r.shortage}`)
+      : el('td',{class:'mono',style:'font-weight:700;'}, String(r.closing));
     tbody.appendChild(el('tr',{},[
       el('td',{}, meta.emoji+' '+meta.label),
       el('td',{class:'mono'}, String(r.opening)),
       el('td',{class:'mono'}, String(r.received)),
       el('td',{class:'mono'}, String(r.dispatched)),
-      el('td',{class:'mono',style:'font-weight:700;'}, String(r.closing)),
+      closingCell,
     ]));
   });
   tbody.appendChild(el('tr',{style:'font-weight:700;background:var(--panel2);'},[
@@ -3220,10 +3298,13 @@ function renderLedgerDayTable(entry){
     el('td',{class:'mono'}, String(entry.totals.opening)),
     el('td',{class:'mono'}, String(entry.totals.received)),
     el('td',{class:'mono'}, String(entry.totals.dispatched)),
-    el('td',{class:'mono'}, String(entry.totals.closing)),
+    el('td',{class:'mono'}, String(Math.max(0,entry.totals.closing))),
   ]));
   tbl.appendChild(tbody);
   wrap.appendChild(tbl);
+  if(entry.totals.shortage>0){
+    wrap.appendChild(el('div',{class:'banner err',style:'margin-top:8px;'},`⚠ Stock data issue: ${entry.totals.shortage} outbound unit(s) are not covered by opening stock + inward stock. Available closing stock is shown as 0 rather than a negative inventory balance. Correct the stock entry before treating the ledger as reconciled.`));
+  }
   return wrap;
 }
  
@@ -3290,6 +3371,13 @@ function BulkStockEntryView(){
       if(existing){ updated = updated.map(r=> r.id===rec.id ? rec : r); }
       else { updated = [...updated, rec]; }
     });
+    const dateCheck=computeStockLedger(updated).find(e=>e.date===d.date);
+    const negativeRows=(dateCheck?.rows||[]).filter(r=>r.closing<0);
+    if(negativeRows.length){
+      STATE.bulkStockError='Stock cannot close below zero. '+negativeRows.map(r=>`${r.platform} is short by ${r.shortage} unit(s)`).join('; ')+'. Enter the missing inward stock or reduce the outbound quantity before saving.';
+      render();
+      return;
+    }
     STATE.bulkStockSaving = true; render();
     const ok = await savePlantStock(updated);
     STATE.bulkStockSaving = false;
@@ -3448,7 +3536,7 @@ function sharedOperationalSnapshot(){
   const bsa=STATE.bsaRecords||[];
   const ledger=computeStockLedger(STATE.plantStockRecords||[]);
   const latestDaily=latestNamanveDailyStock();
-  const activeWarranty=warranty.filter(w=>w.status!=='Scrapped by QC' && w.status!=='Repaired & Returned');
+  const activeWarranty=warranty.filter(w=>warrantyIsActiveStatus(w.status));
   const openBsa=bsa.filter(r=>!['Returned to O&M for Deployment','Scrapped'].includes(r.status));
   const openOm=om.filter(r=>!String(r.status||'').startsWith('CLOSED'));
   return {
@@ -3459,7 +3547,7 @@ function sharedOperationalSnapshot(){
     bsaTotal:bsa.length,
     latestDaily,
     latestLedger:ledger.length?ledger[ledger.length-1]:null,
-    ledgerTotal:ledger.length?ledger[ledger.length-1].totals.closing:0,
+    ledgerTotal:ledger.length?Math.max(0,ledger[ledger.length-1].totals.closing):0,
   };
 }
 function SharedOperationalSnapshotCard(title='Shared Operational Snapshot'){
@@ -3471,11 +3559,13 @@ function SharedOperationalSnapshotCard(title='Shared Operational Snapshot'){
   stats.appendChild(statBox(x.openOm,'O&M Open Pipeline'));
   stats.appendChild(statBox(x.activeWarranty,'Active Warranty'));
   stats.appendChild(statBox(x.openBsa,'Open BSA Cases'));
-  stats.appendChild(statBox(x.ledgerTotal,'OEM Ledger Closing Stock'));
   if(x.latestDaily){
-    stats.appendChild(statBox(computeDailyStockGrandTotal(x.latestDaily),'Latest Daily Stock Grand Total'));
+    stats.appendChild(statBox(computeDailyStockGrandTotal(x.latestDaily),'Namanve New Battery Stock'));
     stats.appendChild(statBox(x.latestDaily.qualityIssues||0,'Latest Daily Quality Issues'));
   }
+  stats.appendChild(statBox(x.ledgerTotal,'OEM Bulk Ledger Closing Stock'));
+  const ledgerIssues=oemLedgerDataIssueSummary();
+  if(ledgerIssues.length) stats.appendChild(statBox(ledgerIssues.reduce((a,b)=>a+b.shortage,0),'Unreconciled Outbound Units'));
   card.appendChild(stats);
   const note=[];
   if(x.latestDaily) note.push('Daily Stock: '+formatNamanveDate(x.latestDaily.date));
@@ -3496,7 +3586,7 @@ function PlantDashboardView(){
   container.appendChild(row1);
 
   const row2=el('div',{class:'chart-row'});
-  row2.appendChild(chartCard('OEM Stock Closing Trend',stockLedgerTrendConfig()));
+  row2.appendChild(chartCard('OEM Bulk Ledger Closing Trend',stockLedgerTrendConfig()));
   row2.appendChild(chartCard('Latest Daily Stock Category Breakdown',latestDailyCategoryConfig()));
   container.appendChild(row2);
 
@@ -3582,20 +3672,52 @@ function PlantDailyCombinedView(){
   return container;
 }
 
+function NamanvePlantNewBatteryStockCard(){
+  const r=namanveNewBatteryStockSnapshot();
+  const card=el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Namanve Plant A — New Battery Stock'));
+  card.appendChild(el('div',{class:'sub'},r ? `${formatNamanveDate(r.date)} · Referenced to the Namanve Inventory Tracker. Grand Total is the plant stock measure; operational states are not added together.` : 'No Namanve Daily Stock record is available yet.'));
+  if(!r){ card.appendChild(el('div',{class:'empty-note'},'Enter a Daily Stock record to establish the plant new-battery stock position.')); return card; }
+  const stats=el('div',{class:'stat-grid'});
+  [
+    ['grandTotal','Grand Total'],['healthy','Healthy'],['qualityIssues','Quality Issues'],
+    ['offline','Offline'],['boxed','Boxed'],['uncharged','Uncharged'],
+    ['batteriesInBikes','Batteries in Bikes'],['testBatteries','Test Batteries']
+  ].forEach(([k,label])=>stats.appendChild(statBox(r[k],label)));
+  card.appendChild(stats);
+  const move=el('div',{class:'detail-grid',style:'margin-top:10px;'});
+  addDetailKV(move,'Deployment Out',r.deployment);
+  addDetailKV(move,'Energy Out',r.energy);
+  addDetailKV(move,'Quality Issues Out',r.qualityIssuesOut);
+  addDetailKV(move,'Returns Healthy',r.returnsHealthy);
+  addDetailKV(move,'Returns Faulty',r.returnsFaulty);
+  addDetailKV(move,'Incoming New Healthy',r.incomingNewHealthy);
+  addDetailKV(move,'Incoming Healthy — Energy',r.incomingHealthyEnergy);
+  card.appendChild(move);
+  card.appendChild(chartCard('Namanve New Battery Stock — Current Physical Categories', baseBarConfig(
+    ['Healthy','Quality Issues','Offline','Boxed','Test Batteries'],
+    [{label:'Batteries',data:[r.healthy,r.qualityIssues,r.offline,r.boxed,r.testBatteries],color:cssVar('--accent')}]
+  )));
+  card.appendChild(el('div',{class:'banner',style:'margin-top:10px;'},'This is Namanve New Battery Stock. It is separate from the OEM Bulk Ledger and separate from Kyebando Warranty Stock. Do not add the three pools together. Uncharged and Batteries in Bikes are shown as operational states and are not added again to Grand Total.'));
+  return card;
+}
+
 function PlantStockOperationsView(){
   const container=el('div');
   container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Stock & Movement'));
 
   /* Stock-specific charts only. */
   const row1=el('div',{class:'chart-row'});
-  row1.appendChild(chartCard('OEM Stock by Platform',stockByPlatformPieConfig()));
-  row1.appendChild(chartCard('Inventory Movements by Month',movementsByMonthConfig()));
+  row1.appendChild(chartCard('OEM Bulk Ledger Stock by Platform',stockByPlatformPieConfig()));
+  row1.appendChild(chartCard('Namanve New Battery Movements by Month',movementsByMonthConfig()));
   container.appendChild(row1);
 
   const row2=el('div',{class:'chart-row'});
   row2.appendChild(chartCard('OEM Stock Closing Trend',stockLedgerTrendConfig()));
   row2.appendChild(chartCard('Daily Stock Grand Total',dailyStockBarConfig()));
   container.appendChild(row2);
+
+  container.appendChild(NamanvePlantNewBatteryStockCard());
 
   container.appendChild(collapseSection('Input — Bulk OEM Stock Intake / Dispatch',BulkStockEntryView()));
   container.appendChild(collapseSection('Input — Stock Movement / Corrections',AdjustmentView()));
@@ -3606,61 +3728,86 @@ function PlantStockOperationsView(){
   const latest=ledger[ledger.length-1];
   if(latest) ledgerWrap.appendChild(renderLedgerDayTable(latest));
   else ledgerWrap.appendChild(el('div',{class:'empty-note'},'No OEM bulk stock entries recorded yet.'));
-  const stock=stockByPlatform();
+  const stock=oemLedgerStockByPlatform();
   ledgerWrap.appendChild(el('div',{class:'stat-grid',style:'margin-top:10px;'},
     PLATFORMS.map(p=>statBox(stock[p],p)).concat([
       statBox(Object.values(stock).reduce((a,b)=>a+b,0),'Total OEM Ledger Stock')
     ])
   ));
+  const newStock=newBatteryStockByPlatform();
+  const newWrap=el('div',{class:'card',style:'margin-top:10px;'});
+  newWrap.appendChild(el('h3',{},'New Battery Operational Stock — Separate Pool'));
+  newWrap.appendChild(el('div',{class:'sub'},'Derived from New Battery Intake and Inventory Movements only. It is not added to the OEM ledger or Warranty Stock.'));
+  const ns=el('div',{class:'stat-grid'}); PLATFORMS.forEach(p=>ns.appendChild(statBox(newStock[p],p)));
+  ns.appendChild(statBox(Object.values(newStock).reduce((a,b)=>a+b,0),'New Battery Balance')); newWrap.appendChild(ns); container.appendChild(newWrap);
   const details=el('details',{style:'margin-top:10px;'});
   details.appendChild(el('summary',{style:'cursor:pointer;font-size:11px;font-weight:700;color:var(--muted);'},'Open full Stock Ledger history'));
   details.appendChild(StockLedgerView());
   ledgerWrap.appendChild(details);
   container.appendChild(ledgerWrap);
+  const stockIssues=oemLedgerDataIssueSummary();
+  if(stockIssues.length){
+    const issueCard=el('div',{class:'card'});
+    issueCard.appendChild(el('h3',{},'Stock Reconciliation Alerts'));
+    issueCard.appendChild(el('div',{class:'sub'},'Negative inventory is never treated as real stock. These are outbound movements that exceed available opening + inward stock and require correction.'));
+    const wrap=el('div',{class:'table-wrap'}),tbl=el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'Platform'),el('th',{},'Uncovered Outbound Units')])]));
+    const tbody=el('tbody'); stockIssues.slice(-30).forEach(x=>tbody.appendChild(el('tr',{},[el('td',{class:'mono'},x.date),el('td',{},x.platform),el('td',{class:'mono',style:'font-weight:700;color:var(--fail);'},String(x.shortage))])));
+    tbl.appendChild(tbody);wrap.appendChild(tbl);issueCard.appendChild(wrap);container.appendChild(issueCard);
+  }
   container.appendChild(SharedOperationalSnapshotCard('Stock & Movement Shared Snapshot'));
 
   return container;
 }
 
 function PlantOperationsCombinedView(){
+  /* Defensive initialization keeps this page renderable even if a cached session
+     reaches the route before the sector loader has rebuilt its drafts. */
+  if(!STATE.newBatteryDraft) STATE.newBatteryDraft=emptyNewBatteryDraft();
+  if(!STATE.warrantyDraft) STATE.warrantyDraft=emptyWarrantyDraft();
+  if(!Array.isArray(STATE.newBatteryRecords)) STATE.newBatteryRecords=[];
+  if(!Array.isArray(STATE.warrantyRecords)) STATE.warrantyRecords=[];
+  if(!Array.isArray(STATE.iotGiven)) STATE.iotGiven=[];
+  if(!Array.isArray(STATE.iotReturned)) STATE.iotReturned=[];
   const container=el('div');
   container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Battery Operations & Warranty'));
-
-  /* Battery-operations-specific charts only. */
+  const newSection=el('div',{class:'card'});
+  newSection.appendChild(el('h3',{},'New Battery Operations — Namanve'));
+  newSection.appendChild(el('div',{class:'sub'},'New Battery Stock is tracked separately from the OEM Bulk Stock Ledger and from Warranty Stock at Kyebando.'));
+  const nb=newBatteryStockByPlatform(), nbStats=el('div',{class:'stat-grid'});
+  PLATFORMS.forEach(p=>nbStats.appendChild(statBox(nb[p],p)));
+  nbStats.appendChild(statBox(Object.values(nb).reduce((a,b)=>a+b,0),'New Battery Operational Balance'));
+  newSection.appendChild(nbStats); container.appendChild(newSection);
+  const newStockIssues=newBatteryStockIssues();
+  if(newStockIssues.length){
+    const issueCard=el('div',{class:'card'});
+    issueCard.appendChild(el('h3',{},'New Battery Stock Reconciliation Alerts'));
+    issueCard.appendChild(el('div',{class:'sub'},'Negative operational balances are not treated as real stock. These records indicate outbound/correction movements that are not covered by recorded New Battery Intake.'));
+    const wrap=el('div',{class:'table-wrap'}),tbl=el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'Platform'),el('th',{},'Uncovered Units')])]));
+    const tbody=el('tbody'); newStockIssues.slice(-30).forEach(x=>tbody.appendChild(el('tr',{},[el('td',{class:'mono'},x.date),el('td',{},x.platform),el('td',{class:'mono',style:'font-weight:700;color:var(--fail);'},String(x.shortage))])));
+    tbl.appendChild(tbody);wrap.appendChild(tbl);issueCard.appendChild(wrap);container.appendChild(issueCard);
+  }
   const row=el('div',{class:'chart-row'});
-  const intakeByDay={};
-  STATE.newBatteryRecords.forEach(r=>{
-    const d=r.date;
-    intakeByDay[d]=(intakeByDay[d]||0)+(parseInt(r.quantity)||0);
-  });
+  const intakeByDay={}; (STATE.newBatteryRecords||[]).forEach(r=>{const d=r.date;intakeByDay[d]=(intakeByDay[d]||0)+(parseInt(r.quantity)||0);});
   const days=Object.keys(intakeByDay).sort().slice(-30);
-  row.appendChild(chartCard(
-    'New Battery Intake — Daily',
-    baseBarConfig(
-      days.length?days.map(formatNamanveDate):['No data'],
-      [{label:'New Batteries',data:days.length?days.map(d=>intakeByDay[d]):[0],color:cssVar('--pass')}],
-      {}
-    )
-  ));
-
+  row.appendChild(chartCard('New Battery Intake — Daily',baseBarConfig(days.length?days.map(formatNamanveDate):['No data'],[{label:'New Batteries',data:days.length?days.map(d=>intakeByDay[d]):[0],color:cssVar('--pass')}],{})));
   const bal=iotBalance();
-  row.appendChild(chartCard(
-    'IoT Handover Balance',
-    baseBarConfig(
-      ['Given','Returned','With IoT'],
-      [{label:'Batteries',data:[bal.given,bal.returned,bal.balance],color:cssVar('--accent')}],
-      {}
-    )
-  ));
+  row.appendChild(chartCard('IoT Handover Balance',baseBarConfig(['Given','Returned','With IoT'],[{label:'Batteries',data:[bal.given,bal.returned,Math.max(0,bal.balance)],color:cssVar('--accent')}],{})));
   container.appendChild(row);
-
-  container.appendChild(chartCard('Warranty by Brand',warrantyByBrandConfig()));
-
-  /* Inputs and histories follow the charts. */
   container.appendChild(collapseSection('Input / History — New Battery Intake',NewBatteryView()));
   container.appendChild(collapseSection('Input / History — IoT Upgrade Tracker',IotTrackerView()));
-  container.appendChild(collapseSection('Warranty & Scrap Stock',WarrantyStockView()));
-
+  const warrantySection=el('div',{class:'card'});
+  warrantySection.appendChild(el('h3',{},'Warranty Operations — Kyebando Warehouse'));
+  warrantySection.appendChild(el('div',{class:'sub'},'Warranty packs are held at Kyebando and are analysed independently from New Battery Stock and the OEM Bulk Stock Ledger.'));
+  const ws=warrantyAnalyticsSummary();
+  warrantySection.appendChild(el('div',{class:'stat-grid'},[statBox(ws.active,'Active Warranty at Kyebando'),statBox(ws.total,'Total Warranty Cases'),statBox(ws.scrapped,'Scrapped'),statBox(ws.returned,'Repaired & Returned')]));
+  container.appendChild(warrantySection);
+  const wrow=el('div',{class:'chart-row'});
+  wrow.appendChild(chartCard('Warranty by Brand — Kyebando',warrantyByBrandConfig()));
+  wrow.appendChild(chartCard('Warranty by Failure Category — Kyebando',warrantyByCategoryConfig()));
+  container.appendChild(wrow);
+  container.appendChild(collapseSection('Warranty Stock & Analytics — Kyebando',WarrantyStockView()));
   return container;
 }
 
@@ -3986,42 +4133,52 @@ function DayLogView(){
 }
 
 function WarrantyStockView(){
-  const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Warranty & Scrap Stock (read-only, reflects the Quality team\'s warranty log)'));
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Batteries Currently Under Warranty & Scrapped, by Brand'));
-  card.appendChild(el('div',{class:'sub'},'Active = escalated to warranty and not yet scrapped or repaired & returned. Scrapped = removed from the fleet by Quality.'));
-  const active = STATE.warrantyRecords.filter(w=>w.status!=='Scrapped by QC' && w.status!=='Repaired & Returned');
-  const scrapped = STATE.warrantyRecords.filter(w=>w.status==='Scrapped by QC');
-  card.appendChild(el('div',{class:'stat-grid'},[statBox(active.length,'Active Under Warranty'), statBox(scrapped.length,'Scrapped Total')]));
-  container.appendChild(card);
- 
-  function groupTable(list, title){
-    const c = el('div',{class:'card'});
-    c.appendChild(el('h3',{},title));
-    if(list.length===0){ c.appendChild(el('div',{class:'empty-note'},'None on file.')); return c; }
-    const groups = {};
-    list.forEach(w=>{
-      const brand = w.model||'Unknown';
-      const key = brand+'|'+w.failureCategory;
-      if(!groups[key]) groups[key] = { brand, issue:w.failureCategory, count:0 };
-      groups[key].count++;
-    });
-    const wrap = el('div',{class:'table-wrap'});
-    const tbl = el('table');
-    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Brand'),el('th',{},'Issue / Reason'),el('th',{},'Count')])]));
-    const tbody = el('tbody');
-    Object.values(groups).sort((a,b)=> a.brand.localeCompare(b.brand)||a.issue.localeCompare(b.issue)).forEach(g=>{
-      tbody.appendChild(el('tr',{},[el('td',{},g.brand),el('td',{},g.issue),el('td',{class:'mono',style:'font-weight:700;'},String(g.count))]));
-    });
-    tbl.appendChild(tbody); wrap.appendChild(tbl); c.appendChild(wrap);
-    return c;
+  const container=el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'Warranty Operations — Kyebando Warehouse (separate from New Battery Stock)'));
+  const summary=warrantyAnalyticsSummary();
+  const active=activeWarrantyRecords();
+  const scrapped=(STATE.warrantyRecords||[]).filter(w=>warrantyIsScrappedStatus(w.status));
+  const returned=(STATE.warrantyRecords||[]).filter(w=>warrantyIsReturnedStatus(w.status));
+  const separation=el('div',{class:'card'});
+  separation.appendChild(el('h3',{},'Inventory Separation — do not combine balances'));
+  separation.appendChild(el('div',{class:'sub'},'New Battery Stock, OEM Bulk Ledger Stock, and Warranty Stock are different operational pools. Warranty batteries are tracked at Kyebando Warehouse and are excluded from Namanve New Battery Stock and the separate OEM Bulk Ledger.'));
+  const sepStats=el('div',{class:'stat-grid'});
+  const newStock=newBatteryStockByPlatform(), oem=oemLedgerStockByPlatform();
+  sepStats.appendChild(statBox(Object.values(newStock).reduce((a,b)=>a+b,0),'New Battery Operational Stock'));
+  sepStats.appendChild(statBox(Object.values(oem).reduce((a,b)=>a+b,0),'OEM Bulk Ledger Closing Stock'));
+  sepStats.appendChild(statBox(active.length,'Kyebando Active Warranty Stock'));
+  sepStats.appendChild(statBox(scrapped.length,'Warranty Failed To Resolve / Scrapped'));
+  sepStats.appendChild(statBox(returned.length,'Warranty Resolved / Returned'));
+  separation.appendChild(sepStats); container.appendChild(separation);
+  const statsCard=el('div',{class:'card'});
+  statsCard.appendChild(el('h3',{},'Warranty Analytics — Kyebando Warehouse'));
+  statsCard.appendChild(el('div',{class:'stat-grid'},[
+    statBox(summary.total,'Total Warranty Cases'),statBox(summary.active,'Currently Under Warranty'),
+    statBox(summary.scrapped,'Failed To Resolve / Scrapped'),statBox(summary.returned,'Resolved / Repaired & Returned')
+  ])); container.appendChild(statsCard);
+  const row1=el('div',{class:'chart-row'});
+  row1.appendChild(chartCard('Warranty Cases by Brand',warrantyByBrandConfig()));
+  row1.appendChild(chartCard('Warranty Cases by Failure Category',warrantyByCategoryConfig()));
+  container.appendChild(row1);
+  const row2=el('div',{class:'chart-row'});
+  row2.appendChild(chartCard('Warranty Cases by Status',warrantyByStatusConfig()));
+  row2.appendChild(chartCard('Active Warranty Stock by Platform — Kyebando',warrantyActiveByBrandConfig()));
+  container.appendChild(row2);
+  function groupTable(list,title){
+    const c=el('div',{class:'card'}); c.appendChild(el('h3',{},title));
+    if(list.length===0){c.appendChild(el('div',{class:'empty-note'},'None on file.'));return c;}
+    const groups={}; list.forEach(w=>{const brand=w.model||'Unknown',issue=w.failureCategory||'Unspecified',key=brand+'|'+issue;if(!groups[key])groups[key]={brand,issue,count:0};groups[key].count++;});
+    const wrap=el('div',{class:'table-wrap'}),tbl=el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Warehouse'),el('th',{},'Brand'),el('th',{},'Issue / Reason'),el('th',{},'Count')])]));
+    const tbody=el('tbody'); Object.values(groups).sort((a,b)=>a.brand.localeCompare(b.brand)||a.issue.localeCompare(b.issue)).forEach(g=>tbody.appendChild(el('tr',{},[
+      el('td',{},'Kyebando Warehouse'),el('td',{},g.brand),el('td',{},g.issue),el('td',{class:'mono',style:'font-weight:700;'},String(g.count))
+    ]))); tbl.appendChild(tbody);wrap.appendChild(tbl);c.appendChild(wrap);return c;
   }
-  container.appendChild(groupTable(active, 'Active Warranty Stock — by Brand & Issue'));
-  container.appendChild(groupTable(scrapped, 'Scrapped Stock — by Brand & Reason'));
+  container.appendChild(groupTable(active,'Active Warranty Stock — Kyebando'));
+  container.appendChild(groupTable(scrapped,'Warranty Scrapped — Kyebando'));
   return container;
 }
- 
+
 function DataIntegrityView(){
   const container = el('div');
   container.appendChild(el('div',{class:'sector-tag'},'Data Integrity — find and remove duplicate battery numbers already in the system or pipeline, so counts stay accurate'));
@@ -4463,14 +4620,116 @@ function AdjustmentView(){
 }
 
 function allInventoryMovements(){
-  const received = STATE.newBatteryRecords.map(r=>({ date:r.date, platform:r.platform, qty:r.quantity, direction:1 }));
-  const adjusted = STATE.adjustments.map(r=>({ date:r.date, platform:r.platform, qty:r.quantity, direction: movementDirection(r.type) }));
+  const received = (STATE.newBatteryRecords||[]).map(r=>({ date:r.date, platform:r.platform, qty:parseInt(r.quantity)||0, direction:1 }));
+  const adjusted = (STATE.adjustments||[]).map(r=>({ date:r.date, platform:r.platform, qty:parseInt(r.quantity)||0, direction: movementDirection(r.type) }));
   return [...received, ...adjusted];
 }
-function stockByPlatform(){
-  const stock = {}; PLATFORMS.forEach(p=>stock[p]=0);
-  allInventoryMovements().forEach(m=>{ stock[m.platform] = (stock[m.platform]||0) + m.direction*m.qty; });
+/* STOCK SEPARATION: OEM bulk ledger, New Battery operations, and Warranty stock are independent pools. */
+function oemLedgerStockByPlatform(){
+  const ledger=computeStockLedger(STATE.plantStockRecords||[]);
+  const latest=ledger.length ? ledger[ledger.length-1] : null;
+  const stock={}; PLATFORMS.forEach(p=>stock[p]=0);
+  if(latest) latest.rows.forEach(r=>{ stock[r.platform]=Math.max(0,parseInt(r.closing)||0); });
   return stock;
+}
+function newBatteryOperationalSnapshot(){
+  const raw={}; PLATFORMS.forEach(p=>raw[p]=0);
+  allInventoryMovements().forEach(m=>{ raw[m.platform]=(raw[m.platform]||0)+m.direction*(parseInt(m.qty)||0); });
+  const available={}; Object.keys(raw).forEach(p=>available[p]=Math.max(0,raw[p]));
+  return {raw,available};
+}
+function newBatteryStockByPlatform(){ return newBatteryOperationalSnapshot().available; }
+function newBatteryStockIssues(){
+  const movements=allInventoryMovements().slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
+  const running={}; PLATFORMS.forEach(p=>running[p]=0); const issues=[];
+  let currentDate='';
+  const daily={};
+  movements.forEach(m=>{
+    const key=String(m.date||'')+'|'+String(m.platform||'');
+    if(!daily[key])daily[key]={date:m.date,platform:m.platform,delta:0};
+    daily[key].delta += m.direction*(parseInt(m.qty)||0);
+  });
+  Object.values(daily).sort((a,b)=>String(a.date).localeCompare(String(b.date))).forEach(x=>{
+    running[x.platform]=(running[x.platform]||0)+x.delta;
+    if(running[x.platform]<0)issues.push({date:x.date,platform:x.platform,shortage:-running[x.platform]});
+  });
+  return issues;
+}
+function stockByPlatform(){ return oemLedgerStockByPlatform(); }
+
+/* ---- Namanve Plant A NEW BATTERY STOCK reference model ----
+   This follows the Namanve Inventory Tracker: the daily physical stock is the
+   primary plant-stock figure. Categories such as Boxed, Uncharged and Batteries
+   in Bikes are operational states and must not be added together as independent
+   batteries. The workbook's GRAND TOTAL is the plant stock measure used here. */
+function namanveNewBatteryStockSnapshot(){
+  const r=latestNamanveDailyStock();
+  if(!r) return null;
+  return {
+    date:r.date,
+    plant:r.plant||'Namanve Plant A',
+    grandTotal:computeDailyStockGrandTotal(r),
+    healthy:parseInt(r.healthy)||0,
+    qualityIssues:parseInt(r.qualityIssues)||0,
+    offline:parseInt(r.offline)||0,
+    boxed:parseInt(r.boxed)||0,
+    uncharged:parseInt(r.uncharged)||0,
+    batteriesInBikes:parseInt(r.batteriesInBikes)||0,
+    testBatteries:parseInt(r.testBatteries)||0,
+    deployment:parseInt(r.deployment)||0,
+    energy:parseInt(r.energy)||0,
+    qualityIssuesOut:parseInt(r.qualityIssuesOut)||0,
+    returnsHealthy:parseInt(r.returnsHealthy)||0,
+    returnsFaulty:parseInt(r.returnsFaulty)||0,
+    incomingNewHealthy:parseInt(r.incomingNewHealthy)||0,
+    incomingHealthyEnergy:parseInt(r.incomingHealthyEnergy)||0
+  };
+}
+function namanveNewBatteryStockStatusText(){
+  const r=namanveNewBatteryStockSnapshot();
+  if(!r) return 'No Namanve Daily Stock record yet.';
+  return `${formatNamanveDate(r.date)} · Grand Total ${r.grandTotal}. Operational state counts are shown separately and are not double-counted.`;
+}
+
+function warrantyWarehouse(w){ return (w&&w.warehouse)||'Kyebando Warehouse'; }
+/* Warranty source classification follows WH BATTERY QUALITY DATA:
+   Vandalism / Tampering, BMS Issue, Cell Issue, Charging Port Failure,
+   Physical Damage, Missing Component, Thermal / Wet Paste,
+   Thermal / Overheating, LED / Display Fault, Unspecified, Other. */
+const WARRANTY_FAILURE_CATEGORIES = [
+  'Vandalism / Tampering','BMS Issue','Cell Issue','Charging Port Failure',
+  'Physical Damage','Missing Component','Thermal / Wet Paste',
+  'Thermal / Overheating','LED / Display Fault','Unspecified','Other'
+];
+const WARRANTY_STATUSES = [
+  'Still In Warranty','Work In Progress','Resolved','Failed To Resolve',
+  'Waiting for Spare Parts','Under Supplier Review','Scrapped by QC','Repaired & Returned'
+];
+function warrantyIsActiveStatus(status){
+  return ['Still In Warranty','Work In Progress','Waiting for Spare Parts','Under Supplier Review'].includes(status);
+}
+function warrantyIsScrappedStatus(status){
+  return ['Failed To Resolve','Scrapped by QC'].includes(status);
+}
+function warrantyIsReturnedStatus(status){
+  return ['Resolved','Repaired & Returned'].includes(status);
+}
+function activeWarrantyRecords(){
+  return (STATE.warrantyRecords||[]).filter(w=>warrantyIsActiveStatus(w.status));
+}
+function warrantyAnalyticsSummary(){
+  const records=STATE.warrantyRecords||[];
+  const active=records.filter(w=>warrantyIsActiveStatus(w.status));
+  const scrapped=records.filter(w=>warrantyIsScrappedStatus(w.status));
+  const returned=records.filter(w=>warrantyIsReturnedStatus(w.status));
+  const byWarehouse={},byBrand={},byCategory={},byStatus={};
+  records.forEach(w=>{
+    const wh=warrantyWarehouse(w); byWarehouse[wh]=(byWarehouse[wh]||0)+1;
+    const brand=w.model||'Unknown'; byBrand[brand]=(byBrand[brand]||0)+1;
+    const cat=w.failureCategory||'Unspecified'; byCategory[cat]=(byCategory[cat]||0)+1;
+    const st=w.status||'Unspecified'; byStatus[st]=(byStatus[st]||0)+1;
+  });
+  return {total:records.length,active:active.length,scrapped:scrapped.length,returned:returned.length,byWarehouse,byBrand,byCategory,byStatus};
 }
  
 /* ---- Plant & Inventory Analytics: stock trends and a battery deep dive ---- */
@@ -4478,7 +4737,7 @@ function stockByPlatform(){
 /* ==================== QUALITY ENGINEER — warranty store + read-only overview ==================== */
  
 function emptyWarrantyDraft(){
-  return { bmsId:'', model:'', failureCategory:'Charging Port Failure', status:'Waiting for Spare Parts', comments:'', };
+  return { bmsId:'', model:'', failureCategory:'Charging Port Failure', status:'Still In Warranty', warehouse:'Kyebando Warehouse', comments:'', };
 }
  
 function WarrantyView(){
@@ -4487,15 +4746,17 @@ function WarrantyView(){
   const d = STATE.warrantyDraft;
   const form = el('div',{class:'card'});
   form.appendChild(el('h3',{},'Escalate Pack to Warranty'));
+  form.appendChild(el('div',{class:'sub'},'Warranty classification follows the WH Battery Quality Data reference: one battery record, one primary failure category, one current warranty status, and Kyebando Warehouse as the warranty location.'));
  
   const g = el('div',{class:'grid'});
   const bmsInp = smartBatteryIdInput(d.bmsId,(v,platform)=>{ d.bmsId=v; if(platform) d.model=platform; },{placeholder:'Scan or enter suffix',key:'warranty-bms'});
   g.appendChild(field('BMS ID', bmsInp));
   g.appendChild(field('Platform', textInput(d.model, v=>d.model=v)));
+  g.appendChild(field('Warranty Warehouse', selectInput(d.warehouse||'Kyebando Warehouse', [['Kyebando Warehouse','Kyebando Warehouse']], v=>d.warehouse=v)));
   g.appendChild(field('Failure Category', selectInput(d.failureCategory,
-    ['Charging Port Failure','Cell Degradation','BMS Defect','IoT Board Failure','Water Ingress'].map(f=>[f,f]), v=>d.failureCategory=v)));
+    WARRANTY_FAILURE_CATEGORIES.map(f=>[f,f]), v=>d.failureCategory=v)));
   g.appendChild(field('Warranty Status', selectInput(d.status,
-    ['Waiting for Spare Parts','Under Supplier Review','Scrapped by QC','Repaired & Returned'].map(s=>[s,s]), v=>d.status=v)));
+    WARRANTY_STATUSES.map(s=>[s,s]), v=>d.status=v)));
   form.appendChild(g);
   form.appendChild(field('Escalation Comments', textareaInput(d.comments, v=>d.comments=v)));
  
@@ -4518,7 +4779,7 @@ function WarrantyView(){
  
   const listCard = el('div',{class:'card'});
   listCard.appendChild(el('h3',{},'Active Warranty Escalations'));
-  const warrantyFiltered = searchFilter(STATE.warrantyRecords, w=>`${w.bmsId} ${w.model} ${w.failureCategory} ${w.status} ${w.comments}`);
+  const warrantyFiltered = searchFilter(activeWarrantyRecords(), w=>`${w.bmsId} ${w.model} ${w.failureCategory} ${w.status} ${w.comments} ${warrantyWarehouse(w)}`);
   if(STATE.warrantyRecords.length===0){
     listCard.appendChild(el('div',{class:'empty-note'},'No active warranty escalations.'));
   } else if(warrantyFiltered.length===0){
@@ -4526,13 +4787,14 @@ function WarrantyView(){
   } else {
     const wrap = el('div',{class:'table-wrap'});
     const tbl = el('table');
-    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'BMS ID'),el('th',{},'Platform'),el('th',{},'Category'),el('th',{},'Status'),el('th',{},'')])]));
+    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'BMS ID'),el('th',{},'Platform'),el('th',{},'Warehouse'),el('th',{},'Category'),el('th',{},'Status'),el('th',{},'')])]));
     const tbody = el('tbody');
     warrantyFiltered.forEach(w=>{
       const tr = el('tr',{},[
         el('td',{class:'mono'}, w.dateEscalated),
         el('td',{class:'mono',style:'font-weight:700;'}, batteryIdButton(w.bmsId)),
         el('td',{}, w.model||'Unknown'),
+        el('td',{}, warrantyWarehouse(w)),
         el('td',{}, w.failureCategory),
         el('td',{}, el('span',{class:'badge'}, w.status)),
       ]);
@@ -4894,12 +5156,22 @@ function QualityOverviewView(){
   container.appendChild(ledgerCard);
  
   const invCard = el('div',{class:'card'});
-  invCard.appendChild(el('h3',{},'Inventory — Current Stock'));
-  const stock = stockByPlatform();
+  invCard.appendChild(el('h3',{},'Inventory — OEM Bulk Ledger Closing Stock'));
+  invCard.appendChild(el('div',{class:'sub'},'OEM bulk ledger only. New Battery Intake and Warranty Stock are displayed separately and are not added to this figure.'));
+  const stock = oemLedgerStockByPlatform();
   const stats3 = el('div',{class:'stat-grid'});
   PLATFORMS.forEach(p=> stats3.appendChild(statBox(stock[p], p)));
-  invCard.appendChild(stats3);
-  container.appendChild(invCard);
+  stats3.appendChild(statBox(Object.values(stock).reduce((a,b)=>a+b,0),'OEM Ledger Total'));
+  invCard.appendChild(stats3); container.appendChild(invCard);
+  const newCard=el('div',{class:'card'});
+  newCard.appendChild(el('h3',{},'Inventory — New Battery Operational Stock'));
+  newCard.appendChild(el('div',{class:'sub'},'Separate from the OEM bulk ledger and separate from Warranty Stock at Kyebando.'));
+  const newStock=newBatteryStockByPlatform(), newStats=el('div',{class:'stat-grid'});
+  PLATFORMS.forEach(p=>newStats.appendChild(statBox(newStock[p],p)));
+  newStats.appendChild(statBox(Object.values(newStock).reduce((a,b)=>a+b,0),'New Battery Balance'));
+  newCard.appendChild(newStats); container.appendChild(newCard);
+  const newIssues=newBatteryStockIssues();
+  if(newIssues.length) container.appendChild(el('div',{class:'banner err'},`⚠ New Battery Stock has ${newIssues.reduce((a,b)=>a+b.shortage,0)} unreconciled outbound unit(s). These are not counted as available stock; correct the intake/movement records in Stock & Movement.`));
   container.appendChild(SharedOperationalSnapshotCard('Quality Shared Operational Snapshot'));
  
   return container;
@@ -5036,14 +5308,13 @@ function defectCategoryByDay(days=30){
 }
 function warrantySummaryStats(){
   const recs = STATE.warrantyRecords;
-  const active = recs.filter(w=>w.status!=='Scrapped by QC' && w.status!=='Repaired & Returned');
-  const scrapped = recs.filter(w=>w.status==='Scrapped by QC');
-  const repaired = recs.filter(w=>w.status==='Repaired & Returned');
-  const closedOm = STATE.omRecords.filter(r=>r.status.startsWith('CLOSED')).length;
+  const active = recs.filter(w=>warrantyIsActiveStatus(w.status));
+  const scrapped = recs.filter(w=>warrantyIsScrappedStatus(w.status));
+  const repaired = recs.filter(w=>warrantyIsReturnedStatus(w.status));
   const withDate = key => recs.filter(w=>key(w.dateEscalated));
   return {
     total: recs.length, active: active.length, scrapped: scrapped.length, repaired: repaired.length,
-    ppm: ppmRating(recs.length, closedOm||recs.length),
+    ppm: null,
     today: withDate(inToday).length, wtd: withDate(inWTD).length, mtd: withDate(inMTD).length, ytd: withDate(inYTD).length,
   };
 }
@@ -5305,6 +5576,12 @@ function warrantyByStatusConfig(){
   const palette = [cssVar('--warn'), cssVar('--capa'), cssVar('--fail'), cssVar('--pass')];
   return basePieConfig(labels, labels.map(l=>counts[l]), labels.map((_,i)=>palette[i%palette.length]));
 }
+function warrantyActiveByBrandConfig(){
+  const counts={}; activeWarrantyRecords().forEach(w=>{const p=w.model||'Unknown';counts[p]=(counts[p]||0)+1;});
+  const labels=Object.keys(counts);
+  if(!labels.length)return baseBarConfig(['No data'],[{label:'Active Warranty',data:[0],color:cssVar('--fail')}],{});
+  return baseBarConfig(labels,[{label:'Active Warranty',data:labels.map(l=>counts[l]),color:cssVar('--fail')}],{});
+}
 function stockLedgerTrendConfig(){
   const ledger = computeStockLedger(STATE.plantStockRecords);
   if(ledger.length===0) return baseLineConfig(['No data'], [{label:'Closing Stock', data:[0], color:cssVar('--accent')}], {});
@@ -5338,6 +5615,17 @@ function QualityAnalyticsView(){
   headerCard.appendChild(stats);
   container.appendChild(headerCard);
 
+  const warrantyAnalytics=warrantyAnalyticsSummary();
+  const warrantyCard=el('div',{class:'card'});
+  warrantyCard.appendChild(el('h3',{},'Warranty Analytics — Kyebando Warehouse (separate from New Battery Stock)'));
+  warrantyCard.appendChild(el('div',{class:'sub'},'Warranty stock is held and analysed separately at Kyebando Warehouse. These figures are not included in New Battery Stock or the OEM Bulk Ledger.'));
+  warrantyCard.appendChild(el('div',{class:'stat-grid'},[statBox(warrantyAnalytics.active,'Active Warranty'),statBox(warrantyAnalytics.total,'Total Warranty Cases'),statBox(warrantyAnalytics.scrapped,'Scrapped'),statBox(warrantyAnalytics.returned,'Repaired & Returned')]));
+  container.appendChild(warrantyCard);
+  const warrantyRows=el('div',{class:'chart-row'});
+  warrantyRows.appendChild(chartCard('Warranty by Brand — Kyebando',warrantyByBrandConfig()));
+  warrantyRows.appendChild(chartCard('Warranty by Status — Kyebando',warrantyByStatusConfig()));
+  container.appendChild(warrantyRows);
+
   /* ---- Rolling period summary: Today / WTD / MTD / YTD FPY, PPM and NCM ---- */
   const periodCard = el('div',{class:'card'});
   periodCard.appendChild(el('h3',{},'Rolling Period Summary — Today / WTD / MTD / YTD'));
@@ -5359,13 +5647,13 @@ function QualityAnalyticsView(){
   /* ---- Warranty Summary Report ---- */
   const warrCard = el('div',{class:'card'});
   warrCard.appendChild(el('h3',{},'Warranty Summary Report'));
-  warrCard.appendChild(el('div',{class:'sub'},'Live snapshot of all warranty escalations, with rolling-period counts and a PPM rate against total closed O&M packs.'));
+  warrCard.appendChild(el('div',{class:'sub'},'Live snapshot of warranty cases at Kyebando Warehouse, with rolling-period counts. Warranty is analysed independently from the O&M closed-pack denominator and from New Battery Stock.'));
   const warrStats = el('div',{class:'stat-grid'});
   warrStats.appendChild(statBox(warrSummary.total,'Total Escalations'));
   warrStats.appendChild(statBox(warrSummary.active,'Active'));
   warrStats.appendChild(statBox(warrSummary.repaired,'Repaired & Returned'));
   warrStats.appendChild(statBox(warrSummary.scrapped,'Scrapped'));
-  warrStats.appendChild(statBox(warrSummary.ppm,'Warranty PPM'));
+  warrStats.appendChild(statBox(warrSummary.total,'Warranty Cases'));
   warrCard.appendChild(warrStats);
   const warrPeriodWrap = el('div',{class:'table-wrap'});
   const warrPeriodTbl = el('table');
@@ -5540,7 +5828,8 @@ const EXPORT_SHEETS = [
   ['oemid','OEM ID Log', ()=>buildOemIdLogExportRows()],
   ['newbattery','New Battery Intake', ()=>buildNewBatteryExportRows()],
   ['movements','Stock Movements', ()=>buildAdjustmentExportRows()],
-  ['stocksummary','Stock Summary', ()=>buildStockSummaryRows()],
+  ['stocksummary','OEM Ledger Stock Summary', ()=>buildStockSummaryRows()],
+  ['newstocksummary','New Battery Stock Summary', ()=>buildNewBatteryStockSummaryRows()],
   ['warranty','Warranty Escalations', ()=>buildWarrantyExportRows()],
   ['warrantysummary','Warranty Summary Report', ()=>buildWarrantySummaryRows()],
   ['iot','IoT Upgrade Tracker', ()=>buildIotExportRows()],
@@ -5675,13 +5964,13 @@ function buildAdjustmentExportRows(){
 }
 function buildWarrantyExportRows(){
   return rowsOrEmpty(STATE.warrantyRecords.map(r=>({
-    'Date Escalated': r.dateEscalated, 'BMS ID': r.bmsId, 'Platform': r.model||'', 'Failure Category': r.failureCategory,
+    'Date Escalated': r.dateEscalated, 'BMS ID': r.bmsId, 'Platform': r.model||'', 'Warehouse': warrantyWarehouse(r), 'Failure Category': r.failureCategory,
     'Status': r.status, 'Comments': r.comments||''
   })));
 }
 function buildWarrantySummaryRows(){
   const s = warrantySummaryStats();
-  return [{ 'Total Escalations': s.total, 'Active': s.active, 'Repaired & Returned': s.repaired, 'Scrapped': s.scrapped, 'Warranty PPM': s.ppm, 'Today': s.today, 'WTD': s.wtd, 'MTD': s.mtd, 'YTD': s.ytd }];
+  return [{ 'Total Escalations': s.total, 'Active': s.active, 'Resolved / Repaired & Returned': s.repaired, 'Failed To Resolve / Scrapped': s.scrapped, 'Warranty Cases': s.total, 'Today': s.today, 'WTD': s.wtd, 'MTD': s.mtd, 'YTD': s.ytd }];
 }
 function buildPeriodSummaryRows(){
   const p = computePeriodAnalytics();
@@ -5695,8 +5984,12 @@ function buildDefectCategoryRows(){
   return rowsOrEmpty(dates.map(d=>({ Date:d, 'Supplier-Related': byDay[d].supplier, 'Non-Supplier-Related': byDay[d].nonSupplier })));
 }
 function buildStockSummaryRows(){
-  const stock = stockByPlatform();
-  return rowsOrEmpty(Object.keys(stock).map(p=>({ Platform:p, 'Current Stock': stock[p] })));
+  const stock = oemLedgerStockByPlatform();
+  return rowsOrEmpty(Object.keys(stock).map(p=>({ Platform:p, 'OEM Ledger Closing Stock': stock[p] })));
+}
+function buildNewBatteryStockSummaryRows(){
+  const stock = newBatteryStockByPlatform();
+  return rowsOrEmpty(Object.keys(stock).map(p=>({ Platform:p, 'New Battery Operational Balance': stock[p] })));
 }
 function buildFpyExportRows(fpy){
   return [{ 'Overall FPY %': fpy.overallFPY.toFixed(1), 'Total Closed Packs': fpy.total, 'First-Pass Closures': fpy.firstPass }];
@@ -5832,7 +6125,10 @@ async function exportMyReport(){
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet((STATE.qualityIssueRecords||[]).map(r=>({'Issue':r.label||r.id,'Platform':r.platform||'','Current Qty':parseInt(r.count)||0,'Last Updated':r.updatedAt||'','Updated By':r.updatedBy||''}))), 'Quality Issue Breakdown');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildNewBatteryExportRows()), 'New Battery Intake');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildAdjustmentExportRows()), 'Stock Movements');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildStockSummaryRows()), 'Stock Summary');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildStockSummaryRows()), 'OEM Ledger Stock');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildNewBatteryStockSummaryRows()), 'New Battery Stock');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildWarrantyExportRows()), 'Warranty — Kyebando');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildWarrantySummaryRows()), 'Warranty Summary');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildIotExportRows()), 'IoT Upgrade Tracker');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildDayLogExportRows()), 'Day Notes');
     filename = `plant-inventory-report-${todayStr()}.xlsx`;
