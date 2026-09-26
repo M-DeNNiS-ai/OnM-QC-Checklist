@@ -496,6 +496,8 @@ const ISSUE_ITEMS = [
   ['irFail','Insulation Failure'],
   ['iotFault','IoT / IMEI Mismatch'],
   ['tampered','Vandalism / Tampering / Water Ingress'],
+  ['physicalDefect','Physical Defect / External Damage'],
+  ['wetThermalPaste','Wet Thermal Paste / Moisture Contamination'],
   ['connectorDamage','Connector Damage'],
   ['cellFailureSingle','Single Cell Failure'],
   ['cellFailureMultiple','Multiple Cell Failure'],
@@ -503,20 +505,32 @@ const ISSUE_ITEMS = [
   ['other','Other Issue'],
 ];
 /* Issues that bypass the normal O&M repair chain entirely and go straight to the BSA team */
-const BSA_TRIGGER_ISSUES = ['tampered','cellFailureSingle','cellFailureMultiple','missingComponent'];
+const BSA_TRIGGER_ISSUES = ['tampered','physicalDefect','wetThermalPaste','swelling','connectorDamage','cellFailureSingle','cellFailureMultiple','missingComponent'];
 function isBsaTriggerIssue(d){ return BSA_TRIGGER_ISSUES.some(k=>d.issues && d.issues[k]); }
+function bsaTriggerLabels(d){
+  return ISSUE_ITEMS.filter(([k])=> BSA_TRIGGER_ISSUES.includes(k) && d && d.issues && d.issues[k]).map(([,l])=>l);
+}
 function bsaIssueSummary(d){
-  const flagged = ISSUE_ITEMS.filter(([k])=> BSA_TRIGGER_ISSUES.includes(k) && d.issues && d.issues[k]).map(([,l])=>l);
+  const flagged = bsaTriggerLabels(d);
   let text = flagged.join(', ');
   if(d.issues && d.issues.missingComponent && d.missingComponentNote) text += ` (missing: ${d.missingComponentNote})`;
   if(d.otherNote) text += (text?' — ':'') + d.otherNote;
   return text || 'Complex issue flagged at intake';
 }
+function bsaEscalationCategory(d){
+  const labels=bsaTriggerLabels(d);
+  if(labels.some(x=>x.includes('Wet Thermal Paste'))) return 'Wet Thermal Paste / Moisture';
+  if(labels.some(x=>x.includes('Vandalism'))) return 'Vandalism / Tampering';
+  if(labels.some(x=>x.includes('Physical Defect'))) return 'Physical Defect / Damage';
+  if(labels.some(x=>x.includes('Cell Failure'))) return 'Cell Failure';
+  if(labels.some(x=>x.includes('Missing Component'))) return 'Missing Component';
+  return labels[0] || 'Other BSA Escalation';
+}
 /* ---- Defect category classification: Supplier-related (manufacturing / OEM defect) vs Non-Supplier
    (handling, field damage, tampering, wear). Used for the daily supplier vs non-supplier defect
    charts and the PPM/NCM analytics below. ---- */
 const SUPPLIER_RELATED_ISSUES = ['bmsFault','cellImbalance','cellFailureSingle','cellFailureMultiple','irFail','canFail','iotFault','lowCapacity'];
-const NON_SUPPLIER_RELATED_ISSUES = ['noPower','chargeFail','dischargeFail','swelling','tampered','connectorDamage','missingComponent','other'];
+const NON_SUPPLIER_RELATED_ISSUES = ['noPower','chargeFail','dischargeFail','swelling','tampered','physicalDefect','wetThermalPaste','connectorDamage','missingComponent','other'];
 function issueCategory(key){ return SUPPLIER_RELATED_ISSUES.includes(key) ? 'Supplier' : 'Non-Supplier'; }
 function recordDefectCategories(issuesMap){
   const cats = new Set();
@@ -1969,7 +1983,7 @@ function ChecklistCard(title, map, items, onSet){
 function IssuesCard(d){
   const card = el('div',{class:'card'});
   card.appendChild(el('h3',{},'Defect Diagnostics'));
-  card.appendChild(el('div',{class:'sub'},'Select all applicable failure modes observed on arrival.'));
+  card.appendChild(el('div',{class:'sub'},'Select all applicable failure modes observed at Stage 1 intake. Physical defects, vandalism/tampering, and wet thermal paste/moisture contamination are automatically routed straight to BSA.'));
   ISSUE_ITEMS.forEach(([key,label])=>{
     const row = el('div',{class:'bool-row'});
     const cb = el('input',{type:'checkbox'});
@@ -2628,6 +2642,9 @@ function NewIntakeCard(){
       bsaRec = {
         id: uid(), bmsId: rec.bmsId, model: rec.model, source: BSA_SOURCES[0],
         dateFlagged: todayStr(), flaggedBy: STATE.techName, issueDescription: bsaIssueSummary(d),
+        escalationCategory: bsaEscalationCategory(d),
+        stage1IssueFlags: bsaTriggerLabels(d),
+        escalatedFromStage: 1,
         sopAttempted: 'No applicable SOP at intake — routed directly per complex-issue policy.',
         assignedEngineer: '', status: BSA_STATUSES[0], rcaSummary:'', repairNotes:'',
         omRecordId: rec.id, createdAt: nowIso(),
@@ -2753,7 +2770,9 @@ function Stage1EditCard(rec){
     if(toBsa1){
       rec.status = 'CLOSED_TRANSFERRED_BSA'; rec.finalDisposition = 'TRANSFERRED_BSA'; rec.closedAt = nowIso();
       bsaRec = { id: uid(), bmsId: rec.bmsId, model: rec.model, source: BSA_SOURCES[0], dateFlagged: todayStr(), flaggedBy: STATE.techName,
-        issueDescription: bsaIssueSummary(issuesProxy), sopAttempted:'No applicable SOP after re-inspection — routed directly.', assignedEngineer:'',
+        issueDescription: bsaIssueSummary(issuesProxy), escalationCategory:bsaEscalationCategory(issuesProxy),
+        stage1IssueFlags:bsaTriggerLabels(issuesProxy), escalatedFromStage:1,
+        sopAttempted:'No applicable SOP after re-inspection — routed directly.', assignedEngineer:'',
         status: BSA_STATUSES[0], rcaSummary:'', repairNotes:'', omRecordId: rec.id, createdAt: nowIso() };
     } else { rec.stage = 2; rec.status = 'STAGE2_OPEN'; }
     const fresh = await loadOm();
@@ -2888,6 +2907,9 @@ function Stage3Card(rec){
           flaggedBy:STATE.techName||'Stage 3 Technician',
           assignedEngineer:'',
           issueDescription:s3.qcNote || bsaIssueSummary(rec.stage1||{}),
+          escalationCategory:bsaEscalationCategory(rec.stage1||{}),
+          stage1IssueFlags:bsaTriggerLabels(rec.stage1||{}),
+          escalatedFromStage:3,
           sopAttempted:rec.stage2?.sopRef || 'Stage 3 final QC could not be completed',
         });
         const bsaOk = await saveBsa(freshBsa);
@@ -3093,7 +3115,9 @@ function OmHistoryView(){
   tbl.appendChild(tbody);
   wrap.appendChild(tbl);
   card.appendChild(wrap);
-  return card;
+  const holder=el('div'); holder.appendChild(card);
+  holder.appendChild(SharedOperationalSnapshotCard('O&M Shared Operational Snapshot'));
+  return holder;
 }
 
 /* ---- O&M Manager Analytics: pipeline-wide FPY / CAPA / BSA trends + battery deep dive ---- */
@@ -3133,6 +3157,7 @@ function OmAdminAnalyticsView(){
   container.appendChild(row4);
 
   container.appendChild(BatteryDeepDiveCard());
+  container.appendChild(SharedOperationalSnapshotCard('O&M Shared Operational Snapshot'));
   return container;
 }
  
@@ -4595,6 +4620,7 @@ function QualityBsaView(){
     tbl.appendChild(tbody); wrap.appendChild(tbl); listCard.appendChild(wrap);
   }
   container.appendChild(listCard);
+  container.appendChild(SharedOperationalSnapshotCard('Quality BSA Shared Operational Snapshot'));
   return container;
 }
 
@@ -4609,6 +4635,9 @@ function BsaCaseCard(r, editable){
   ]);
   card.appendChild(header);
   card.appendChild(el('div',{class:'sub'}, `${r.source||'BSA escalation'} · escalated ${r.dateFlagged||'—'} · by ${r.flaggedBy||'—'}`));
+  if(r.escalationCategory){
+    card.appendChild(el('div',{class:'banner capa'},`Stage ${r.escalatedFromStage||'—'} escalation reason: ${r.escalationCategory}`));
+  }
   if(r.bsaReceivedAt){
     card.appendChild(el('div',{class:'banner ok'},`✓ Received by BSA: ${new Date(r.bsaReceivedAt).toLocaleString()} · ${r.bsaReceivedBy||'—'}`));
   } else if(editable){
@@ -4781,8 +4810,9 @@ function BsaHistoryView(){
   const container = el('div');
   container.appendChild(el('div',{class:'sector-tag'},'BSA Technician — completed BSA cases'));
   const closed = searchFilter(STATE.bsaRecords.filter(r=>['Returned to O&M for Deployment','Scrapped'].includes(r.status) || ['Worked On','Warranty','Scrapped','Returned to O&M for Deployment'].includes(bsaTechStatus(r))).sort((a,b)=>(b.dateClosed||b.dateFlagged||'').localeCompare(a.dateClosed||a.dateFlagged||'')), r=>`${r.bmsId} ${r.model} ${r.status} ${bsaTechStatus(r)} ${r.rcaSummary} ${r.repairNotes}`);
-  if(closed.length===0){ container.appendChild(el('div',{class:'card'},[el('div',{class:'empty-note'},'No closed cases yet.')])); return container; }
+  if(closed.length===0){ container.appendChild(el('div',{class:'card'},[el('div',{class:'empty-note'},'No closed cases yet.')])); container.appendChild(SharedOperationalSnapshotCard('BSA Shared Operational Snapshot')); return container; }
   closed.forEach(r=> container.appendChild(BsaCaseCard(r, false)));
+  container.appendChild(SharedOperationalSnapshotCard('BSA Shared Operational Snapshot'));
   return container;
 }
 
@@ -4810,6 +4840,10 @@ function BsaAnalyticsView(){
   const row = el('div',{class:'chart-row'});
   row.appendChild(chartCard('Cases by Status (Pie)', bsaByStatusConfig()));
   row.appendChild(chartCard('Cases by Source', bsaBySourceConfig()));
+  const reasonRow=el('div',{class:'chart-row'});
+  reasonRow.appendChild(chartCard('Stage 1 BSA Escalations by Reason', bsaByReasonConfig()));
+  reasonRow.appendChild(chartCard('Defect Category — Supplier vs Non-Supplier', defectCategoryPieConfig()));
+  container.appendChild(reasonRow);
   container.appendChild(row);
 
   container.appendChild(BatteryDeepDiveCard());
@@ -4866,6 +4900,7 @@ function QualityOverviewView(){
   PLATFORMS.forEach(p=> stats3.appendChild(statBox(stock[p], p)));
   invCard.appendChild(stats3);
   container.appendChild(invCard);
+  container.appendChild(SharedOperationalSnapshotCard('Quality Shared Operational Snapshot'));
  
   return container;
 }
@@ -5202,6 +5237,16 @@ function bsaBySourceConfig(){
   const counts = {}; BSA_SOURCES.forEach(s=>counts[s]=0);
   STATE.bsaRecords.forEach(r=>{ counts[r.source]=(counts[r.source]||0)+1; });
   return baseBarConfig(BSA_SOURCES.map(s=>s.split(' (')[0]), [{label:'Cases', data: BSA_SOURCES.map(s=>counts[s]||0), color: cssVar('--capa')}], {});
+}
+function bsaByReasonConfig(){
+  const counts = {};
+  STATE.bsaRecords.forEach(r=>{
+    const key=r.escalationCategory || (r.source===BSA_SOURCES[0] ? 'Quality / O&M Escalation' : 'Other BSA Escalation');
+    counts[key]=(counts[key]||0)+1;
+  });
+  const labels=Object.keys(counts);
+  if(!labels.length) return baseBarConfig(['No data'], [{label:'Cases',data:[0],color:cssVar('--capa')}], {});
+  return baseBarConfig(labels, [{label:'Cases',data:labels.map(l=>counts[l]),color:cssVar('--capa')}], {});
 }
 function dispositionConfig(){
   const closed = STATE.omRecords.filter(r=>r.status.startsWith('CLOSED'));
@@ -5582,6 +5627,9 @@ function buildOmExportRows(){
     'Date Received': r.dateReceived, 'Time Received': r.timeReceived, 'Visit #': r.visitNumber,
     'Current Stage': r.stage, 'Status': r.status, 'CAPA Cycles': r.capaCycles,
     'Stage1 Technician': r.stage1.technician||'', 'Stage1 Received By': r.stage1.receivedBy||'', 'Stage1 Completed At': r.stage1.completedAt||'',
+    'Stage1 Defects': ISSUE_ITEMS.filter(([k])=>r.stage1?.issues?.[k]).map(([,l])=>l).join(', '),
+    'Stage1 BSA Direct': isBsaTriggerIssue({issues:r.stage1?.issues||{}}) ? 'YES' : 'NO',
+    'BSA Escalation Category': (STATE.bsaRecords||[]).find(b=>b.omRecordId===r.id)?.escalationCategory||'',
     'Stage2 Technician': r.stage2.technician||'', 'Stage2 SOP': r.stage2.sopRef||'', 'Stage2 Parts Replaced': r.stage2.partsReplaced||'', 'Stage2 Repair Notes': r.stage2.repairAction||'', 'Stage2 Completed At': r.stage2.completedAt||'',
     'Stage3 Technician': r.stage3.technician||'', 'Pack Voltage (V)': r.stage3.tests.packVoltage||'', 'Min Cell (V)': r.stage3.tests.minCell||'', 'Max Cell (V)': r.stage3.tests.maxCell||'',
     'IR Measured (MΩ)': r.stage3.tests.irMeasured||'', 'IR Threshold (MΩ)': r.stage3.tests.irThreshold||'',
@@ -5719,7 +5767,9 @@ function buildDayLogExportRows(){
 function buildBsaExportRows(){
   return rowsOrEmpty(STATE.bsaRecords.map(r=>({
     'Date Flagged': r.dateFlagged, 'BMS ID': r.bmsId, Platform: r.model||'', Source: r.source, 'Flagged By': r.flaggedBy||'',
-    'Assigned Engineer': r.assignedEngineer||'', 'BSA Technician Status': bsaTechStatus(r), Status: r.status, 'Issue Description': r.issueDescription||'', 'SOP Attempted': r.sopAttempted||'',
+    'Assigned Engineer': r.assignedEngineer||'', 'BSA Technician Status': bsaTechStatus(r), Status: r.status, 'Issue Description': r.issueDescription||'',
+    'Escalation Category': r.escalationCategory||'', 'Escalated From Stage': r.escalatedFromStage||'', 'Stage1 Issue Flags': (r.stage1IssueFlags||[]).join(', '),
+    'SOP Attempted': r.sopAttempted||'',
     'RCA Summary': r.rcaSummary||'', 'Repair Notes': r.repairNotes||'', 'Date Closed': r.dateClosed||''
   })));
 }
