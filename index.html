@@ -391,6 +391,60 @@ body.silent-refresh .view-fade {
 .cp-table td{ padding:4px 6px; border-bottom:1px solid var(--line); }
 .cp-table td.num{ text-align:right; font-family:var(--font-mono); }
 .cp-note{ margin-top:12px; font-size:11px; color:var(--muted); line-height:1.5; }
+
+/* ---- Calm stress-relief background ---- */
+body{
+  position:relative;
+  overflow-x:hidden;
+  background:
+    radial-gradient(circle at 15% 18%, rgba(91,76,255,.045), transparent 30%),
+    radial-gradient(circle at 84% 76%, rgba(37,180,120,.035), transparent 32%),
+    var(--bg);
+}
+body::before,
+body::after{
+  content:"";
+  position:fixed;
+  inset:-28%;
+  z-index:0;
+  pointer-events:none;
+  will-change:transform,opacity;
+}
+/* Slow, soft colour fields move like a gentle breathing pattern. */
+body::before{
+  opacity:.28;
+  filter:blur(18px);
+  background:
+    radial-gradient(ellipse 32% 24% at 18% 28%, rgba(91,76,255,.13), transparent 72%),
+    radial-gradient(ellipse 30% 26% at 78% 68%, rgba(37,180,120,.10), transparent 72%),
+    radial-gradient(ellipse 24% 20% at 54% 42%, rgba(196,181,253,.07), transparent 75%);
+  animation:bqcCalmBreath 42s ease-in-out infinite;
+}
+/* Very faint drifting points provide movement without visual noise. */
+body::after{
+  opacity:.16;
+  background:
+    radial-gradient(circle at 12% 24%, rgba(255,255,255,.20) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 68% 18%, rgba(255,255,255,.14) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 84% 74%, rgba(255,255,255,.16) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 34% 82%, rgba(255,255,255,.12) 0 1px, transparent 1.8px);
+  background-size:210px 210px, 260px 260px, 230px 230px, 290px 290px;
+  animation:bqcCalmDrift 70s ease-in-out infinite;
+}
+#root{position:relative;z-index:1;}
+@keyframes bqcCalmBreath{
+  0%,100%{transform:scale(1) translate3d(-1%,0,0);opacity:.24;}
+  25%{transform:scale(1.035) translate3d(1.5%,-.8%,0);opacity:.29;}
+  50%{transform:scale(1.06) translate3d(2%,1.2%,0);opacity:.27;}
+  75%{transform:scale(1.03) translate3d(-1%,.7%,0);opacity:.30;}
+}
+@keyframes bqcCalmDrift{
+  0%,100%{transform:translate3d(0,0,0);}
+  50%{transform:translate3d(2.5%,-1.5%,0);}
+}
+@media (prefers-reduced-motion:reduce){
+  body::before,body::after{animation:none;}
+}
 </style>
 </head>
 <body>
@@ -1431,10 +1485,87 @@ const NAMANVE_DAILY_STOCK_SEED = [
   ['2026-09-21',413,74,436,396,396,468,13,206,0,0,0,0,0,0,1332],
   ['2026-09-22',566,92,240,180,180,714,8,246,0,0,0,0,0,0,1086],
   ['2026-09-23',189,107,465,0,0,1031,8,317,0,0,0,0,0,0,769],
-  ['2026-09-24',88,8,262,504,574,1055,8,301,0,102,0,0,720,0,870],
+  ['2026-09-24',88,8,262,504,574,1055,8,301,0,102,0,0,720,0,1086],
   ['2026-09-25',223,15,432,108,108,1055,1,307,0,0,0,0,0,0,779],
   ['2026-09-26',223,15,432,108,108,1055,1,0,0,0,0,0,0,0,779],
 ];
+
+/* ---- Excel reference movement table: Namanve Inventory Tracker, updated through 25 Sep 2026 ----
+   Source: Monthly Movement sheet. These rows are the reference for Stock In / Stock Out
+   analytics and are intentionally capped at 25 Sep 2026 as requested. */
+const NAMANVE_EXCEL_MOVEMENT_REFERENCE = [
+  ['2026-09-01',2263,0,0,0,0,0,2263],
+  ['2026-09-02',2263,0,0,40,80,120,2143],
+  ['2026-09-03',2143,0,0,0,0,0,2143],
+  ['2026-09-04',2143,0,0,0,100,100,2043],
+  ['2026-09-05',2043,0,2,0,0,2,2043],
+  ['2026-09-06',2043,0,0,0,0,0,2043],
+  ['2026-09-07',2043,0,0,0,0,0,2043],
+  ['2026-09-08',2043,0,0,0,100,100,1943],
+  ['2026-09-09',1943,0,0,0,100,100,1843],
+  ['2026-09-10',1843,0,0,0,0,0,1843],
+  ['2026-09-11',1843,0,0,45,0,45,1798],
+  ['2026-09-12',1798,0,0,0,0,0,1798],
+  ['2026-09-13',1798,0,0,0,0,0,1798],
+  ['2026-09-14',1798,0,0,0,0,0,1798],
+  ['2026-09-15',1798,0,0,0,0,0,1798],
+  ['2026-09-16',1798,0,0,0,0,0,1798],
+  ['2026-09-17',1798,0,28,0,0,28,1770],
+  ['2026-09-18',1770,0,84,0,0,84,1686],
+  ['2026-09-19',1686,0,148,0,0,148,1538],
+  ['2026-09-20',1538,0,0,0,0,0,1538],
+  ['2026-09-21',1538,0,206,0,0,206,1332],
+  ['2026-09-22',1332,0,246,0,0,246,1086],
+  ['2026-09-23',1086,0,317,0,0,317,769],
+  ['2026-09-24',769,720,301,102,0,403,1086],
+  ['2026-09-25',1086,0,307,0,0,307,779]
+].map(r=>({date:r[0],opening:r[1],received:r[2],bikes:r[3],energy:r[4],plantB:r[5],totalIssued:r[6],closing:r[7]}));
+
+function namanveExcelMovementRows(){
+  return NAMANVE_EXCEL_MOVEMENT_REFERENCE.filter(r=>r.date<='2026-09-25');
+}
+function namanveExcelMovementSummary(){
+  const rows=namanveExcelMovementRows();
+  return {
+    from:rows.length?rows[0].date:'',
+    to:rows.length?rows[rows.length-1].date:'',
+    opening:rows.length?rows[0].opening:0,
+    received:rows.reduce((a,r)=>a+r.received,0),
+    totalIssued:rows.reduce((a,r)=>a+r.totalIssued,0),
+    closing:rows.length?rows[rows.length-1].closing:0
+  };
+}
+function NamanveExcelMovementTable(){
+  const card=el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Namanve Stock In / Stock Out — Excel Reference through 25 Sep 2026'));
+  card.appendChild(el('div',{class:'sub'},'Reference: Namanve Inventory Tracker — Monthly Movement. These figures are used for the dated movement analysis and are not mixed with Warranty Stock or the OEM Bulk Ledger.'));
+  const rows=namanveExcelMovementRows();
+  const sum=namanveExcelMovementSummary();
+  card.appendChild(el('div',{class:'stat-grid'},[
+    statBox(sum.opening,'Opening — 1 Sep'),
+    statBox(sum.received,'Stock In / Received'),
+    statBox(sum.totalIssued,'Stock Out / Total Issued'),
+    statBox(sum.closing,'Closing — 25 Sep')
+  ]));
+  const wrap=el('div',{class:'table-wrap',style:'margin-top:10px;'});
+  const tbl=el('table');
+  tbl.appendChild(el('thead',{},[el('tr',{},[
+    el('th',{},'Date'),el('th',{},'Opening'),el('th',{},'Received'),
+    el('th',{},'Bikes'),el('th',{},'Energy'),el('th',{},'Plant B'),
+    el('th',{},'Total Issued'),el('th',{},'Closing')
+  ])]));
+  const tb=el('tbody');
+  rows.forEach(r=>tb.appendChild(el('tr',{},[
+    el('td',{class:'mono'},formatNamanveDate(r.date)),
+    el('td',{class:'mono'},String(r.opening)),el('td',{class:'mono'},String(r.received)),
+    el('td',{class:'mono'},String(r.bikes)),el('td',{class:'mono'},String(r.energy)),
+    el('td',{class:'mono'},String(r.plantB)),el('td',{class:'mono',style:'font-weight:800;'},String(r.totalIssued)),
+    el('td',{class:'mono',style:'font-weight:800;'},String(r.closing))
+  ])));
+  tbl.appendChild(tb);wrap.appendChild(tbl);card.appendChild(wrap);
+  return card;
+}
+
 function namanveSeedDailyStock(){
   return NAMANVE_DAILY_STOCK_SEED.map(r=>({
     id:'namanve-seed-'+r[0], createdAt:nowIso(), updatedAt:nowIso(),
@@ -3761,54 +3892,96 @@ function PlantStockOperationsView(){
 }
 
 function PlantOperationsCombinedView(){
-  /* Defensive initialization keeps this page renderable even if a cached session
-     reaches the route before the sector loader has rebuilt its drafts. */
-  if(!STATE.newBatteryDraft) STATE.newBatteryDraft=emptyNewBatteryDraft();
-  if(!STATE.warrantyDraft) STATE.warrantyDraft=emptyWarrantyDraft();
-  if(!Array.isArray(STATE.newBatteryRecords)) STATE.newBatteryRecords=[];
-  if(!Array.isArray(STATE.warrantyRecords)) STATE.warrantyRecords=[];
-  if(!Array.isArray(STATE.iotGiven)) STATE.iotGiven=[];
-  if(!Array.isArray(STATE.iotReturned)) STATE.iotReturned=[];
-  const container=el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Battery Operations & Warranty'));
-  const newSection=el('div',{class:'card'});
-  newSection.appendChild(el('h3',{},'New Battery Operations — Namanve'));
-  newSection.appendChild(el('div',{class:'sub'},'New Battery Stock is tracked separately from the OEM Bulk Stock Ledger and from Warranty Stock at Kyebando.'));
-  const nb=newBatteryStockByPlatform(), nbStats=el('div',{class:'stat-grid'});
-  PLATFORMS.forEach(p=>nbStats.appendChild(statBox(nb[p],p)));
-  nbStats.appendChild(statBox(Object.values(nb).reduce((a,b)=>a+b,0),'New Battery Operational Balance'));
-  newSection.appendChild(nbStats); container.appendChild(newSection);
-  const newStockIssues=newBatteryStockIssues();
-  if(newStockIssues.length){
-    const issueCard=el('div',{class:'card'});
-    issueCard.appendChild(el('h3',{},'New Battery Stock Reconciliation Alerts'));
-    issueCard.appendChild(el('div',{class:'sub'},'Negative operational balances are not treated as real stock. These records indicate outbound/correction movements that are not covered by recorded New Battery Intake.'));
-    const wrap=el('div',{class:'table-wrap'}),tbl=el('table');
-    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Date'),el('th',{},'Platform'),el('th',{},'Uncovered Units')])]));
-    const tbody=el('tbody'); newStockIssues.slice(-30).forEach(x=>tbody.appendChild(el('tr',{},[el('td',{class:'mono'},x.date),el('td',{},x.platform),el('td',{class:'mono',style:'font-weight:700;color:var(--fail);'},String(x.shortage))])));
-    tbl.appendChild(tbody);wrap.appendChild(tbl);issueCard.appendChild(wrap);container.appendChild(issueCard);
+  /* Battery Operations is deliberately defensive: one malformed optional store must never
+     prevent the entire Operations page from loading. */
+  try{
+    if(!STATE.newBatteryDraft) STATE.newBatteryDraft=emptyNewBatteryDraft();
+    if(!STATE.warrantyDraft) STATE.warrantyDraft=emptyWarrantyDraft();
+    if(!STATE.adjustmentDraft) STATE.adjustmentDraft=emptyAdjustmentDraft();
+    if(!Array.isArray(STATE.newBatteryRecords)) STATE.newBatteryRecords=[];
+    if(!Array.isArray(STATE.warrantyRecords)) STATE.warrantyRecords=[];
+    if(!Array.isArray(STATE.adjustments)) STATE.adjustments=[];
+    if(!Array.isArray(STATE.iotGiven)) STATE.iotGiven=[];
+    if(!Array.isArray(STATE.iotReturned)) STATE.iotReturned=[];
+
+    const container=el('div');
+    container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Battery Operations & Warranty'));
+
+    /* Namanve new-battery operation pool */
+    const newSection=el('div',{class:'card'});
+    newSection.appendChild(el('h3',{},'New Battery Operations — Namanve Plant A'));
+    newSection.appendChild(el('div',{class:'sub'},'Physical New Battery Stock follows the Namanve Inventory Tracker. Warranty and OEM Bulk Ledger stock are excluded.'));
+    const nr=namanveNewBatteryStockSnapshot();
+    const nbStats=el('div',{class:'stat-grid'});
+    if(nr){
+      [['grandTotal','Grand Total'],['healthy','Healthy'],['qualityIssues','Quality Issues'],['offline','Offline'],
+       ['boxed','Boxed'],['uncharged','Uncharged'],['batteriesInBikes','Batteries in Bikes'],['testBatteries','Test Batteries']]
+       .forEach(([k,l])=>nbStats.appendChild(statBox(nr[k],l)));
+      newSection.appendChild(nbStats);
+      newSection.appendChild(el('div',{class:'banner',style:'margin-top:10px;'},namanveNewBatteryStockStatusText()));
+    }else{
+      newSection.appendChild(el('div',{class:'empty-note'},'No Namanve Daily Stock reference record is available yet.'));
+    }
+    container.appendChild(newSection);
+
+    container.appendChild(NamanveExcelMovementTable());
+
+    /* Dated charts: use the Excel movement table through 25 Sep 2026. */
+    const row=el('div',{class:'chart-row'});
+    row.appendChild(chartCard('Namanve Stock In vs Stock Out — September 2026',movementsByMonthConfig()));
+    const dailyRows=[...(STATE.dailyStockRecords||[])].filter(r=>String(r.date||'')<='2026-09-25').sort((a,b)=>a.date.localeCompare(b.date)).slice(-30);
+    row.appendChild(chartCard('Namanve New Battery Grand Total — Dated',dailyStockBarConfig()));
+    container.appendChild(row);
+
+    const iotRow=el('div',{class:'chart-row'});
+    const bal=iotBalance();
+    iotRow.appendChild(chartCard('IoT Handover Balance',baseBarConfig(
+      ['Given','Returned','With IoT'],
+      [{label:'Batteries',data:[bal.given,bal.returned,Math.max(0,bal.balance)],color:cssVar('--accent')}],{}
+    )));
+    iotRow.appendChild(chartCard('Warranty Cases by Brand — Kyebando',warrantyByBrandConfig()));
+    container.appendChild(iotRow);
+
+    /* Existing input/history remains available. */
+    container.appendChild(collapseSection('Input / History — New Battery Intake',NewBatteryView()));
+    container.appendChild(collapseSection('Input / History — Stock Movement / Corrections',AdjustmentView()));
+    container.appendChild(collapseSection('Input / History — IoT Upgrade Tracker',IotTrackerView()));
+
+    /* Warranty is a separate physical pool at Kyebando. */
+    const ws=warrantyAnalyticsSummary();
+    const warrantySection=el('div',{class:'card'});
+    warrantySection.appendChild(el('h3',{},'Warranty Operations — Kyebando Warehouse'));
+    warrantySection.appendChild(el('div',{class:'sub'},'Warranty packs are stored and analysed separately at Kyebando. They are never added to Namanve New Battery Stock or OEM Bulk Stock.'));
+    warrantySection.appendChild(el('div',{class:'stat-grid'},[
+      statBox(ws.active,'Active Warranty — Kyebando'),
+      statBox(ws.total,'Total Warranty Records'),
+      statBox(ws.scrapped,'Failed To Resolve / Scrapped'),
+      statBox(ws.returned,'Resolved / Returned')
+    ]));
+    container.appendChild(warrantySection);
+
+    const wrow=el('div',{class:'chart-row'});
+    wrow.appendChild(chartCard('Warranty by Brand — Kyebando',warrantyByBrandConfig()));
+    wrow.appendChild(chartCard('Warranty by Failure Category — Kyebando',warrantyByCategoryConfig()));
+    container.appendChild(wrow);
+
+    container.appendChild(collapseSection('Warranty Stock & Analytics — Kyebando',WarrantyStockView()));
+    container.appendChild(SharedOperationalSnapshotCard('Operations Shared Snapshot'));
+    return container;
+  }catch(e){
+    console.error('Battery Operations page render error:',e);
+    const fallback=el('div');
+    fallback.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Battery Operations & Warranty'));
+    fallback.appendChild(el('div',{class:'card'},[
+      el('h3',{},'Battery Operations'),
+      el('div',{class:'banner err'},'The Operations page encountered a data-rendering issue, but the page itself is still available. Refreshing the data or opening Data Integrity can identify the affected record.'),
+      el('div',{class:'sub'},'Technical detail: '+(e&&e.message?e.message:'Unknown rendering error'))
+    ]));
+    try{ fallback.appendChild(NamanveExcelMovementTable()); }catch(ignore){}
+    try{ fallback.appendChild(collapseSection('Input / History — Stock Movement / Corrections',AdjustmentView())); }catch(ignore){}
+    try{ fallback.appendChild(collapseSection('Input / History — New Battery Intake',NewBatteryView())); }catch(ignore){}
+    return fallback;
   }
-  const row=el('div',{class:'chart-row'});
-  const intakeByDay={}; (STATE.newBatteryRecords||[]).forEach(r=>{const d=r.date;intakeByDay[d]=(intakeByDay[d]||0)+(parseInt(r.quantity)||0);});
-  const days=Object.keys(intakeByDay).sort().slice(-30);
-  row.appendChild(chartCard('New Battery Intake — Daily',baseBarConfig(days.length?days.map(formatNamanveDate):['No data'],[{label:'New Batteries',data:days.length?days.map(d=>intakeByDay[d]):[0],color:cssVar('--pass')}],{})));
-  const bal=iotBalance();
-  row.appendChild(chartCard('IoT Handover Balance',baseBarConfig(['Given','Returned','With IoT'],[{label:'Batteries',data:[bal.given,bal.returned,Math.max(0,bal.balance)],color:cssVar('--accent')}],{})));
-  container.appendChild(row);
-  container.appendChild(collapseSection('Input / History — New Battery Intake',NewBatteryView()));
-  container.appendChild(collapseSection('Input / History — IoT Upgrade Tracker',IotTrackerView()));
-  const warrantySection=el('div',{class:'card'});
-  warrantySection.appendChild(el('h3',{},'Warranty Operations — Kyebando Warehouse'));
-  warrantySection.appendChild(el('div',{class:'sub'},'Warranty packs are held at Kyebando and are analysed independently from New Battery Stock and the OEM Bulk Stock Ledger.'));
-  const ws=warrantyAnalyticsSummary();
-  warrantySection.appendChild(el('div',{class:'stat-grid'},[statBox(ws.active,'Active Warranty at Kyebando'),statBox(ws.total,'Total Warranty Cases'),statBox(ws.scrapped,'Scrapped'),statBox(ws.returned,'Repaired & Returned')]));
-  container.appendChild(warrantySection);
-  const wrow=el('div',{class:'chart-row'});
-  wrow.appendChild(chartCard('Warranty by Brand — Kyebando',warrantyByBrandConfig()));
-  wrow.appendChild(chartCard('Warranty by Failure Category — Kyebando',warrantyByCategoryConfig()));
-  container.appendChild(wrow);
-  container.appendChild(collapseSection('Warranty Stock & Analytics — Kyebando',WarrantyStockView()));
-  return container;
 }
 
 
@@ -5352,9 +5525,21 @@ function basePieConfig(labels, data, colors, opts={}){
   }
   return { type:'pie', data:{ labels, datasets:[{ data, backgroundColor: colors }] }, options: chartBaseOptions({legend:true, noScales:true, ...opts}) };
 }
+function chartDateNote(config,title){
+  const labels=(config&&config.data&&Array.isArray(config.data.labels))?config.data.labels:[];
+  const dateLike=labels.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(String(x)));
+  if(dateLike.length){
+    return `Excel/reference period: ${formatNamanveDate(dateLike[0])} — ${formatNamanveDate(dateLike[dateLike.length-1])}`;
+  }
+  /* Categorical warranty charts are tied to the shared warranty workbook reference period. */
+  if(/Warranty/i.test(title)) return 'Warranty Excel reference: 10 Jul 2026 — 25 Sep 2026 · Kyebando Warehouse';
+  if(/Namanve|Daily Stock|Stock In|Stock Out|Movement/i.test(title)) return 'Namanve Inventory Tracker reference: through 25 Sep 2026';
+  return 'Analysis date: live records loaded in the application';
+}
 function chartCard(title, config){
   const card = el('div',{class:'chart-card'});
   card.appendChild(el('h3',{},title));
+  card.appendChild(el('div',{class:'chart-source-date'},chartDateNote(config,title)));
   const wrap = el('div',{class:'chart-wrap'});
   const canvas = el('canvas');
   wrap.appendChild(canvas);
@@ -5438,10 +5623,14 @@ function dailyAnalysisConfig(){
 }
 /* ---- Daily stock bar graph: grand total logged per day from Daily Stock Data ---- */
 function dailyStockBarConfig(){
-  const rows = [...STATE.dailyStockRecords].sort((a,b)=>a.date.localeCompare(b.date)).slice(-30);
-  if(rows.length===0) return baseBarConfig(['No data'], [{label:'Grand Total', data:[0], color:cssVar('--accent')}], {});
-  return baseBarConfig(rows.map(r=>r.date), [{label:'Grand Total Stock', data: rows.map(r=>computeDailyStockGrandTotal(r)), color: cssVar('--accent')}], {});
+  const rows=[...(STATE.dailyStockRecords||[])]
+    .filter(r=>String(r.date||'')<='2026-09-25')
+    .sort((a,b)=>a.date.localeCompare(b.date))
+    .slice(-30);
+  if(rows.length===0) return baseBarConfig(['No data'], [{label:'Grand Total',data:[0],color:cssVar('--accent')}], {});
+  return baseBarConfig(rows.map(r=>formatNamanveDate(r.date)), [{label:'Grand Total Stock',data:rows.map(r=>computeDailyStockGrandTotal(r)),color:cssVar('--accent')}], {});
 }
+
 function qualityIssueByCauseConfig(){
   const rows=[...(STATE.qualityIssueRecords||[])].filter(r=>(parseInt(r.count)||0)>0);
   if(!rows.length) return baseBarConfig(['No data'],[{label:'Quality Issues',data:[0],color:cssVar('--fail')}],{});
@@ -5546,22 +5735,18 @@ function stockByPlatformPieConfig(){
   return basePieConfig(PLATFORMS, PLATFORMS.map(p=>Math.max(0,stock[p])), PLATFORMS.map((_,i)=>palette[i%palette.length]));
 }
 function movementsByMonthConfig(){
-  const months = new Set();
-  const inByMonth = {}, outByMonth = {};
-  STATE.newBatteryRecords.forEach(r=>{ const m=monthKey(r.date); months.add(m); inByMonth[m]=(inByMonth[m]||0)+(r.quantity||0); });
-  STATE.adjustments.forEach(r=>{
-    const m=monthKey(r.date); months.add(m);
-    const dir=movementDirection(r.type);
-    if(dir>0) inByMonth[m]=(inByMonth[m]||0)+(r.quantity||0);
-    else outByMonth[m]=(outByMonth[m]||0)+(r.quantity||0);
-  });
-  const sortedMonths = [...months].sort();
-  if(sortedMonths.length===0) return baseBarConfig(['No data'], [{label:'Stock In', data:[0], color:cssVar('--pass')}], {});
-  return baseBarConfig(sortedMonths, [
-    {label:'Stock In', data: sortedMonths.map(m=>inByMonth[m]||0), color: cssVar('--pass')},
-    {label:'Stock Out', data: sortedMonths.map(m=>outByMonth[m]||0), color: cssVar('--fail')},
-  ], {});
+  const rows=namanveExcelMovementRows();
+  if(!rows.length) return baseLineConfig(['No data'],[
+    {label:'Stock In / Received',data:[0],color:cssVar('--pass')},
+    {label:'Stock Out / Total Issued',data:[0],color:cssVar('--fail')}
+  ],{});
+  const labels=rows.map(r=>formatNamanveDate(r.date));
+  return baseLineConfig(labels,[
+    {label:'Stock In / Received',data:rows.map(r=>r.received),color:cssVar('--pass')},
+    {label:'Stock Out / Total Issued',data:rows.map(r=>r.totalIssued),color:cssVar('--fail')}
+  ],{});
 }
+
 function warrantyByCategoryConfig(){
   const counts = {};
   STATE.warrantyRecords.forEach(w=>{ counts[w.failureCategory]=(counts[w.failureCategory]||0)+1; });
