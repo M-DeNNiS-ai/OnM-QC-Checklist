@@ -6,25 +6,25 @@
 <title>Battery QC — Namanve</title>
 <style>
 :root {
-  --bg: #f3f5f9;
-  --bg-accent: #eef2ff;
+  --bg: #f4f8fb;
+  --bg-accent: #e9f5f7;
   --panel: #ffffff;
-  --panel2: #f6f7fb;
-  --line: #e6e9f2;
-  --line-dark: #d7dcec;
+  --panel2: #f0f7f8;
+  --line: #dce8ec;
+  --line-dark: #c7d9df;
   --text: #10142a;
   --muted: #667085;
-  --accent: #4f46e5;
-  --accent-soft: #eef0ff;
-  --accent2: #0ea5e9;
-  --pass: #059669;
+  --accent: #0b63ce;
+  --accent-soft: #eaf3ff;
+  --accent2: #00a6c7;
+  --pass: #16865a;
   --pass-bg: #ecfdf5;
   --fail: #dc2626;
   --fail-bg: #fef2f2;
   --warn: #d97706;
   --warn-bg: #fffbeb;
-  --capa: #9333ea;
-  --capa-bg: #faf5ff;
+  --capa: #087f8c;
+  --capa-bg: #e8f8f7;
   --shadow-sm: 0 1px 2px rgba(16,20,42,.04), 0 1px 1px rgba(16,20,42,.03);
   --shadow-md: 0 4px 16px rgba(16,20,42,.08), 0 1px 3px rgba(16,20,42,.06);
   --shadow-lg: 0 12px 32px rgba(16,20,42,.14), 0 3px 8px rgba(16,20,42,.08);
@@ -41,9 +41,9 @@
   --line-dark: #3a4570;
   --text: #f1f3fb;
   --muted: #99a3c4;
-  --accent: #818cf8;
-  --accent-soft: rgba(129,140,248,.14);
-  --accent2: #38bdf8;
+  --accent: #4da3ff;
+  --accent-soft: rgba(77,163,255,.14);
+  --accent2: #34d399;
   --pass: #4ade80;
   --pass-bg: rgba(74, 222, 128, 0.12);
   --fail: #f87171;
@@ -397,7 +397,7 @@ body{
   position:relative;
   overflow-x:hidden;
   background:
-    radial-gradient(circle at 15% 18%, rgba(91,76,255,.045), transparent 30%),
+    radial-gradient(circle at 15% 18%, rgba(8,120,209,.045), transparent 30%),
     radial-gradient(circle at 84% 76%, rgba(37,180,120,.035), transparent 32%),
     var(--bg);
 }
@@ -415,9 +415,9 @@ body::before{
   opacity:.28;
   filter:blur(18px);
   background:
-    radial-gradient(ellipse 32% 24% at 18% 28%, rgba(91,76,255,.13), transparent 72%),
+    radial-gradient(ellipse 32% 24% at 18% 28%, rgba(8,120,209,.13), transparent 72%),
     radial-gradient(ellipse 30% 26% at 78% 68%, rgba(37,180,120,.10), transparent 72%),
-    radial-gradient(ellipse 24% 20% at 54% 42%, rgba(196,181,253,.07), transparent 75%);
+    radial-gradient(ellipse 24% 20% at 54% 42%, rgba(26,166,106,.06), transparent 75%);
   animation:bqcCalmBreath 42s ease-in-out infinite;
 }
 /* Very faint drifting points provide movement without visual noise. */
@@ -431,6 +431,214 @@ body::after{
   background-size:210px 210px, 260px 260px, 230px 230px, 290px 290px;
   animation:bqcCalmDrift 70s ease-in-out infinite;
 }
+
+/* ============================================================
+   PREMIUM BATTERY MOTION SYSTEM
+   Pointer-reactive 3D cylindrical lithium-ion cells + calm
+   continuous stress-relief animation. Decorative only.
+   ============================================================ */
+:root{
+  --motion-blue: #0878d1;
+  --motion-blue2: #35b8e8;
+  --motion-green: #1aa66a;
+  --motion-green2: #70d6a4;
+}
+.ambient-scene{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  overflow:hidden;
+  perspective:1100px;
+  isolation:isolate;
+  opacity:.92;
+}
+.ambient-scene::before{
+  content:"";
+  position:absolute;
+  width:54vw;
+  height:54vw;
+  min-width:420px;
+  min-height:420px;
+  max-width:820px;
+  max-height:820px;
+  left:50%;
+  top:46%;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:
+    radial-gradient(circle, rgba(8,120,209,.075) 0 18%, transparent 46%),
+    radial-gradient(circle, rgba(26,166,106,.055) 0 8%, transparent 55%);
+  filter:blur(10px);
+  animation:ambientBreath 18s ease-in-out infinite;
+}
+.motion-grid{
+  position:absolute;
+  inset:-20%;
+  opacity:.07;
+  background-image:
+    linear-gradient(rgba(8,120,209,.55) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(26,166,106,.45) 1px,transparent 1px);
+  background-size:90px 90px;
+  transform:translate3d(calc(var(--mx,0) * -18px),calc(var(--my,0) * -12px),0)
+             rotateX(58deg) rotateZ(-7deg);
+  transform-origin:center;
+  animation:gridDrift 32s linear infinite;
+}
+.battery-orbit{
+  position:absolute;
+  left:50%;
+  top:48%;
+  width:min(720px,82vw);
+  height:min(420px,54vw);
+  transform:translate(-50%,-50%) rotateX(calc(var(--py,0) * 7deg)) rotateY(calc(var(--px,0) * 12deg));
+  transform-style:preserve-3d;
+  transition:transform .18s cubic-bezier(.2,.75,.25,1);
+}
+.battery-cell{
+  position:absolute;
+  width:76px;
+  height:210px;
+  left:50%;
+  top:50%;
+  transform-style:preserve-3d;
+  transform-origin:50% 50%;
+  opacity:.14;
+  filter:drop-shadow(0 16px 28px rgba(8,50,80,.13));
+}
+.battery-cell.c1{ transform:translate(-50%,-50%) translate3d(-190px,26px,-80px) rotateY(calc(-22deg + var(--px,0) * 34deg)) rotateX(calc(var(--py,0) * -8deg)); }
+.battery-cell.c2{ transform:translate(-50%,-50%) translate3d(0,-10px,80px) rotateY(calc(12deg + var(--px,0) * 42deg)) rotateX(calc(var(--py,0) * -10deg)); opacity:.20; }
+.battery-cell.c3{ transform:translate(-50%,-50%) translate3d(190px,30px,-55px) rotateY(calc(30deg + var(--px,0) * 34deg)) rotateX(calc(var(--py,0) * -7deg)); }
+.cell-body{
+  position:absolute;
+  inset:0;
+  border-radius:38px;
+  background:
+    linear-gradient(90deg,rgba(5,30,48,.82) 0 6%,rgba(10,99,157,.9) 14%,rgba(22,167,113,.86) 48%,rgba(7,91,143,.88) 82%,rgba(3,32,52,.84) 96%),
+    linear-gradient(180deg,#0b7bd1,#137e8b);
+  border:1px solid rgba(255,255,255,.42);
+  box-shadow:
+    inset 10px 0 18px rgba(255,255,255,.12),
+    inset -12px 0 18px rgba(0,0,0,.16),
+    0 0 0 1px rgba(8,120,209,.12);
+  transform:translateZ(0);
+  animation:cellBreathe 7s ease-in-out infinite;
+}
+.cell-body::before{
+  content:"Li-ion";
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%) rotate(90deg);
+  color:rgba(255,255,255,.78);
+  font:700 10px/1 var(--font-sans);
+  letter-spacing:1.6px;
+}
+.cell-body::after{
+  content:"QC";
+  position:absolute;
+  left:50%;
+  bottom:18px;
+  transform:translateX(-50%);
+  color:rgba(255,255,255,.58);
+  font:700 8px/1 var(--font-mono);
+  letter-spacing:1px;
+}
+.cell-cap{
+  position:absolute;
+  width:70px;
+  height:70px;
+  left:3px;
+  top:-28px;
+  border-radius:50%;
+  transform:rotateX(72deg) translateZ(10px);
+  background:
+    radial-gradient(circle at 50% 44%,#cbd5db 0 10%,#5c6c75 11% 22%,#dce6ea 23% 40%,#52636d 41% 63%,#1e3039 64% 100%);
+  border:1px solid rgba(255,255,255,.5);
+  box-shadow:0 4px 8px rgba(0,0,0,.18);
+}
+.cell-cap::after{
+  content:"";
+  position:absolute;
+  width:18px;
+  height:18px;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,.65);
+  box-shadow:0 0 0 3px rgba(8,120,209,.18);
+}
+.cell-bottom{
+  position:absolute;
+  width:70px;
+  height:70px;
+  left:3px;
+  bottom:-28px;
+  border-radius:50%;
+  transform:rotateX(72deg) translateZ(-5px);
+  background:radial-gradient(circle,#52636d 0 55%,#1f3038 56% 100%);
+  opacity:.75;
+}
+.stress-relief{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:170px;
+  height:170px;
+  transform:translate(-50%,-50%) translate3d(calc(var(--px,0) * 22px),calc(var(--py,0) * 16px),120px);
+  transform-style:preserve-3d;
+  transition:transform .25s ease-out;
+}
+.stress-relief .ring{
+  position:absolute;
+  inset:0;
+  border:1px solid rgba(26,166,106,.20);
+  border-radius:50%;
+  animation:stressOrbit 12s linear infinite;
+}
+.stress-relief .ring:nth-child(2){ inset:16px; border-color:rgba(8,120,209,.18); animation-duration:9s; animation-direction:reverse; }
+.stress-relief .ring:nth-child(3){ inset:34px; border-color:rgba(52,211,153,.16); animation-duration:15s; }
+.stress-relief .core{
+  position:absolute;
+  left:50%; top:50%;
+  width:42px; height:42px;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.9),rgba(52,211,153,.35) 35%,rgba(8,120,209,.14) 72%,transparent 73%);
+  box-shadow:0 0 34px rgba(26,166,106,.16);
+  animation:stressPulse 5.5s ease-in-out infinite;
+}
+.motion-label{
+  position:absolute;
+  left:50%;
+  top:calc(50% + min(230px,29vw));
+  transform:translateX(-50%);
+  padding:5px 10px;
+  border-radius:999px;
+  border:1px solid rgba(8,120,209,.13);
+  background:rgba(255,255,255,.48);
+  backdrop-filter:blur(8px);
+  color:rgba(9,75,112,.48);
+  font:700 9px/1 var(--font-mono);
+  letter-spacing:1.4px;
+  text-transform:uppercase;
+}
+[data-theme="dark"] .motion-label{background:rgba(10,20,35,.38);color:rgba(180,230,255,.42);}
+@keyframes ambientBreath{0%,100%{transform:translate(-50%,-50%) scale(.94);opacity:.65}50%{transform:translate(-50%,-50%) scale(1.06);opacity:1}}
+@keyframes gridDrift{0%{background-position:0 0}100%{background-position:90px 90px}}
+@keyframes cellBreathe{0%,100%{filter:brightness(.92)}50%{filter:brightness(1.04)}}
+@keyframes stressOrbit{to{transform:rotate(360deg)}}
+@keyframes stressPulse{0%,100%{transform:translate(-50%,-50%) scale(.78);opacity:.52}50%{transform:translate(-50%,-50%) scale(1.14);opacity:.95}}
+@media (max-width:760px){
+  .battery-orbit{transform:translate(-50%,-50%) scale(.72) rotateX(calc(var(--py,0) * 5deg)) rotateY(calc(var(--px,0) * 8deg));}
+  .motion-label{top:calc(50% + 175px);}
+}
+@media (prefers-reduced-motion:reduce){
+  .battery-cell,.stress-relief .ring,.stress-relief .core,.ambient-scene::before,.motion-grid{animation:none;}
+  .battery-orbit,.stress-relief{transition:none;}
+}
+
 #root{position:relative;z-index:1;}
 @keyframes bqcCalmBreath{
   0%,100%{transform:scale(1) translate3d(-1%,0,0);opacity:.24;}
@@ -445,9 +653,30 @@ body::after{
 @media (prefers-reduced-motion:reduce){
   body::before,body::after{animation:none;}
 }
+
+.nav-loading{
+  position:fixed; left:50%; top:14px; transform:translateX(-50%);
+  z-index:9200; display:inline-flex; align-items:center; gap:7px;
+  padding:6px 11px; border-radius:999px; background:var(--panel);
+  border:1px solid var(--line-dark); box-shadow:var(--shadow-md);
+  color:var(--accent); font-size:10px; font-weight:800;
+}
+
 </style>
 </head>
 <body>
+<div id="ambient-scene" class="ambient-scene" aria-hidden="true">
+  <div class="motion-grid"></div>
+  <div class="battery-orbit" id="battery-orbit">
+    <div class="battery-cell c1"><div class="cell-body"></div><div class="cell-cap"></div><div class="cell-bottom"></div></div>
+    <div class="battery-cell c2"><div class="cell-body"></div><div class="cell-cap"></div><div class="cell-bottom"></div></div>
+    <div class="battery-cell c3"><div class="cell-body"></div><div class="cell-cap"></div><div class="cell-bottom"></div></div>
+    <div class="stress-relief">
+      <div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="core"></div>
+    </div>
+  </div>
+  <div class="motion-label" id="motion-label">battery view · neutral</div>
+</div>
 <div id="boot-loader" class="boot-loader">
   <div class="boot-card">
     <div class="boot-spinner"></div>
@@ -678,6 +907,47 @@ function roleCanWrite(role, store){
   }
   return false;
 }
+
+function roleCanDelete(role, store){
+  /* Quality Engineer is the controlled data-administration role.
+     Deletes are soft-deletes in cloud storage, so removal does not destroy the
+     underlying record and can be recovered from the database backup/history. */
+  if(role==='quality') return BQC_STORES.includes(store);
+  /* Existing duplicate-cleanup workflows retain their normal write permission. */
+  return false;
+}
+async function deleteStoreRecord(store,id){
+  const session=currentSession();
+  if(!session || !roleCanDelete(session.role,store)){
+    alert('Only the Quality Engineer may delete records.');
+    return false;
+  }
+  const fresh=await loadStore(store);
+  const target=fresh.find(r=>String(r.id)===String(id));
+  if(!target) return false;
+  const label=STORE_LABEL[store]||store;
+  const ref=target.bmsId||target.oemId||target.id;
+  if(!confirm(`Delete this record from ${label}?\\n\\nRecord: ${ref}\\n\\nThe cloud copy will be soft-deleted and will not appear in normal views.`)) return false;
+  const updated=fresh.filter(r=>String(r.id)!==String(id));
+  const ok=await saveStore(store,updated);
+  if(ok) await loadStoresIntoState([store]);
+  return ok;
+}
+async function deleteAllStoreRecords(store){
+  const session=currentSession();
+  if(!session || !roleCanDelete(session.role,store)){
+    alert('Only the Quality Engineer may delete records.');
+    return false;
+  }
+  const fresh=await loadStore(store);
+  if(!fresh.length){ toast('No records to delete in this store.'); return false; }
+  const label=STORE_LABEL[store]||store;
+  if(!confirm(`DELETE ALL ${fresh.length} RECORDS from ${label}?\\n\\nThis is a soft-delete operation. The records will be hidden from normal views but remain recoverable in Supabase.`)) return false;
+  const ok=await saveStore(store,[]);
+  if(ok) await loadStoresIntoState([store]);
+  return ok;
+}
+
 
 /* ---- Local keys ---- */
 const CFG_KEY='bqc_cloud_cfg', CACHE_PREFIX='bqc_cache_', OUTBOX_KEY='bqc_outbox', SESSION_KEY='bqc_session';
@@ -1798,7 +2068,20 @@ function render(){
   const scrollY = window.scrollY;
   pendingCharts = [];
   root.innerHTML='';
-  root.appendChild(View());
+  try{
+    root.appendChild(View());
+  }catch(e){
+    console.error('Page render error:',e);
+    const fallback=el('div',{class:'app'},[
+      el('div',{class:'banner err'},'This page encountered a rendering error.'),
+      el('div',{class:'card'},[
+        el('h3',{},'Page recovery'),
+        el('div',{class:'sub'},'Your saved data has not been deleted. Refresh the page or switch pages; the shared stores remain intact.'),
+        el('button',{class:'btn-primary',onClick:()=>location.reload()},'Reload app')
+      ])
+    ]);
+    root.appendChild(fallback);
+  }
   const chartJobs = pendingCharts.slice();
   pendingCharts = [];
   const initCharts = ()=>{
@@ -4352,6 +4635,82 @@ function WarrantyStockView(){
   return container;
 }
 
+
+function QualityRecordAdministration(){
+  if(STATE.role!=='quality') return null;
+  const card=el('div',{class:'card quality-admin-card'});
+  card.appendChild(el('div',{class:'quality-admin-head'},[
+    el('div',{},[
+      el('h3',{},'Quality Engineer — Record Administration'),
+      el('div',{class:'sub'},'Full-store inspection and controlled deletion. All deletions are soft-deletes in the cloud.')
+    ]),
+    el('span',{class:'status-chip PASS'},'FULL DELETE ACCESS')
+  ]));
+  const controls=el('div',{class:'grid narrow'});
+  const storeSel=el('select',{id:'quality-store-admin'});
+  BQC_STORES.forEach(store=>{
+    const opt=el('option',{value:store},`${STORE_LABEL[store]||store} (${(STATE[STORE_STATE_KEYS[store]]||[]).length})`);
+    storeSel.appendChild(opt);
+  });
+  const search=el('input',{placeholder:'Filter by ID, date, platform, status…',dataset:{fkey:'quality-admin-search'}});
+  const refresh=el('button',{class:'btn-sm'},'Refresh selected');
+  const deleteAll=el('button',{class:'btn-danger btn-sm'},'Delete all in store');
+  controls.appendChild(field('Store',storeSel));
+  controls.appendChild(field('Search',search));
+  controls.appendChild(el('div',{style:'display:flex;align-items:end;gap:6px;'},[refresh,deleteAll]));
+  card.appendChild(controls);
+  const listHost=el('div',{style:'margin-top:12px;'});
+  card.appendChild(listHost);
+
+  function renderRecords(){
+    const store=storeSel.value;
+    const stateKey=STORE_STATE_KEYS[store];
+    const rows=(STATE[stateKey]||[]);
+    const q=(search.value||'').trim().toLowerCase();
+    const filtered=q ? rows.filter(r=>stableStr(r).toLowerCase().includes(q)) : rows;
+    listHost.innerHTML='';
+    listHost.appendChild(el('div',{class:'sub'},`${filtered.length} visible of ${rows.length} records`));
+    if(!filtered.length){ listHost.appendChild(el('div',{class:'empty-note'},'No matching records.')); return; }
+    const wrap=el('div',{class:'table-wrap'});
+    const tbl=el('table');
+    tbl.appendChild(el('thead',{},[el('tr',{},[
+      el('th',{},'Record'),el('th',{},'Date / Time'),el('th',{},'Status / Type'),el('th',{},'Action')
+    ])]));
+    const tb=el('tbody');
+    filtered.slice(0,250).forEach((r,idx)=>{
+      const ref=r.bmsId||r.oemId||r.id||'—';
+      const date=r.date||r.dateReceived||r.dateFlagged||r.dateEscalated||r.createdAt||'—';
+      const status=r.status||r.type||r.failureCategory||r.platform||'—';
+      const del=el('button',{class:'btn-danger btn-sm'},'Delete');
+      del.addEventListener('click',async()=>{
+        STATE.integrityBusy=true; render();
+        const ok=await deleteStoreRecord(store,r.id);
+        STATE.integrityBusy=false;
+        if(ok){ await loadStoresIntoState([store]); toast('Record soft-deleted by Quality Engineer.'); }
+        else render();
+      });
+      tb.appendChild(el('tr',{'style':`--row-i:${idx};`},[
+        el('td',{},String(ref)),el('td',{class:'mono'},String(date)),el('td',{},String(status)),
+        el('td',{},del)
+      ]));
+    });
+    tbl.appendChild(tb);wrap.appendChild(tbl);listHost.appendChild(wrap);
+    if(filtered.length>250) listHost.appendChild(el('div',{class:'sub'},'Showing first 250 matches. Use the filter to narrow the list.'));
+  }
+  storeSel.addEventListener('change',renderRecords);
+  search.addEventListener('input',renderRecords);
+  refresh.addEventListener('click',async()=>{ await loadStoresIntoState([storeSel.value]); render(); });
+  deleteAll.addEventListener('click',async()=>{
+    STATE.integrityBusy=true; render();
+    const ok=await deleteAllStoreRecords(storeSel.value);
+    STATE.integrityBusy=false;
+    if(ok){ await loadStoresIntoState([storeSel.value]); toast('Selected store records soft-deleted.'); }
+    else render();
+  });
+  renderRecords();
+  return card;
+}
+
 function DataIntegrityView(){
   const container = el('div');
   container.appendChild(el('div',{class:'sector-tag'},'Data Integrity — find and remove duplicate battery numbers already in the system or pipeline, so counts stay accurate'));
@@ -6392,6 +6751,34 @@ async function autoRefreshDocket(){
 setInterval(autoRefreshDocket, 8000);
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && !userIsTypingInForm()) autoRefreshDocket(); });
  
+
+/* ---------- Pointer-reactive battery view + continuous calm animation ---------- */
+(function initBatteryMotion(){
+  const scene=document.getElementById('ambient-scene');
+  if(!scene) return;
+  let raf=0, tx=0, ty=0, x=0, y=0;
+  const label=document.getElementById('motion-label');
+  function frame(){
+    x += (tx-x)*0.075; y += (ty-y)*0.075;
+    document.documentElement.style.setProperty('--px',x.toFixed(4));
+    document.documentElement.style.setProperty('--py',y.toFixed(4));
+    const ax=Math.abs(x), ay=Math.abs(y);
+    let view='neutral';
+    if(ax>.55 && ay<.45) view=x<0?'left profile':'right profile';
+    else if(ay>.55 && ax<.55) view=y<0?'top view':'bottom view';
+    else if(ax>.35 || ay>.35) view='oblique view';
+    if(label) label.textContent='battery view · '+view;
+    raf=requestAnimationFrame(frame);
+  }
+  window.addEventListener('pointermove',e=>{
+    tx=Math.max(-1,Math.min(1,(e.clientX/window.innerWidth-.5)*2));
+    ty=Math.max(-1,Math.min(1,(e.clientY/window.innerHeight-.5)*2));
+  },{passive:true});
+  window.addEventListener('pointerleave',()=>{tx=0;ty=0;},{passive:true});
+  frame();
+  window.addEventListener('blur',()=>{tx=0;ty=0;});
+})();
+
 /* ---------- Boot ---------- */
 function removeBootLoader(){
   const l = document.getElementById('boot-loader');
@@ -6402,11 +6789,14 @@ async function restoreSession(){
     const s=await apiFetch('/api/auth/me');
     if(!s.authenticated){ render(); removeBootLoader(); return; }
     STATE.role=s.user.role; STATE.stage=s.user.stage||null; STATE.techName=s.user.name||'';
-    if(STATE.role==='omtech'){STATE.view='main';await loadStoresIntoState(BQC_STORES);STATE.intakeDraft=emptyIntakeDraft(STATE.techName);}
-    else if(STATE.role==='omadmin'){STATE.view='dashboard'; await loadOmAdminSector();}
-    else if(STATE.role==='plantinv' || STATE.role==='plant' || STATE.role==='inventory'){ STATE.role='plantinv'; STATE.view='bulk'; await loadPlantInventorySector(); }
-    else if(STATE.role==='quality'){STATE.view='warranty'; await loadQualitySector();}
-    else if(STATE.role==='bsa'){STATE.view='activity'; await loadBsaSector();}
+    /* Preload every store this role can read before the first page render.
+       This makes direct login, refresh, and deep navigation use the same data snapshot. */
+    await loadStoresIntoState(BQC_STORES,{ensureNamanve:true,ensureQualityIssues:true});
+    if(STATE.role==='omtech'){STATE.view='main';STATE.intakeDraft=emptyIntakeDraft(STATE.techName);}
+    else if(STATE.role==='omadmin'){STATE.view='dashboard';}
+    else if(STATE.role==='plantinv' || STATE.role==='plant' || STATE.role==='inventory'){ STATE.role='plantinv'; STATE.view='dashboard'; }
+    else if(STATE.role==='quality'){STATE.view='warranty';}
+    else if(STATE.role==='bsa'){STATE.view='activity';}
     render();
     removeBootLoader();
   }catch(e){ console.error(e); render(); removeBootLoader(); }
