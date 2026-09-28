@@ -754,6 +754,159 @@ button:active,.nav-item:active,.nav button:active{transform:translateY(0) scale(
   .card,.stat,.panel,.sop-box,button,.nav-item,.nav button{transition:none!important;}
 }
 
+
+
+/* =====================================================================
+   DARK THEME VISIBILITY HARDENING
+   The premium UI layers above intentionally use translucent/light surfaces.
+   These rules are the final cascade so DARK mode remains readable everywhere.
+   ===================================================================== */
+[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#07111f;
+  --bg-accent:#0b2234;
+  --panel:#0f1d2d;
+  --panel2:#14283a;
+  --line:#263d50;
+  --line-dark:#355267;
+  --text:#f4f8fb;
+  --muted:#b2c2cf;
+  --accent:#55a7ff;
+  --accent2:#28c4d8;
+  --accent-soft:rgba(85,167,255,.16);
+  --pass:#39d98a;
+  --pass-bg:rgba(57,217,138,.14);
+  --fail:#ff7474;
+  --fail-bg:rgba(255,116,116,.14);
+  --warn:#ffb454;
+  --warn-bg:rgba(255,180,84,.14);
+  --capa:#c4a7ff;
+  --capa-bg:rgba(196,167,255,.14);
+  --shadow-sm:0 2px 10px rgba(0,0,0,.28);
+  --shadow-md:0 10px 28px rgba(0,0,0,.38);
+  --shadow-lg:0 18px 46px rgba(0,0,0,.50);
+}
+[data-theme="dark"] body{
+  background:
+    radial-gradient(1000px 650px at 8% -10%,rgba(40,196,216,.13),transparent 60%),
+    radial-gradient(900px 620px at 105% 5%,rgba(85,167,255,.12),transparent 58%),
+    linear-gradient(135deg,#07111f 0%,#091827 52%,#06141d 100%);
+  color:var(--text);
+}
+[data-theme="dark"] .header,
+[data-theme="dark"] .card,
+[data-theme="dark"] .gate,
+[data-theme="dark"] .modal,
+[data-theme="dark"] .dialog,
+[data-theme="dark"] .panel,
+[data-theme="dark"] .section,
+[data-theme="dark"] .table-wrap,
+[data-theme="dark"] .table-card,
+[data-theme="dark"] .chart-card{
+  background:var(--panel) !important;
+  color:var(--text);
+  border-color:var(--line) !important;
+}
+[data-theme="dark"] .nav{
+  background:linear-gradient(135deg,rgba(10,28,43,.98),rgba(8,43,55,.96)) !important;
+  border-color:rgba(40,196,216,.28) !important;
+}
+[data-theme="dark"] .nav button{
+  background:rgba(15,35,52,.92) !important;
+  color:#c9d9e5 !important;
+  border-color:rgba(85,167,255,.20) !important;
+}
+[data-theme="dark"] .nav button:hover:not(.active){
+  background:#19364b !important;
+  color:#fff !important;
+}
+[data-theme="dark"] .nav button.active{
+  color:#fff !important;
+  background:linear-gradient(135deg,#1269ce,#13aabd 58%,#16865a) !important;
+  border-color:transparent !important;
+}
+[data-theme="dark"] .global-searchbar{
+  background:rgba(9,25,40,.94) !important;
+  border-color:rgba(40,196,216,.28) !important;
+}
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea{
+  background:#0b1928 !important;
+  color:#f4f8fb !important;
+  border-color:#355267 !important;
+  caret-color:#55d9ff;
+}
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder{color:#8297a8 !important;opacity:1;}
+[data-theme="dark"] option{background:#0b1928;color:#f4f8fb;}
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus{
+  border-color:#55a7ff !important;
+  box-shadow:0 0 0 3px rgba(85,167,255,.18) !important;
+}
+[data-theme="dark"] label,
+[data-theme="dark"] .sub,
+[data-theme="dark"] .pin-hint,
+[data-theme="dark"] .search-hint,
+[data-theme="dark"] small{color:#b2c2cf;}
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6,
+[data-theme="dark"] strong,
+[data-theme="dark"] b{color:#f4f8fb;}
+[data-theme="dark"] table{color:#edf5fa;background:transparent;}
+[data-theme="dark"] th{background:#142b3d !important;color:#dceaf3 !important;border-color:#355267 !important;}
+[data-theme="dark"] td{background:transparent;color:#e5eef4;border-color:#263d50 !important;}
+[data-theme="dark"] tr:nth-child(even) td{background:rgba(20,40,58,.38);}
+[data-theme="dark"] tr:hover td{background:rgba(40,196,216,.08) !important;}
+[data-theme="dark"] .check-row,
+[data-theme="dark"] .takeover-row,
+[data-theme="dark"] .list-row,
+[data-theme="dark"] .timeline-row{border-color:#263d50 !important;}
+[data-theme="dark"] .seg{border-color:#355267 !important;}
+[data-theme="dark"] .seg button{background:#0f1d2d !important;color:#aebfcd !important;border-color:#263d50 !important;}
+[data-theme="dark"] .seg button.active{background:#183b55 !important;color:#fff !important;}
+[data-theme="dark"] .banner{background:var(--warn-bg) !important;color:#ffc06b !important;border-color:#a66b18 !important;}
+[data-theme="dark"] .banner.ok{background:var(--pass-bg) !important;color:#62e8a2 !important;border-color:#258a5d !important;}
+[data-theme="dark"] .banner.err{background:var(--fail-bg) !important;color:#ff9191 !important;border-color:#a94747 !important;}
+[data-theme="dark"] .banner.capa{background:var(--capa-bg) !important;color:#d1baff !important;border-color:#7357ae !important;}
+[data-theme="dark"] .btn-danger{background:var(--fail-bg) !important;color:#ff9999 !important;border-color:#b64b4b !important;}
+[data-theme="dark"] .btn-capa{background:var(--capa-bg) !important;color:#d1baff !important;border-color:#7357ae !important;}
+[data-theme="dark"] .badge{background:rgba(85,167,255,.14) !important;color:#79baff !important;border-color:#397dbd !important;}
+[data-theme="dark"] .status-chip.INCOMPLETE,
+[data-theme="dark"] .status-chip.NA,
+[data-theme="dark"] .status-chip.PENDING{background:#14283a !important;color:#b9cad6 !important;border-color:#355267 !important;}
+[data-theme="dark"] .global-search-input{background:#0b1928 !important;}
+[data-theme="dark"] .motion-label{
+  background:rgba(7,20,32,.82) !important;
+  color:#72d7ff !important;
+  border-color:rgba(85,167,255,.30) !important;
+  box-shadow:0 8px 24px rgba(0,0,0,.24);
+}
+[data-theme="dark"] .ambient-scene::before{mix-blend-mode:screen;opacity:.42;}
+[data-theme="dark"] .ambient-scene::after{border-color:rgba(40,196,216,.16);box-shadow:0 0 90px rgba(40,196,216,.12),inset 0 0 80px rgba(85,167,255,.08);}
+[data-theme="dark"] .battery-cell{filter:drop-shadow(0 18px 24px rgba(0,0,0,.48));}
+[data-theme="dark"] .cell-cap,
+[data-theme="dark"] .cell-bottom{background:radial-gradient(circle at 45% 38%,#e8f1f5,#7f98aa 55%,#334b5b 100%);}
+[data-theme="dark"] .takeover-inbox{background:linear-gradient(135deg,rgba(40,196,216,.10),rgba(57,217,138,.07)) !important;border-color:rgba(40,196,216,.28) !important;}
+[data-theme="dark"] .theme-toggle select{background:#0b1928 !important;color:#f4f8fb !important;border-color:#355267 !important;}
+[data-theme="dark"] .btn-primary{color:#fff !important;}
+[data-theme="dark"] a{color:#70c7ff;}
+[data-theme="dark"] a:hover{color:#9cddff;}
+[data-theme="dark"] ::selection{background:rgba(40,196,216,.32);color:#fff;}
+[data-theme="dark"] ::-webkit-scrollbar{width:10px;height:10px;}
+[data-theme="dark"] ::-webkit-scrollbar-track{background:#081521;}
+[data-theme="dark"] ::-webkit-scrollbar-thumb{background:#29465a;border-radius:10px;border:2px solid #081521;}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover{background:#3a6680;}
+@media(prefers-contrast:more){
+  [data-theme="dark"]{--line:#456276;--line-dark:#5c7890;--muted:#d0dce5;}
+  [data-theme="dark"] td,[data-theme="dark"] th{border-color:#456276 !important;}
+}
 </style>
 </head>
 <body>
@@ -2226,7 +2379,10 @@ function animateStatNumbers(){
     requestAnimationFrame(step);
   });
 }
+let renderInProgress = false;
 function render(){
+  if(renderInProgress) return;
+  renderInProgress = true;
   const active = document.activeElement;
   let focusInfo = null;
   if(active && root.contains(active) && active.dataset && active.dataset.fkey){
@@ -2238,8 +2394,21 @@ function render(){
   }
   const scrollY = window.scrollY;
   pendingCharts = [];
-  root.innerHTML='';
-  root.appendChild(View());
+  try{
+    root.innerHTML='';
+    const viewNode = View();
+    appendChildSafe(root, viewNode);
+  }catch(renderError){
+    console.error('Application render failed:', renderError);
+    root.innerHTML='';
+    try{ appendChildSafe(root, PageLoadRecoveryView(renderError)); }
+    catch(recoveryError){
+      console.error('Recovery render failed:', recoveryError);
+      root.textContent='The application could not render this page. Please retry.';
+    }
+  } finally {
+    renderInProgress = false;
+  }
   const chartJobs = pendingCharts.slice();
   pendingCharts = [];
   const initCharts = ()=>{
@@ -2419,18 +2588,40 @@ function renderChartFallback(canvas, config, title=''){
   };
 }
 
+/*
+ * DOM factory — hardened for mixed/nested child arrays.
+ *
+ * The previous implementation passed every non-string child directly to
+ * appendChild(). A page containing a nested array, number, boolean, or an
+ * accidental non-Node could therefore abort the entire page render with:
+ *   Failed to execute 'appendChild' on 'Node': parameter 1 is not of type 'Node'.
+ *
+ * Keep the original API, but normalize children recursively so one malformed
+ * child cannot take down navigation or the rest of the page.
+ */
+function appendChildSafe(parent, child){
+  if(child==null || child===false) return;
+  if(Array.isArray(child)){
+    child.forEach(c=>appendChildSafe(parent,c));
+    return;
+  }
+  if(child instanceof Node){
+    parent.appendChild(child);
+    return;
+  }
+  parent.appendChild(document.createTextNode(String(child)));
+}
 function el(tag, attrs={}, children=[]){
   const e = document.createElement(tag);
-  for(const k in attrs){
-    if(k==='class') e.className = attrs[k];
-    else if(k==='disabled'){ if(attrs[k]) e.setAttribute('disabled','true'); }
-    else if(k.startsWith('on')) e.addEventListener(k.slice(2).toLowerCase(), attrs[k]);
-    else e.setAttribute(k, attrs[k]);
+  for(const k in (attrs||{})){
+    const v=attrs[k];
+    if(v==null || v===false) continue;
+    if(k==='class') e.className = String(v);
+    else if(k==='disabled'){ if(v) e.setAttribute('disabled','true'); }
+    else if(k.startsWith('on') && typeof v==='function') e.addEventListener(k.slice(2).toLowerCase(), v);
+    else e.setAttribute(k, String(v));
   }
-  (Array.isArray(children)?children:[children]).forEach(c=>{
-    if(c==null) return;
-    e.appendChild(typeof c==='string' ? document.createTextNode(c) : c);
-  });
+  appendChildSafe(e, children);
   return e;
 }
 function field(label, inputEl){
