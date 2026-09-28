@@ -3,28 +3,28 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Battery QC — Namanve</title>
+<title>Battery QC — Namanve | Operations Control Center</title>
 <style>
 :root {
-  --bg: #f4f8fb;
-  --bg-accent: #e9f5f7;
+  --bg: #f3f5f9;
+  --bg-accent: #eef2ff;
   --panel: #ffffff;
-  --panel2: #f0f7f8;
-  --line: #dce8ec;
-  --line-dark: #c7d9df;
+  --panel2: #f6f7fb;
+  --line: #e6e9f2;
+  --line-dark: #d7dcec;
   --text: #10142a;
   --muted: #667085;
-  --accent: #0b63ce;
-  --accent-soft: #eaf3ff;
-  --accent2: #00a6c7;
-  --pass: #16865a;
+  --accent: #4f46e5;
+  --accent-soft: #eef0ff;
+  --accent2: #0ea5e9;
+  --pass: #059669;
   --pass-bg: #ecfdf5;
   --fail: #dc2626;
   --fail-bg: #fef2f2;
   --warn: #d97706;
   --warn-bg: #fffbeb;
-  --capa: #087f8c;
-  --capa-bg: #e8f8f7;
+  --capa: #9333ea;
+  --capa-bg: #faf5ff;
   --shadow-sm: 0 1px 2px rgba(16,20,42,.04), 0 1px 1px rgba(16,20,42,.03);
   --shadow-md: 0 4px 16px rgba(16,20,42,.08), 0 1px 3px rgba(16,20,42,.06);
   --shadow-lg: 0 12px 32px rgba(16,20,42,.14), 0 3px 8px rgba(16,20,42,.08);
@@ -41,9 +41,9 @@
   --line-dark: #3a4570;
   --text: #f1f3fb;
   --muted: #99a3c4;
-  --accent: #4da3ff;
-  --accent-soft: rgba(77,163,255,.14);
-  --accent2: #34d399;
+  --accent: #818cf8;
+  --accent-soft: rgba(129,140,248,.14);
+  --accent2: #38bdf8;
   --pass: #4ade80;
   --pass-bg: rgba(74, 222, 128, 0.12);
   --fail: #f87171;
@@ -397,7 +397,7 @@ body{
   position:relative;
   overflow-x:hidden;
   background:
-    radial-gradient(circle at 15% 18%, rgba(8,120,209,.045), transparent 30%),
+    radial-gradient(circle at 15% 18%, rgba(91,76,255,.045), transparent 30%),
     radial-gradient(circle at 84% 76%, rgba(37,180,120,.035), transparent 32%),
     var(--bg);
 }
@@ -415,9 +415,9 @@ body::before{
   opacity:.28;
   filter:blur(18px);
   background:
-    radial-gradient(ellipse 32% 24% at 18% 28%, rgba(8,120,209,.13), transparent 72%),
+    radial-gradient(ellipse 32% 24% at 18% 28%, rgba(91,76,255,.13), transparent 72%),
     radial-gradient(ellipse 30% 26% at 78% 68%, rgba(37,180,120,.10), transparent 72%),
-    radial-gradient(ellipse 24% 20% at 54% 42%, rgba(26,166,106,.06), transparent 75%);
+    radial-gradient(ellipse 24% 20% at 54% 42%, rgba(196,181,253,.07), transparent 75%);
   animation:bqcCalmBreath 42s ease-in-out infinite;
 }
 /* Very faint drifting points provide movement without visual noise. */
@@ -431,214 +431,6 @@ body::after{
   background-size:210px 210px, 260px 260px, 230px 230px, 290px 290px;
   animation:bqcCalmDrift 70s ease-in-out infinite;
 }
-
-/* ============================================================
-   PREMIUM BATTERY MOTION SYSTEM
-   Pointer-reactive 3D cylindrical lithium-ion cells + calm
-   continuous stress-relief animation. Decorative only.
-   ============================================================ */
-:root{
-  --motion-blue: #0878d1;
-  --motion-blue2: #35b8e8;
-  --motion-green: #1aa66a;
-  --motion-green2: #70d6a4;
-}
-.ambient-scene{
-  position:fixed;
-  inset:0;
-  z-index:0;
-  pointer-events:none;
-  overflow:hidden;
-  perspective:1100px;
-  isolation:isolate;
-  opacity:.92;
-}
-.ambient-scene::before{
-  content:"";
-  position:absolute;
-  width:54vw;
-  height:54vw;
-  min-width:420px;
-  min-height:420px;
-  max-width:820px;
-  max-height:820px;
-  left:50%;
-  top:46%;
-  transform:translate(-50%,-50%);
-  border-radius:50%;
-  background:
-    radial-gradient(circle, rgba(8,120,209,.075) 0 18%, transparent 46%),
-    radial-gradient(circle, rgba(26,166,106,.055) 0 8%, transparent 55%);
-  filter:blur(10px);
-  animation:ambientBreath 18s ease-in-out infinite;
-}
-.motion-grid{
-  position:absolute;
-  inset:-20%;
-  opacity:.07;
-  background-image:
-    linear-gradient(rgba(8,120,209,.55) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(26,166,106,.45) 1px,transparent 1px);
-  background-size:90px 90px;
-  transform:translate3d(calc(var(--mx,0) * -18px),calc(var(--my,0) * -12px),0)
-             rotateX(58deg) rotateZ(-7deg);
-  transform-origin:center;
-  animation:gridDrift 32s linear infinite;
-}
-.battery-orbit{
-  position:absolute;
-  left:50%;
-  top:48%;
-  width:min(720px,82vw);
-  height:min(420px,54vw);
-  transform:translate(-50%,-50%) rotateX(calc(var(--py,0) * 7deg)) rotateY(calc(var(--px,0) * 12deg));
-  transform-style:preserve-3d;
-  transition:transform .18s cubic-bezier(.2,.75,.25,1);
-}
-.battery-cell{
-  position:absolute;
-  width:76px;
-  height:210px;
-  left:50%;
-  top:50%;
-  transform-style:preserve-3d;
-  transform-origin:50% 50%;
-  opacity:.14;
-  filter:drop-shadow(0 16px 28px rgba(8,50,80,.13));
-}
-.battery-cell.c1{ transform:translate(-50%,-50%) translate3d(-190px,26px,-80px) rotateY(calc(-22deg + var(--px,0) * 34deg)) rotateX(calc(var(--py,0) * -8deg)); }
-.battery-cell.c2{ transform:translate(-50%,-50%) translate3d(0,-10px,80px) rotateY(calc(12deg + var(--px,0) * 42deg)) rotateX(calc(var(--py,0) * -10deg)); opacity:.20; }
-.battery-cell.c3{ transform:translate(-50%,-50%) translate3d(190px,30px,-55px) rotateY(calc(30deg + var(--px,0) * 34deg)) rotateX(calc(var(--py,0) * -7deg)); }
-.cell-body{
-  position:absolute;
-  inset:0;
-  border-radius:38px;
-  background:
-    linear-gradient(90deg,rgba(5,30,48,.82) 0 6%,rgba(10,99,157,.9) 14%,rgba(22,167,113,.86) 48%,rgba(7,91,143,.88) 82%,rgba(3,32,52,.84) 96%),
-    linear-gradient(180deg,#0b7bd1,#137e8b);
-  border:1px solid rgba(255,255,255,.42);
-  box-shadow:
-    inset 10px 0 18px rgba(255,255,255,.12),
-    inset -12px 0 18px rgba(0,0,0,.16),
-    0 0 0 1px rgba(8,120,209,.12);
-  transform:translateZ(0);
-  animation:cellBreathe 7s ease-in-out infinite;
-}
-.cell-body::before{
-  content:"Li-ion";
-  position:absolute;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%) rotate(90deg);
-  color:rgba(255,255,255,.78);
-  font:700 10px/1 var(--font-sans);
-  letter-spacing:1.6px;
-}
-.cell-body::after{
-  content:"QC";
-  position:absolute;
-  left:50%;
-  bottom:18px;
-  transform:translateX(-50%);
-  color:rgba(255,255,255,.58);
-  font:700 8px/1 var(--font-mono);
-  letter-spacing:1px;
-}
-.cell-cap{
-  position:absolute;
-  width:70px;
-  height:70px;
-  left:3px;
-  top:-28px;
-  border-radius:50%;
-  transform:rotateX(72deg) translateZ(10px);
-  background:
-    radial-gradient(circle at 50% 44%,#cbd5db 0 10%,#5c6c75 11% 22%,#dce6ea 23% 40%,#52636d 41% 63%,#1e3039 64% 100%);
-  border:1px solid rgba(255,255,255,.5);
-  box-shadow:0 4px 8px rgba(0,0,0,.18);
-}
-.cell-cap::after{
-  content:"";
-  position:absolute;
-  width:18px;
-  height:18px;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
-  border-radius:50%;
-  border:2px solid rgba(255,255,255,.65);
-  box-shadow:0 0 0 3px rgba(8,120,209,.18);
-}
-.cell-bottom{
-  position:absolute;
-  width:70px;
-  height:70px;
-  left:3px;
-  bottom:-28px;
-  border-radius:50%;
-  transform:rotateX(72deg) translateZ(-5px);
-  background:radial-gradient(circle,#52636d 0 55%,#1f3038 56% 100%);
-  opacity:.75;
-}
-.stress-relief{
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:170px;
-  height:170px;
-  transform:translate(-50%,-50%) translate3d(calc(var(--px,0) * 22px),calc(var(--py,0) * 16px),120px);
-  transform-style:preserve-3d;
-  transition:transform .25s ease-out;
-}
-.stress-relief .ring{
-  position:absolute;
-  inset:0;
-  border:1px solid rgba(26,166,106,.20);
-  border-radius:50%;
-  animation:stressOrbit 12s linear infinite;
-}
-.stress-relief .ring:nth-child(2){ inset:16px; border-color:rgba(8,120,209,.18); animation-duration:9s; animation-direction:reverse; }
-.stress-relief .ring:nth-child(3){ inset:34px; border-color:rgba(52,211,153,.16); animation-duration:15s; }
-.stress-relief .core{
-  position:absolute;
-  left:50%; top:50%;
-  width:42px; height:42px;
-  transform:translate(-50%,-50%);
-  border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.9),rgba(52,211,153,.35) 35%,rgba(8,120,209,.14) 72%,transparent 73%);
-  box-shadow:0 0 34px rgba(26,166,106,.16);
-  animation:stressPulse 5.5s ease-in-out infinite;
-}
-.motion-label{
-  position:absolute;
-  left:50%;
-  top:calc(50% + min(230px,29vw));
-  transform:translateX(-50%);
-  padding:5px 10px;
-  border-radius:999px;
-  border:1px solid rgba(8,120,209,.13);
-  background:rgba(255,255,255,.48);
-  backdrop-filter:blur(8px);
-  color:rgba(9,75,112,.48);
-  font:700 9px/1 var(--font-mono);
-  letter-spacing:1.4px;
-  text-transform:uppercase;
-}
-[data-theme="dark"] .motion-label{background:rgba(10,20,35,.38);color:rgba(180,230,255,.42);}
-@keyframes ambientBreath{0%,100%{transform:translate(-50%,-50%) scale(.94);opacity:.65}50%{transform:translate(-50%,-50%) scale(1.06);opacity:1}}
-@keyframes gridDrift{0%{background-position:0 0}100%{background-position:90px 90px}}
-@keyframes cellBreathe{0%,100%{filter:brightness(.92)}50%{filter:brightness(1.04)}}
-@keyframes stressOrbit{to{transform:rotate(360deg)}}
-@keyframes stressPulse{0%,100%{transform:translate(-50%,-50%) scale(.78);opacity:.52}50%{transform:translate(-50%,-50%) scale(1.14);opacity:.95}}
-@media (max-width:760px){
-  .battery-orbit{transform:translate(-50%,-50%) scale(.72) rotateX(calc(var(--py,0) * 5deg)) rotateY(calc(var(--px,0) * 8deg));}
-  .motion-label{top:calc(50% + 175px);}
-}
-@media (prefers-reduced-motion:reduce){
-  .battery-cell,.stress-relief .ring,.stress-relief .core,.ambient-scene::before,.motion-grid{animation:none;}
-  .battery-orbit,.stress-relief{transition:none;}
-}
-
 #root{position:relative;z-index:1;}
 @keyframes bqcCalmBreath{
   0%,100%{transform:scale(1) translate3d(-1%,0,0);opacity:.24;}
@@ -654,29 +446,329 @@ body::after{
   body::before,body::after{animation:none;}
 }
 
-.nav-loading{
-  position:fixed; left:50%; top:14px; transform:translateX(-50%);
-  z-index:9200; display:inline-flex; align-items:center; gap:7px;
-  padding:6px 11px; border-radius:999px; background:var(--panel);
-  border:1px solid var(--line-dark); box-shadow:var(--shadow-md);
-  color:var(--accent); font-size:10px; font-weight:800;
+/* ==================== PREMIUM BATTERY MOTION BACKGROUND ==================== */
+.ambient-scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;perspective:1200px}
+#root{position:relative;z-index:1}
+.motion-grid{position:absolute;inset:-10%;opacity:.16;background-image:linear-gradient(rgba(11,99,206,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(0,166,199,.12) 1px,transparent 1px);background-size:54px 54px;transform:perspective(700px) rotateX(58deg) translateY(18%);animation:gridDrift 26s linear infinite}
+.battery-orbit{position:absolute;left:50%;top:48%;width:360px;height:360px;transform-style:preserve-3d;transform:translate(-50%,-50%) rotateX(calc(var(--py,0)*11deg)) rotateY(calc(var(--px,0)*20deg)) rotateZ(calc(var(--px,0)*2deg))}
+.battery-cell{position:absolute;width:76px;height:176px;transform-style:preserve-3d;filter:drop-shadow(0 18px 20px rgba(0,65,120,.16));animation:cellFloat 7s ease-in-out infinite}
+.battery-cell.c1{left:48px;top:100px;transform:translateZ(45px) rotateZ(-7deg)}
+.battery-cell.c2{left:145px;top:46px;transform:translateZ(-15px) rotateZ(5deg) scale(.94);animation-delay:-2s}
+.battery-cell.c3{left:238px;top:105px;transform:translateZ(20px) rotateZ(9deg) scale(.88);animation-delay:-4s}
+.cell-body{position:absolute;inset:10px 0 8px;border-radius:38px;background:linear-gradient(90deg,#063b7a 0%,#0b63ce 34%,#00a6c7 58%,#16865a 100%);box-shadow:inset -8px 0 15px rgba(0,0,0,.22),inset 8px 0 12px rgba(255,255,255,.15);transform:translateZ(0)}
+.cell-body:after{content:'Li-ion  •  QC';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(90deg);font:700 9px/1 system-ui;color:rgba(255,255,255,.82);letter-spacing:1.2px;white-space:nowrap}
+.cell-cap,.cell-bottom{position:absolute;left:7px;width:62px;height:20px;border-radius:50%;background:radial-gradient(circle at 45% 38%,#eef6fb,#a8b8c6 55%,#4e6679 100%);box-shadow:0 2px 6px rgba(0,0,0,.25);transform:translateZ(12px)}
+.cell-cap{top:0}.cell-bottom{bottom:0;transform:translateZ(2px)}
+.cell-cap:after{content:'';position:absolute;width:22px;height:8px;border-radius:50%;left:20px;top:5px;background:#7890a1;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)}
+.stress-relief{position:absolute;left:50%;top:50%;width:150px;height:150px;transform:translate(-50%,-50%) translateZ(-70px);transform-style:preserve-3d;opacity:.38}
+.stress-relief .ring{position:absolute;inset:15px;border:1px solid rgba(0,166,199,.55);border-radius:50%;animation:stressSpin 12s linear infinite}
+.stress-relief .ring:nth-child(2){inset:32px;border-color:rgba(11,99,206,.48);animation-duration:9s;animation-direction:reverse}
+.stress-relief .ring:nth-child(3){inset:49px;border-color:rgba(22,134,90,.5);animation-duration:7s}
+.stress-relief .core{position:absolute;left:50%;top:50%;width:22px;height:22px;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,#fff 0 15%,#00a6c7 35%,rgba(0,166,199,0) 70%);animation:calmPulse 3.6s ease-in-out infinite}
+.motion-label{position:absolute;right:18px;bottom:16px;padding:6px 10px;border:1px solid rgba(11,99,206,.16);border-radius:999px;background:rgba(255,255,255,.56);backdrop-filter:blur(8px);font:600 10px/1 system-ui;color:#0b63ce;letter-spacing:.8px;text-transform:uppercase}
+@keyframes cellFloat{0%,100%{translate:0 0 0}50%{translate:0 -7px 5px}}
+@keyframes stressSpin{to{transform:rotateZ(360deg) rotateX(18deg)}}
+@keyframes calmPulse{0%,100%{scale:.75;opacity:.45}50%{scale:1.35;opacity:.9}}
+@keyframes gridDrift{to{transform:perspective(700px) rotateX(58deg) translateY(22%) translateX(54px)}}
+@media(max-width:800px){.battery-orbit{transform:translate(-50%,-50%) scale(.72) rotateX(calc(var(--py,0)*8deg)) rotateY(calc(var(--px,0)*14deg))}.motion-label{right:10px;bottom:10px;font-size:8px}}
+@media(prefers-reduced-motion:reduce){.motion-grid,.battery-cell,.stress-relief .ring,.stress-relief .core{animation:none!important}}
+
+
+/* ==================== VISIBLE OPERATIONS MENU ==================== */
+.nav{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;padding:10px;margin:0 0 14px;border:1px solid rgba(11,99,206,.20);border-radius:18px;background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(232,248,255,.92));box-shadow:0 14px 38px rgba(5,55,105,.12),inset 0 1px rgba(255,255,255,.95);backdrop-filter:blur(18px) saturate(140%);position:relative;overflow:hidden;}
+.nav::before{content:'MAIN MENU  ·  OPERATIONS CONTROL CENTER';display:block;grid-column:1/-1;padding:3px 6px 5px;font-size:10px;font-weight:900;letter-spacing:1.8px;color:#0b63ce;text-transform:uppercase;}
+.nav button{min-height:44px;border-radius:12px;border:1px solid rgba(11,99,206,.13);font-weight:850;background:rgba(255,255,255,.84);position:relative;overflow:hidden;}
+.nav button::after{content:'';position:absolute;inset:0;background:linear-gradient(110deg,transparent 24%,rgba(255,255,255,.65) 48%,transparent 72%);transform:translateX(-120%);transition:transform .65s ease;}
+.nav button:hover::after{transform:translateX(120%)}
+.nav button.active{color:#fff;border-color:transparent;background:linear-gradient(135deg,#0b63ce 0%,#00a6c7 58%,#16865a 100%);box-shadow:0 9px 24px rgba(11,99,206,.28),0 0 0 2px rgba(255,255,255,.45) inset;transform:translateY(-1px);}
+.global-searchbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:9px 11px;border:1px solid rgba(0,166,199,.20);border-radius:14px;background:rgba(255,255,255,.76);box-shadow:0 8px 26px rgba(0,70,120,.08);backdrop-filter:blur(12px);}
+.global-search-input{flex:1 1 320px;max-width:none!important;min-height:42px!important;border-radius:11px!important;border:1px solid rgba(11,99,206,.26)!important;}
+.search-go{min-height:42px;border-radius:11px!important;padding:0 17px!important;}
+.search-hint{font-size:10px;font-weight:850;color:#087f8c;padding:0 4px;}
+.takeover-inbox{border:1px solid rgba(0,166,199,.25);background:linear-gradient(135deg,rgba(0,166,199,.06),rgba(22,134,90,.045));}
+.takeover-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line);}
+[data-theme="dark"] .nav{background:linear-gradient(135deg,rgba(13,28,47,.96),rgba(8,48,63,.92));border-color:rgba(56,189,248,.22);}
+[data-theme="dark"] .nav button{background:rgba(18,31,51,.90);color:#e9f4ff;border-color:rgba(56,189,248,.16);}
+[data-theme="dark"] .global-searchbar{background:rgba(12,27,44,.84);border-color:rgba(56,189,248,.20);}
+@media(max-width:720px){.nav{grid-template-columns:repeat(2,minmax(0,1fr));}.nav button{min-height:46px}.global-searchbar{position:sticky;top:6px;z-index:15;}}
+
+/* ==================== PREMIUM 3D BATTERY / POINTER VISUALS ==================== */
+.ambient-scene::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at calc(50% + var(--px,0)*18%) calc(42% + var(--py,0)*14%),rgba(0,166,199,.11),transparent 29%),radial-gradient(circle at 18% 82%,rgba(11,99,206,.08),transparent 26%);mix-blend-mode:multiply;animation:svAura 14s ease-in-out infinite alternate;}
+.ambient-scene::after{content:'';position:absolute;left:50%;top:50%;width:620px;height:620px;transform:translate(-50%,-50%) rotateX(calc(var(--py,0)*10deg)) rotateY(calc(var(--px,0)*12deg));border:1px solid rgba(0,166,199,.11);border-radius:50%;box-shadow:0 0 85px rgba(0,166,199,.08),inset 0 0 70px rgba(11,99,206,.05);animation:svRing 22s linear infinite;}
+.battery-orbit::before{content:'';position:absolute;left:50%;top:50%;width:430px;height:170px;transform:translate(-50%,-50%) rotateX(70deg);border:1px solid rgba(0,166,199,.17);border-radius:50%;box-shadow:0 0 32px rgba(0,166,199,.10);animation:svOrbit 16s linear infinite;}
+.battery-orbit::after{content:'QC  •  TRACE  •  TEST  •  VERIFY';position:absolute;left:50%;top:50%;transform:translate(-50%,145px);font:800 8px/1 system-ui;letter-spacing:3px;color:rgba(11,99,206,.36);white-space:nowrap;animation:svTextPulse 5s ease-in-out infinite;}
+.battery-cell{will-change:transform,filter;}
+.battery-cell::before{content:'';position:absolute;inset:-12px -8px;background:radial-gradient(ellipse,rgba(0,166,199,.17),transparent 65%);filter:blur(10px);transform:translateZ(-20px);}
+.battery-cell::after{content:'';position:absolute;left:8px;right:8px;top:44%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.72),transparent);box-shadow:0 30px rgba(255,255,255,.23),0 -30px rgba(255,255,255,.17);opacity:.65;animation:cellScan 4.5s ease-in-out infinite;}
+.cell-body{background:linear-gradient(105deg,#062d5e 0%,#0b63ce 30%,#00a6c7 56%,#16865a 82%,#0a4f47 100%);}
+@keyframes svAura{0%{opacity:.45;transform:scale(1) translate3d(0,0,0)}100%{opacity:.78;transform:scale(1.08) translate3d(calc(var(--px,0)*12px),calc(var(--py,0)*10px),0)}}
+@keyframes svRing{to{transform:translate(-50%,-50%) rotateX(70deg) rotateZ(360deg)}}
+@keyframes svOrbit{to{transform:translate(-50%,-50%) rotateX(70deg) rotateZ(-360deg)}}
+@keyframes svTextPulse{0%,100%{opacity:.25;letter-spacing:3px}50%{opacity:.62;letter-spacing:4px}}
+@keyframes cellScan{0%,100%{transform:translateY(-34px);opacity:.05}50%{transform:translateY(34px);opacity:.65}}
+@media(prefers-reduced-motion:reduce){.ambient-scene::before,.ambient-scene::after,.battery-orbit::before,.battery-orbit::after,.battery-cell::after{animation:none!important}}
+
+
+/* =====================================================================
+   SILICON-VALLEY OPERATIONS UI — navigation, search and motion layer
+   ===================================================================== */
+:root{
+  --accent:#0b63ce;
+  --accent2:#00a6c7;
+  --pass:#16865a;
+  --capa:#087f8c;
+  --accent-soft:rgba(11,99,206,.10);
+  --bg:#f4f8fc;
+  --bg-accent:#e8f6fb;
+  --panel:rgba(255,255,255,.92);
+  --panel2:#f1f7fb;
+  --line:#dce8f1;
+  --line-dark:#c4d7e5;
+  --text:#0c1b2a;
+  --muted:#607487;
+  --shadow-sm:0 2px 8px rgba(7,46,79,.06);
+  --shadow-md:0 10px 28px rgba(7,46,79,.10);
+  --shadow-lg:0 24px 60px rgba(7,46,79,.16);
+}
+[data-theme="dark"]{
+  --accent:#4da3ff; --accent2:#19c3d8; --pass:#4ade80; --capa:#38d9c5;
+  --accent-soft:rgba(77,163,255,.13); --bg:#06111d; --bg-accent:#0a2132;
+  --panel:rgba(11,26,41,.90); --panel2:#102b40; --line:#1b3b52; --line-dark:#2a526b;
+  --text:#edf8ff; --muted:#91aabc;
+  --shadow-sm:0 2px 10px rgba(0,0,0,.28); --shadow-md:0 12px 30px rgba(0,0,0,.36); --shadow-lg:0 28px 70px rgba(0,0,0,.48);
+}
+body{
+  background:
+    radial-gradient(900px 600px at calc(10% + var(--px,0)*7%) calc(0% + var(--py,0)*5%), rgba(0,166,199,.12), transparent 65%),
+    radial-gradient(1000px 700px at calc(100% - var(--px,0)*6%) calc(10% - var(--py,0)*5%), rgba(11,99,206,.13), transparent 64%),
+    var(--bg);
+  transition:background .5s ease;
+}
+.app{max-width:1240px;padding:20px;position:relative}
+.app::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent 28%,rgba(0,166,199,.02));}
+.header{
+  border-radius:18px; padding:15px 18px; backdrop-filter:blur(18px) saturate(135%);
+  -webkit-backdrop-filter:blur(18px) saturate(135%);
+  box-shadow:0 18px 50px rgba(7,46,79,.12), inset 0 1px 0 rgba(255,255,255,.7);
+}
+.header::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg,rgba(255,255,255,.12),transparent 30%,rgba(0,166,199,.06) 70%,transparent);
+}
+.nav{
+  position:sticky;top:10px;z-index:30;
+  margin:0 0 16px;padding:0;
+  border:1px solid rgba(117,151,176,.26);border-radius:20px;
+  background:linear-gradient(135deg,rgba(255,255,255,.94),rgba(247,251,253,.84));
+  backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);
+  box-shadow:0 18px 48px rgba(7,46,79,.12),inset 0 1px 0 rgba(255,255,255,.92);
+  overflow:hidden;
+}
+.nav::before{
+  content:'';position:absolute;inset:0 0 auto;height:2px;
+  background:linear-gradient(90deg,#0b63ce,#00a6c7,#16865a);opacity:.9;
+}
+.nav-head{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:12px 15px 10px;border-bottom:1px solid rgba(117,151,176,.16);
+}
+.nav-title-wrap{display:flex;align-items:baseline;gap:9px;min-width:0}
+.nav-kicker{font-size:9px;font-weight:950;letter-spacing:1.8px;color:#16865a}
+.nav-title{font-size:15px;letter-spacing:-.25px;color:var(--text)}
+.nav-context{font-size:9px;font-weight:850;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-rail{display:flex;gap:5px;padding:7px;overflow-x:auto;scrollbar-width:thin}
+.nav-rail::-webkit-scrollbar{height:4px}.nav-rail::-webkit-scrollbar-thumb{background:rgba(11,99,206,.18);border-radius:99px}
+.nav-item{
+  flex:1 0 auto;min-width:132px;min-height:48px;display:grid;grid-template-columns:25px 1fr 13px;align-items:center;gap:8px;
+  padding:7px 10px;border:1px solid transparent;border-radius:13px;background:transparent;
+  color:var(--muted);font-size:11px;font-weight:820;text-align:left;
+  transition:transform .18s ease,background .18s ease,border-color .18s ease,box-shadow .18s ease,color .18s ease;
+}
+.nav-index{font:800 9px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#8aa1b3;letter-spacing:.5px}
+.nav-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-arrow{font-size:15px;line-height:1;color:#9bb0bf;text-align:center}
+.nav-item:hover{transform:translateY(-1px);color:var(--accent);background:rgba(11,99,206,.045);border-color:rgba(11,99,206,.12)}
+.nav-item:hover .nav-arrow{color:var(--accent2)}
+.nav-item.active{color:#fff;background:linear-gradient(135deg,#0b63ce 0%,#008fbf 58%,#16865a 100%);border-color:rgba(255,255,255,.26);box-shadow:0 10px 25px rgba(11,99,206,.22),inset 0 1px 0 rgba(255,255,255,.26);transform:translateY(-1px)}
+.nav-item.active .nav-index,.nav-item.active .nav-arrow{color:rgba(255,255,255,.74)}
+.nav-item.active .nav-arrow{font-size:8px}
+[data-theme="dark"] .nav{background:linear-gradient(135deg,rgba(8,24,38,.96),rgba(10,36,48,.90));border-color:rgba(77,163,255,.20);box-shadow:0 20px 55px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.05)}
+[data-theme="dark"] .nav-head{border-color:rgba(77,163,255,.12)}
+[data-theme="dark"] .nav-item:hover{background:rgba(77,163,255,.08);border-color:rgba(77,163,255,.16)}
+@media(max-width:760px){
+  .nav-head{align-items:flex-start;flex-direction:column;gap:4px;padding:11px 12px 8px}
+  .nav-context{max-width:100%}.nav-rail{padding:6px}.nav-item{min-width:150px}
+}
+.global-search{margin:0 0 15px}
+.search-shell{
+  display:flex;align-items:center;gap:8px;max-width:860px;
+  padding:6px 7px 6px 13px;border:1px solid var(--line-dark);border-radius:15px;
+  background:rgba(255,255,255,.82);backdrop-filter:blur(15px);
+  box-shadow:0 10px 28px rgba(7,46,79,.08);
+}
+[data-theme="dark"] .search-shell{background:rgba(10,29,45,.88)}
+.search-icon{font-size:23px;color:var(--accent);font-weight:900;line-height:1}
+.global-search-input{
+  flex:1!important;max-width:none!important;border:0!important;background:transparent!important;
+  box-shadow:none!important;padding:9px 5px!important;font-size:13px!important;
+}
+.global-search-input:focus{transform:none!important}
+.search-go{min-width:88px;border-radius:11px}
+.search-clear{border-radius:10px}
+.search-hint{max-width:860px;margin:5px 3px 0;color:var(--muted);font-size:10px}
+.search-results-card{border-radius:18px;overflow:hidden}
+.search-result-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.search-result-head h2{margin:0 0 3px;font-size:18px;letter-spacing:-.3px}
+.search-result-count{
+  min-width:48px;height:48px;border-radius:15px;display:grid;place-items:center;
+  color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:17px;font-weight:850;
+  box-shadow:0 10px 25px rgba(11,99,206,.22)
+}
+.search-loading{display:flex;align-items:center;gap:9px;padding:18px;border-radius:12px;background:var(--panel2);color:var(--muted)}
+.takeover-inbox{
+  border:1px solid rgba(0,166,199,.30)!important;
+  background:linear-gradient(135deg,rgba(0,166,199,.07),rgba(11,99,206,.04))!important;
+}
+.takeover-row{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:11px 12px;margin-top:8px;border:1px solid var(--line);border-radius:12px;
+  background:rgba(255,255,255,.56);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.takeover-row:hover{transform:translateX(3px);border-color:var(--accent2);box-shadow:0 8px 22px rgba(7,46,79,.09)}
+.team-workload-wrap>.card{animation-delay:.04s}
+.card{border-radius:15px;background:var(--panel);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.card:hover{transform:translateY(-3px) scale(1.002)}
+.stat{
+  border-radius:14px!important;background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(239,248,252,.65))!important;
+}
+[data-theme="dark"] .stat{background:linear-gradient(145deg,rgba(19,43,62,.9),rgba(11,31,47,.75))!important}
+.view-fade{animation:viewFade .38s cubic-bezier(.2,.75,.2,1)}
+/* more premium ambient depth */
+.ambient-scene::before,.ambient-scene::after{
+  content:'';position:absolute;border-radius:50%;filter:blur(2px);mix-blend-mode:screen;opacity:.34;
+}
+.ambient-scene::before{
+  width:360px;height:360px;left:calc(8% + var(--px,0)*80px);top:calc(26% + var(--py,0)*55px);
+  background:radial-gradient(circle,rgba(0,166,199,.25),transparent 68%);animation:ambientPulse 8s ease-in-out infinite;
+}
+.ambient-scene::after{
+  width:430px;height:430px;right:calc(6% - var(--px,0)*70px);bottom:calc(8% - var(--py,0)*50px);
+  background:radial-gradient(circle,rgba(11,99,206,.22),transparent 68%);animation:ambientPulse 10s ease-in-out infinite reverse;
+}
+@keyframes ambientPulse{0%,100%{transform:scale(.92);opacity:.22}50%{transform:scale(1.08);opacity:.42}}
+@media(max-width:760px){
+  .app{padding:10px}.nav{overflow-x:auto;justify-content:flex-start}.nav button{flex:0 0 auto}
+  .search-shell{max-width:none}.search-go{min-width:72px}.header{border-radius:14px}
+}
+@media(prefers-reduced-motion:reduce){
+  .ambient-scene::before,.ambient-scene::after{animation:none!important}
+  .card,.view-fade{animation:none!important}
+}
+
+
+/* ===== CALM LUXURY USER EXPERIENCE LAYER ===== */
+:root{
+  --calm-blue:#2563eb;
+  --calm-cyan:#06b6d4;
+  --calm-green:#10b981;
+  --calm-mint:#dff8ef;
+  --calm-sky:#e8f4ff;
+  --calm-ink:#17324d;
+  --calm-glow:rgba(37,99,235,.14);
+}
+html{scroll-behavior:smooth;}
+body{
+  background:
+    radial-gradient(900px 520px at 8% -8%,rgba(37,99,235,.105),transparent 62%),
+    radial-gradient(760px 480px at 96% 4%,rgba(16,185,129,.10),transparent 60%),
+    linear-gradient(135deg,#f8fbff 0%,#f5fbfa 52%,#f8fcff 100%);
+  color:var(--calm-ink);
+}
+body::before{
+  content:"";position:fixed;inset:-20%;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(circle at 20% 35%,rgba(6,182,212,.055),transparent 18%),
+    radial-gradient(circle at 76% 68%,rgba(16,185,129,.055),transparent 20%),
+    radial-gradient(circle at 55% 10%,rgba(37,99,235,.045),transparent 22%);
+  filter:blur(18px);animation:bqcCalmBreath 18s ease-in-out infinite;
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.28;
+  background-image:radial-gradient(circle,rgba(37,99,235,.08) 0 1px,transparent 1.5px);
+  background-size:46px 46px;mask-image:linear-gradient(to bottom,transparent,black 15%,black 85%,transparent);
+  animation:bqcCalmDrift 55s ease-in-out infinite;
+}
+#root{position:relative;z-index:1;}
+.card,.stat,.panel,.table-wrap,.sop-box,.boot-card,.modal-card{
+  transition:box-shadow .45s ease,transform .45s cubic-bezier(.2,.8,.2,1),border-color .45s ease,background .45s ease;
+}
+.card:hover,.stat:hover,.panel:hover,.sop-box:hover{
+  transform:translateY(-2px);
+  border-color:rgba(37,99,235,.20)!important;
+  box-shadow:0 18px 45px rgba(31,75,112,.10),0 0 0 1px rgba(6,182,212,.035);
+}
+button,.nav-item,.nav button{transition:transform .25s ease,box-shadow .3s ease,background .3s ease,border-color .3s ease;}
+button:hover,.nav-item:hover,.nav button:hover{transform:translateY(-1px);}
+button:active,.nav-item:active,.nav button:active{transform:translateY(0) scale(.985);}
+:focus-visible{outline:2px solid rgba(6,182,212,.72)!important;outline-offset:3px;}
+
+/* Calm status colors: never rely on color alone for meaning. */
+.badge,.chip,.pill{transition:filter .35s ease,box-shadow .35s ease;}
+.badge:hover,.chip:hover,.pill:hover{filter:saturate(1.08);box-shadow:0 5px 18px rgba(37,99,235,.10);}
+
+/* Premium menu: visually rich, but intentionally quiet. */
+.nav{
+  background:linear-gradient(120deg,rgba(255,255,255,.94),rgba(239,249,255,.91) 48%,rgba(240,253,248,.92));
+  box-shadow:0 20px 55px rgba(26,74,111,.10),inset 0 1px rgba(255,255,255,.98);
+  border-color:rgba(37,99,235,.14);
+}
+.nav::after{
+  content:"";position:absolute;left:7%;right:7%;top:0;height:2px;border-radius:99px;
+  background:linear-gradient(90deg,transparent,var(--calm-blue),var(--calm-cyan),var(--calm-green),transparent);
+  opacity:.72;animation:calmMenuGlow 6s ease-in-out infinite;
+}
+.nav-item.active,.nav button.active{
+  box-shadow:0 10px 26px rgba(37,99,235,.14),inset 0 1px rgba(255,255,255,.7);
+}
+
+/* A slow ambient aura around the existing battery/stress-relief scene. */
+.battery-orbit::before{
+  content:"";position:absolute;inset:-48px;border-radius:50%;
+  background:radial-gradient(circle,rgba(6,182,212,.10),rgba(37,99,235,.035) 42%,transparent 70%);
+  filter:blur(9px);animation:calmAura 7s ease-in-out infinite;pointer-events:none;
+}
+.stress-relief{filter:drop-shadow(0 8px 24px rgba(6,182,212,.10));}
+.stress-relief .ring{filter:drop-shadow(0 0 5px rgba(6,182,212,.10));}
+.stress-relief .core{box-shadow:0 0 24px rgba(6,182,212,.18);}
+
+/* Softer loading state: a breathing signal instead of a harsh spinner. */
+.boot-spinner,.spinner,.sync-dot{animation-timing-function:ease-in-out!important;}
+.sync-dot{box-shadow:0 0 0 0 rgba(16,185,129,.24);animation:calmSignal 3s infinite!important;}
+
+@keyframes calmAura{0%,100%{transform:scale(.94);opacity:.55}50%{transform:scale(1.08);opacity:1}}
+@keyframes calmMenuGlow{0%,100%{opacity:.42;transform:scaleX(.86)}50%{opacity:.82;transform:scaleX(1)}}
+@keyframes calmSignal{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.12);opacity:.72}50%{box-shadow:0 0 0 7px rgba(16,185,129,.03);opacity:1}}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto;}
+  body::before,body::after,.nav::after,.battery-orbit::before,.sync-dot{animation:none!important;}
+  .card,.stat,.panel,.sop-box,button,.nav-item,.nav button{transition:none!important;}
 }
 
 </style>
 </head>
 <body>
+
 <div id="ambient-scene" class="ambient-scene" aria-hidden="true">
   <div class="motion-grid"></div>
   <div class="battery-orbit" id="battery-orbit">
     <div class="battery-cell c1"><div class="cell-body"></div><div class="cell-cap"></div><div class="cell-bottom"></div></div>
     <div class="battery-cell c2"><div class="cell-body"></div><div class="cell-cap"></div><div class="cell-bottom"></div></div>
     <div class="battery-cell c3"><div class="cell-body"></div><div class="cell-cap"></div><div class="cell-bottom"></div></div>
-    <div class="stress-relief">
-      <div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="core"></div>
-    </div>
+    <div class="stress-relief"><div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="core"></div></div>
   </div>
   <div class="motion-label" id="motion-label">battery view · neutral</div>
 </div>
+
 <div id="boot-loader" class="boot-loader">
   <div class="boot-card">
     <div class="boot-spinner"></div>
@@ -876,78 +968,48 @@ const BQC_TABLE = 'bqc_records';
 const BQC_STORES = [
   'om_chain_records','plant_records','plant_stock_records','new_battery_records',
   'inventory_adjustments','warranty_records','daily_stock_records','iot_given_records',
-  'iot_returned_records','day_log_records','bsa_records','quality_issue_records'
+  'iot_returned_records','day_log_records','bsa_records','quality_issue_records',
+  'accountability_audit_records','rca_records','takeover_request_records'
 ];
 const STORE_LABEL = {
   om_chain_records:'O&M repair chain', plant_records:'Plant records', plant_stock_records:'Plant stock',
   new_battery_records:'New batteries', inventory_adjustments:'Inventory adjustments',
   warranty_records:'Warranty', daily_stock_records:'Daily stock', iot_given_records:'IoT given',
-  iot_returned_records:'IoT returned', day_log_records:'Day log', bsa_records:'BSA', quality_issue_records:'Quality Issue Breakdown'
+  iot_returned_records:'IoT returned', day_log_records:'Day log', bsa_records:'BSA', quality_issue_records:'Quality Issue Breakdown',
+  accountability_audit_records:'Technician Accountability Audit', rca_records:'RCA / Root Cause Analysis',
+  takeover_request_records:'Technician Takeover Requests'
 };
 
 /* ---- Access rules (same matrix the old server enforced) ---- */
 const PLANTINV_STORES = ['plant_records','plant_stock_records','new_battery_records','inventory_adjustments','warranty_records','daily_stock_records','iot_given_records','iot_returned_records','day_log_records','quality_issue_records'];
 function roleCanRead(role, store){
   if(role==='omadmin'||role==='quality') return true;
-  if(role==='bsa') return ['om_chain_records','warranty_records','bsa_records'].includes(store);
+  if(store==='accountability_audit_records') return ['omtech','bsa'].includes(role);
+  if(store==='takeover_request_records') return ['omtech','omadmin','quality'].includes(role);
+  if(role==='bsa') return ['om_chain_records','warranty_records','bsa_records','rca_records'].includes(store);
   if(role==='plantinv') return PLANTINV_STORES.includes(store);
   if(role==='omtech') {
     const s = currentSession();
-    return store==='om_chain_records' || (store==='bsa_records' && s && s.stage===3);
+    return store==='om_chain_records' || store==='day_log_records' || store==='rca_records' || (store==='bsa_records' && s && s.stage===3);
   }
   return false;
 }
 function roleCanWrite(role, store){
+  if(store==='accountability_audit_records') return false;
+  if(store==='takeover_request_records') return role==='omtech';
   if(role==='omadmin'||role==='quality') return true;
-  if(role==='bsa') return ['bsa_records','om_chain_records','warranty_records'].includes(store);
+  if(role==='bsa') return ['bsa_records','om_chain_records','warranty_records','rca_records'].includes(store);
   if(role==='plantinv') return PLANTINV_STORES.includes(store);
   if(role==='omtech') {
     const s = currentSession();
-    return store==='om_chain_records' || (store==='bsa_records' && s && s.stage===3);
+    return store==='om_chain_records' || store==='day_log_records' || store==='rca_records' || (store==='bsa_records' && s && s.stage===3);
   }
   return false;
 }
-
 function roleCanDelete(role, store){
-  /* Quality Engineer is the controlled data-administration role.
-     Deletes are soft-deletes in cloud storage, so removal does not destroy the
-     underlying record and can be recovered from the database backup/history. */
-  if(role==='quality') return BQC_STORES.includes(store);
-  /* Existing duplicate-cleanup workflows retain their normal write permission. */
-  return false;
+  /* Quality retains the requested operational delete authority. The accountability audit is immutable. */
+  return role==='quality' && BQC_STORES.includes(store) && store!=='accountability_audit_records';
 }
-async function deleteStoreRecord(store,id){
-  const session=currentSession();
-  if(!session || !roleCanDelete(session.role,store)){
-    alert('Only the Quality Engineer may delete records.');
-    return false;
-  }
-  const fresh=await loadStore(store);
-  const target=fresh.find(r=>String(r.id)===String(id));
-  if(!target) return false;
-  const label=STORE_LABEL[store]||store;
-  const ref=target.bmsId||target.oemId||target.id;
-  if(!confirm(`Delete this record from ${label}?\\n\\nRecord: ${ref}\\n\\nThe cloud copy will be soft-deleted and will not appear in normal views.`)) return false;
-  const updated=fresh.filter(r=>String(r.id)!==String(id));
-  const ok=await saveStore(store,updated);
-  if(ok) await loadStoresIntoState([store]);
-  return ok;
-}
-async function deleteAllStoreRecords(store){
-  const session=currentSession();
-  if(!session || !roleCanDelete(session.role,store)){
-    alert('Only the Quality Engineer may delete records.');
-    return false;
-  }
-  const fresh=await loadStore(store);
-  if(!fresh.length){ toast('No records to delete in this store.'); return false; }
-  const label=STORE_LABEL[store]||store;
-  if(!confirm(`DELETE ALL ${fresh.length} RECORDS from ${label}?\\n\\nThis is a soft-delete operation. The records will be hidden from normal views but remain recoverable in Supabase.`)) return false;
-  const ok=await saveStore(store,[]);
-  if(ok) await loadStoresIntoState([store]);
-  return ok;
-}
-
 
 /* ---- Local keys ---- */
 const CFG_KEY='bqc_cloud_cfg', CACHE_PREFIX='bqc_cache_', OUTBOX_KEY='bqc_outbox', SESSION_KEY='bqc_session';
@@ -1079,18 +1141,71 @@ async function loadStore(key){
   return clone(cached);
 }
 
-async function saveStore(key, list){
+
+/* ---------- Traceability / accountability layer ---------- */
+function sessionActor(){
+  const s=currentSession();
+  return {name:s?.name||'System',role:s?.role||'system',stage:s?.stage||null};
+}
+function batteryRefFromRecord(r){
+  return String(r?.bmsId||r?.batteryId||r?.oemId||r?.id||'').trim().toUpperCase();
+}
+function auditDiffs(store, base, incoming, removed){
+  const beforeMap=new Map((base||[]).map(r=>[String(r.id),r]));
+  const out=[];
+  (incoming||[]).forEach(rec=>{
+    const prev=beforeMap.get(String(rec.id));
+    if(!prev || stableStr(prev)!==stableStr(rec)){
+      out.push({action:prev?'UPDATE':'CREATE',store,recordId:String(rec.id),bmsId:batteryRefFromRecord(rec),
+        before:prev?clone(prev):null,after:clone(rec)});
+    }
+  });
+  (removed||[]).forEach(id=>{
+    const prev=beforeMap.get(String(id));
+    if(prev) out.push({action:'DELETE',store,recordId:String(id),bmsId:batteryRefFromRecord(prev),
+      before:clone(prev),after:null});
+  });
+  return out;
+}
+async function appendAccountabilityAudit(entries){
+  if(!entries.length) return;
+  try{
+    const actor=sessionActor();
+    const fresh=await loadStore('accountability_audit_records');
+    const rows=[...fresh];
+    entries.forEach(e=>rows.push({id:uid(),timestamp:nowIso(),actor:actor.name,role:actor.role,stage:actor.stage,...e}));
+    await saveStore('accountability_audit_records',rows,{internalAuditWrite:true});
+    STATE.accountabilityAuditRecords=rows;
+  }catch(e){ console.error('Accountability audit append failed',e); }
+}
+function requireActorName(label='Technician'){
+  const a=sessionActor();
+  if(!a.name || a.name==='System'){ toast(label+' identity is required before saving this record.'); return false; }
+  return true;
+}
+function normalizeActorFields(key, rec){
+  const a=sessionActor(), out=clone(rec);
+  if(key==='day_log_records') out.enteredBy=a.name;
+  if(key==='om_chain_records'){ out.updatedBy=a.name; out.updatedRole=a.role; out.updatedStage=a.stage||null; out.updatedAt=nowIso(); }
+  if(key==='bsa_records' || key==='rca_records'){ out.updatedBy=a.name; out.updatedRole=a.role; out.updatedAt=nowIso(); }
+  if(key==='takeover_request_records'){ out.requestedBy=a.name; out.requestedByRole=a.role; out.requestedAt=out.requestedAt||nowIso(); }
+  return out;
+}
+
+async function saveStore(key, list, options={}){
   if(!BQC_STORES.includes(key)){ console.error('Unknown store', key); return false; }
   const session = currentSession();
-  if(session && !roleCanWrite(session.role, key)){
+  const internalAuditWrite = !!options.internalAuditWrite && key==='accountability_audit_records';
+  if(!internalAuditWrite && session && !roleCanWrite(session.role, key)){
     console.error('Role '+session.role+' may not write '+key);
     alert('Your role does not have permission to change '+(STORE_LABEL[key]||key)+'.');
     return false;
   }
   const incoming = (Array.isArray(list)?list:[]).map(r=>{
-    const rec = clone(r);
+    let rec = clone(r);
     if(!rec.id) rec.id = uid();
     rec.id = String(rec.id);
+    /* Actor identity is captured by the audit event; critical record-specific actor fields are set by their workflow. */
     return rec;
   });
   const base = LAST_SERVED[key] || cacheGet(key);
@@ -1116,8 +1231,37 @@ async function saveStore(key, list){
   cacheSet(key, incoming);
   LAST_SERVED[key] = incoming;
   outboxPush(ops);
-  flushOutbox();       /* fire and forget — data is already safe locally */
+  flushOutbox();
+  if(key!=='accountability_audit_records' && !options.skipAudit){
+    const changes=auditDiffs(key,base,incoming,removed);
+    if(changes.length) appendAccountabilityAudit(changes);
+  }
   return true;
+}
+
+
+async function deleteStoreRecord(store,id){
+  const session=currentSession();
+  if(!session || !roleCanDelete(session.role,store)){toast('Only the Quality Engineer can delete operational records.');return false;}
+  if(!confirm(`Delete record ${id} from ${STORE_LABEL[store]||store}? The cloud record will remain recoverable as a soft delete.`)) return false;
+  const fresh=await loadStore(store);
+  const updated=fresh.filter(r=>String(r.id)!==String(id));
+  if(updated.length===fresh.length){toast('Record not found.');return false;}
+  const ok=await saveStore(store,updated);
+  if(ok) toast(`✓ Record ${id} deleted (soft delete).`);
+  return ok;
+}
+async function deleteAllStoreRecords(store){
+  const session=currentSession();
+  if(!session || !roleCanDelete(session.role,store)){toast('Only the Quality Engineer can delete operational records.');return false;}
+  const fresh=await loadStore(store);
+  if(!fresh.length){toast('No records to delete in this store.');return false;}
+  const phrase=`DELETE ${fresh.length}`;
+  const typed=prompt(`This will soft-delete ALL ${fresh.length} records in ${STORE_LABEL[store]||store}.\nType ${phrase} to continue.`);
+  if(typed!==phrase) return false;
+  const ok=await saveStore(store,[]);
+  if(ok) toast(`✓ ${fresh.length} record(s) deleted (soft delete).`);
+  return ok;
 }
 
 async function loadOm(){ return loadStore('om_chain_records'); }
@@ -1144,6 +1288,9 @@ async function loadBsa(){ return loadStore('bsa_records'); }
 async function saveBsa(list){ return saveStore('bsa_records',list); }
 async function loadQualityIssues(){ return loadStore('quality_issue_records'); }
 async function saveQualityIssues(list){ return saveStore('quality_issue_records',list); }
+async function loadAccountabilityAudit(){ return loadStore('accountability_audit_records'); }
+async function loadRca(){ return loadStore('rca_records'); }
+async function saveRca(list){ return saveStore('rca_records',list); }
 
 /* ---------- Shared live-data loader ----------
    One mapping keeps every sector reading the same underlying stores.  Sector loaders and the
@@ -1162,6 +1309,9 @@ const STORE_STATE_KEYS = {
   day_log_records:'dayLogRecords',
   bsa_records:'bsaRecords',
   quality_issue_records:'qualityIssueRecords',
+  accountability_audit_records:'accountabilityAuditRecords',
+  rca_records:'rcaRecords',
+  takeover_request_records:'takeoverRequestRecords',
 };
 
 async function loadStoresIntoState(keys=BQC_STORES, options={}){
@@ -1219,7 +1369,8 @@ function signIn(mode, pin, name){
   if(mode==='omtech'){
     const stage = STAGE_PINS[pin];
     if(!stage) throw new Error('Invalid PIN or role');
-    const who = (name||'').trim() || ('Stage '+stage+' Technician');
+    const who = (name||'').trim();
+    if(!who) throw new Error('Technician name is required for accountability.');
     const s = { role:'omtech', stage, name:who, issuedAt:Date.now() };
     lsWrite(SESSION_KEY, s); return s;
   }
@@ -1265,6 +1416,8 @@ create table if not exists bqc_records (
   updated_by  text
 );
 create index if not exists bqc_records_store_idx on bqc_records (store_key, deleted);
+-- New stores used by the enhanced app: accountability_audit_records and rca_records.
+-- The browser PIN layer is not a production security boundary; enforce role/RLS on the server before deployment.
 
 alter table bqc_records enable row level security;
 
@@ -1494,7 +1647,8 @@ function newOmRecord(d, visitNumber, techName){
     visitNumber,
     stage: 2, status: 'STAGE2_OPEN',
     capaCycles: 0, isCorrectiveAction: false, capaLog: [],
-    stage1: { technician: techName, receivedBy: d.receivedBy, pre: d.pre, issues: d.issues, otherNote: d.otherNote, completedAt: nowIso() },
+    stage1: { technician: techName, receivedBy: techName, pre: d.pre, issues: d.issues, otherNote: d.otherNote, completedAt: nowIso() },
+    createdBy: techName, updatedBy: techName, updatedRole:'omtech', updatedStage:1,
     stage2: { technician:'', sopRef: STANDARD_SOPS[0], repairAction:'', partsReplaced:'', post:{}, completedAt:null },
     stage3: { technician:'', tests:{packVoltage:'',minCell:'',maxCell:'',irMeasured:'',irThreshold:550}, testBools:{}, qcPassed:'', qcNote:'', completedAt:null },
     finalDisposition: null, closedAt: null,
@@ -1942,6 +2096,13 @@ function emptyDayLogDraft(){ return { date: todayStr(), notes:'', pending:'', cl
 function emptyBsaDraft(){
   return { bmsId:'', model:'', source: BSA_SOURCES[0], dateFlagged: todayStr(), flaggedBy:'', issueDescription:'', sopAttempted:'', assignedEngineer:'', status: BSA_STATUSES[0], rcaSummary:'', repairNotes:'' };
 }
+function emptyRcaDraft(){
+  return {bmsId:'',model:'',linkedRecordId:'',source:'O&M / BSA / Quality',owner:'',dateOpened:todayStr(),
+    problemStatement:'',containment:'',immediateAction:'',why1:'',why2:'',why3:'',why4:'',why5:'',
+    fishbone:{People:'',Machine:'',Method:'',Material:'',Measurement:'',Environment:''},
+    rootCause:'',correctiveAction:'',preventiveAction:'',verificationMethod:'',dueDate:'',
+    status:'RCA IN PROGRESS',verifiedBy:'',verifiedAt:'',notes:''};
+}
 function iotBalance(){
   const given = STATE.iotGiven.reduce((a,r)=>a+(parseInt(r.quantity)||0),0);
   const returned = STATE.iotReturned.reduce((a,r)=>a+(parseInt(r.quantity)||0),0);
@@ -1962,6 +2123,11 @@ let STATE = {
   view: 'main',
   toast: null,
   searchQuery: '',
+  searchCommitted: '',
+  searchReturnView: 'main',
+  searchActive: false,
+  searchResults: [],
+  searchBusy: false,
   deepDiveId: '',
   batteryModalId: '',
   chartModal: null,
@@ -1978,6 +2144,9 @@ let STATE = {
   dayLogRecords: [],
   bsaRecords: [],
   qualityIssueRecords: [],
+  accountabilityAuditRecords: [],
+  rcaRecords: [],
+  takeoverRequestRecords: [],
  
   intakeDraft: emptyIntakeDraft(''),
   openId: null,
@@ -2013,6 +2182,8 @@ let STATE = {
   bsaDraft: null,
   bsaSaving: false,
   bsaLinkBmsSearch: '',
+  rcaDraft: emptyRcaDraft(),
+  rcaSaving: false,
   exportSelection: null,
   exportPreview: null,
   myReportExporting: false,
@@ -2068,20 +2239,7 @@ function render(){
   const scrollY = window.scrollY;
   pendingCharts = [];
   root.innerHTML='';
-  try{
-    root.appendChild(View());
-  }catch(e){
-    console.error('Page render error:',e);
-    const fallback=el('div',{class:'app'},[
-      el('div',{class:'banner err'},'This page encountered a rendering error.'),
-      el('div',{class:'card'},[
-        el('h3',{},'Page recovery'),
-        el('div',{class:'sub'},'Your saved data has not been deleted. Refresh the page or switch pages; the shared stores remain intact.'),
-        el('button',{class:'btn-primary',onClick:()=>location.reload()},'Reload app')
-      ])
-    ]);
-    root.appendChild(fallback);
-  }
+  root.appendChild(View());
   const chartJobs = pendingCharts.slice();
   pendingCharts = [];
   const initCharts = ()=>{
@@ -2385,24 +2543,155 @@ function selectInput(value, options, onChange, opts={}){
 }
 function Toast(){ return el('div',{class:'banner ok'},[STATE.toast]); }
 
-/* ---------- Global search (available on every screen) ---------- */
-function SearchBar(){
-  const wrap = el('div',{style:'margin-bottom:12px;display:flex;align-items:center;gap:8px;'});
-  const inp = textInput(STATE.searchQuery, v=>{ STATE.searchQuery=v; render(); }, {placeholder:'🔎 Search by Battery / BMS Number — also matches platform, technician, status, notes…', key:'global-search'});
-  inp.style.maxWidth='420px';
-  wrap.appendChild(inp);
-  if(STATE.searchQuery){
-    const clearBtn = el('button',{class:'btn-sm'},'Clear');
-    clearBtn.addEventListener('click', ()=>{ STATE.searchQuery=''; render(); });
-    wrap.appendChild(clearBtn);
+/* ---------- Global battery / record search — Enter to execute ---------- */
+function searchTextForRecord(record){
+  try{
+    const raw=JSON.stringify(record||{});
+    return raw.toLowerCase();
+  }catch(e){ return ''; }
+}
+function searchTerms(q){
+  return String(q||'').trim().toLowerCase().split(/[\s,;]+/).map(x=>x.trim()).filter(Boolean);
+}
+function searchRecordMatches(record, terms){
+  if(!terms.length) return false;
+  const raw=searchTextForRecord(record);
+  const digits=raw.replace(/\D/g,'');
+  return terms.some(term=>{
+    if(/^\d+$/.test(term)) return digits.includes(term);
+    return raw.includes(term);
+  });
+}
+function searchBatteryRef(record){
+  try{
+    const ref=batteryRefFromRecord(record);
+    return ref ? String(ref) : '';
+  }catch(e){
+    return String(record?.bmsId||record?.batteryId||record?.oemId||'');
   }
+}
+async function executeGlobalSearch(){
+  const q=(STATE.searchQuery||'').trim();
+  if(!q) return;
+  STATE.searchBusy=true; STATE.searchActive=true; STATE.view='search'; render();
+  try{
+    const keys=visibleStoreKeys();
+    await loadStoresIntoState(keys,{ensureNamanve:true,ensureQualityIssues:true});
+    const hits=[];
+    keys.forEach(store=>{
+      const stateKey=STORE_STATE_KEYS[store];
+      const rows=stateKey && Array.isArray(STATE[stateKey]) ? STATE[stateKey] : [];
+      rows.forEach(rec=>{
+        if(searchRecordMatches(rec,searchTerms(q))){
+          const ref=searchBatteryRef(rec);
+          hits.push({
+            store, id:String(rec.id||''), battery:ref||'NO BATTERY ID',
+            platform:rec.model||rec.platform||rec.oem||'',
+            technician:rec.technician||rec.updatedBy||rec.enteredBy||rec.assignedEngineer||rec.flaggedBy||'',
+            status:rec.status||rec.finalDisposition||rec.qcPassed||'',
+            date:rec.dateReceived||rec.date||rec.createdAt||rec.updatedAt||'',
+            record:rec
+          });
+        }
+      });
+    });
+    const seen=new Set();
+    STATE.searchResults=hits.filter(h=>{
+      const k=h.store+'|'+h.id;
+      if(seen.has(k)) return false; seen.add(k); return true;
+    }).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  }catch(e){
+    STATE.searchResults=[]; STATE.globalSyncError=e.message||'Search failed';
+  }finally{
+    STATE.searchBusy=false; render();
+  }
+}
+function SearchResultsView(){
+  const card=el('div',{class:'card search-results-card'});
+  const terms=searchTerms(STATE.searchQuery);
+  card.appendChild(el('div',{class:'search-result-head'},[
+    el('div',{},[
+      el('h2',{},'Battery Trace Search'),
+      el('div',{class:'sub'},`${STATE.searchResults.length} matching record${STATE.searchResults.length===1?'':'s'} across every data entry visible to your role · pattern: ${terms.join(' + ')||'—'}`)
+    ]),
+    el('span',{class:'search-result-count'},String(STATE.searchResults.length))
+  ]));
+  if(STATE.searchBusy){
+    card.appendChild(el('div',{class:'search-loading'},[el('span',{class:'spinner'}),'Searching every visible record…']));
+    return card;
+  }
+  if(!STATE.searchResults.length){
+    card.appendChild(el('div',{class:'empty-note'},'No matching entry found. Try fewer digits from the battery/BMS number, or another distinctive part of the ID.'));
+    return card;
+  }
+  const wrap=el('div',{class:'table-wrap'});
+  const tbl=el('table');
+  tbl.appendChild(el('thead',{},[el('tr',{},[
+    el('th',{},'Battery / BMS'),
+    el('th',{},'Source'),
+    el('th',{},'Platform'),
+    el('th',{},'Technician / Owner'),
+    el('th',{},'Status'),
+    el('th',{},'Date / Time')
+  ])]));
+  const body=el('tbody');
+  STATE.searchResults.forEach((h,i)=>{
+    const refCell=el('td',{class:'mono'});
+    if(h.battery!=='NO BATTERY ID') refCell.appendChild(batteryIdButton(h.battery));
+    else refCell.appendChild(el('span',{},h.battery));
+    body.appendChild(el('tr',{style:`--row-i:${Math.min(i,20)};`},[
+      refCell,
+      el('td',{},STORE_LABEL[h.store]||h.store),
+      el('td',{},h.platform||'—'),
+      el('td',{},h.technician||'—'),
+      el('td',{},h.status||'—'),
+      el('td',{class:'mono'},String(h.date||'—'))
+    ]));
+  });
+  tbl.appendChild(body); wrap.appendChild(tbl); card.appendChild(wrap);
+  return card;
+}
+function SearchBar(){
+  const wrap=el('div',{class:'global-searchbar'});
+  const run=async()=>{
+    if(STATE.view!=='search') STATE.searchReturnView=STATE.view;
+    STATE.searchQuery=String(inp.value||'').trim();
+    STATE.searchCommitted=STATE.searchQuery;
+    if(!STATE.searchQuery){STATE.searchResults=[];STATE.searchActive=false;render();return;}
+    await executeGlobalSearch();
+  };
+  const inp=textInput(STATE.searchQuery,v=>{STATE.searchQuery=v;},{placeholder:'🔎 Search battery / BMS number — enter a few digits, then press Enter',key:'global-search'});
+  inp.className='global-search-input';
+  inp.setAttribute('aria-label','Search battery or BMS number');
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();run();}});
+  wrap.appendChild(inp);
+  const go=el('button',{class:'btn-primary search-go'},'⌕ Search');
+  go.addEventListener('click',run);
+  wrap.appendChild(go);
+  if(STATE.searchQuery){
+    const clear=el('button',{class:'btn-sm'},'Clear');
+    clear.addEventListener('click',()=>{STATE.searchQuery='';STATE.searchCommitted='';STATE.searchResults=[];STATE.searchActive=false;STATE.view=STATE.searchReturnView||'main';render();});
+    wrap.appendChild(clear);
+  }
+  const q=(STATE.searchCommitted||'').trim();
+  if(q)wrap.appendChild(el('span',{class:'search-hint'},`Pattern: ${q} · searches every visible record`));
   return wrap;
 }
-function searchFilter(items, getText){
-  const q = (STATE.searchQuery||'').trim().toLowerCase();
-  if(!q) return items;
+function searchFilter(items,getText){
+  const q=(STATE.searchCommitted||'').trim().toLowerCase();
+  if(!q)return items;
+  const digits=q.replace(/\D/g,'');
   return items.filter(it=>{
-    try{ return String(getText(it)||'').toLowerCase().includes(q); } catch(e){ return false; }
+    try{
+      const text=String(getText(it)||'').toLowerCase();
+      if(text.includes(q))return true;
+      if(digits.length>=2){
+        const normalized=text.replace(/[^0-9a-z]/g,'');
+        const battery=batteryRefFromRecord(it).replace(/[^0-9a-z]/g,'');
+        if(normalized.includes(digits)||battery.includes(digits))return true;
+      }
+      return false;
+    }catch(e){return false;}
   });
 }
  
@@ -2575,7 +2864,7 @@ function Header(){
     el('button',{class:'btn-sm', disabled: STATE.myReportExporting, onClick: exportMyReport}, STATE.myReportExporting ? loadingLabel(true,'Preparing…') : '⬇ Download My Report'),
     el('button',{class:'btn-sm', onClick:()=>{
       apiFetch('/api/auth/logout',{method:'POST'}).catch(()=>{});
-      STATE.role=null; STATE.stage=null; STATE.view='main'; STATE.openId=null; STATE.serialWarning=null; STATE.searchQuery='';
+      STATE.role=null; STATE.stage=null; STATE.view='main'; STATE.openId=null; STATE.serialWarning=null; STATE.searchQuery='';STATE.searchCommitted='';
       render();
     }},'Sign Out')
   ]);
@@ -2592,17 +2881,30 @@ function Header(){
   return head;
 }
 function Nav(items, labels){
-  const nav = el('div',{class:'nav'});
-  items.forEach(k=>{
-    const b = el('button',{class: STATE.view===k?'active':''}, labels[k]);
+  const nav = el('nav',{class:'nav premium-nav','aria-label':'Main menu'});
+  const head = el('div',{class:'nav-head'},[
+    el('div',{class:'nav-title-wrap'},[
+      el('span',{class:'nav-kicker'},'CONTROL CENTER'),
+      el('strong',{class:'nav-title'},'Main Menu')
+    ]),
+    el('span',{class:'nav-context'}, STATE.role==='omtech' ? ('STAGE '+STATE.stage+' · '+STATE.techName) : (SECTOR_LABEL[STATE.role]||'OPERATIONS'))
+  ]);
+  nav.appendChild(head);
+  const rail = el('div',{class:'nav-rail'});
+  items.forEach((k,i)=>{
+    const active = STATE.view===k;
+    const b = el('button',{class:'nav-item '+(active?'active':''),'aria-current':active?'page':null,'title':labels[k]},[
+      el('span',{class:'nav-index'},String(i+1).padStart(2,'0')),
+      el('span',{class:'nav-label'},labels[k]),
+      el('span',{class:'nav-arrow'},active?'●':'›')
+    ]);
     b.addEventListener('click', async ()=>{
       if(STATE.navLoading) return;
       STATE.navLoading = true;
       STATE.view=k; STATE.openId=null;
       try{
-        /* Every page navigation pulls the same shared stores before rendering.
-           This prevents one dashboard from showing an older snapshot than another. */
         await loadStoresIntoState(visibleStoreKeys(), {ensureNamanve:true, ensureQualityIssues:true});
+        if(STATE.role==='omtech') STATE.takeoverRequestRecords=await loadStore('takeover_request_records');
         STATE.omLastRefreshed=nowTime();
         STATE.globalLastRefreshed=nowTime();
       }catch(e){
@@ -2612,14 +2914,16 @@ function Nav(items, labels){
         render();
       }
     });
-    nav.appendChild(b);
+    rail.appendChild(b);
   });
+  nav.appendChild(rail);
   return nav;
 }
  
 /* ---------- Top level router ---------- */
 function View(){
   if(!STATE.role) return LoginView();
+  if(STATE.view==='daylog') STATE.view='notes';
   const wrap = el('div',{class:'app'});
   wrap.appendChild(Header());
   if(STATE.toast) wrap.appendChild(Toast());
@@ -2627,50 +2931,71 @@ function View(){
   const content = el('div',{class:'view-fade'});
  
   if(STATE.role==='omtech'){
-    wrap.appendChild(Nav(['main','myclosed','analytics'], {main:'My Docket', myclosed:'My Completed Work', analytics:'My Analytics'}));
+    wrap.appendChild(Nav(['main','progress','rca','knowledge','myclosed','analytics','notes'], {main:'My Docket', progress:'Daily Progress', rca:'Technician RCA', knowledge:'5S & Battery Insights', myclosed:'My Completed Work', analytics:'My Analytics', notes:'NOTES CENTER'}));
     wrap.appendChild(SearchBar());
-    if(STATE.view==='myclosed') content.appendChild(OmTechClosedView());
+    if(STATE.view==='search') content.appendChild(SearchResultsView());
+    else if(STATE.view==='progress') content.appendChild(DailyWorkProgressView());
+    else if(STATE.view==='rca') content.appendChild(RcaWorkspaceView());
+    else if(STATE.view==='knowledge') content.appendChild(KnowledgeInsightsView());
+    else if(STATE.view==='myclosed') content.appendChild(OmTechClosedView());
     else if(STATE.view==='analytics') content.appendChild(OmTechAnalyticsView());
+    else if(STATE.view==='notes') content.appendChild(DayLogView());
     else content.appendChild(OmTechDocketView());
   } else if(STATE.role==='omadmin'){
-    wrap.appendChild(Nav(['dashboard','analytics','integrity','history','daylog'], {dashboard:'Pipeline Oversight', analytics:'Analytics', integrity:'Data Integrity', history:'Full Chain History', daylog:'Day Notes'}));
+    wrap.appendChild(Nav(['dashboard','progress','analytics','integrity','history','notes','rca','knowledge'], {dashboard:'Pipeline Oversight', progress:'Daily Progress', analytics:'Analytics', integrity:'Data Integrity', history:'Full Chain History', notes:'NOTES CENTER', rca:'RCA Register', knowledge:'5S & Battery Insights'}));
     wrap.appendChild(SearchBar());
-    if(STATE.view==='analytics') content.appendChild(OmAdminAnalyticsView());
+    if(STATE.view==='search') content.appendChild(SearchResultsView());
+    else if(STATE.view==='progress') content.appendChild(DailyWorkProgressView());
+    else if(STATE.view==='analytics') content.appendChild(OmAdminAnalyticsView());
     else if(STATE.view==='integrity') content.appendChild(DataIntegrityView());
     else if(STATE.view==='history') content.appendChild(OmHistoryView());
-    else if(STATE.view==='daylog') content.appendChild(DayLogView());
+    else if(STATE.view==='notes') content.appendChild(DayLogView());
+    else if(STATE.view==='rca') content.appendChild(RcaWorkspaceView());
+    else if(STATE.view==='knowledge') content.appendChild(KnowledgeInsightsView());
     else content.appendChild(OmDashboardView());
   } else if(STATE.role==='plantinv'){
-    const legacyToCombined = {main:'dashboard',bulk:'stock',ledger:'stock',dailystock:'daily',warrantystock:'operations',newintake:'operations',adjust:'stock',stock:'stock',iot:'operations',analytics:'dashboard',history:'daily'};
+    const legacyToCombined = {main:'dashboard',bulk:'stock',ledger:'stock',dailystock:'daily',warrantystock:'operations',newintake:'operations',adjust:'stock',stock:'stock',iot:'operations',analytics:'dashboard',history:'daily',daylog:'notes'};
     if(legacyToCombined[STATE.view]) STATE.view = legacyToCombined[STATE.view];
-    if(!['dashboard','daily','stock','operations','daylog','integrity'].includes(STATE.view)) STATE.view='dashboard';
-    wrap.appendChild(Nav(['dashboard','daily','stock','operations','daylog','integrity'], {
-      dashboard:'Plant Dashboard', daily:'Daily Stock & Quality', stock:'Stock & Movement',
-      operations:'Battery Operations & Warranty', daylog:'Day Notes', integrity:'Data Integrity'
+    if(!['dashboard','progress','daily','stock','operations','notes','integrity','knowledge','search'].includes(STATE.view)) STATE.view='dashboard';
+    wrap.appendChild(Nav(['dashboard','progress','daily','stock','operations','notes','integrity','knowledge'], {
+      dashboard:'Plant Dashboard', progress:'Daily Progress', daily:'Daily Stock & Quality', stock:'Stock & Movement',
+      operations:'Battery Operations & Warranty', notes:'NOTES CENTER', integrity:'Data Integrity', knowledge:'5S & Battery Insights'
     }));
     wrap.appendChild(SearchBar());
-    if(STATE.view==='dashboard') content.appendChild(PlantDashboardView());
+    if(STATE.view==='search') content.appendChild(SearchResultsView());
+    else if(STATE.view==='dashboard') content.appendChild(PlantDashboardView());
+    else if(STATE.view==='progress') content.appendChild(DailyWorkProgressView());
     else if(STATE.view==='daily') content.appendChild(PlantDailyCombinedView());
     else if(STATE.view==='stock') content.appendChild(PlantStockOperationsView());
     else if(STATE.view==='operations') content.appendChild(PlantOperationsCombinedView());
-    else if(STATE.view==='daylog') content.appendChild(DayLogView());
+    else if(STATE.view==='notes') content.appendChild(DayLogView());
     else if(STATE.view==='integrity') content.appendChild(DataIntegrityView());
+    else if(STATE.view==='knowledge') content.appendChild(KnowledgeInsightsView());
   } else if(STATE.role==='quality'){
-    wrap.appendChild(Nav(['warranty','bsa','overview','ledger','analytics','integrity','daylog'], {warranty:'Warranty & Escalations', bsa:'BSA Escalations', overview:'Sector Overview', ledger:'Stock Ledger', analytics:'Analytics & Reports', integrity:'Data Integrity', daylog:'Day Notes'}));
+    wrap.appendChild(Nav(['warranty','bsa','progress','overview','ledger','analytics','integrity','notes','rca','knowledge'], {warranty:'Warranty & Escalations', bsa:'BSA Escalations', progress:'Daily Progress', overview:'Sector Overview', ledger:'Stock Ledger', analytics:'Analytics & Reports', integrity:'Data Integrity', notes:'NOTES CENTER', rca:'RCA Register', knowledge:'5S & Battery Insights'}));
     wrap.appendChild(SearchBar());
-    if(STATE.view==='overview') content.appendChild(QualityOverviewView());
+    if(STATE.view==='search') content.appendChild(SearchResultsView());
+    else if(STATE.view==='overview') content.appendChild(QualityOverviewView());
     else if(STATE.view==='bsa') content.appendChild(QualityBsaView());
+    else if(STATE.view==='progress') content.appendChild(DailyWorkProgressView());
     else if(STATE.view==='ledger') content.appendChild(StockLedgerView());
     else if(STATE.view==='analytics') content.appendChild(QualityAnalyticsView());
     else if(STATE.view==='integrity') content.appendChild(DataIntegrityView());
-    else if(STATE.view==='daylog') content.appendChild(DayLogView());
+    else if(STATE.view==='notes') content.appendChild(DayLogView());
+    else if(STATE.view==='rca') content.appendChild(RcaWorkspaceView());
+    else if(STATE.view==='knowledge') content.appendChild(KnowledgeInsightsView());
     else content.appendChild(WarrantyView());
   } else if(STATE.role==='bsa'){
-    wrap.appendChild(Nav(['activity','newcase','analytics','history'], {activity:'BSA Queue', newcase:'Log New Case', analytics:'Analytics', history:'Completed Cases'}));
+    wrap.appendChild(Nav(['activity','newcase','progress','rca','knowledge','analytics','notes','history'], {activity:'BSA Queue', newcase:'Log New Case', progress:'Daily Progress', rca:'RCA Room', knowledge:'5S & Battery Insights', analytics:'Analytics', notes:'NOTES CENTER', history:'Completed Cases'}));
     wrap.appendChild(SearchBar());
-    if(STATE.view==='newcase') content.appendChild(BsaNewCaseView());
+    if(STATE.view==='search') content.appendChild(SearchResultsView());
+    else if(STATE.view==='newcase') content.appendChild(BsaNewCaseView());
+    else if(STATE.view==='progress') content.appendChild(DailyWorkProgressView());
+    else if(STATE.view==='rca') content.appendChild(RcaWorkspaceView());
+    else if(STATE.view==='knowledge') content.appendChild(KnowledgeInsightsView());
     else if(STATE.view==='analytics') content.appendChild(BsaAnalyticsView());
     else if(STATE.view==='history') content.appendChild(BsaHistoryView());
+    else if(STATE.view==='notes') content.appendChild(DayLogView());
     else content.appendChild(BsaActivityView());
   }
   wrap.appendChild(content);
@@ -2967,20 +3292,158 @@ function openChartSelection(title,label,value){
 function stageTechnicianName(rec,stage){const key='stage'+stage;return rec&&rec[key]?(rec[key].technician||'Unassigned'):'Unassigned';}
 function openRecordsAtStage(stage){return (STATE.omRecords||[]).filter(r=>r.stage===stage&&!String(r.status||'').startsWith('CLOSED'));}
 function stageWorkload(stage){const counts={};openRecordsAtStage(stage).forEach(r=>{const who=stageTechnicianName(r,stage);counts[who]=(counts[who]||0)+1;});return counts;}
+/* =====================================================================
+   STAGED TAKEOVER REQUESTS
+   A technician may request a handover only from the adjacent stage.
+   The technician who currently owns the work at that adjacent stage must
+   ACCEPT before ownership transfers. The request/decision is retained.
+   ===================================================================== */
+function adjacentStage(a,b){ return Math.abs(Number(a)-Number(b))===1; }
+function stageTech(r,stage){ return String((r['stage'+stage]||{}).technician||'').trim(); }
+
+async function requestStageTakeover(recordId,targetStage){
+  if(STATE.role!=='omtech') return;
+  const requesterStage=Number(STATE.stage), target=Number(targetStage);
+  if(!adjacentStage(requesterStage,target)){ toast('Takeover requests are limited to the immediately previous or next stage.'); return; }
+  const fresh=await loadOm();
+  const rec=fresh.find(r=>String(r.id)===String(recordId));
+  if(!rec || rec.stage!==target || String(rec.status||'').startsWith('CLOSED')){ toast('This battery is no longer available at that stage. Refreshing.'); STATE.omRecords=fresh; render(); return; }
+  const currentOwner=stageTech(rec,target);
+  if(!currentOwner){ toast('There is no technician at the target stage to accept the handover.'); return; }
+  if(currentOwner===STATE.techName){ toast('You are already the assigned technician.'); return; }
+  const requests=await loadStore('takeover_request_records');
+  const pending=requests.find(x=>x.recordId===rec.id && x.status==='PENDING' && x.requestedBy===STATE.techName);
+  if(pending){ toast('A takeover request is already pending for this battery.'); return; }
+  const req={
+    id:uid(), createdAt:nowIso(), updatedAt:nowIso(), status:'PENDING',
+    recordId:String(rec.id), bmsId:rec.bmsId, model:rec.model||'',
+    requester:STATE.techName, requesterStage,
+    targetTechnician:currentOwner, targetStage:target,
+    reason:'Technician requested adjacent-stage takeover',
+    acceptedAt:null, acceptedBy:null, declinedAt:null, declinedBy:null
+  };
+  const ok=await saveStore('takeover_request_records',[...requests,req]);
+  if(!ok){ toast('Could not create the takeover request.'); return; }
+  STATE.takeoverRequestRecords=[...requests,req];
+  toast(`✓ Takeover request sent to ${currentOwner} for BMS ${rec.bmsId}.`);
+  render();
+}
+
+async function decideTakeoverRequest(requestId,decision){
+  if(STATE.role!=='omtech') return;
+  const requests=await loadStore('takeover_request_records');
+  const req=requests.find(x=>String(x.id)===String(requestId));
+  if(!req || req.status!=='PENDING'){ toast('This request is no longer pending.'); STATE.takeoverRequestRecords=requests; render(); return; }
+  if(req.targetTechnician!==STATE.techName || Number(req.targetStage)!==Number(STATE.stage)){
+    toast('Only the technician currently assigned at the target stage can accept or decline this request.');
+    return;
+  }
+  if(!adjacentStage(req.requesterStage,req.targetStage)){ toast('Invalid stage-transfer request.'); return; }
+  if(decision==='DECLINE'){
+    req.status='DECLINED'; req.declinedAt=nowIso(); req.declinedBy=STATE.techName; req.updatedAt=nowIso();
+    const saved=await saveStore('takeover_request_records',requests);
+    if(saved){ STATE.takeoverRequestRecords=requests; toast(`Takeover request for ${req.bmsId} declined.`); render(); }
+    return;
+  }
+
+  const fresh=await loadOm();
+  const rec=fresh.find(r=>String(r.id)===String(req.recordId));
+  if(!rec || rec.stage!==req.targetStage || String(rec.status||'').startsWith('CLOSED')){
+    req.status='EXPIRED'; req.updatedAt=nowIso();
+    await saveStore('takeover_request_records',requests);
+    STATE.takeoverRequestRecords=requests;
+    toast('The battery changed before acceptance; request expired.'); render(); return;
+  }
+  const ownerNow=stageTech(rec,req.targetStage);
+  if(ownerNow!==STATE.techName){
+    toast('The current owner changed. Refresh and review the request again.');
+    return;
+  }
+
+  const fromStage=Number(req.targetStage), toStage=Number(req.requesterStage);
+  const transfer={
+    at:nowIso(), fromStage, toStage, fromTechnician:STATE.techName,
+    toTechnician:req.requester, requestId:req.id, acceptedBy:STATE.techName
+  };
+  rec.handoverHistory=Array.isArray(rec.handoverHistory)?rec.handoverHistory:[];
+  rec.handoverHistory.push(transfer);
+  rec.stage=toStage;
+  rec.status='STAGE'+toStage+'_OPEN';
+  rec['stage'+toStage]=rec['stage'+toStage]||{};
+  rec['stage'+toStage].technician=req.requester;
+  rec['stage'+toStage].transferredAt=nowIso();
+  rec['stage'+toStage].transferredFromStage=fromStage;
+  rec['stage'+toStage].transferredFromTechnician=STATE.techName;
+  rec.updatedAt=nowIso();
+  rec.updatedBy=req.requester;
+  rec.updatedRole='omtech';
+  rec.updatedStage=toStage;
+
+  const savedOm=await saveOm(fresh);
+  if(!savedOm){ toast('Transfer was not saved; no ownership was changed.'); return; }
+
+  req.status='ACCEPTED'; req.acceptedAt=nowIso(); req.acceptedBy=STATE.techName; req.updatedAt=nowIso();
+  const savedReq=await saveStore('takeover_request_records',requests);
+  if(!savedReq){ toast('Battery transfer saved, but request status could not be updated. Refresh the request queue.'); }
+  STATE.omRecords=fresh;
+  STATE.takeoverRequestRecords=requests;
+  toast(`✓ ${req.bmsId} transferred to ${req.requester} at Stage ${toStage}.`);
+  render();
+}
+
+function TakeoverRequestInbox(){
+  const card=el('div',{class:'card takeover-inbox'});
+  const mine=(STATE.takeoverRequestRecords||[]).filter(r=>r.status==='PENDING' && r.targetTechnician===STATE.techName && Number(r.targetStage)===Number(STATE.stage));
+  const sent=(STATE.takeoverRequestRecords||[]).filter(r=>r.status==='PENDING' && r.requester===STATE.techName);
+  card.appendChild(el('h3',{},`Takeover Requests · ${mine.length} awaiting your acceptance`));
+  card.appendChild(el('div',{class:'sub'},'Only the technician currently holding the battery at the adjacent stage can approve the transfer. Acceptance moves ownership to the requesting technician and keeps the handover history.'));
+  if(!mine.length) card.appendChild(el('div',{class:'empty-note'},'No incoming takeover requests.'));
+  mine.forEach(r=>{
+    const row=el('div',{class:'takeover-row'},[
+      el('div',{},[
+        el('div',{class:'mono',style:'font-weight:800;'},r.bmsId||'—'),
+        el('div',{class:'meta'},`${r.requester} · Stage ${r.requesterStage} wants to take over from your Stage ${r.targetStage}`)
+      ]),
+      el('div',{style:'display:flex;gap:6px;flex-wrap:wrap;'},[
+        el('button',{class:'btn-primary btn-sm',onClick:()=>decideTakeoverRequest(r.id,'ACCEPT')},'Accept & Transfer'),
+        el('button',{class:'btn-sm btn-danger',onClick:()=>decideTakeoverRequest(r.id,'DECLINE')},'Decline')
+      ])
+    ]);
+    card.appendChild(row);
+  });
+  if(sent.length){
+    card.appendChild(el('div',{style:'font-weight:800;margin-top:12px;'},'My Pending Requests'));
+    sent.forEach(r=>card.appendChild(el('div',{class:'takeover-row'},[
+      el('div',{},[el('div',{class:'mono',style:'font-weight:800;'},r.bmsId||'—'),el('div',{class:'meta'},`Waiting for ${r.targetTechnician} · Stage ${r.targetStage}`)]),
+      el('span',{class:'status-chip OPEN'},'PENDING')
+    ])));
+  }
+  return card;
+}
+
 async function takeOverStageRecord(recordId,stage){
+  if(Number(stage)!==Number(STATE.stage)){
+    requestStageTakeover(recordId,Number(stage));
+    return;
+  }
   const fresh=await loadOm(); const rec=fresh.find(r=>r.id===recordId);
-  if(!rec||rec.stage!==stage||String(rec.status||'').startsWith('CLOSED')){toast('This work item is no longer available for takeover. Refreshing the docket.');STATE.omRecords=fresh;render();return;}
-  const key='stage'+stage; const previous=rec[key]&&rec[key].technician?rec[key].technician:'Unassigned';
+  if(!rec||rec.stage!==stage||String(rec.status||'').startsWith('CLOSED')){toast('This work item is no longer available. Refreshing the docket.');STATE.omRecords=fresh;render();return;}
+  const key='stage'+stage; const previous=stageTech(rec,stage);
   if(previous===STATE.techName){toast('This work is already assigned to you.');return;}
-  if(!window.confirm(`Take over ${rec.bmsId} at Stage ${stage} from ${previous}?`))return;
-  rec[key]=rec[key]||{}; rec[key].technician=STATE.techName; rec[key].takenOverAt=nowIso(); rec[key].takenOverFrom=previous; rec.updatedAt=nowIso();
+  if(previous && previous!=='Unassigned'){
+    toast('For a different-stage owner, send a takeover request. The current owner must accept it.');
+    return;
+  }
+  if(!window.confirm(`Take unassigned ${rec.bmsId} at Stage ${stage}?`))return;
+  rec[key]=rec[key]||{}; rec[key].technician=STATE.techName; rec[key].startedAt=rec[key].startedAt||nowIso(); rec[key].takenOverAt=nowIso(); rec[key].takenOverFrom=previous||'Unassigned'; rec.updatedAt=nowIso(); rec.updatedBy=STATE.techName; rec.updatedStage=stage;
   const saved=await saveOm(fresh); if(!saved){toast('Could not take over this work item. Check the connection and try again.');return;}
   STATE.omRecords=fresh; toast(`✓ ${rec.bmsId} is now assigned to you at Stage ${stage}.`); render();
 }
 function OmTechTeamWorkloadCard(){
-  const container=el('div',{class:'card'});
+  const container=el('div',{class:'team-workload-wrap'});
+  container.appendChild(TakeoverRequestInbox());
   container.appendChild(el('h3',{},'Team Work in Progress — Take Over Work'));
-  container.appendChild(el('div',{class:'sub'},"Live workload across Stage 1, Stage 2 and Stage 3. You can take over another technician's open work at your signed-in stage after confirmation. Other stages are visible for workload awareness but cannot be taken over from this screen."));
+  container.appendChild(el('div',{class:'sub'},"Live workload across Stage 1, Stage 2 and Stage 3. You may take unassigned work at your stage. For the previous/next stage, send a takeover request; the technician currently holding that battery must accept before ownership transfers."));
   const current=openRecordsAtStage(STATE.stage); const allOpen=[1,2,3].map(stage=>({stage,count:openRecordsAtStage(stage).length}));
   const stats=el('div',{class:'stat-grid'}); allOpen.forEach(x=>stats.appendChild(statBox(x.count,`Stage ${x.stage} WIP`)));
   stats.appendChild(statBox(current.filter(r=>stageTechnicianName(r,STATE.stage)===STATE.techName).length,'My Current-Stage WIP'));
@@ -2993,8 +3456,14 @@ function OmTechTeamWorkloadCard(){
     const wrap=el('div',{class:'table-wrap'}),tbl=el('table'); tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'BMS ID'),el('th',{},'Platform'),el('th',{},'Assigned Technician'),el('th',{},'Status'),el('th',{},'Action')])]));
     const tbody=el('tbody'); list.forEach(r=>{
       const who=stageTechnicianName(r,stage), action=el('td',{});
-      if(stage!==STATE.stage)action.appendChild(el('span',{class:'meta'},'Switch to Stage '+stage+' to take over'));
-      else if(who===STATE.techName)action.appendChild(el('span',{class:'status-chip PASS'},'Assigned to you'));
+      if(stage!==STATE.stage){
+        if(who===STATE.techName) action.appendChild(el('span',{class:'status-chip PASS'},'Owned by you'));
+        else if(who!=='Unassigned'){
+          const b=el('button',{class:'btn-sm btn-primary'},'Request Takeover');
+          b.addEventListener('click',()=>requestStageTakeover(r.id,stage));
+          action.appendChild(b);
+        }else action.appendChild(el('span',{class:'meta'},'Unassigned'));
+      } else if(who===STATE.techName)action.appendChild(el('span',{class:'status-chip PASS'},'Assigned to you'));
       else{const b=el('button',{class:'btn-sm btn-primary'},who==='Unassigned'?'Take Work':'Take Over');b.addEventListener('click',()=>takeOverStageRecord(r.id,stage));action.appendChild(b);}
       tbody.appendChild(el('tr',{},[el('td',{class:'mono',style:'font-weight:700;'},batteryIdButton(r.bmsId)),el('td',{},r.model||'Unknown'),el('td',{},who),el('td',{},el('span',{class:'status-chip OPEN'},String(r.status||'').replace(/_/g,' '))),action]));
     });
@@ -3253,6 +3722,7 @@ function Stage1EditCard(rec){
     const cbakCheck = cbakLengthError(rec.bmsId, rec.model);
     if(cbakCheck){ STATE.intakeError = cbakCheck; render(); return; }
     s1.technician = STATE.techName;
+    s1.completedBy = STATE.techName;
     s1.completedAt = nowIso();
     let bsaRec = null;
     if(toBsa1){
@@ -3319,6 +3789,8 @@ function Stage2Card(rec){
     if(STATE.intakeSaving) return;
     STATE.intakeError = null;
     s2.technician = STATE.techName;
+    s2.startedAt = s2.startedAt || nowIso();
+    s2.completedBy = STATE.techName;
     s2.completedAt = nowIso();
     rec.stage = 3; rec.status = 'STAGE3_OPEN';
     const fresh = await loadOm();
@@ -3374,6 +3846,8 @@ function Stage3Card(rec){
     if(!s3.qcPassed){ toast('Select a final QC disposition first.'); return; }
     STATE.intakeError = null;
     s3.technician = STATE.techName;
+    s3.startedAt = s3.startedAt || nowIso();
+    s3.completedBy = STATE.techName;
     s3.completedAt = nowIso();
     const priorQcPassed = s3.qcPassed;
     if(s3.qcPassed==='PASS'){
@@ -4533,186 +5007,296 @@ function IotTrackerView(){
   return container;
 }
 
-/* ---- Day Log: notes on everything that happened / is pending for a given day, closeable ---- */
-function DayLogView(){
-  const d = STATE.dayLogDraft;
-  const container = el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Day Notes — shared across sectors so a day can be reviewed and closed'));
-  const card = el('div',{class:'card'});
-  card.appendChild(el('h3',{},'Log a Day Note'));
-  const g = el('div',{class:'grid narrow'});
-  g.appendChild(field('Date', textInput(d.date, v=>d.date=v, {type:'date'})));
-  g.appendChild(field('Entered By', textInput(d.enteredBy, v=>d.enteredBy=v)));
-  card.appendChild(g);
-  card.appendChild(field('What happened today', textareaInput(d.notes, v=>d.notes=v)));
-  card.appendChild(field('Still pending / carried to tomorrow', textareaInput(d.pending, v=>d.pending=v)));
-  const closeRow = el('div',{class:'bool-row'});
-  const cb = el('input',{type:'checkbox'}); cb.checked = !!d.closed;
-  cb.addEventListener('change', ()=>{ d.closed = cb.checked; render(); });
-  closeRow.appendChild(cb); closeRow.appendChild(el('label',{},'Mark this day as closed (nothing outstanding)'));
-  card.appendChild(closeRow);
-  const saveBtn = el('button',{class:'btn-primary', style:'margin-top:8px;', disabled: STATE.dayLogSaving}, STATE.dayLogSaving?loadingLabel(true,'Saving…'):'Save Day Note');
-  saveBtn.addEventListener('click', async ()=>{
-    if(STATE.dayLogSaving) return;
-    if(!d.date){ toast('Date is required.'); return; }
-    const fresh = await loadDayLog();
-    const idx = fresh.findIndex(r=>r.date===d.date && r.enteredBy===d.enteredBy && r.role===STATE.role);
-    const entry = { id: idx>-1?fresh[idx].id:uid(), createdAt: idx>-1?fresh[idx].createdAt:nowIso(), updatedAt: nowIso(), role: STATE.role, ...JSON.parse(JSON.stringify(d)) };
-    const updated = idx>-1 ? fresh.map((r,i)=>i===idx?entry:r) : [...fresh, entry];
-    STATE.dayLogSaving = true; render();
-    const ok = await saveDayLog(updated);
-    STATE.dayLogSaving = false;
-    if(!ok){ toast('⚠ Could not save — try again.'); render(); return; }
-    STATE.dayLogRecords = updated;
-    toast(`✓ Day note saved for ${d.date}.`);
+/* ---- NOTES CENTER: existing notes remain in their source records; this area provides one review timeline. ---- */
+function NotesCenterSummary(){
+  const rows=[];
+  const push=(date,source,bms,note,by)=>{if(String(note||'').trim())rows.push({date:date||'—',source,bms:bms||'',note:String(note),by:by||'—'});};
+  (STATE.dayLogRecords||[]).forEach(r=>{push(r.date,'DAY NOTE','',r.notes,r.enteredBy);push(r.date,'PENDING / CARRY-OVER','',r.pending,r.enteredBy);});
+  (STATE.omRecords||[]).forEach(r=>{push(r.dateReceived,'O&M INTAKE',r.bmsId,r.stage1?.otherNote,r.stage1?.technician);push(r.stage2?.completedAt?.slice(0,10)||r.dateReceived,'STAGE 2 REPAIR',r.bmsId,r.stage2?.repairAction,r.stage2?.technician);push(r.stage3?.completedAt?.slice(0,10)||r.dateReceived,'STAGE 3 QC',r.bmsId,r.stage3?.qcNote,r.stage3?.technician);});
+  (STATE.warrantyRecords||[]).forEach(r=>push(r.dateFlagged||r.date,'WARRANTY',r.bmsId,r.comments,r.updatedBy||r.loggedBy));
+  (STATE.bsaRecords||[]).forEach(r=>push(r.dateFlagged,'BSA',r.bmsId,`${r.issueDescription||''} ${r.rcaSummary||''} ${r.repairNotes||''}`.trim(),r.flaggedBy||r.assignedEngineer));
+  (STATE.rcaRecords||[]).forEach(r=>push(r.dateOpened,'RCA',r.bmsId,`${r.problemStatement||''} ${r.rootCause||''} ${r.correctiveAction||''}`.trim(),r.owner||r.updatedBy));
+  (STATE.plantRecords||[]).forEach(r=>push(r.date,'PLANT',r.bmsId||r.batteryId,r.notes,r.enteredBy||r.updatedBy));
+  (STATE.plantStockRecords||[]).forEach(r=>push(r.date,'PLANT STOCK','',r.notes,r.enteredBy||r.loggedBy));
+  (STATE.newBatteryRecords||[]).forEach(r=>push(r.date,'NEW BATTERY',r.bmsId||r.batteryId,r.notes,r.loggedBy||r.enteredBy));
+  (STATE.adjustments||[]).forEach(r=>push(r.date,'STOCK MOVEMENT',r.bmsId||r.batteryId,r.notes,r.loggedBy));
+  (STATE.dailyStockRecords||[]).forEach(r=>push(r.date,'DAILY STOCK','',r.notes,r.enteredBy));
+  (STATE.iotGiven||[]).forEach(r=>push(r.date,'IOT GIVEN',(r.bmsIds||[]).join(', '),r.notes,r.givenBy));
+  (STATE.iotReturned||[]).forEach(r=>push(r.date,'IOT RETURNED',(r.bmsIds||[]).join(', '),r.notes,r.receivedBy));
+  (STATE.qualityIssueRecords||[]).forEach(r=>push(r.updatedAt||r.createdAt,'QUALITY ISSUE',r.bmsId||r.batteryId,r.notes,r.updatedBy));
+  return rows.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+}
+function NotesCenterEntryCard(){
+  const d=STATE.dayLogDraft,card=el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Log / update shared day note'));
+  const g=el('div',{class:'grid narrow'});g.appendChild(field('Date',textInput(d.date,v=>d.date=v,{type:'date'})));g.appendChild(field('Entered By',textInput(d.enteredBy||STATE.techName||sessionActor().name,v=>{}, {readonly:true})));card.appendChild(g);
+  card.appendChild(field('What happened today',textareaInput(d.notes,v=>d.notes=v)));
+  card.appendChild(field('Still pending / carried to tomorrow',textareaInput(d.pending,v=>d.pending=v)));
+  const closeRow=el('div',{class:'bool-row'}),cb=el('input',{type:'checkbox'});cb.checked=!!d.closed;cb.addEventListener('change',()=>{d.closed=cb.checked;render();});closeRow.appendChild(cb);closeRow.appendChild(el('label',{},'Mark this day as closed (nothing outstanding)'));card.appendChild(closeRow);
+  const save=el('button',{class:'btn-primary',disabled:STATE.dayLogSaving},STATE.dayLogSaving?loadingLabel(true,'Saving…'):'Save Day Note');
+  save.addEventListener('click',async()=>{
+    if(STATE.dayLogSaving)return;if(!d.date){toast('Date is required.');return;}if(!requireActorName('User'))return;
+    d.enteredBy=STATE.techName||sessionActor().name;const fresh=await loadDayLog();const idx=fresh.findIndex(r=>r.date===d.date&&r.enteredBy===d.enteredBy&&r.role===STATE.role);
+    const entry={id:idx>-1?fresh[idx].id:uid(),createdAt:idx>-1?fresh[idx].createdAt:nowIso(),updatedAt:nowIso(),role:STATE.role,...JSON.parse(JSON.stringify(d)),enteredBy:d.enteredBy};
+    const updated=idx>-1?fresh.map((r,i)=>i===idx?entry:r):[...fresh,entry];STATE.dayLogSaving=true;render();const ok=await saveDayLog(updated);STATE.dayLogSaving=false;
+    if(!ok){toast('⚠ Could not save — try again.');render();return;}STATE.dayLogRecords=updated;toast(`✓ Day note saved for ${d.date}.`);render();
   });
-  card.appendChild(saveBtn);
+  card.appendChild(save);return card;
+}
+function DayLogView(){
+  const container=el('div');
+  container.appendChild(el('div',{class:'sector-tag'},'NOTES CENTER — one area for daily notes, pending items and operational evidence'));
+  container.appendChild(el('div',{class:'card'},[el('h3',{},'Single source of review'),el('div',{class:'sub'},'All existing notes remain attached to their original battery/transaction records. This center brings those notes together for review without deleting, moving or overwriting the original data.')]));
+  container.appendChild(NotesCenterEntryCard());
+  const card=el('div',{class:'card'}),rows=searchFilter(NotesCenterSummary(),r=>`${r.date} ${r.source} ${r.bms} ${r.note} ${r.by}`);
+  card.appendChild(el('h3',{},`Unified Notes Timeline (${rows.length})`));
+  if(!rows.length)card.appendChild(el('div',{class:'empty-note'},'No notes match the current search.'));
+  rows.slice(0,300).forEach(r=>{const item=el('div',{class:'day-log-item'});item.appendChild(el('div',{style:'display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;'},[el('strong',{},r.source),el('span',{class:'badge'},r.date)]));if(r.bms)item.appendChild(el('div',{class:'mono',style:'margin-top:4px;'},r.bms));item.appendChild(el('div',{style:'margin-top:5px;white-space:pre-wrap;'},r.note));item.appendChild(el('div',{class:'meta',style:'margin-top:4px;'},'By '+r.by));card.appendChild(item);});
+  container.appendChild(card);return container;
+}
+
+/* ==================== DAILY WORK PROGRESS / ACCOUNTABILITY ==================== */
+function dateKey(v){ return String(v||'').slice(0,10); }
+function sameDay(v,d){ return dateKey(v)===d; }
+function techNamesFromOm(rows){
+  const set=new Set();
+  (rows||[]).forEach(r=>[r.stage1?.technician,r.stage2?.technician,r.stage3?.technician].forEach(x=>{if(x)set.add(x);}));
+  return Array.from(set).sort();
+}
+function DailyWorkProgressView(){
+  const container=el('div'), today=todayStr(), om=STATE.omRecords||[], bsa=STATE.bsaRecords||[], daylogs=STATE.dayLogRecords||[];
+  container.appendChild(el('div',{class:'sector-tag'},'Daily Work Progress — battery movement, technician accountability and open work'));
+  const todayOm=om.filter(r=>sameDay(r.dateReceived,today)||sameDay(r.createdAt,today)||sameDay(r.updatedAt,today));
+  const closedToday=om.filter(r=>sameDay(r.closedAt,today)), bsaToday=bsa.filter(r=>sameDay(r.dateFlagged,today)||sameDay(r.createdAt,today));
+  const open=om.filter(r=>!String(r.status||'').startsWith('CLOSED'));
+  const card=el('div',{class:'card'});
+  card.appendChild(el('h3',{},'Today at a glance'));
+  card.appendChild(el('div',{class:'stat-grid'},[
+    statBox(todayOm.length,'Batteries Touched Today'),statBox(closedToday.length,'Batteries Closed Today'),
+    statBox(open.length,'Open O&M WIP'),statBox(bsaToday.length,'BSA Cases Today'),
+    statBox(daylogs.filter(r=>sameDay(r.date,today)&&!r.closed).length,'Open Day Notes'),
+    statBox(om.filter(r=>r.capaCycles>0&&!String(r.status||'').startsWith('CLOSED')).length,'Open CAPA / Rework')
+  ]));
+  card.appendChild(el('div',{class:'sub'},`Operational date: ${today}. Figures come from the same shared records used by the operational pages.`));
   container.appendChild(card);
 
-  const listCard = el('div',{class:'card'});
-  listCard.appendChild(el('h3',{},'All Day Notes'));
-  const rows = searchFilter([...STATE.dayLogRecords].sort((a,b)=>b.date.localeCompare(a.date)), r=>`${r.date} ${r.notes} ${r.pending} ${r.enteredBy} ${r.role}`);
-  if(rows.length===0){ listCard.appendChild(el('div',{class:'empty-note'},'No day notes logged yet.')); }
-  rows.forEach(r=>{
-    const item = el('div',{class:'day-log-item'+(r.closed?' closed':'')});
-    item.appendChild(el('div',{style:'display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;'},[
-      el('div',{style:'font-weight:700;'}, `${r.date} · ${SECTOR_LABEL[r.role]||r.role}`),
-      el('span',{class:'status-chip '+(r.closed?'PASS':'OPEN')}, r.closed?'CLOSED':'OPEN')
-    ]));
-    if(r.notes) item.appendChild(el('div',{style:'margin-top:4px;'}, r.notes));
-    if(r.pending) item.appendChild(el('div',{style:'margin-top:4px;color:var(--warn);'}, 'Pending: '+r.pending));
-    item.appendChild(el('div',{class:'meta', style:'margin-top:4px;'}, 'By '+(r.enteredBy||'—')));
-    listCard.appendChild(item);
+  const workload=el('div',{class:'card'});
+  workload.appendChild(el('h3',{},'Technician accountability — live WIP'));
+  const names=techNamesFromOm(om), data=[];
+  names.forEach(name=>{
+    const s1=open.filter(r=>r.stage===1&&r.stage1?.technician===name).length;
+    const s2=open.filter(r=>r.stage===2&&r.stage2?.technician===name).length;
+    const s3=open.filter(r=>r.stage===3&&r.stage3?.technician===name).length;
+    const done=om.filter(r=>(r.stage1?.technician===name&&sameDay(r.stage1?.completedAt,today))||
+      (r.stage2?.technician===name&&sameDay(r.stage2?.completedAt,today))||
+      (r.stage3?.technician===name&&sameDay(r.stage3?.completedAt,today))).length;
+    data.push([name,s1,s2,s3,done]);
   });
-  container.appendChild(listCard);
-  return container;
-}
-
-function WarrantyStockView(){
-  const container=el('div');
-  container.appendChild(el('div',{class:'sector-tag'},'Warranty Operations — Kyebando Warehouse (separate from New Battery Stock)'));
-  const summary=warrantyAnalyticsSummary();
-  const active=activeWarrantyRecords();
-  const scrapped=(STATE.warrantyRecords||[]).filter(w=>warrantyIsScrappedStatus(w.status));
-  const returned=(STATE.warrantyRecords||[]).filter(w=>warrantyIsReturnedStatus(w.status));
-  const separation=el('div',{class:'card'});
-  separation.appendChild(el('h3',{},'Inventory Separation — do not combine balances'));
-  separation.appendChild(el('div',{class:'sub'},'New Battery Stock, OEM Bulk Ledger Stock, and Warranty Stock are different operational pools. Warranty batteries are tracked at Kyebando Warehouse and are excluded from Namanve New Battery Stock and the separate OEM Bulk Ledger.'));
-  const sepStats=el('div',{class:'stat-grid'});
-  const newStock=newBatteryStockByPlatform(), oem=oemLedgerStockByPlatform();
-  sepStats.appendChild(statBox(Object.values(newStock).reduce((a,b)=>a+b,0),'New Battery Operational Stock'));
-  sepStats.appendChild(statBox(Object.values(oem).reduce((a,b)=>a+b,0),'OEM Bulk Ledger Closing Stock'));
-  sepStats.appendChild(statBox(active.length,'Kyebando Active Warranty Stock'));
-  sepStats.appendChild(statBox(scrapped.length,'Warranty Failed To Resolve / Scrapped'));
-  sepStats.appendChild(statBox(returned.length,'Warranty Resolved / Returned'));
-  separation.appendChild(sepStats); container.appendChild(separation);
-  const statsCard=el('div',{class:'card'});
-  statsCard.appendChild(el('h3',{},'Warranty Analytics — Kyebando Warehouse'));
-  statsCard.appendChild(el('div',{class:'stat-grid'},[
-    statBox(summary.total,'Total Warranty Cases'),statBox(summary.active,'Currently Under Warranty'),
-    statBox(summary.scrapped,'Failed To Resolve / Scrapped'),statBox(summary.returned,'Resolved / Repaired & Returned')
-  ])); container.appendChild(statsCard);
-  const row1=el('div',{class:'chart-row'});
-  row1.appendChild(chartCard('Warranty Cases by Brand',warrantyByBrandConfig()));
-  row1.appendChild(chartCard('Warranty Cases by Failure Category',warrantyByCategoryConfig()));
-  container.appendChild(row1);
-  const row2=el('div',{class:'chart-row'});
-  row2.appendChild(chartCard('Warranty Cases by Status',warrantyByStatusConfig()));
-  row2.appendChild(chartCard('Active Warranty Stock by Platform — Kyebando',warrantyActiveByBrandConfig()));
-  container.appendChild(row2);
-  function groupTable(list,title){
-    const c=el('div',{class:'card'}); c.appendChild(el('h3',{},title));
-    if(list.length===0){c.appendChild(el('div',{class:'empty-note'},'None on file.'));return c;}
-    const groups={}; list.forEach(w=>{const brand=w.model||'Unknown',issue=w.failureCategory||'Unspecified',key=brand+'|'+issue;if(!groups[key])groups[key]={brand,issue,count:0};groups[key].count++;});
+  if(!data.length) workload.appendChild(el('div',{class:'empty-note'},'No technician activity recorded yet.'));
+  else{
     const wrap=el('div',{class:'table-wrap'}),tbl=el('table');
-    tbl.appendChild(el('thead',{},[el('tr',{},[el('th',{},'Warehouse'),el('th',{},'Brand'),el('th',{},'Issue / Reason'),el('th',{},'Count')])]));
-    const tbody=el('tbody'); Object.values(groups).sort((a,b)=>a.brand.localeCompare(b.brand)||a.issue.localeCompare(b.issue)).forEach(g=>tbody.appendChild(el('tr',{},[
-      el('td',{},'Kyebando Warehouse'),el('td',{},g.brand),el('td',{},g.issue),el('td',{class:'mono',style:'font-weight:700;'},String(g.count))
-    ]))); tbl.appendChild(tbody);wrap.appendChild(tbl);c.appendChild(wrap);return c;
+    tbl.appendChild(el('thead',{},[
+      el('tr',{},['Technician','Stage 1 WIP','Stage 2 WIP','Stage 3 WIP','Stage Actions Today'].map(x=>el('th',{},x)))
+    ]));
+    const tb=el('tbody');data.forEach(r=>tb.appendChild(el('tr',{},r.map((x,i)=>el('td',{class:i?'num':''},x)))));
+    tbl.appendChild(tb);wrap.appendChild(tbl);workload.appendChild(wrap);
   }
-  container.appendChild(groupTable(active,'Active Warranty Stock — Kyebando'));
-  container.appendChild(groupTable(scrapped,'Warranty Scrapped — Kyebando'));
+  container.appendChild(workload);
+
+  const timeline=el('div',{class:'card'});
+  timeline.appendChild(el('h3',{},'Battery movement today'));
+  const rows=om.filter(r=>sameDay(r.dateReceived,today)||sameDay(r.stage1?.completedAt,today)||sameDay(r.stage2?.completedAt,today)||sameDay(r.stage3?.completedAt,today)||sameDay(r.closedAt,today))
+    .sort((a,b)=>String(b.updatedAt||b.closedAt||b.createdAt).localeCompare(String(a.updatedAt||a.closedAt||a.createdAt))).slice(0,100);
+  if(!rows.length) timeline.appendChild(el('div',{class:'empty-note'},'No battery movement recorded today.'));
+  else{
+    const wrap=el('div',{class:'table-wrap'}),tbl=el('table');
+    tbl.appendChild(el('thead',{},[
+      el('tr',{},['BMS ID','Platform','Stage','Status','Stage 1 Tech','Stage 2 Tech','Stage 3 Tech','Last Updated'].map(x=>el('th',{},x)))
+    ]));
+    const tb=el('tbody');
+    rows.forEach(r=>tb.appendChild(el('tr',{},[
+      el('td',{class:'mono'},batteryIdButton(r.bmsId)),el('td',{},r.model||'—'),el('td',{},String(r.stage||'—')),
+      el('td',{},el('span',{class:'status-chip '+(String(r.status||'').startsWith('CLOSED')?'PASS':'OPEN')},String(r.status||'—'))),
+      el('td',{},r.stage1?.technician||'—'),el('td',{},r.stage2?.technician||'—'),el('td',{},r.stage3?.technician||'—'),
+      el('td',{class:'mono'},r.updatedAt||r.closedAt||r.createdAt||'—')
+    ])));
+    tbl.appendChild(tb);wrap.appendChild(tbl);timeline.appendChild(wrap);
+  }
+  container.appendChild(timeline);
+
+  const pending=el('div',{class:'card'});
+  pending.appendChild(el('h3',{},'Accountability exceptions requiring attention'));
+  const exceptions=[];
+  om.filter(r=>!String(r.status||'').startsWith('CLOSED')).forEach(r=>{
+    const tech=stageTechnicianName(r,r.stage);
+    if(tech==='Unassigned') exceptions.push(`${r.bmsId}: Stage ${r.stage} is unassigned`);
+    const age=Math.floor((Date.now()-new Date(r.createdAt||Date.now()).getTime())/86400000);
+    if(age>=2) exceptions.push(`${r.bmsId}: open for ${age} day(s)`);
+  });
+  bsa.filter(r=>!['Returned to O&M for Deployment','Scrapped'].includes(r.status)).forEach(r=>{if(!r.assignedEngineer)exceptions.push(`${r.bmsId}: BSA case has no assigned engineer`);});
+  if(!exceptions.length) pending.appendChild(el('div',{class:'banner ok'},'No obvious accountability exceptions detected from the available records.'));
+  else exceptions.slice(0,100).forEach(x=>pending.appendChild(el('div',{class:'banner capa'},'⚠ '+x)));
+  container.appendChild(pending);
   return container;
 }
 
+/* ==================== RCA WORKSPACE — 5 WHY + FISHBONE ==================== */
+const RCA_FISHBONE=['People','Machine','Method','Material','Measurement','Environment'];
+function RcaWorkspaceView(){
+  const container=el('div'), d=STATE.rcaDraft||(STATE.rcaDraft=emptyRcaDraft());
+  container.appendChild(el('div',{class:'sector-tag'},'Technician RCA Room — structured problem solving'));
+  const intro=el('div',{class:'card'});
+  intro.appendChild(el('h3',{},'Technician RCA engagement passage'));
+  intro.appendChild(el('div',{class:'sub'},'Do not stop at the symptom. The technician who observed or worked on the failure should participate in the RCA: define the problem with evidence, contain the risk, ask Why five times, review the Fishbone branches, test the suspected cause, assign corrective/preventive actions and record how effectiveness will be verified. RCA is a learning and accountability process — not a blame exercise.'));
+  intro.appendChild(el('div',{class:'banner'},'Minimum evidence before closing: battery/BMS ID, failure symptom, test observations or measurements, containment, 5-Why chain, Fishbone review, verified root cause, corrective action, preventive action, owner, due date and verification evidence.'));
+  container.appendChild(intro);
 
-function QualityRecordAdministration(){
-  if(STATE.role!=='quality') return null;
-  const card=el('div',{class:'card quality-admin-card'});
-  card.appendChild(el('div',{class:'quality-admin-head'},[
-    el('div',{},[
-      el('h3',{},'Quality Engineer — Record Administration'),
-      el('div',{class:'sub'},'Full-store inspection and controlled deletion. All deletions are soft-deletes in the cloud.')
-    ]),
-    el('span',{class:'status-chip PASS'},'FULL DELETE ACCESS')
-  ]));
-  const controls=el('div',{class:'grid narrow'});
-  const storeSel=el('select',{id:'quality-store-admin'});
-  BQC_STORES.forEach(store=>{
-    const opt=el('option',{value:store},`${STORE_LABEL[store]||store} (${(STATE[STORE_STATE_KEYS[store]]||[]).length})`);
-    storeSel.appendChild(opt);
-  });
-  const search=el('input',{placeholder:'Filter by ID, date, platform, status…',dataset:{fkey:'quality-admin-search'}});
-  const refresh=el('button',{class:'btn-sm'},'Refresh selected');
-  const deleteAll=el('button',{class:'btn-danger btn-sm'},'Delete all in store');
-  controls.appendChild(field('Store',storeSel));
-  controls.appendChild(field('Search',search));
-  controls.appendChild(el('div',{style:'display:flex;align-items:end;gap:6px;'},[refresh,deleteAll]));
-  card.appendChild(controls);
-  const listHost=el('div',{style:'margin-top:12px;'});
-  card.appendChild(listHost);
+  const form=el('div',{class:'card'});form.appendChild(el('h3',{},'RCA / CAPA record'));
+  const g=el('div',{class:'grid'});
+  g.appendChild(field('Battery / BMS ID',smartBatteryIdInput(d.bmsId,(v,platform)=>{d.bmsId=v;if(platform)d.model=platform;},{placeholder:'Scan or enter BMS ID',key:'rca-bms'})));
+  g.appendChild(field('Platform',textInput(d.model,v=>d.model=v)));
+  g.appendChild(field('RCA Owner',textInput(d.owner||STATE.techName,v=>d.owner=v,{placeholder:STATE.techName||'Technician'})));
+  g.appendChild(field('Linked Record ID',textInput(d.linkedRecordId,v=>d.linkedRecordId=v,{mono:true})));form.appendChild(g);
+  form.appendChild(field('Problem Statement — what failed, where, when and under what condition?',textareaInput(d.problemStatement,v=>d.problemStatement=v)));
+  form.appendChild(field('Immediate Containment',textareaInput(d.containment,v=>d.containment=v)));
+  form.appendChild(field('Immediate Corrective Action / Repair',textareaInput(d.immediateAction,v=>d.immediateAction=v)));
 
-  function renderRecords(){
-    const store=storeSel.value;
-    const stateKey=STORE_STATE_KEYS[store];
-    const rows=(STATE[stateKey]||[]);
-    const q=(search.value||'').trim().toLowerCase();
-    const filtered=q ? rows.filter(r=>stableStr(r).toLowerCase().includes(q)) : rows;
-    listHost.innerHTML='';
-    listHost.appendChild(el('div',{class:'sub'},`${filtered.length} visible of ${rows.length} records`));
-    if(!filtered.length){ listHost.appendChild(el('div',{class:'empty-note'},'No matching records.')); return; }
-    const wrap=el('div',{class:'table-wrap'});
-    const tbl=el('table');
-    tbl.appendChild(el('thead',{},[el('tr',{},[
-      el('th',{},'Record'),el('th',{},'Date / Time'),el('th',{},'Status / Type'),el('th',{},'Action')
-    ])]));
-    const tb=el('tbody');
-    filtered.slice(0,250).forEach((r,idx)=>{
-      const ref=r.bmsId||r.oemId||r.id||'—';
-      const date=r.date||r.dateReceived||r.dateFlagged||r.dateEscalated||r.createdAt||'—';
-      const status=r.status||r.type||r.failureCategory||r.platform||'—';
-      const del=el('button',{class:'btn-danger btn-sm'},'Delete');
-      del.addEventListener('click',async()=>{
-        STATE.integrityBusy=true; render();
-        const ok=await deleteStoreRecord(store,r.id);
-        STATE.integrityBusy=false;
-        if(ok){ await loadStoresIntoState([store]); toast('Record soft-deleted by Quality Engineer.'); }
-        else render();
-      });
-      tb.appendChild(el('tr',{'style':`--row-i:${idx};`},[
-        el('td',{},String(ref)),el('td',{class:'mono'},String(date)),el('td',{},String(status)),
-        el('td',{},del)
-      ]));
-    });
-    tbl.appendChild(tb);wrap.appendChild(tbl);listHost.appendChild(wrap);
-    if(filtered.length>250) listHost.appendChild(el('div',{class:'sub'},'Showing first 250 matches. Use the filter to narrow the list.'));
-  }
-  storeSel.addEventListener('change',renderRecords);
-  search.addEventListener('input',renderRecords);
-  refresh.addEventListener('click',async()=>{ await loadStoresIntoState([storeSel.value]); render(); });
-  deleteAll.addEventListener('click',async()=>{
-    STATE.integrityBusy=true; render();
-    const ok=await deleteAllStoreRecords(storeSel.value);
-    STATE.integrityBusy=false;
-    if(ok){ await loadStoresIntoState([storeSel.value]); toast('Selected store records soft-deleted.'); }
-    else render();
+  const why=el('div',{class:'card',style:'margin-top:10px;'});why.appendChild(el('h4',{},'5 WHY template'));
+  why.appendChild(el('div',{class:'sub'},'Each Why should be supported by an observation, measurement, record or test where possible. If it is a hypothesis, test it before declaring the root cause.'));
+  [['why1','Why 1 — Why did the observed problem occur?'],['why2','Why 2 — Why did that condition exist?'],['why3','Why 3 — Why was that condition not prevented or detected?'],['why4','Why 4 — Why did the system/process allow it?'],['why5','Why 5 — What underlying system/root cause remains?']].forEach(([k,l])=>why.appendChild(field(l,textareaInput(d[k],v=>d[k]=v))));form.appendChild(why);
+
+  const fish=el('div',{class:'card',style:'margin-top:10px;'});fish.appendChild(el('h4',{},'Fishbone / Ishikawa template'));
+  fish.appendChild(el('div',{class:'sub'},'Consider all six branches before selecting the verified root cause.'));
+  RCA_FISHBONE.forEach(k=>fish.appendChild(field(k,textareaInput(d.fishbone?.[k]||'',v=>{d.fishbone=d.fishbone||{};d.fishbone[k]=v},{placeholder:`Possible ${k} causes, evidence and checks`}))));form.appendChild(fish);
+
+  const action=el('div',{class:'card',style:'margin-top:10px;'});action.appendChild(el('h4',{},'Root cause and action plan'));
+  action.appendChild(field('Verified Root Cause',textareaInput(d.rootCause,v=>d.rootCause=v)));
+  action.appendChild(field('Corrective Action — remove the immediate cause',textareaInput(d.correctiveAction,v=>d.correctiveAction=v)));
+  action.appendChild(field('Preventive Action — stop recurrence across the process',textareaInput(d.preventiveAction,v=>d.preventiveAction=v)));
+  action.appendChild(field('Verification Method / Evidence',textareaInput(d.verificationMethod,v=>d.verificationMethod=v)));
+  const ag=el('div',{class:'grid'});ag.appendChild(field('Due Date',textInput(d.dueDate,v=>d.dueDate=v,{type:'date'})));
+  ag.appendChild(field('Status',selectInput(d.status,[['RCA IN PROGRESS','RCA IN PROGRESS'],['ACTION OPEN','ACTION OPEN'],['READY FOR VERIFICATION','READY FOR VERIFICATION'],['VERIFIED CLOSED','VERIFIED CLOSED']],v=>d.status=v)));action.appendChild(ag);form.appendChild(action);
+
+  const save=el('button',{class:'btn-primary',disabled:STATE.rcaSaving},STATE.rcaSaving?loadingLabel(true,'Saving…'):'Save RCA');
+  save.addEventListener('click',async()=>{
+    if(STATE.rcaSaving)return;
+    if(!requireActorName('Technician')||!d.bmsId.trim()||!d.problemStatement.trim()){toast('Battery/BMS ID and a clear problem statement are required.');return;}
+    if(!d.why1||!d.why2||!d.why3||!d.why4||!d.why5){toast('Complete all five Why fields before saving the RCA.');return;}
+    if(!d.rootCause.trim()){toast('Verified root cause is required.');return;}
+    const fresh=await loadRca(), entry={...clone(d),id:d.id||uid(),createdAt:d.createdAt||nowIso(),updatedAt:nowIso(),openedBy:d.openedBy||STATE.techName,updatedBy:STATE.techName,updatedRole:STATE.role};
+    const idx=fresh.findIndex(r=>r.id===entry.id),updated=idx>=0?fresh.map((r,i)=>i===idx?entry:r):[...fresh,entry];
+    STATE.rcaSaving=true;render();const ok=await saveRca(updated);STATE.rcaSaving=false;
+    if(!ok){toast('Could not save RCA.');render();return;}
+    STATE.rcaRecords=updated;STATE.rcaDraft=emptyRcaDraft();toast(`✓ RCA saved for ${entry.bmsId}.`);render();
   });
-  renderRecords();
-  return card;
+  form.appendChild(save);container.appendChild(form);
+
+  const list=el('div',{class:'card'});list.appendChild(el('h3',{},'RCA register'));
+  const rows=searchFilter([...(STATE.rcaRecords||[])].sort((a,b)=>String(b.updatedAt||b.createdAt).localeCompare(String(a.updatedAt||a.createdAt))),r=>`${r.bmsId} ${r.model} ${r.owner} ${r.status} ${r.rootCause} ${r.problemStatement}`);
+  if(!rows.length)list.appendChild(el('div',{class:'empty-note'},'No RCA records yet.'));
+  rows.slice(0,100).forEach(r=>{const item=el('div',{class:'sop-box'});item.appendChild(el('div',{style:'display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;'},[el('strong',{},batteryIdButton(r.bmsId)),el('span',{class:'status-chip '+(r.status==='VERIFIED CLOSED'?'PASS':'CAPA')},r.status||'RCA IN PROGRESS')]));item.appendChild(el('div',{class:'meta'},`Owner: ${r.owner||'—'} · Updated by: ${r.updatedBy||'—'} · Due: ${r.dueDate||'—'}`));item.appendChild(el('div',{style:'margin-top:6px;'},`Root cause: ${r.rootCause||'—'}`));list.appendChild(item);});
+  container.appendChild(list);return container;
+}
+
+/* ==================== 5S + LITHIUM / LiFePO4 KNOWLEDGE INSIGHTS ==================== */
+function KnowledgeInsightsView(){
+  const container=el('div');container.appendChild(el('div',{class:'sector-tag'},'Battery Operations Insights — 5S, Li-ion / LiFePO4 and technician reminders'));
+  const five=el('div',{class:'card'});five.appendChild(el('h3',{},'5S — 日本語 + English'));
+  const rows=[
+    ['整理','Seiri','Sort','Remove unnecessary tools, parts, cables, packaging and records from the work area. Keep only what is needed for the current job.'],
+    ['整頓','Seiton','Set in Order','Give every tool, tester, charger, PPE item and battery location a defined place and label.'],
+    ['清掃','Seiso','Shine','Clean benches, connectors, terminals, tools and test areas; cleaning also exposes abnormal wear, contamination and damage.'],
+    ['清潔','Seiketsu','Standardize','Turn the first three S into standard checklists, visual controls, labeling, inspection frequencies and consistent work methods.'],
+    ['躾','Shitsuke','Sustain / Discipline','Follow the standard every day, record deviations, close actions and improve the standard when evidence shows a better method.']
+  ];
+  const tbl=el('table');tbl.appendChild(el('thead',{},[el('tr',{},['日本語','Romaji','English','Battery-work insight'].map(x=>el('th',{},x)))]));
+  const tb=el('tbody');rows.forEach(r=>tb.appendChild(el('tr',{},r.map(x=>el('td',{},x)))));tbl.appendChild(tb);const wrap=el('div',{class:'table-wrap'});wrap.appendChild(tbl);five.appendChild(wrap);container.appendChild(five);
+
+  const safety=el('div',{class:'card'});safety.appendChild(el('h3',{},'Lithium-ion / LiFePO4 important notes'));
+  safety.appendChild(el('div',{class:'sub'},'Use these as shop-floor reminders alongside the applicable OEM manual, site risk assessment, charger specification, BMS limits and emergency procedure.'));
+  [
+    ['Identity first','Record BMS/pack ID, chemistry/platform, date, location, technician and status before testing. Never allow an unidentified battery to enter WIP.'],
+    ['Do not charge damaged packs','Swelling, deformation, leakage, unusual smell/noise, smoke, abnormal heating or significant physical damage are stop-and-escalate conditions.'],
+    ['Use the correct charger','Charging voltage/current, connector, communication and BMS requirements must match the battery/OEM specification. Never bypass the BMS as a normal troubleshooting shortcut.'],
+    ['Control temperature','Record abnormal temperature rise and investigate before continuing. Charging/testing areas should be designated, ventilated and kept clear of combustibles.'],
+    ['Prevent short circuits','Protect exposed terminals, control loose conductive tools/parts and verify polarity before connection.'],
+    ['Quarantine abnormal batteries','Segregate suspect/damaged batteries from normal stock according to the site battery quarantine and emergency procedure; do not mix them back into healthy stock.'],
+    ['Evidence beats assumptions','Capture voltage, cell spread, resistance where applicable, charger behaviour, BMS/IoT alarms, visual findings and test conditions.'],
+    ['LiFePO4 is not risk-free','Lithium iron phosphate has different electrochemical characteristics from other lithium chemistries, but a damaged or misused pack can still create electrical, fire and thermal-runaway hazards.'],
+    ['Never improvise fire response','Follow the site emergency response and fire-service/OEM instructions for the exact installation. Do not create an ad-hoc extinguishing procedure in the app.'],
+    ['Close the loop','Every failed battery should end with a traceable disposition: repair, warranty, return, quarantine, scrap or other approved status — plus who made the decision and why.']
+  ].forEach(([h,t])=>{const x=el('div',{class:'sop-box'});x.appendChild(el('strong',{},h));x.appendChild(el('div',{style:'margin-top:4px;'},t));safety.appendChild(x);});
+  container.appendChild(safety);
+
+  const practice=el('div',{class:'card'});practice.appendChild(el('h3',{},'Technician daily self-check'));
+  ['I know the battery ID before touching the pack.','I know the chemistry/platform and applicable SOP.','I recorded the starting condition and evidence.','I kept the work area controlled under 5S.','I recorded my actions and completion time.','I escalated abnormal heat, swelling, damage, smoke, leakage or other unsafe conditions.','I left the battery with an explicit next status and owner.'].forEach(x=>practice.appendChild(el('div',{class:'check-row'},[el('span',{},x),el('span',{class:'badge'},'CHECK')])));
+  container.appendChild(practice);return container;
 }
 
 function DataIntegrityView(){
   const container = el('div');
+  const auditCard=el('div',{class:'card'});
+  auditCard.appendChild(el('h3',{},'Technician Accountability Audit Trail'));
+  auditCard.appendChild(el('div',{class:'sub'},'Every create, update and delete routed through the app is recorded with actor, role, stage, timestamp, store and battery reference. This log is append-only from the user interface.'));
+  const auditRows=[...(STATE.accountabilityAuditRecords||[])].sort((a,b)=>String(b.timestamp).localeCompare(String(a.timestamp)));
+  const mine=(STATE.role==='omtech'||STATE.role==='bsa')?auditRows.filter(r=>r.actor===STATE.techName):auditRows;
+  auditCard.appendChild(el('div',{class:'stat-grid'},[
+    statBox(auditRows.length,'Audit Events'),statBox(auditRows.filter(r=>r.action==='CREATE').length,'Creates'),
+    statBox(auditRows.filter(r=>r.action==='UPDATE').length,'Updates'),statBox(auditRows.filter(r=>r.action==='DELETE').length,'Deletes'),
+    statBox(mine.length,'Visible to Current User')
+  ]));
+  if(mine.length){
+    const wrap=el('div',{class:'table-wrap'}),tbl=el('table');
+    tbl.appendChild(el('thead',{},[
+      el('tr',{},['Time','Actor','Role / Stage','Action','Store','Battery','Record ID'].map(x=>el('th',{},x)))
+    ]));
+    const tb=el('tbody');
+    mine.slice(0,200).forEach(r=>tb.appendChild(el('tr',{},[
+      el('td',{class:'mono'},r.timestamp||'—'),el('td',{},r.actor||'—'),el('td',{},`${r.role||'—'}${r.stage?` / S${r.stage}`:''}`),
+      el('td',{},el('span',{class:'status-chip '+(r.action==='DELETE'?'FAIL':r.action==='CREATE'?'PASS':'CAPA')},r.action||'—')),
+      el('td',{},STORE_LABEL[r.store]||r.store||'—'),el('td',{class:'mono'},r.bmsId||'—'),el('td',{class:'mono'},r.recordId||'—')
+    ])));
+    tbl.appendChild(tb);wrap.appendChild(tbl);auditCard.appendChild(wrap);
+  } else auditCard.appendChild(el('div',{class:'empty-note'},'No audit events are visible yet.'));
+  if(STATE.role==='omtech'||STATE.role==='bsa') auditCard.appendChild(el('div',{class:'banner'},'You can see your own accountability events here. Management/Quality can review the wider audit register.'));
+  container.appendChild(auditCard);
+
+  if(STATE.role==='quality'){
+    const admin=el('div',{class:'card'});
+    admin.appendChild(el('h3',{},'Quality Record Administration — Delete / Trace'));
+    admin.appendChild(el('div',{class:'sub'},'Quality Engineer may delete operational records when correction, disposition or data-cleanup requires it. Deletes are soft-deletes and automatically create an accountability audit event. The audit store itself cannot be deleted from this interface.'));
+    const sel=document.createElement('select'); sel.className='cp-input';
+    BQC_STORES.filter(k=>k!=='accountability_audit_records').forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=STORE_LABEL[k]||k;sel.appendChild(o);});
+    admin.appendChild(field('Store',sel));
+    const controls=el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;'});
+    const refresh=el('button',{class:'btn-primary'},'Refresh selected');
+    const delAll=el('button',{class:'btn-danger'},'Delete ALL in selected store');
+    controls.appendChild(refresh);controls.appendChild(delAll);admin.appendChild(controls);
+    const list=el('div',{class:'table-wrap',style:'margin-top:10px;'});
+    const renderList=async()=>{
+      const rows=await loadStore(sel.value); list.innerHTML='';
+      if(!rows.length){list.appendChild(el('div',{class:'empty-note'},'No live records in this store.'));return;}
+      const tbl=el('table');tbl.appendChild(el('thead',{},[
+      el('tr',{},['ID','Battery/BMS','Updated','Actor','Action'].map(x=>el('th',{},x)))
+    ]));
+      const tb=el('tbody');
+      rows.slice(0,250).forEach(r=>{
+        const tr=el('tr',{});
+        tr.appendChild(el('td',{class:'mono'},r.id||'—'));
+        tr.appendChild(el('td',{class:'mono'},batteryRefFromRecord(r)||'—'));
+        tr.appendChild(el('td',{class:'mono'},r.updatedAt||r.createdAt||'—'));
+        tr.appendChild(el('td',{},r.updatedBy||r.enteredBy||r.flaggedBy||'—'));
+        const td=el('td',{}),b=el('button',{class:'btn-danger btn-sm'},'Delete');
+        b.addEventListener('click',async()=>{const ok=await deleteStoreRecord(sel.value,r.id);if(ok){STATE.accountabilityAuditRecords=await loadAccountabilityAudit();await renderList();render();}});
+        td.appendChild(b);tr.appendChild(td);tb.appendChild(tr);
+      });
+      tbl.appendChild(tb);list.appendChild(tbl);
+      if(rows.length>250)list.appendChild(el('div',{class:'meta',style:'margin-top:6px;'},`Showing first 250 of ${rows.length} records. Search by battery ID in the global search bar for a focused list.`));
+    };
+    refresh.addEventListener('click',renderList);
+    delAll.addEventListener('click',async()=>{const ok=await deleteAllStoreRecords(sel.value);if(ok){STATE.accountabilityAuditRecords=await loadAccountabilityAudit();await renderList();render();}});
+    admin.appendChild(list); container.appendChild(admin); renderList();
+  }
   container.appendChild(el('div',{class:'sector-tag'},'Data Integrity — find and remove duplicate battery numbers already in the system or pipeline, so counts stay accurate'));
  
   if(STATE.omRecords && STATE.omRecords.length>0){
@@ -5382,7 +5966,7 @@ function QualityBsaView(){
   addBtn.addEventListener('click', async ()=>{
     if(STATE.bsaSaving) return;
     if(!d.bmsId.trim() || !d.issueDescription.trim()){ toast('BMS ID and issue description are required.'); return; }
-    const entry = { id:uid(), createdAt:nowIso(), status: BSA_STATUSES[0], rcaSummary:'', repairNotes:'', ...JSON.parse(JSON.stringify(d)) };
+    const entry = { id:uid(), createdAt:nowIso(), updatedAt:nowIso(), createdBy:STATE.techName||sessionActor().name, updatedBy:STATE.techName||sessionActor().name, status: BSA_STATUSES[0], rcaSummary:'', repairNotes:'', ...JSON.parse(JSON.stringify(d)), flaggedBy:STATE.techName||sessionActor().name };
     const fresh = await loadBsa();
     const updated = [...fresh, entry];
     STATE.bsaSaving = true; render();
@@ -6379,6 +6963,16 @@ const EXPORT_SHEETS = [
   ['iot','IoT Upgrade Tracker', ()=>buildIotExportRows()],
   ['daylog','Day Notes', ()=>buildDayLogExportRows()],
   ['bsa','BSA Cases', ()=>buildBsaExportRows()],
+  ['takeover','Takeover Requests', ()=>rowsOrEmpty((STATE.takeoverRequestRecords||[]).map(r=>({'BMS ID':r.bmsId||'', 'Target Stage':r.targetStage||'', 'Requester':r.requester||'', 'Requester Stage':r.requesterStage||'', 'Current Technician':r.targetTechnician||'', 'Status':r.status||'', 'Requested At':r.createdAt||'', 'Responded By':r.acceptedBy||r.declinedBy||'', 'Responded At':r.acceptedAt||r.declinedAt||''})))],
+  ['rca','RCA Register', ()=>rowsOrEmpty((STATE.rcaRecords||[]).map(r=>({
+    'BMS ID':r.bmsId||'', Platform:r.model||'', Owner:r.owner||'', Status:r.status||'',
+    'Problem Statement':r.problemStatement||'', 'Why 1':r.why1||'', 'Why 2':r.why2||'', 'Why 3':r.why3||'', 'Why 4':r.why4||'', 'Why 5':r.why5||'',
+    People:r.fishbone?.People||'', Machine:r.fishbone?.Machine||'', Method:r.fishbone?.Method||'', Material:r.fishbone?.Material||'', Measurement:r.fishbone?.Measurement||'', Environment:r.fishbone?.Environment||'',
+    'Root Cause':r.rootCause||'', 'Corrective Action':r.correctiveAction||'', 'Preventive Action':r.preventiveAction||'', Verification:r.verificationMethod||'', 'Due Date':r.dueDate||'', 'Updated By':r.updatedBy||'', 'Updated At':r.updatedAt||''
+  })))],
+  ['audit','Technician Accountability Audit', ()=>rowsOrEmpty((STATE.accountabilityAuditRecords||[]).map(r=>({
+    Timestamp:r.timestamp||'', Actor:r.actor||'', Role:r.role||'', Stage:r.stage||'', Action:r.action||'', Store:r.store||'', 'Battery/BMS ID':r.bmsId||'', 'Record ID':r.recordId||''
+  })))],
   ['fpyoverall','FPY Overall', ()=>buildFpyExportRows(fpyStats())],
   ['fpyplatform','FPY by Platform', ()=>buildFpyByPlatformRows(fpyStats())],
   ['fpymonth','FPY by Month', ()=>buildFpyByMonthRows(fpyStats())],
@@ -6751,34 +7345,6 @@ async function autoRefreshDocket(){
 setInterval(autoRefreshDocket, 8000);
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && !userIsTypingInForm()) autoRefreshDocket(); });
  
-
-/* ---------- Pointer-reactive battery view + continuous calm animation ---------- */
-(function initBatteryMotion(){
-  const scene=document.getElementById('ambient-scene');
-  if(!scene) return;
-  let raf=0, tx=0, ty=0, x=0, y=0;
-  const label=document.getElementById('motion-label');
-  function frame(){
-    x += (tx-x)*0.075; y += (ty-y)*0.075;
-    document.documentElement.style.setProperty('--px',x.toFixed(4));
-    document.documentElement.style.setProperty('--py',y.toFixed(4));
-    const ax=Math.abs(x), ay=Math.abs(y);
-    let view='neutral';
-    if(ax>.55 && ay<.45) view=x<0?'left profile':'right profile';
-    else if(ay>.55 && ax<.55) view=y<0?'top view':'bottom view';
-    else if(ax>.35 || ay>.35) view='oblique view';
-    if(label) label.textContent='battery view · '+view;
-    raf=requestAnimationFrame(frame);
-  }
-  window.addEventListener('pointermove',e=>{
-    tx=Math.max(-1,Math.min(1,(e.clientX/window.innerWidth-.5)*2));
-    ty=Math.max(-1,Math.min(1,(e.clientY/window.innerHeight-.5)*2));
-  },{passive:true});
-  window.addEventListener('pointerleave',()=>{tx=0;ty=0;},{passive:true});
-  frame();
-  window.addEventListener('blur',()=>{tx=0;ty=0;});
-})();
-
 /* ---------- Boot ---------- */
 function removeBootLoader(){
   const l = document.getElementById('boot-loader');
@@ -6789,14 +7355,15 @@ async function restoreSession(){
     const s=await apiFetch('/api/auth/me');
     if(!s.authenticated){ render(); removeBootLoader(); return; }
     STATE.role=s.user.role; STATE.stage=s.user.stage||null; STATE.techName=s.user.name||'';
-    /* Preload every store this role can read before the first page render.
-       This makes direct login, refresh, and deep navigation use the same data snapshot. */
-    await loadStoresIntoState(BQC_STORES,{ensureNamanve:true,ensureQualityIssues:true});
-    if(STATE.role==='omtech'){STATE.view='main';STATE.intakeDraft=emptyIntakeDraft(STATE.techName);}
-    else if(STATE.role==='omadmin'){STATE.view='dashboard';}
-    else if(STATE.role==='plantinv' || STATE.role==='plant' || STATE.role==='inventory'){ STATE.role='plantinv'; STATE.view='dashboard'; }
-    else if(STATE.role==='quality'){STATE.view='warranty';}
-    else if(STATE.role==='bsa'){STATE.view='activity';}
+    if(STATE.role==='omtech'){STATE.view='main';await loadStoresIntoState(BQC_STORES,{ensureNamanve:true,ensureQualityIssues:true});
+      STATE.accountabilityAuditRecords=await loadAccountabilityAudit();
+      STATE.rcaRecords=await loadRca();
+      STATE.takeoverRequestRecords=await loadStore('takeover_request_records');
+      STATE.intakeDraft=emptyIntakeDraft(STATE.techName);}
+    else if(STATE.role==='omadmin'){STATE.view='dashboard'; await loadOmAdminSector();}
+    else if(STATE.role==='plantinv' || STATE.role==='plant' || STATE.role==='inventory'){ STATE.role='plantinv'; STATE.view='bulk'; await loadPlantInventorySector(); }
+    else if(STATE.role==='quality'){STATE.view='warranty'; await loadQualitySector();}
+    else if(STATE.role==='bsa'){STATE.view='activity'; await loadBsaSector();}
     render();
     removeBootLoader();
   }catch(e){ console.error(e); render(); removeBootLoader(); }
@@ -6804,6 +7371,29 @@ async function restoreSession(){
 syncBadge();
 maybeShowSetup();
 restoreSession();
+
+/* ---------- Pointer-reactive cylindrical battery motion ---------- */
+(function initBatteryMotion(){
+  const scene=document.getElementById('ambient-scene'); if(!scene)return;
+  let raf=0,tx=0,ty=0,x=0,y=0;
+  const label=document.getElementById('motion-label');
+  function frame(){
+    x+=(tx-x)*.09;y+=(ty-y)*.09;
+    document.documentElement.style.setProperty('--px',x.toFixed(4));
+    document.documentElement.style.setProperty('--py',y.toFixed(4));
+    const ax=Math.abs(x),ay=Math.abs(y);let view='neutral';
+    if(ax>.55&&ay<.45)view=x<0?'left profile':'right profile';
+    else if(ay>.55&&ax<.55)view=y<0?'top view':'bottom view';
+    else if(ax>.35||ay>.35)view='oblique view';
+    if(label)label.textContent='battery view · '+view;
+    raf=requestAnimationFrame(frame);
+  }
+  window.addEventListener('pointermove',e=>{tx=Math.max(-1,Math.min(1,(e.clientX/innerWidth-.5)*2));ty=Math.max(-1,Math.min(1,(e.clientY/innerHeight-.5)*2));},{passive:true});
+  window.addEventListener('pointerleave',()=>{tx=0;ty=0;},{passive:true});
+  window.addEventListener('blur',()=>{tx=0;ty=0;});
+  frame();
+})();
+
 </script>
 </body>
 </html>
