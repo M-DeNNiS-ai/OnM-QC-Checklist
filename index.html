@@ -2921,6 +2921,21 @@ function Nav(items, labels){
 }
  
 /* ---------- Top level router ---------- */
+function PageLoadRecoveryView(error){
+  const card=el('div',{class:'card',style:'border:1px solid rgba(239,68,68,.28);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(247,252,255,.96));'});
+  card.appendChild(el('div',{class:'badge',style:'display:inline-flex;margin-bottom:10px;'},'PAGE RECOVERY'));
+  card.appendChild(el('h2',{},'This page could not finish rendering'));
+  card.appendChild(el('div',{class:'sub'},'Navigation and stored data remain available. Retry the page or return to the section home.'));
+  const detail=(error&&error.message)||'Unexpected page rendering error';
+  card.appendChild(el('details',{style:'margin-top:12px;'},[el('summary',{},'Technical details'),el('div',{class:'meta mono',style:'margin-top:8px;white-space:pre-wrap;'},detail)]));
+  const actions=el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;'});
+  const retry=el('button',{class:'btn-primary'},'Retry page'); retry.addEventListener('click',()=>render());
+  const home=el('button',{class:'btn'},'Return to section home'); home.addEventListener('click',()=>{
+    if(STATE.role==='omtech') STATE.view='main'; else if(STATE.role==='omadmin') STATE.view='dashboard'; else if(STATE.role==='plantinv') STATE.view='dashboard'; else if(STATE.role==='quality') STATE.view='warranty'; else if(STATE.role==='bsa') STATE.view='activity'; render();
+  });
+  actions.append(retry,home); card.appendChild(actions); return card;
+}
+
 function View(){
   if(!STATE.role) return LoginView();
   if(STATE.view==='daylog') STATE.view='notes';
@@ -2929,6 +2944,8 @@ function View(){
   if(STATE.toast) wrap.appendChild(Toast());
  
   const content = el('div',{class:'view-fade'});
+
+  try {
  
   if(STATE.role==='omtech'){
     wrap.appendChild(Nav(['main','progress','rca','knowledge','myclosed','analytics','notes'], {main:'My Docket', progress:'Daily Progress', rca:'Technician RCA', knowledge:'5S & Battery Insights', myclosed:'My Completed Work', analytics:'My Analytics', notes:'NOTES CENTER'}));
@@ -2998,9 +3015,17 @@ function View(){
     else if(STATE.view==='notes') content.appendChild(DayLogView());
     else content.appendChild(BsaActivityView());
   }
+  } catch(pageError) {
+    console.error('Page render failed', {role:STATE.role, view:STATE.view, error:pageError});
+    content.innerHTML='';
+    content.appendChild(PageLoadRecoveryView(pageError));
+  }
   wrap.appendChild(content);
   return wrap;
 }
+
+/* Compatibility alias for legacy plant/inventory links. Current routing maps this destination to Stock & Movement. */
+function WarrantyStockView(){ return PlantStockOperationsView(); }
 
 /* ==================== SHARED — Battery Deep Dive (every role) ====================
    Pull together everything on file about one battery (BMS or OEM ID) from whichever
