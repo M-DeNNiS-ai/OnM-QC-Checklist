@@ -1166,6 +1166,45 @@ function roleCanDelete(role, store){
 
 /* ---- Local keys ---- */
 const CFG_KEY='bqc_cloud_cfg', CACHE_PREFIX='bqc_cache_', OUTBOX_KEY='bqc_outbox', SESSION_KEY='bqc_session';
+const INTAKE_DRAFT_PREFIX='bqc_intake_draft_v2_';
+function intakeDraftStorageKey(){
+  const s=currentSession();
+  const actor=(s?.name||STATE?.techName||'anonymous').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,80)||'anonymous';
+  const stage=s?.stage||STATE?.stage||'1';
+  return INTAKE_DRAFT_PREFIX+actor+'_stage'+stage;
+}
+function draftHasUserData(d){
+  if(!d) return false;
+  return !!(String(d.bmsId||'').trim() || String(d.model||'').trim() || String(d.imei||'').trim() ||
+    String(d.site||'').trim() || String(d.otherNote||'').trim() || String(d.missingComponentNote||'').trim() ||
+    Object.keys(d.pre||{}).length || Object.keys(d.issues||{}).length);
+}
+function saveIntakeDraftLocal(d){
+  try{
+    const payload=clone(d||{});
+    payload.receivedBy=payload.receivedBy || (currentSession()?.name||STATE?.techName||'');
+    payload._savedAt=Date.now();
+    const ok=lsWrite(intakeDraftStorageKey(),payload);
+    if(ok && STATE) STATE.intakeDraftSavedAt=payload._savedAt;
+    return ok;
+  }catch(e){ console.error('Intake draft save failed',e); return false; }
+}
+function loadIntakeDraftLocal(techName){
+  try{
+    const saved=lsRead(intakeDraftStorageKey(),null);
+    if(!saved || !draftHasUserData(saved)) return null;
+    const base=emptyIntakeDraft(techName||STATE?.techName||'');
+    return Object.assign(base,saved,{pre:Object.assign({},base.pre,saved.pre||{}),issues:Object.assign({},base.issues,saved.issues||{})});
+  }catch(e){ console.error('Intake draft restore failed',e); return null; }
+}
+function clearIntakeDraftLocal(){ try{ localStorage.removeItem(intakeDraftStorageKey()); }catch(e){} }
+function scheduleIntakeDraftSave(){
+  clearTimeout(window.__bqcDraftTimer);
+  window.__bqcDraftTimer=setTimeout(()=>{
+    if(STATE?.role==='omtech' && STATE?.stage===1 && draftHasUserData(STATE.intakeDraft)) saveIntakeDraftLocal(STATE.intakeDraft);
+  },120);
+}
+
 
 function lsRead(key, fallback){ try{ const v=localStorage.getItem(key); return v==null?fallback:JSON.parse(v); }catch(e){ return fallback; } }
 function lsWrite(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); return true; }catch(e){ console.error('localStorage write failed', key, e); Cloud.storageFull=true; return false; } }
@@ -1381,10 +1420,16 @@ async function saveStore(key, list, options={}){
   });
   removed.forEach(id=> ops.push({type:'delete', store:key, id, by:who, at:Date.now()}));
 
-  cacheSet(key, incoming);
+  const cacheOk=cacheSet(key, incoming);
+  if(cacheOk===false){
+    console.error('Local persistence failed for',key);
+    return false;
+  }
   LAST_SERVED[key] = incoming;
   outboxPush(ops);
-  flushOutbox();
+  const cloudAttempted=!Cloud.localOnly && cloudReady() && navigator.onLine && ops.length>0;
+  const cloudSaved=cloudAttempted ? await flushOutbox() : true;
+  STATE.lastSaveStatus={store:key,localSaved:true,cloudAttempted,cloudSaved,pending:pendingCount(),at:Date.now()};
   if(key!=='accountability_audit_records' && !options.skipAudit){
     const changes=auditDiffs(key,base,incoming,removed);
     if(changes.length) appendAccountabilityAudit(changes);
@@ -2308,6 +2353,8 @@ let STATE = {
   omLastRefreshed: null,
   omSyncOk: true,        // false when the last background/manual sync attempt failed
   intakeSaving: false,   // true while a Send-to-Stage-2 write is in flight (disables the button, prevents double-submit)
+  intakeDraftSavedAt: null,
+  lastSaveStatus: null,
  
   plantDraft: null,
   plantSaving: false,
@@ -2346,6 +2393,9 @@ function toast(msg){ STATE.toast = msg; render(); setTimeout(()=>{ STATE.toast=n
  
 const root = document.getElementById('root');
 let pendingCharts = [];
+root.addEventListener('input',()=>{ if(STATE?.role==='omtech' && STATE?.stage===1) scheduleIntakeDraftSave(); });
+root.addEventListener('change',()=>{ if(STATE?.role==='omtech' && STATE?.stage===1) scheduleIntakeDraftSave(); });
+window.addEventListener('beforeunload',()=>{ if(STATE?.role==='omtech' && STATE?.stage===1 && draftHasUserData(STATE.intakeDraft)) saveIntakeDraftLocal(STATE.intakeDraft); });
 root.addEventListener('click', e=>{
   const target=e.target.closest('[data-battery-id]');
   if(target) openBatteryModal(target.getAttribute('data-battery-id'));
@@ -3724,6 +3774,7 @@ function NewIntakeCard(){
   const card = el('div',{class:'card'});
   card.appendChild(el('h3',{},'Receive Battery — New Intake'));
   card.appendChild(el('div',{class:'sub'},'Log a battery arriving at Stage 1. Once sent, it moves to the Stage 2 repair docket. A given battery can only have one visit per day — the next visit for the same BMS ID must be on a later day.'));
+  if(draftHasUserData(d)) card.appendChild(el('div',{class:'banner',style:'margin-top:8px;'},'✓ Your unfinished intake is saved on this device automatically. Refreshing or reopening the app will restore it.'));
  
   if(STATE.serialWarning){
     container_warn(card);
@@ -3787,7 +3838,7 @@ function NewIntakeCard(){
   const actions = el('div',{style:'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;align-items:center;'});
   if(STATE.intakeSaving) actions.appendChild(el('span',{class:'sync-line'},'Saving…'));
   const clearBtn = el('button',{disabled: STATE.intakeSaving},'Reset');
-  clearBtn.addEventListener('click', ()=>{ STATE.intakeDraft = emptyIntakeDraft(STATE.techName); STATE.serialWarning=null; STATE.intakeError=null; render(); });
+  clearBtn.addEventListener('click', ()=>{ STATE.intakeDraft = emptyIntakeDraft(STATE.techName); clearIntakeDraftLocal(); STATE.intakeDraftSavedAt=null; STATE.serialWarning=null; STATE.intakeError=null; render(); });
   const toBsa = isBsaTriggerIssue(d);
   const sendBtn = el('button',{class: toBsa?'btn-capa':'btn-primary', disabled: STATE.intakeSaving}, loadingLabel(STATE.intakeSaving, 'Sending…'));
   if(!STATE.intakeSaving) sendBtn.textContent = toBsa ? 'Send Straight to BSA Team' : 'Send to Stage 2 Docket';
@@ -3844,11 +3895,14 @@ function NewIntakeCard(){
     }
     STATE.omRecords = updated;
     STATE.intakeDraft = emptyIntakeDraft(STATE.techName);
+    clearIntakeDraftLocal();
+    STATE.intakeDraftSavedAt=null;
     STATE.serialWarning = null;
     STATE.intakeError = null;
     STATE.omLastRefreshed = nowTime();
-    if(toBsa) toast(`✓ BMS ${rec.bmsId} logged and sent straight to the BSA team.` + (!bsaOk ? ' (BSA case log failed to save — notify BSA manually.)' : ''));
-    else toast(`✓ Intake logged — BMS ${rec.bmsId} sent to Stage 2 docket.`);
+    const saveNote=STATE.lastSaveStatus?.cloudAttempted && !STATE.lastSaveStatus?.cloudSaved ? ' Saved locally and queued for cloud sync.' : ' Saved successfully.';
+    if(toBsa) toast(`✓ BMS ${rec.bmsId} logged and sent straight to the BSA team.` + (!bsaOk ? ' (BSA case log failed to save — notify BSA manually.)' : '') + saveNote);
+    else toast(`✓ Intake logged — BMS ${rec.bmsId} sent to Stage 2 docket.${saveNote}`);
   });
   actions.appendChild(clearBtn); actions.appendChild(sendBtn);
   card.appendChild(actions);
@@ -7543,6 +7597,15 @@ function liveStoreSnapshot(){
 
 async function autoRefreshDocket(){
   if(userIsTypingInForm()) return;
+  if(STATE?.role==='omtech' && STATE?.stage===1 && draftHasUserData(STATE.intakeDraft)){
+    const beforeDraft=stableStr(STATE.intakeDraft);
+    await loadStoresIntoState(visibleStoreKeys());
+    if(beforeDraft!==stableStr(STATE.intakeDraft)){
+      const restored=loadIntakeDraftLocal(STATE.techName);
+      if(restored) STATE.intakeDraft=restored;
+    }
+    return;
+  }
   try{
     const before=liveStoreSnapshot();
     await loadStoresIntoState(visibleStoreKeys());
@@ -7575,7 +7638,9 @@ async function restoreSession(){
       STATE.accountabilityAuditRecords=await loadAccountabilityAudit();
       STATE.rcaRecords=await loadRca();
       STATE.takeoverRequestRecords=await loadStore('takeover_request_records');
-      STATE.intakeDraft=emptyIntakeDraft(STATE.techName);}
+      const restoredDraft=loadIntakeDraftLocal(STATE.techName);
+      STATE.intakeDraft=restoredDraft || emptyIntakeDraft(STATE.techName);
+      STATE.intakeDraftSavedAt=restoredDraft?restoredDraft._savedAt||null:null;}
     else if(STATE.role==='omadmin'){STATE.view='dashboard'; await loadOmAdminSector();}
     else if(STATE.role==='plantinv' || STATE.role==='plant' || STATE.role==='inventory'){ STATE.role='plantinv'; STATE.view='bulk'; await loadPlantInventorySector(); }
     else if(STATE.role==='quality'){STATE.view='warranty'; await loadQualitySector();}
