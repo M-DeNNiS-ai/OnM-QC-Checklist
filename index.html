@@ -907,6 +907,181 @@ button:active,.nav-item:active,.nav button:active{transform:translateY(0) scale(
   [data-theme="dark"]{--line:#456276;--line-dark:#5c7890;--muted:#d0dce5;}
   [data-theme="dark"] td,[data-theme="dark"] th{border-color:#456276 !important;}
 }
+
+/* ================================================================
+   TOUCH-FIRST RESPONSIVE UX PATCH — preserves application logic/data
+   Designed for phones, tablets, laptops and touchscreens.
+   ================================================================ */
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+body{min-width:0;overflow-x:hidden;overscroll-behavior-x:none;}
+*,*::before,*::after{touch-action:manipulation;}
+button,input,select,textarea{font:inherit;-webkit-tap-highlight-color:transparent;}
+button{min-height:44px;min-width:44px;}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role="button"]:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 38%,transparent);outline-offset:2px;}
+
+/* Comfortable desktop canvas without wasting small-screen space */
+.app{width:100%;max-width:1240px;margin:0 auto;padding:18px clamp(10px,2vw,20px);}
+.header{min-width:0;align-items:center;}
+.brand{min-width:0;flex:1 1 220px;}
+.brand h1,.brand p{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.user-info{min-width:0;flex:0 1 auto;flex-wrap:wrap;justify-content:flex-end;}
+.user-info>span:not(.badge){max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* Navigation: touchable, visually distinct, never dependent on tiny hit areas */
+.nav{width:100%;}
+.nav-rail{scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;}
+.nav-item{min-height:50px;min-width:148px;padding:9px 12px;cursor:pointer;user-select:none;-webkit-user-select:none;}
+.nav-item:active{transform:scale(.985)!important;}
+.nav-item.active{min-height:50px;}
+
+/* Search stays usable while scrolling */
+.search-shell{width:100%;min-height:54px;}
+.global-search-input{min-height:44px!important;}
+.search-go,.search-clear{min-height:44px;min-width:48px;}
+
+/* Forms: larger targets, less accidental misses */
+label{line-height:1.3;}
+input,select,textarea{min-height:44px;padding:10px 11px;}
+textarea{min-height:88px;}
+input[type="checkbox"],input[type="radio"]{min-width:22px;min-height:22px;width:22px;height:22px;}
+.bool-row,.check-row,.export-check-row{min-height:44px;padding:8px 6px;}
+.bool-row input{width:22px;height:22px;min-width:22px;}
+.seg{min-height:44px;border-radius:10px;}
+.seg button{min-height:42px;padding:8px 12px;font-size:11px;}
+
+/* All common action buttons have a reliable touch target */
+.btn-sm{min-height:44px;padding:9px 12px;font-size:11px;}
+.btn-block{min-height:48px;}
+.footer-actions{gap:10px;}
+.footer-actions button{min-height:48px;}
+
+/* Cards/tables become scroll-safe instead of forcing page width */
+.card,.chart-card{min-width:0;overflow:hidden;}
+.table-wrap{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;}
+table{min-width:640px;}
+.table-wrap table{width:max-content;min-width:100%;}
+.chart-card .chart-wrap{min-height:220px;width:100%;}
+
+/* Modal/dialog interaction */
+#battery-modal,#chart-modal,#cloud-panel{padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));}
+.modal-card,.cp-card{max-width:100%;width:min(900px,100%);}
+.modal-close,.cp-x{min-width:44px;min-height:44px;display:grid;place-items:center;border-radius:10px;}
+
+/* Floating sync badge must not obscure controls */
+.sync-badge{min-height:44px;padding:9px 13px;right:max(10px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));}
+
+/* Disable hover-only movement on coarse/touch devices */
+@media (hover:none), (pointer:coarse){
+  button:hover:not(:disabled),.card:hover,.chart-card:hover,.stat:hover,.takeover-row:hover,.nav-item:hover{transform:none!important;box-shadow:inherit;}
+  button:active:not(:disabled){transform:scale(.985)!important;}
+  .nav-item::after{display:none;}
+}
+
+/* Tablet */
+@media (max-width:900px){
+  .app{padding:12px;}
+  .header{gap:10px;}
+  .header .user-info{width:100%;justify-content:flex-start;}
+  .user-info>span:not(.badge){max-width:none;}
+  .nav-item{min-width:138px;}
+  .grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));}
+  .chart-row{grid-template-columns:minmax(0,1fr);}
+}
+
+/* Phone: replace tiny horizontal controls with large, thumb-friendly controls */
+@media (max-width:760px){
+  body{font-size:14px;}
+  .app{padding:8px 8px 76px;}
+  .header{border-radius:14px;padding:12px;position:relative;}
+  .brand h1{font-size:16px;}
+  .brand p{font-size:10px;}
+  .header .user-info{gap:6px;}
+  .user-info .badge{min-height:32px;display:inline-flex;align-items:center;}
+  .user-info button{flex:1 1 calc(50% - 6px);min-width:120px;}
+  .theme-toggle{flex:1 1 100%;}
+  .theme-toggle select{width:100%;min-height:44px;}
+
+  /* Mobile menu is a two-column control grid, not a tiny horizontal scroller. */
+  .nav{position:sticky;top:6px;border-radius:15px;margin-bottom:10px;z-index:40;}
+  .nav-head{padding:10px 11px 7px;}
+  .nav-title{font-size:14px;}
+  .nav-rail{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:7px;overflow:visible;}
+  .nav-item{min-width:0;width:100%;min-height:52px;height:auto;grid-template-columns:22px minmax(0,1fr) 12px;padding:9px 9px;border-radius:11px;font-size:11px;}
+  .nav-item.active{min-height:52px;}
+  .nav-index{font-size:8px;}
+  .nav-label{white-space:normal;line-height:1.15;}
+
+  .global-search{margin-bottom:10px;}
+  .search-shell{gap:5px;padding:5px;border-radius:12px;}
+  .search-icon{display:none;}
+  .global-search-input{font-size:16px!important;min-height:48px!important;padding:9px 8px!important;}
+  .search-go{min-width:70px;min-height:48px;padding:0 10px!important;}
+  .search-clear{min-width:44px;min-height:48px;}
+  .search-hint{font-size:9px;line-height:1.3;}
+
+  .card,.chart-card{border-radius:13px;padding:12px;margin-bottom:9px;}
+  .card h3{font-size:13px;}
+  .card .sub{margin-bottom:9px;}
+  .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}
+  .stat{padding:10px;border-radius:11px!important;}
+  .stat .n{font-size:19px;}
+  .grid,.grid.narrow{grid-template-columns:1fr;gap:7px;}
+
+  input,select,textarea{font-size:16px!important;min-height:48px;border-radius:9px;}
+  textarea{min-height:100px;}
+  .smart-id-top{display:grid;grid-template-columns:1fr;gap:7px;}
+  .smart-id-platform{width:100%;}
+  .id-prefix{width:100%;min-height:48px;}
+  .id-suffix{width:100%;}
+  .seg{width:100%;}
+  .seg button{flex:1;min-height:46px;padding:9px 8px;}
+
+  .check-row,.bool-row,.export-check-row{min-height:48px;padding:9px 6px;gap:10px;}
+  .check-row span,.bool-row label,.export-check-row label{font-size:12px;line-height:1.3;}
+  .bool-row input,.export-check-row input{width:24px;height:24px;min-width:24px;}
+
+  .footer-actions{position:static;display:grid;grid-template-columns:1fr;gap:7px;margin-top:10px;padding:10px 0;background:transparent;}
+  .footer-actions button{width:100%;min-height:50px;}
+
+  .docket-item,.takeover-row{align-items:stretch;flex-direction:column;gap:8px;}
+  .docket-item button,.takeover-row button{width:100%;}
+  .takeover-row{padding:10px;}
+
+  .chart-card .chart-wrap{height:230px;min-height:210px;}
+  .chart-card .chart-wrap::after{display:none;}
+
+  .table-wrap{border-radius:9px;}
+  th,td{padding:9px 10px;}
+
+  .modal-card,.cp-card{width:100%;max-height:calc(100vh - 20px);border-radius:14px;}
+  .modal-head,.cp-head{padding:11px 12px;}
+  .modal-body,.cp-body{padding:12px;}
+  .detail-grid{grid-template-columns:1fr 1fr;}
+
+  .sync-badge{right:8px;bottom:8px;font-size:10px;}
+}
+
+/* Very small phones */
+@media (max-width:390px){
+  .app{padding-left:6px;padding-right:6px;}
+  .nav-rail{grid-template-columns:1fr;}
+  .nav-item{min-height:50px;}
+  .user-info button{flex:1 1 100%;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .detail-grid{grid-template-columns:1fr;}
+  .search-go{min-width:62px;font-size:11px;}
+}
+
+/* Safe areas for modern phones */
+@supports(padding:max(0px)){
+  .app{padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));}
+}
+
+/* Prevent motion from interfering with touch precision */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;}
+}
+
 </style>
 </head>
 <body>
