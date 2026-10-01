@@ -1482,11 +1482,65 @@ body{
   .physics-field,.physics-wave,.physics-arc,.physics-particle,.physics-law,.ambient-scene::before,.ambient-scene::after,.motion-grid,.battery-orbit::before{animation:none!important;}
 }
 
+
+/* =====================================================================
+   PERFORMANCE + TOUCH RESPONSE 3.0 — behavior-preserving optimization
+   ===================================================================== */
+html{scroll-behavior:smooth;}
+body{overflow-x:hidden;}
+button,input,select,textarea{touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+.btn,.btn-sm,.btn-primary,.nav-item,.glass-tab,[role="button"]{
+  -webkit-user-select:none;user-select:none;
+  will-change:transform;
+  transform:translateZ(0);
+  backface-visibility:hidden;
+  transition:transform .07s ease,box-shadow .10s ease,background-color .10s ease,border-color .10s ease,opacity .10s ease!important;
+}
+.btn:active,.btn-sm:active,.btn-primary:active,.nav-item:active,.glass-tab:active,[role="button"]:active{
+  transform:translate3d(0,1px,0) scale(.975)!important;
+  transition-duration:.02s!important;
+}
+.btn[disabled],.btn-sm[disabled],.btn-primary[disabled]{
+  cursor:wait;transform:none!important;box-shadow:none!important;opacity:.72;
+}
+.nav-item{contain:layout paint;}
+.card,.stat,.panel,.chart-card,.glass-section,.glass-card,.sop-box,.attached-record{
+  content-visibility:auto;
+  contain-intrinsic-size:220px;
+}
+.chart-card{contain-intrinsic-size:280px;}
+.table-wrap,.preview-scroll{content-visibility:auto;contain-intrinsic-size:260px;}
+@media (pointer:coarse){
+  .btn:hover,.btn-sm:hover,.btn-primary:hover,.nav-item:hover,.glass-tab:hover{transform:none!important;box-shadow:none!important;}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto!important;}
+}
+
+
+/* ==================== QUANTUM-FIELD / MATHEMATICAL ORBIT AMBIENCE ==================== */
+#physics-ambience-canvas{
+  position:absolute; inset:0; width:100%; height:100%;
+  display:block; pointer-events:none; z-index:0;
+  opacity:.92;
+  mix-blend-mode:screen;
+  will-change:transform;
+}
+.ambient-scene > *:not(#physics-ambience-canvas){z-index:1;}
+#physics-ambience-canvas{filter:saturate(115%)}
+@media (max-width:760px){
+  #physics-ambience-canvas{opacity:.62;filter:saturate(105%)}
+}
+@media (prefers-reduced-motion:reduce){
+  #physics-ambience-canvas{opacity:.22}
+}
+
 </style>
 </head>
 <body>
 
 <div id="ambient-scene" class="ambient-scene" aria-hidden="true">
+  <canvas id="physics-ambience-canvas" aria-hidden="true"></canvas>
   <div class="motion-grid"></div>
   <div class="battery-orbit" id="battery-orbit">
     <div class="battery-cell c1"><div class="cell-body"></div><div class="cell-cap"></div><div class="cell-bottom"></div></div>
@@ -1525,10 +1579,214 @@ body{
 <div id="cloud-panel"></div>
 <div id="battery-modal"></div>
 <div id="chart-modal"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
+
+/* ==================== PHYSICS / MATHEMATICAL ORBIT ENGINE ====================
+   Decorative background only. It does not touch application state, routing, forms,
+   persistence, reports, imports, or operational logic. */
+(function initPhysicsAmbience(){
+  const canvas = document.getElementById('physics-ambience-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d', {alpha:true, desynchronized:true});
+  if(!ctx) return;
+
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  const TAU = Math.PI * 2;
+  let W = 0, H = 0, DPR = 1, raf = 0, last = 0, running = true;
+  let t = Math.random()*100;
+  const pointer = {x:.5,y:.5, tx:.5, ty:.5};
+  const palette = [
+    [47,129,246],[34,211,238],[99,102,241],[167,139,250],[52,211,153],[251,191,36],[96,165,250]
+  ];
+  let count = coarse ? 125 : 260;
+  const motes = [];
+  const orbs = [];
+
+  function resize(){
+    const r = canvas.getBoundingClientRect();
+    DPR = Math.min(window.devicePixelRatio || 1, coarse ? 1.35 : 1.7);
+    W = Math.max(1, Math.floor(r.width)); H = Math.max(1, Math.floor(r.height));
+    canvas.width = Math.floor(W*DPR); canvas.height = Math.floor(H*DPR);
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    count = coarse ? Math.min(125, Math.max(60, Math.floor(W*H/7600))) : Math.min(260, Math.max(120, Math.floor(W*H/6200)));
+    while(motes.length<count) motes.push(makeMote(motes.length));
+    if(motes.length>count) motes.length=count;
+    while(orbs.length<12) orbs.push(makeOrb(orbs.length));
+  }
+
+  function rnd(a,b){return a+Math.random()*(b-a)}
+  function pick(){return palette[(Math.random()*palette.length)|0]}
+  function rgb(c,a){return `rgba(${c[0]},${c[1]},${c[2]},${a})`}
+  function makeMote(i){
+    const c=pick(); return {u:Math.random(),v:Math.random(),spd:rnd(.00005,.00017)*(i%3===0?1.7:1),size:rnd(.5,2.2),phase:rnd(0,TAU),c,life:rnd(0,1)};
+  }
+  function makeOrb(i){
+    return {rx:rnd(.10,.48),ry:rnd(.08,.42),a:rnd(0,TAU),w:rnd(.00015,.00045),tilt:rnd(-.9,.9),size:rnd(2.5,10),c:pick(),phase:rnd(0,TAU),depth:rnd(.2,1)};
+  }
+
+  function field(x,y,time,k){
+    const nx=x/W-0.5, ny=y/H-0.5;
+    const r=Math.hypot(nx,ny)+0.0001;
+    const ang=Math.atan2(ny,nx);
+    const swirl=0.0017*(Math.sin(time*0.00035+k)+Math.cos(r*22-time*0.00019));
+    return {
+      x: Math.sin(ny*8.5 + time*.00032 + k)*.9 + Math.cos(ang*3-time*.00021)*.55 - nx*swirl*50,
+      y: Math.cos(nx*7.2 - time*.00027 + k*.8)*.7 + Math.sin(ang*4+time*.00016)*.5 - ny*swirl*50
+    };
+  }
+
+  function drawGlowDot(x,y,r,c,a){
+    const g=ctx.createRadialGradient(x,y,0,x,y,r*5);
+    g.addColorStop(0,rgb(c,a)); g.addColorStop(.22,rgb(c,a*.62)); g.addColorStop(1,rgb(c,0));
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r*5,0,TAU); ctx.fill();
+    ctx.fillStyle=rgb(c,Math.min(.95,a*1.35)); ctx.beginPath(); ctx.arc(x,y,r,0,TAU); ctx.fill();
+  }
+
+  function curvePoint(type,u,time,seed){
+    const a=u*TAU, d=time*.00013+seed;
+    const s1=Math.sin(a), c1=Math.cos(a);
+    switch(type%18){
+      case 0:{const r=.16+.12*Math.sin(3*a+d);return[c1*r,s1*r*.72];}                 // rosette
+      case 1:return[Math.sin(3*a+d)*.33,Math.sin(4*a)*.23];                           // Lissajous 3:4
+      case 2:{const r=.23+.095*Math.cos(5*a+d);return[c1*r,s1*r];}                     // epicyclic ring
+      case 3:{const r=.025+.046*a;return[c1*Math.cos(a+d)*r,s1*Math.sin(a+d)*r];}      // expanding spiral
+      case 4:{const r=.25*Math.cos(5*a+d);return[c1*r,s1*r];}                         // rose 5-petal
+      case 5:{const q=.31+.075*Math.sin(7*a+d);return[q*Math.cos(2*a),q*.58*Math.sin(2*a)];}
+      case 6:return[.29*Math.sin(2*a+d)*c1,.29*Math.sin(2*a+d)*s1];                   // lemniscate-like
+      case 7:{const r=.17+.055*Math.cos(9*a+d);return[c1*r,s1*r];}                    // high harmonic ring
+      case 8:{const r=.31*Math.exp(-.105*a);return[r*Math.cos(2*a+d),r*Math.sin(2*a+d)];}
+      case 9:return[.31*Math.cos(a)+.075*Math.cos(11*a+d),.22*Math.sin(a)+.05*Math.sin(9*a+d)]; // Fourier blend
+      case 10:return[.25*Math.sin(6*a+d),.24*Math.sin(7*a+.7*d)];                     // harmonograph
+      case 11:{const r=.19+.04*Math.sin(12*a+d);return[r*Math.cos(3*a),r*Math.sin(3*a)];}
+      case 12:{const r=.22*(1+Math.cos(a+d));return[r*c1,r*s1*.82];}                  // cardioid
+      case 13:{const x=.24*Math.cos(a),y=.24*Math.sin(a);return[x+.065*Math.cos(13*a+d),y+.065*Math.sin(10*a-d)];}
+      case 14:{const x=.25*c1, y=.25*s1*.82; return[x*(1+.25*Math.sin(8*a+d)),y*(1+.2*Math.cos(6*a-d))];}
+      case 15:{const r=.20+.12*Math.abs(Math.sin(4*a+d)); return[r*c1,r*s1*.74];}      // clover/caustic
+      case 16:{const r=.28*Math.tan(.17*Math.sin(3*a+d)); return[Math.max(-.42,Math.min(.42,r))*c1, Math.max(-.42,Math.min(.42,r))*s1];} // bounded tangent field
+      case 17:return[.30*Math.sin(2*a+d)+.055*Math.sin(17*a), .22*Math.cos(3*a-d)+.05*Math.cos(13*a)];
+      default:return[.3*c1,.2*s1];
+    }
+  }
+
+  function drawMathCurve(type, cx, cy, scale, time, alpha, c, seed){
+    ctx.beginPath();
+    const steps=type===3||type===8?240:180;
+    for(let i=0;i<=steps;i++){
+      const u=i/steps, [px,py]=curvePoint(type,u,time,seed);
+      const x=cx+px*scale, y=cy+py*scale;
+      if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle=rgb(c,alpha); ctx.lineWidth=.65+(type%3)*.18; ctx.stroke();
+  }
+
+  function drawFieldLines(time){
+    const cx=W*(.50+((pointer.x-.5)*.06)), cy=H*(.48+((pointer.y-.5)*.045));
+    for(let ring=0;ring<16;ring++){
+      const rr=(.11+ring*.034)*Math.min(W,H);
+      ctx.beginPath();
+      for(let j=0;j<=220;j++){
+        const a=j/220*TAU;
+        const ripple=1+0.055*Math.sin(a*5+time*.00025+ring*.7)+0.025*Math.cos(a*11-time*.00031);
+        const x=cx+Math.cos(a)*rr*ripple*(1.35+.15*Math.sin(time*.00012+ring));
+        const y=cy+Math.sin(a)*rr*.56*ripple;
+        if(j===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle=rgb(palette[ring%palette.length],.045+(ring%4===0?.035:0));
+      ctx.lineWidth=.55; ctx.stroke();
+    }
+  }
+
+  function drawVectorTrails(time){
+    const step=Math.max(2,Math.min(4,W/350));
+    for(let i=0;i<22;i++){
+      let x=W*(.08+(i%6)*.17)+Math.sin(time*.00017+i)*18;
+      let y=H*(.12+Math.floor(i/6)*.34)+Math.cos(time*.00013+i*1.7)*15;
+      ctx.beginPath(); ctx.moveTo(x,y);
+      for(let j=0;j<25;j++){
+        const f=field(x,y,time,i*.31); x+=f.x*step; y+=f.y*step;
+        if(x<0||x>W||y<0||y>H) break; ctx.lineTo(x,y);
+      }
+      const c=palette[i%palette.length]; ctx.strokeStyle=rgb(c,.045); ctx.lineWidth=.8; ctx.stroke();
+    }
+  }
+
+  function draw(time){
+    ctx.clearRect(0,0,W,H);
+    pointer.x += (pointer.tx-pointer.x)*.035; pointer.y += (pointer.ty-pointer.y)*.035;
+    const dt=time-last; last=time; t += reduceMotion ? 0.15 : Math.min(3,Math.max(.25,dt/16.7));
+
+    // 1–12 parametric families around the scene.
+    const centerX=W*(.5+(pointer.x-.5)*.035), centerY=H*(.49+(pointer.y-.5)*.028);
+    const scale=Math.min(W,H);
+    for(let i=0;i<18;i++){
+      drawMathCurve(i%18, centerX + Math.sin(t*.003+i)*W*.10, centerY + Math.cos(t*.0022+i*.7)*H*.08, scale*(.42-i*.012), time+i*117, .022+(i%4)*.004, palette[i%palette.length], i*.73);
+    }
+    drawFieldLines(time);
+    drawVectorTrails(time);
+
+    // Low-cost traveling wave ribbons: phase-shifted sine / cosine interference.
+    for(let band=0; band<7; band++){
+      const yy=H*(.12+band*.125);
+      ctx.beginPath();
+      for(let j=0;j<=150;j++){
+        const xx=(j/150)*W;
+        const y=yy + Math.sin(xx*.012 + time*.0011*(band%2?-.8:1) + band)*10
+                     + Math.sin(xx*.026 - time*.00065 + band*1.7)*4;
+        if(j===0)ctx.moveTo(xx,y);else ctx.lineTo(xx,y);
+      }
+      ctx.strokeStyle=rgb(palette[(band+3)%palette.length],.026);
+      ctx.lineWidth=.65; ctx.stroke();
+    }
+
+    // Moving orbiting charge / energy orbs.
+    for(let i=0;i<orbs.length;i++){
+      const o=orbs[i]; o.a += reduceMotion ? .0002 : o.w*(coarse?1.2:1.0)*1e3*.016;
+      const a=o.a + time*.00018*(i%2?1:-1);
+      const wobble=1+.09*Math.sin(time*.00045+o.phase);
+      let x=centerX+Math.cos(a)*W*o.rx*wobble;
+      let y=centerY+Math.sin(a*(1.0+(i%3)*.12))*H*o.ry*wobble;
+      const z=(Math.sin(a*1.7+o.phase)+1)/2;
+      y -= z*20*o.depth;
+      drawGlowDot(x,y,o.size*(.72+.5*z),o.c,.13+.08*z);
+      ctx.beginPath();ctx.arc(centerX,centerY,Math.hypot(x-centerX,y-centerY),0,TAU);ctx.strokeStyle=rgb(o.c,.016);ctx.lineWidth=.5;ctx.stroke();
+    }
+
+    // Flowing micro-particles through a pseudo electric field.
+    for(let i=0;i<motes.length;i++){
+      const m=motes[i];
+      const fx=Math.sin(time*m.spd+m.phase)*.00012, fy=Math.cos(time*m.spd*.8+m.phase)*.00008;
+      m.u=(m.u+fx+0.000015) % 1; m.v=(m.v+fy+1.00001)%1;
+      const baseX=m.u*W, baseY=m.v*H;
+      const f=field(baseX,baseY,time,i*.09);
+      const x=baseX+f.x*10, y=baseY+f.y*8;
+      const a=.055+.03*Math.sin(time*.002+m.phase);
+      ctx.fillStyle=rgb(m.c,a); ctx.beginPath(); ctx.arc(x,y,m.size,0,TAU); ctx.fill();
+    }
+
+    // A few bright “energy transfer” pulses.
+    for(let i=0;i<5;i++){
+      const a=time*.00035*(i%2?1:-1)+i*1.3;
+      const rr=scale*(.10+i*.055);
+      const x=centerX+Math.cos(a)*rr*1.6, y=centerY+Math.sin(a)*rr*.72;
+      const c=palette[(i+2)%palette.length];
+      ctx.globalCompositeOperation='lighter';
+      drawGlowDot(x,y,1.5+(i%3),c,.16);
+      ctx.globalCompositeOperation='source-over';
+    }
+
+    raf=requestAnimationFrame(draw);
+  }
+
+  function start(){ if(raf||!running) return; raf=requestAnimationFrame(draw); }
+  function stop(){ if(raf){cancelAnimationFrame(raf);raf=0;} }
+  canvas.addEventListener('pointermove',e=>{const r=canvas.getBoundingClientRect();pointer.tx=(e.clientX-r.left)/r.width;pointer.ty=(e.clientY-r.top)/r.height;},{passive:true});
+  window.addEventListener('resize',resize,{passive:true});
+  document.addEventListener('visibilitychange',()=>{running=!document.hidden; if(running) start(); else stop();},{passive:true});
+  resize();
+  if(reduceMotion){ draw(0); stop(); } else { requestAnimationFrame(draw); }
+})();
+
 /* ---------- Theme ---------- */
 let currentTheme = localStorage.getItem('bqc_theme') || 'light';
 document.documentElement.setAttribute('data-theme', currentTheme);
@@ -1716,6 +1974,7 @@ const BQC_STORES = [
   'iot_returned_records','day_log_records','bsa_records','quality_issue_records',
   'accountability_audit_records','rca_records','takeover_request_records'
 ];
+var EXPORT_ROWS_CACHE = new Map();
 const STORE_LABEL = {
   om_chain_records:'O&M repair chain', plant_records:'Plant records', plant_stock_records:'Plant stock',
   new_battery_records:'New batteries', inventory_adjustments:'Inventory adjustments',
@@ -2026,7 +2285,8 @@ async function saveStore(key, list, options={}){
     const changes=auditDiffs(key,base,incoming,removed);
     if(changes.length) appendAccountabilityAudit(changes);
   }
-  return true;
+  EXPORT_ROWS_CACHE.clear();
+    return true;
 }
 
 
@@ -2127,6 +2387,53 @@ async function loadStoresIntoState(keys=BQC_STORES, options={}){
 function visibleStoreKeys(){
   const session=currentSession();
   return session ? BQC_STORES.filter(k=>roleCanRead(session.role,k)) : [];
+}
+
+/* ---- Lazy third-party libraries: charts and Excel are no longer on the critical boot path. ---- */
+let CHART_LOAD_PROMISE=null;
+let XLSX_LOAD_PROMISE=null;
+function loadExternalScriptOnce(src, globalName){
+  if(globalName && window[globalName]) return Promise.resolve(window[globalName]);
+  if(globalName==='Chart' && CHART_LOAD_PROMISE) return CHART_LOAD_PROMISE;
+  if(globalName==='XLSX' && XLSX_LOAD_PROMISE) return XLSX_LOAD_PROMISE;
+  const p=new Promise((resolve,reject)=>{
+    const existing=document.querySelector('script[data-bqc-lib="'+globalName+'"]');
+    if(existing){ existing.addEventListener('load',()=>resolve(window[globalName]),{once:true}); existing.addEventListener('error',()=>reject(new Error(globalName+' library failed to load')),{once:true}); return; }
+    const script=document.createElement('script');
+    script.src=src; script.async=true; script.dataset.bqcLib=globalName;
+    script.onload=()=>resolve(window[globalName]);
+    script.onerror=()=>reject(new Error(globalName+' library failed to load'));
+    document.head.appendChild(script);
+  });
+  if(globalName==='Chart') CHART_LOAD_PROMISE=p;
+  if(globalName==='XLSX') XLSX_LOAD_PROMISE=p;
+  return p;
+}
+function ensureChartLibrary(){
+  return loadExternalScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js','Chart');
+}
+function ensureXlsxLibrary(){
+  return loadExternalScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js','XLSX');
+}
+let BACKGROUND_REFRESH_PROMISE=null;
+function scheduleBackgroundDataRefresh(){
+  if(BACKGROUND_REFRESH_PROMISE) return BACKGROUND_REFRESH_PROMISE;
+  const run=async()=>{
+    try{
+      const keys=visibleStoreKeys();
+      if(!keys.length) return;
+      const before={}; keys.forEach(k=>{const sk=STORE_STATE_KEYS[k]; before[k]=sk?STATE[sk]:undefined;});
+      await loadStoresIntoState(keys,{ensureNamanve:true,ensureQualityIssues:true});
+      const after={}; keys.forEach(k=>{const sk=STORE_STATE_KEYS[k]; after[k]=sk?STATE[sk]:undefined;});
+      const changed=keys.some(k=>visibleStateChanged(before[k],after[k]));
+      STATE.globalLastRefreshed=nowTime(); STATE.omLastRefreshed=nowTime();
+      if(changed && !overlayIsOpen()) silentRender();
+    }catch(e){ STATE.globalSyncError=e.message||'Background refresh failed'; }
+    finally{ BACKGROUND_REFRESH_PROMISE=null; }
+  };
+  if('requestIdleCallback' in window) BACKGROUND_REFRESH_PROMISE=new Promise(resolve=>requestIdleCallback(()=>run().finally(resolve),{timeout:1200}));
+  else BACKGROUND_REFRESH_PROMISE=new Promise(resolve=>setTimeout(()=>run().finally(resolve),60));
+  return BACKGROUND_REFRESH_PROMISE;
 }
 
 function visibleStateChanged(before, after){
@@ -3055,26 +3362,29 @@ function render(){
   pendingCharts = [];
   const initCharts = ()=>{
     chartJobs.forEach(({canvas, config, title})=>{
-      try{
-        if(typeof Chart!=='undefined'){
-          const chart = new Chart(canvas.getContext('2d'), config);
+      try{ renderChartFallback(canvas, config, title); }catch(e){ console.error('Chart fallback error:', title, e); }
+    });
+    if(!chartJobs.length) return;
+    // Upgrade fallbacks to Chart.js after the page has painted and the library is available.
+    ensureChartLibrary().then(()=>{
+      if(!root.isConnected) return;
+      chartJobs.forEach(({canvas, config, title})=>{
+        if(!canvas.isConnected || typeof Chart==='undefined') return;
+        try{
+          const prior=Chart.getChart(canvas); if(prior) prior.destroy();
+          const chart=new Chart(canvas.getContext('2d'), config);
           canvas.style.cursor='pointer';
           canvas.addEventListener('click', evt=>{
-            const pts = chart.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
+            const pts=chart.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
             if(!pts.length) return;
             const p=pts[0], label=chart.data.labels?.[p.index] ?? '', value=chart.data.datasets?.[p.datasetIndex]?.data?.[p.index] ?? 0;
             openChartSelection(title,label,value);
-          });
-        } else {
-          renderChartFallback(canvas, config, title);
-        }
-      }catch(e){
-        console.error('Chart render error:', title, e);
-        try{ renderChartFallback(canvas, config, title); }catch(fallbackError){ console.error('Chart fallback error:', title, fallbackError); }
-      }
-    });
+          },{passive:true});
+        }catch(e){ console.error('Chart upgrade error:', title, e); }
+      });
+    }).catch(()=>{});
   };
-  requestAnimationFrame(()=>requestAnimationFrame(initCharts));
+  requestAnimationFrame(initCharts);
   pendingCharts = [];
   animateStatNumbers();
   if(focusInfo){
@@ -3731,21 +4041,15 @@ function Nav(items, labels){
       el('span',{class:'nav-label'},labels[k]),
       el('span',{class:'nav-arrow'},active?'●':'›')
     ]);
-    b.addEventListener('click', async ()=>{
-      if(STATE.navLoading) return;
+    b.addEventListener('click', ()=>{
+      if(STATE.navLoading && STATE.view===k) return;
       STATE.navLoading = true;
       STATE.view=k; STATE.openId=null;
-      try{
-        await loadStoresIntoState(visibleStoreKeys(), {ensureNamanve:true, ensureQualityIssues:true});
-        if(STATE.role==='omtech') STATE.takeoverRequestRecords=await loadStore('takeover_request_records');
-        STATE.omLastRefreshed=nowTime();
-        STATE.globalLastRefreshed=nowTime();
-      }catch(e){
-        STATE.globalSyncError=e.message||'Could not refresh shared data';
-      }finally{
-        STATE.navLoading=false;
-        render();
-      }
+      // Paint the requested page immediately. Data refresh continues off the critical path.
+      render();
+      scheduleBackgroundDataRefresh().finally(()=>{
+        if(STATE.navLoading){ STATE.navLoading=false; silentRender(); }
+      });
     });
     rail.appendChild(b);
   });
@@ -7814,6 +8118,19 @@ function FullVisibilityTablesCard(){
 }
 
 /* ---- Selective Excel export with checkboxes + preview ---- */
+const EXPORT_CACHE_TTL=15000;
+function exportCacheKey(key,label){
+  const session=currentSession();
+  const sig=[STATE.role,STATE.stage,STATE.techName,key];
+  BQC_STORES.forEach(store=>{const sk=STORE_STATE_KEYS[store]; const rows=sk?STATE[sk]:[]; if(rows) sig.push(store,rows.length,rows.length?String(rows[rows.length-1]?.updatedAt||rows[rows.length-1]?.id||''):'');});
+  return sig.join('|');
+}
+function getExportRows(key,label,fn){
+  const cacheKey=exportCacheKey(key,label), hit=EXPORT_ROWS_CACHE.get(cacheKey), now=Date.now();
+  if(hit && now-hit.at<EXPORT_CACHE_TTL) return hit.rows;
+  const rows=fn(); EXPORT_ROWS_CACHE.set(cacheKey,{at:now,rows}); return rows;
+}
+
 const EXPORT_SHEETS = [
   ['om','OM Chain Records', ()=>buildOmExportRows()],
   ['plant','Plant Logs', ()=>buildPlantExportRows()],
@@ -8072,29 +8389,46 @@ function buildBsaExportRows(){
   })));
 }
  
-async function refreshAllStoresForExport(){
+let LAST_EXPORT_REFRESH_AT=0;
+async function refreshAllStoresForExport(force=false){
+  const now=Date.now();
+  if(!force && now-LAST_EXPORT_REFRESH_AT<12000) return;
   await loadStoresIntoState(BQC_STORES);
+  LAST_EXPORT_REFRESH_AT=Date.now();
 }
 async function exportAllDataToExcel(){
   if(!STATE.exportSelection){ STATE.exportSelection = {}; EXPORT_SHEETS.forEach(([k])=>STATE.exportSelection[k]=true); }
   else { EXPORT_SHEETS.forEach(([k])=>STATE.exportSelection[k]=true); }
   await exportSelectedToExcel();
 }
+async function downloadWorkbookFast(wb,filename){
+  // Avoid XLSX.writeFile's hidden download plumbing and use an uncompressed ZIP for speed.
+  const data=XLSX.write(wb,{bookType:'xlsx',type:'array',compression:false});
+  const blob=new Blob([data],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=filename; a.rel='noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
 async function exportSelectedToExcel(){
-  if(typeof XLSX === 'undefined'){ toast('Excel library failed to load — check your connection and try again.'); return; }
-  const selection = STATE.exportSelection || {};
-  const chosen = EXPORT_SHEETS.filter(([k])=>selection[k]!==false);
-  if(chosen.length===0){ toast('Select at least one sheet to download.'); return; }
+  if(STATE.exportingExcel) return;
   STATE.exportingExcel = true; render();
-  await refreshAllStoresForExport();
-  const wb = XLSX.utils.book_new();
-  chosen.forEach(([key,label,fn])=>{
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fn()), label.slice(0,31));
-  });
-  const filename = `battery-qc-report-${todayStr()}.xlsx`;
-  XLSX.writeFile(wb, filename);
-  STATE.exportingExcel = false;
-  toast('Excel report downloaded: '+filename+` (${chosen.length} sheet${chosen.length===1?'':'s'})`);
+  try{
+    await ensureXlsxLibrary();
+    const selection=STATE.exportSelection||{};
+    const chosen=EXPORT_SHEETS.filter(([k])=>selection[k]!==false);
+    if(chosen.length===0){ toast('Select at least one sheet to download.'); return; }
+    await refreshAllStoresForExport(false);
+    await new Promise(r=>requestAnimationFrame(r));
+    const wb=XLSX.utils.book_new();
+    chosen.forEach(([key,label,fn])=>{
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(getExportRows(key,label,fn)),label.slice(0,31));
+    });
+    const filename=`battery-qc-report-${todayStr()}.xlsx`;
+    await downloadWorkbookFast(wb,filename);
+    toast('Excel report downloaded: '+filename+` (${chosen.length} sheet${chosen.length===1?'':'s'})`);
+  }catch(e){ console.error('Excel export failed',e); toast('Report could not be downloaded: '+(e.message||'unknown error')); }
+  finally{ STATE.exportingExcel=false; render(); }
 }
 
 /* ---- Per-role "Download My Report" — every docket (om tech, om admin, plant & inventory, quality,
@@ -8109,47 +8443,34 @@ function buildOmTechMyWorkRows(){
 }
 async function exportMyReport(){
   if(STATE.myReportExporting) return;
-  if(typeof XLSX === 'undefined'){ toast('Excel library failed to load — check your connection and try again.'); return; }
-  STATE.myReportExporting = true; render();
-  await refreshAllStoresForExport();
-  const wb = XLSX.utils.book_new();
-  let filename = `my-report-${todayStr()}.xlsx`;
-  if(STATE.role==='omtech'){
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildOmTechMyWorkRows()), ('Stage '+STATE.stage+' Work').slice(0,31));
-    filename = `${STATE.techName||'technician'}-stage${STATE.stage}-report-${todayStr()}.xlsx`;
-  } else if(STATE.role==='omadmin'){
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildOmExportRows()), 'OM Chain Records');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildWarrantyExportRows()), 'Warranty Escalations');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildBsaExportRows()), 'BSA Cases');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildDayLogExportRows()), 'Day Notes');
-    filename = `om-manager-report-${todayStr()}.xlsx`;
-  } else if(STATE.role==='plantinv'){
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildStockLedgerExportRows()), 'OEM Stock Ledger');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildOemIdLogExportRows()), 'OEM ID Log');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildDailyStockExportRows()), 'Daily Stock Data');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet((STATE.qualityIssueRecords||[]).map(r=>({'Issue':r.label||r.id,'Platform':r.platform||'','Current Qty':parseInt(r.count)||0,'Last Updated':r.updatedAt||'','Updated By':r.updatedBy||''}))), 'Quality Issue Breakdown');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildNewBatteryExportRows()), 'New Battery Intake');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildAdjustmentExportRows()), 'Stock Movements');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildStockSummaryRows()), 'OEM Ledger Stock');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildNewBatteryStockSummaryRows()), 'New Battery Stock');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildWarrantyExportRows()), 'Warranty — Kyebando');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildWarrantySummaryRows()), 'Warranty Summary');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildIotExportRows()), 'IoT Upgrade Tracker');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildDayLogExportRows()), 'Day Notes');
-    filename = `plant-inventory-report-${todayStr()}.xlsx`;
-  } else if(STATE.role==='bsa'){
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildBsaExportRows()), 'BSA Cases');
-    filename = `bsa-report-${todayStr()}.xlsx`;
-  } else if(STATE.role==='quality'){
-    // Quality Engineer gets everything, same as the full Analytics export.
-    EXPORT_SHEETS.forEach(([key,label,fn])=>{
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fn()), label.slice(0,31));
-    });
-    filename = `quality-full-report-${todayStr()}.xlsx`;
-  }
-  XLSX.writeFile(wb, filename);
-  STATE.myReportExporting = false;
-  toast('Report downloaded: '+filename);
+  STATE.myReportExporting=true; render();
+  try{
+    await ensureXlsxLibrary();
+    await refreshAllStoresForExport(false);
+    const wb=XLSX.utils.book_new();
+    let filename=`my-report-${todayStr()}.xlsx`;
+    const add=(key,label,fn)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(getExportRows(key,label,fn)),label.slice(0,31));
+    if(STATE.role==='omtech'){
+      add('omtech','Stage '+STATE.stage+' Work',buildOmTechMyWorkRows);
+      filename=`${STATE.techName||'technician'}-stage${STATE.stage}-report-${todayStr()}.xlsx`;
+    } else if(STATE.role==='omadmin'){
+      add('om','OM Chain Records',buildOmExportRows); add('warranty','Warranty Escalations',buildWarrantyExportRows); add('bsa','BSA Cases',buildBsaExportRows); add('daylog','Day Notes',buildDayLogExportRows);
+      filename=`om-manager-report-${todayStr()}.xlsx`;
+    } else if(STATE.role==='plantinv'){
+      add('ledger','OEM Stock Ledger',buildStockLedgerExportRows); add('oemid','OEM ID Log',buildOemIdLogExportRows); add('dailystock','Daily Stock Data',buildDailyStockExportRows);
+      add('qualityissues','Quality Issue Breakdown',()=>rowsOrEmpty((STATE.qualityIssueRecords||[]).map(r=>({'Issue':r.label||r.id,'Platform':r.platform||'','Current Qty':parseInt(r.count)||0,'Last Updated':r.updatedAt||'','Updated By':r.updatedBy||''}))));
+      add('newbattery','New Battery Intake',buildNewBatteryExportRows); add('movements','Stock Movements',buildAdjustmentExportRows); add('stocksummary','OEM Ledger Stock',buildStockSummaryRows); add('newstocksummary','New Battery Stock',buildNewBatteryStockSummaryRows);
+      add('warranty','Warranty — Kyebando',buildWarrantyExportRows); add('warrantysummary','Warranty Summary',buildWarrantySummaryRows); add('iot','IoT Upgrade Tracker',buildIotExportRows); add('daylog','Day Notes',buildDayLogExportRows);
+      filename=`plant-inventory-report-${todayStr()}.xlsx`;
+    } else if(STATE.role==='bsa'){
+      add('bsa','BSA Cases',buildBsaExportRows); filename=`bsa-report-${todayStr()}.xlsx`;
+    } else if(STATE.role==='quality'){
+      EXPORT_SHEETS.forEach(([key,label,fn])=>add(key,label,fn)); filename=`quality-full-report-${todayStr()}.xlsx`;
+    }
+    await downloadWorkbookFast(wb,filename);
+    toast('Report downloaded: '+filename);
+  }catch(e){ console.error('My report export failed',e); toast('Report could not be downloaded: '+(e.message||'unknown error')); }
+  finally{ STATE.myReportExporting=false; render(); }
 }
  
 /* ---------- Live docket refresh ----------
@@ -8231,24 +8552,39 @@ async function restoreSession(){
     const s=await apiFetch('/api/auth/me');
     if(!s.authenticated){ render(); removeBootLoader(); return; }
     STATE.role=s.user.role; STATE.stage=s.user.stage||null; STATE.techName=s.user.name||'';
-    if(STATE.role==='omtech'){STATE.view='main';await loadStoresIntoState(BQC_STORES,{ensureNamanve:true,ensureQualityIssues:true});
-      STATE.accountabilityAuditRecords=await loadAccountabilityAudit();
-      STATE.rcaRecords=await loadRca();
-      STATE.takeoverRequestRecords=await loadStore('takeover_request_records');
-      const restoredDraft=loadIntakeDraftLocal(STATE.techName);
-      STATE.intakeDraft=restoredDraft || emptyIntakeDraft(STATE.techName);
-      STATE.intakeDraftSavedAt=restoredDraft?restoredDraft._savedAt||null:null;}
-    else if(STATE.role==='omadmin'){STATE.view='dashboard'; await loadOmAdminSector();}
-    else if(STATE.role==='plantinv' || STATE.role==='plant' || STATE.role==='inventory'){ STATE.role='plantinv'; STATE.view='bulk'; await loadPlantInventorySector(); }
-    else if(STATE.role==='quality'){STATE.view='warranty'; await loadQualitySector();}
-    else if(STATE.role==='bsa'){STATE.view='activity'; await loadBsaSector();}
-    render();
-    removeBootLoader();
+    if(STATE.role==='omtech') STATE.view='main';
+    else if(STATE.role==='omadmin') STATE.view='dashboard';
+    else if(STATE.role==='plantinv' || STATE.role==='plant' || STATE.role==='inventory'){ STATE.role='plantinv'; STATE.view='bulk'; }
+    else if(STATE.role==='quality') STATE.view='warranty';
+    else if(STATE.role==='bsa') STATE.view='activity';
+    // Paint shell immediately after authentication; role data is loaded off the critical path.
+    render(); removeBootLoader();
+    const hydrate=async()=>{
+      try{
+        if(STATE.role==='omtech'){
+          await loadStoresIntoState(BQC_STORES,{ensureNamanve:true,ensureQualityIssues:true});
+          STATE.accountabilityAuditRecords=await loadAccountabilityAudit();
+          STATE.rcaRecords=await loadRca();
+          STATE.takeoverRequestRecords=await loadStore('takeover_request_records');
+          const restoredDraft=loadIntakeDraftLocal(STATE.techName);
+          STATE.intakeDraft=restoredDraft || emptyIntakeDraft(STATE.techName);
+          STATE.intakeDraftSavedAt=restoredDraft?restoredDraft._savedAt||null:null;
+        } else if(STATE.role==='omadmin') await loadOmAdminSector();
+        else if(STATE.role==='plantinv') await loadPlantInventorySector();
+        else if(STATE.role==='quality') await loadQualitySector();
+        else if(STATE.role==='bsa') await loadBsaSector();
+        STATE.navLoading=false;
+        silentRender();
+      }catch(e){ console.error('Background session hydration failed',e); STATE.globalSyncError=e.message||'Could not finish loading shared data'; STATE.navLoading=false; silentRender(); }
+    };
+    hydrate();
   }catch(e){ console.error(e); render(); removeBootLoader(); }
 }
 syncBadge();
 maybeShowSetup();
 restoreSession();
+if('requestIdleCallback' in window) requestIdleCallback(()=>ensureChartLibrary().catch(()=>{}),{timeout:2500});
+else setTimeout(()=>ensureChartLibrary().catch(()=>{}),800);
 
 /* ---------- Pointer-reactive cylindrical battery motion ---------- */
 (function initBatteryMotion(){
