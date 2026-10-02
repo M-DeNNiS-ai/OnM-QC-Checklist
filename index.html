@@ -1535,6 +1535,23 @@ button,input,select,textarea{touch-action:manipulation;-webkit-tap-highlight-col
   #physics-ambience-canvas{opacity:.22}
 }
 
+
+/* ---------- RELIABILITY / TOUCH RESPONSE LAYER ---------- */
+html,body{overscroll-behavior-x:none;}
+#root{position:relative;z-index:2;}
+button,[role="button"],input,select,textarea{touch-action:manipulation;}
+button,.btn,.btn-sm,.btn-primary,.nav-item,.glass-tab{will-change:transform;}
+button.bqc-pressed,.btn.bqc-pressed,.btn-sm.bqc-pressed,.btn-primary.bqc-pressed,.nav-item.bqc-pressed,.glass-tab.bqc-pressed{transform:scale(.975)!important;filter:brightness(.98)!important;}
+button:disabled{pointer-events:none!important;}
+#sync-badge{z-index:9600;}
+#cloud-panel{z-index:9700;}
+@media(max-width:720px){
+  .app{width:100%;max-width:none;}
+  .header,.nav,.card,.chart-card,.form-card,.glass-section{contain:layout style paint;}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;}
+}
 </style>
 </head>
 <body>
@@ -2097,20 +2114,34 @@ function applyPending(store, rows){
 async function cloudReq(path, options={}){
   if(!cloudReady()) throw new Error('Cloud storage is not configured');
   const base = Cloud.cfg.url.replace(/\/+$/,'');
-  const res = await fetch(base+'/rest/v1/'+path, Object.assign({}, options, {
-    headers: Object.assign({
-      'apikey': Cloud.cfg.key,
-      'Authorization': 'Bearer '+Cloud.cfg.key,
-      'Content-Type': 'application/json'
-    }, options.headers||{})
-  }));
+  const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 8000;
+  const controller = typeof AbortController!=='undefined' ? new AbortController() : null;
+  let timer = null;
+  if(controller) timer=setTimeout(()=>controller.abort(), timeoutMs);
+  const reqOptions = Object.assign({}, options);
+  delete reqOptions.timeoutMs;
+  if(controller) reqOptions.signal = reqOptions.signal || controller.signal;
+  try{
+    const res = await fetch(base+'/rest/v1/'+path, Object.assign({}, reqOptions, {
+      headers: Object.assign({
+        'apikey': Cloud.cfg.key,
+        'Authorization': 'Bearer '+Cloud.cfg.key,
+        'Content-Type': 'application/json'
+      }, options.headers||{})
+    }));
   if(!res.ok){
     let detail=''; try{ const b=await res.json(); detail=b.message||b.error||b.hint||''; }catch(e){}
     throw new Error(detail || ('Cloud error '+res.status));
   }
-  if(res.status===204) return null;
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
+    if(res.status===204) return null;
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  }catch(e){
+    if(e && e.name==='AbortError') throw new Error('Cloud request timed out');
+    throw e;
+  }finally{
+    if(timer) clearTimeout(timer);
+  }
 }
 
 async function cloudPull(store){
@@ -2367,16 +2398,21 @@ const STORE_STATE_KEYS = {
 async function loadStoresIntoState(keys=BQC_STORES, options={}){
   const session=currentSession();
   const readable=(keys||[]).filter(k=> !session || roleCanRead(session.role,k));
-  const loaded=await Promise.all(readable.map(async key=>[key,await loadStore(key)]));
-  loaded.forEach(([key,rows])=>{
-    const stateKey=STORE_STATE_KEYS[key];
-    if(stateKey) STATE[stateKey]=rows;
+  const results=await Promise.allSettled(readable.map(async key=>[key,await loadStore(key)]));
+  const failures=[];
+  results.forEach(r=>{
+    if(r.status==='fulfilled'){
+      const [key,rows]=r.value;
+      const stateKey=STORE_STATE_KEYS[key];
+      if(stateKey) STATE[stateKey]=rows;
+    }else failures.push(r.reason?.message || String(r.reason || 'Store load failed'));
   });
+  if(failures.length) STATE.globalSyncError=failures.slice(0,3).join(' · ');
   if(options.ensureNamanve && readable.includes('daily_stock_records')){
-    STATE.dailyStockRecords=await ensureNamanvePlantData();
+    try{ STATE.dailyStockRecords=await ensureNamanvePlantData(); }catch(e){ STATE.globalSyncError=e.message||'Namanve stock refresh failed'; }
   }
   if(options.ensureQualityIssues && readable.includes('quality_issue_records')){
-    STATE.qualityIssueRecords=await ensureQualityIssueSeed();
+    try{ STATE.qualityIssueRecords=await ensureQualityIssueSeed(); }catch(e){ STATE.globalSyncError=e.message||'Quality issue refresh failed'; }
   }
   if(readable.includes('warranty_records')){
     STATE.warrantyRecords=(STATE.warrantyRecords||[]).map(w=>w.warehouse ? w : {...w,warehouse:'Kyebando Warehouse'});
@@ -2660,8 +2696,9 @@ function importBackup(input){
 
 /* First-run: ask for a connection before anyone starts typing records. */
 function maybeShowSetup(){
-  if(cloudReady() || Cloud.localOnly) return;
-  openPanel();
+  // Never auto-open the full-screen connection panel. It can obscure the login screen and
+  // make the application appear unresponsive. The sync badge remains the explicit entry point.
+  return;
 }
 
 window.addEventListener('online', ()=>{ Cloud.online=true; syncBadge(); flushOutbox(); });
@@ -3295,6 +3332,21 @@ let pendingCharts = [];
 root.addEventListener('input',()=>{ if(STATE?.role==='omtech' && STATE?.stage===1) scheduleIntakeDraftSave(); });
 root.addEventListener('change',()=>{ if(STATE?.role==='omtech' && STATE?.stage===1) scheduleIntakeDraftSave(); });
 window.addEventListener('beforeunload',()=>{ if(STATE?.role==='omtech' && STATE?.stage===1 && draftHasUserData(STATE.intakeDraft)) saveIntakeDraftLocal(STATE.intakeDraft); });
+root.addEventListener('pointerdown', e=>{
+  const b=e.target.closest('button,[role=\"button\"]');
+  if(!b || b.disabled) return;
+  b.classList.add('bqc-pressed');
+  clearTimeout(b._bqcPressTimer);
+  b._bqcPressTimer=setTimeout(()=>b.classList.remove('bqc-pressed'),180);
+},{passive:true});
+root.addEventListener('pointerup', e=>{
+  const b=e.target.closest('button,[role=\"button\"]');
+  if(b) b.classList.remove('bqc-pressed');
+},{passive:true});
+root.addEventListener('pointercancel', e=>{
+  const b=e.target.closest('button,[role=\"button\"]');
+  if(b) b.classList.remove('bqc-pressed');
+},{passive:true});
 root.addEventListener('click', e=>{
   const target=e.target.closest('[data-battery-id]');
   if(target) openBatteryModal(target.getAttribute('data-battery-id'));
@@ -3329,9 +3381,11 @@ function animateStatNumbers(){
   });
 }
 let renderInProgress = false;
+let renderPending = false;
 function render(){
-  if(renderInProgress) return;
+  if(renderInProgress){ renderPending=true; return; }
   renderInProgress = true;
+  renderPending = false;
   const active = document.activeElement;
   let focusInfo = null;
   if(active && root.contains(active) && active.dataset && active.dataset.fkey){
@@ -3357,6 +3411,10 @@ function render(){
     }
   } finally {
     renderInProgress = false;
+  }
+  if(renderPending){
+    renderPending=false;
+    queueMicrotask(()=>render());
   }
   const chartJobs = pendingCharts.slice();
   pendingCharts = [];
@@ -3941,6 +3999,30 @@ function statBox(num, label){
   return s;
 }
  
+/* ---------- Post-login background hydration ---------- */
+async function hydrateRoleData(){
+  try{
+    if(STATE.role==='omtech'){
+      await loadStoresIntoState(visibleStoreKeys(),{ensureNamanve:true,ensureQualityIssues:true});
+      STATE.accountabilityAuditRecords=await loadAccountabilityAudit();
+      STATE.rcaRecords=await loadRca();
+      STATE.takeoverRequestRecords=await loadStore('takeover_request_records');
+      const restoredDraft=loadIntakeDraftLocal(STATE.techName);
+      if(restoredDraft){ STATE.intakeDraft=restoredDraft; STATE.intakeDraftSavedAt=restoredDraft._savedAt||null; }
+    } else if(STATE.role==='omadmin') await loadOmAdminSector();
+    else if(STATE.role==='plantinv') await loadPlantInventorySector();
+    else if(STATE.role==='quality') await loadQualitySector();
+    else if(STATE.role==='bsa') await loadBsaSector();
+    STATE.navLoading=false;
+    if(STATE.role) silentRender();
+  }catch(e){
+    console.error('Post-login hydration failed',e);
+    STATE.globalSyncError=e.message||'Could not finish loading shared data';
+    STATE.navLoading=false;
+    if(STATE.role) silentRender();
+  }
+}
+
 /* ---------- Login ---------- */
 function LoginView(){
   const gate = el('div',{class:'gate'});
@@ -3967,9 +4049,15 @@ function LoginView(){
         try{
           const auth=await apiFetch('/api/auth/login',{method:'POST',body:JSON.stringify({mode,name:nameInp.value.trim(),pin:pinInp.value})});
           STATE.techName=auth.user.name||nameInp.value.trim(); STATE.role='omtech'; STATE.stage=auth.user.stage; STATE.view='main';
-          await loadStoresIntoState(BQC_STORES); STATE.intakeDraft=emptyIntakeDraft(STATE.techName); render();
+          const restoredDraft=loadIntakeDraftLocal(STATE.techName);
+          STATE.intakeDraft=restoredDraft || emptyIntakeDraft(STATE.techName);
+          STATE.intakeDraftSavedAt=restoredDraft?restoredDraft._savedAt||null:null;
+          render();
+          requestAnimationFrame(()=>hydrateRoleData());
         }catch(e){errBox.textContent=e.message;}
-      }); body.appendChild(go);
+      });
+      [nameInp,pinInp].forEach(inp=>inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&!go.disabled)go.click();}));
+      body.appendChild(go);
     }else{
       body.appendChild(el('label',{},SECTOR_LABEL[mode]+' PIN'));
       const inp=el('input',{type:'password',placeholder:'••••'}); body.appendChild(inp);
@@ -3980,13 +4068,16 @@ function LoginView(){
         try{
           const auth=await apiFetch('/api/auth/login',{method:'POST',body:JSON.stringify({mode,pin:inp.value})});
           STATE.role=mode; STATE.view='main';
-          if(mode==='omadmin'){ await loadOmAdminSector(); STATE.view='dashboard'; }
-          else if(mode==='plantinv'){ await loadPlantInventorySector(); STATE.view='bulk'; }
-          else if(mode==='quality'){ await loadQualitySector(); STATE.view='warranty'; }
-          else if(mode==='bsa'){ await loadBsaSector(); STATE.view='activity'; }
+          if(mode==='omadmin') STATE.view='dashboard';
+          else if(mode==='plantinv') STATE.view='bulk';
+          else if(mode==='quality') STATE.view='warranty';
+          else if(mode==='bsa') STATE.view='activity';
           render();
+          requestAnimationFrame(()=>hydrateRoleData());
         }catch(e){errBox.textContent=e.message;}
-      }); body.appendChild(go);
+      });
+      inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&!go.disabled)go.click();});
+      body.appendChild(go);
     }
   }
   modeSel.addEventListener('change',()=>{mode=modeSel.value;renderBody();}); renderBody(); return gate;
@@ -4042,14 +4133,11 @@ function Nav(items, labels){
       el('span',{class:'nav-arrow'},active?'●':'›')
     ]);
     b.addEventListener('click', ()=>{
-      if(STATE.navLoading && STATE.view===k) return;
-      STATE.navLoading = true;
+      STATE.navLoading = false;
       STATE.view=k; STATE.openId=null;
-      // Paint the requested page immediately. Data refresh continues off the critical path.
+      // Navigation is never gated by network/data refresh. Paint first, refresh second.
       render();
-      scheduleBackgroundDataRefresh().finally(()=>{
-        if(STATE.navLoading){ STATE.navLoading=false; silentRender(); }
-      });
+      requestAnimationFrame(()=>{ scheduleBackgroundDataRefresh().catch(()=>{}); });
     });
     rail.appendChild(b);
   });
@@ -8583,15 +8671,20 @@ async function restoreSession(){
 syncBadge();
 maybeShowSetup();
 restoreSession();
-if('requestIdleCallback' in window) requestIdleCallback(()=>ensureChartLibrary().catch(()=>{}),{timeout:2500});
-else setTimeout(()=>ensureChartLibrary().catch(()=>{}),800);
+// Chart.js stays lazy: chart-heavy code loads only when a chart page actually needs it.
+
 
 /* ---------- Pointer-reactive cylindrical battery motion ---------- */
 (function initBatteryMotion(){
   const scene=document.getElementById('ambient-scene'); if(!scene)return;
   let raf=0,tx=0,ty=0,x=0,y=0;
   const label=document.getElementById('motion-label');
-  function frame(){
+  let lastFrame=0;
+  function frame(ts){
+    if(document.hidden){ raf=0; return; }
+    const interval=coarse?33:20;
+    if(ts-lastFrame < interval){ raf=requestAnimationFrame(frame); return; }
+    lastFrame=ts;
     x+=(tx-x)*.09;y+=(ty-y)*.09;
     document.documentElement.style.setProperty('--px',x.toFixed(4));
     document.documentElement.style.setProperty('--py',y.toFixed(4));
@@ -8605,7 +8698,11 @@ else setTimeout(()=>ensureChartLibrary().catch(()=>{}),800);
   window.addEventListener('pointermove',e=>{tx=Math.max(-1,Math.min(1,(e.clientX/innerWidth-.5)*2));ty=Math.max(-1,Math.min(1,(e.clientY/innerHeight-.5)*2));},{passive:true});
   window.addEventListener('pointerleave',()=>{tx=0;ty=0;},{passive:true});
   window.addEventListener('blur',()=>{tx=0;ty=0;});
-  frame();
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){ if(raf) cancelAnimationFrame(raf); raf=0; }
+    else if(!raf) raf=requestAnimationFrame(frame);
+  },{passive:true});
+  raf=requestAnimationFrame(frame);
 })();
 
 </script>
