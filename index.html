@@ -1731,6 +1731,69 @@ label,.label,.field label,.form label{font-weight:700;}
 /* Reliable report UX */
 .report-download-status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--muted)}
 @media (max-width:760px){.report-download-status{font-size:11px}}
+/* ==================== HARDENED RESPONSIVE OPERATIONS LAYER ==================== */
+html,body{width:100%;min-width:0;}
+.app{width:100%;max-width:1240px;margin:0 auto;}
+.card,.chart-card,.header,.nav,.global-searchbar,.search-shell,.table-wrap,.modal-card,.cp-card{max-width:100%;min-width:0;}
+.grid>*{min-width:0;}
+input,select,textarea,button{max-width:100%;min-width:0;}
+.table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.table-wrap table{min-width:680px;}
+.footer-actions{flex-wrap:wrap;}
+.footer-actions button{flex:0 1 auto;}
+.docket-item,.takeover-row,.check-row,.bool-row{min-width:0;}
+.docket-item>div:first-child,.takeover-row>div:first-child{min-width:0;overflow-wrap:anywhere;}
+.sync-badge{max-width:calc(100vw - 20px);}
+@media(max-width:760px){
+  body{font-size:12px;}
+  .app{padding:10px;}
+  .header{padding:12px;border-radius:14px;align-items:flex-start;}
+  .brand{min-width:0;flex:1 1 180px;}
+  .user-info{width:100%;flex-wrap:wrap;justify-content:flex-start;}
+  .nav{top:4px;border-radius:15px;}
+  .nav-head{padding:10px 11px 7px;}
+  .nav-rail{overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;}
+  .nav-item{min-width:145px;scroll-snap-align:start;}
+  .global-search{margin-bottom:10px;}
+  .search-shell{width:100%;padding:6px 7px 6px 10px;}
+  .global-search-input{font-size:16px!important;} /* prevents iOS zoom */
+  .search-go{min-width:74px;padding:0 10px!important;}
+  .card,.chart-card{padding:12px;border-radius:12px;}
+  .grid,.chart-row{grid-template-columns:1fr;}
+  .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .smart-id-top{width:100%;}
+  .smart-id-platform{width:100%;min-width:0;}
+  .id-prefix{max-width:100%;overflow:hidden;text-overflow:ellipsis;}
+  .docket-item{align-items:flex-start;flex-direction:column;gap:8px;}
+  .docket-item>div:last-child{width:100%;justify-content:flex-start;flex-wrap:wrap;}
+  .takeover-row{align-items:flex-start;}
+  .modal-card,.cp-card{max-height:94vh;border-radius:12px;}
+  .modal-head,.cp-head{padding:11px 12px;}
+  .modal-body,.cp-body{padding:11px 12px 15px;}
+  .detail-grid{grid-template-columns:1fr 1fr;}
+  .selection-row{align-items:flex-start;flex-wrap:wrap;}
+  .footer-actions{position:sticky;bottom:0;padding:8px 0;background:var(--bg);z-index:20;}
+  .footer-actions button{flex:1 1 140px;}
+}
+@media(max-width:460px){
+  .app{padding:7px;}
+  .header{gap:8px;}
+  .brand h1{font-size:14px;}
+  .brand p{font-size:10px;}
+  .badge{font-size:9px;}
+  .user-info button{flex:1 1 120px;}
+  .nav-item{min-width:138px;}
+  .stat-grid,.detail-grid{grid-template-columns:1fr;}
+  .actions-mobile-stack{flex-direction:column!important;align-items:stretch!important;}
+  .actions-mobile-stack button{width:100%;}
+  .seg{width:100%;}
+  .seg button{flex:1;}
+  .chart-card .chart-wrap{height:220px;}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important;}
+}
+
 </style>
 </head>
 <body>
@@ -2464,7 +2527,12 @@ async function saveStore(key, list, options={}){
   const base = LAST_SERVED[key] || cacheGet(key);
   const baseMap = new Map(base.map(r=>[String(r.id), r]));
   const nextIds = new Set(incoming.map(r=>r.id));
-  const removed = base.map(r=>String(r.id)).filter(id=>!nextIds.has(id));
+  /* Shared stores are updated as upserts by default. A missing row in a stale
+     browser copy is NOT evidence that another user's record should be deleted.
+     Only workflows that explicitly request deletion may generate delete ops. */
+  const removed = options.allowDeletes
+    ? base.map(r=>String(r.id)).filter(id=>!nextIds.has(id))
+    : [];
 
   /* Guardrail: a bulk deletion is almost always a bug, not an intention. */
   if(removed.length >= 5 && removed.length >= base.length*0.5){
@@ -2525,7 +2593,13 @@ async function deleteAllStoreRecords(store){
 }
 
 async function loadOm(){ return loadStore('om_chain_records'); }
-async function saveOm(list){ return saveStore('om_chain_records',list); }
+async function saveOm(list, options={}){
+  /* O&M is a shared multi-technician queue. Normal stage updates must NEVER
+     delete another technician's newly-created record just because this browser
+     loaded its list a moment earlier. Explicit cleanup operations can opt into
+     deletions with {allowDeletes:true}. */
+  return saveStore('om_chain_records',list,{...options,allowDeletes:!!options.allowDeletes});
+}
 async function loadPlant(){ return loadStore('plant_records'); }
 async function savePlant(list){ return saveStore('plant_records',list); }
 async function loadPlantStock(){ return loadStore('plant_stock_records'); }
@@ -2632,6 +2706,7 @@ function ensureXlsxLibrary(){
 }
 let BACKGROUND_REFRESH_PROMISE=null;
 function scheduleBackgroundDataRefresh(){
+  if(STATE?.intakeSaving) return Promise.resolve(false);
   if(BACKGROUND_REFRESH_PROMISE) return BACKGROUND_REFRESH_PROMISE;
   const run=async()=>{
     try{
@@ -5071,6 +5146,7 @@ function NewIntakeCard(){
     const saveNote=STATE.lastSaveStatus?.cloudAttempted && !STATE.lastSaveStatus?.cloudSaved ? ' Saved locally and queued for cloud sync.' : ' Saved successfully.';
     if(toBsa) toast(`✓ BMS ${rec.bmsId} logged and sent straight to the BSA team.` + (!bsaOk ? ' (BSA case log failed to save — notify BSA manually.)' : '') + saveNote);
     else toast(`✓ Intake logged — BMS ${rec.bmsId} sent to Stage 2 docket.${saveNote}`);
+    render();
   });
   actions.appendChild(clearBtn); actions.appendChild(sendBtn);
   card.appendChild(actions);
@@ -8900,6 +8976,10 @@ function liveStoreSnapshot(){
 }
 
 async function autoRefreshDocket(){
+  /* Never let the 8-second poll repaint the active workflow while a technician is
+     saving/transferring a battery. This was a major source of the reported
+     'jumping' feeling and could make a handoff look as if it had not registered. */
+  if(STATE?.intakeSaving) return;
   if(userIsTypingInForm()) return;
   if(STATE?.role==='omtech' && STATE?.stage===1 && draftHasUserData(STATE.intakeDraft)){
     const beforeDraft=stableStr(STATE.intakeDraft);
