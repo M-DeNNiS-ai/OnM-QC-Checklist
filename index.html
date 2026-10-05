@@ -4451,7 +4451,7 @@ function Nav(items, labels){
   const rail = el('div',{class:'nav-rail'});
   items.forEach((k,i)=>{
     const active = STATE.view===k;
-    const b = el('button',{class:'nav-item '+(active?'active':''),'aria-current':active?'page':null,'title':labels[k]},[
+    const b = el('button',{class:'nav-item '+(active?'active':''),'aria-current':active?'page':null,'title':labels[k],'aria-label':labels[k]},[
       el('span',{class:'nav-index'},String(i+1).padStart(2,'0')),
       el('span',{class:'nav-label'},labels[k]),
       el('span',{class:'nav-arrow'},active?'●':'›')
@@ -8847,7 +8847,107 @@ function bqcEscapeCsv(v){
 function bqcCompatibilityWorkbook(chosen){
   const stamp=new Date().toLocaleString();
   let html='<!doctype html><html><head><meta charset="utf-8"><title>Battery QC Namanve Report</title>'+
-    '<style>body{font-family:Arial,sans-serif;font-size:11px;color:#182033}h1{font-size:20px}h2{font-size:15px;margin:22px 0 6px}p{color:#667085}.wrap{overflow:auto}table{border-collapse:collapse;width:100%;margin-bottom:18px}th,td{border:1px solid #ccd3df;padding:5px;text-align:left;vertical-align:top}th{background:#eaf0f8;font-weight:700}</style></head><body>'+
+    '<style>body{font-family:Arial,sans-serif;font-size:11px;color:#182033}h1{font-size:20px}h2{font-size:15px;margin:22px 0 6px}p{color:#667085}.wrap{overflow:auto}table{border-collapse:collapse;width:100%;margin-bottom:18px}th,td{border:1px solid #ccd3df;padding:5px;text-align:left;vertical-align:top}th{background:#eaf0f8;font-weight:700}
+/* ==================== FINAL UI STABILITY / ACCESSIBILITY OVERRIDES ====================
+   This layer intentionally comes last so responsive/theme rules cannot hide active labels
+   or create conflicting interaction states. It is visual/UX only and does not alter data. */
+.nav-item.active,
+.nav-item.active:hover,
+.nav button.active,
+.nav button.active:hover{
+  color:#fff !important;
+  background:linear-gradient(135deg,#0b63ce 0%,#008fbf 58%,#16865a 100%) !important;
+  border-color:rgba(255,255,255,.34) !important;
+  box-shadow:0 10px 25px rgba(11,99,206,.22),inset 0 1px 0 rgba(255,255,255,.28) !important;
+}
+.nav-item.active .nav-label{color:#fff !important;opacity:1 !important;visibility:visible !important;text-shadow:0 1px 1px rgba(0,0,0,.16);}
+.nav-item.active .nav-index,.nav-item.active .nav-arrow{color:rgba(255,255,255,.82) !important;visibility:visible !important;}
+.nav-item .nav-label{display:block;min-width:0;visibility:visible;}
+.nav-item[aria-current="page"]{outline:none;}
+.nav-item:focus-visible{outline:3px solid rgba(11,99,206,.35) !important;outline-offset:2px !important;}
+
+/* Keep the application readable when several older visual layers overlap. */
+html,body{max-width:100%;overflow-x:hidden;}
+body{min-height:100vh;}
+.app{box-sizing:border-box;min-width:0;}
+.header,.nav,.card,.panel,.chart-card,.form-card,.glass-section,.glass-card,.table-wrap,.search-shell,.modal-card{min-width:0;box-sizing:border-box;}
+
+/* Header identity and actions never collapse into unreadable overlaps. */
+.header{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;}
+.header .brand{min-width:0;flex:1 1 280px;}
+.header .user-info{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap;min-width:0;max-width:100%;}
+.header .user-info > *{min-width:0;}
+.header .user-info .badge{white-space:nowrap;}
+.theme-toggle{flex:0 0 auto;}
+
+/* Navigation: desktop uses all available width; small screens become a deliberate horizontal rail. */
+.nav{width:100%;}
+.nav-head{min-width:0;}
+.nav-title-wrap{min-width:0;}
+.nav-title{white-space:nowrap;}
+.nav-rail{min-width:0;}
+.nav-item{min-width:132px;max-width:260px;box-sizing:border-box;}
+
+/* Consistent controls. Disabled controls must remain identifiable without looking broken. */
+button,.btn,.btn-sm,.btn-primary,.btn-danger,.btn-capa,.btn-block,[role="button"]{cursor:pointer;}
+button:disabled,.btn:disabled,.btn-sm:disabled,.btn-primary:disabled,[role="button"][aria-disabled="true"]{cursor:not-allowed;transform:none !important;box-shadow:none !important;}
+input,select,textarea{box-sizing:border-box;max-width:100%;}
+select{cursor:pointer;}
+input[type="checkbox"],input[type="radio"]{max-width:none;}
+
+/* Forms stay usable across every role and viewport. */
+.form-grid,.field-grid,.grid{min-width:0;}
+.field,.form-field{min-width:0;}
+.field label,.form label{display:block;}
+
+/* Data tables remain readable instead of forcing the entire page wider than the viewport. */
+.table-wrap{overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;}
+.table-wrap table{width:max-content;min-width:100%;}
+th,td{overflow-wrap:anywhere;}
+
+/* Modals and drawers use the available viewport without clipping their actions. */
+.modal-backdrop{box-sizing:border-box;}
+.modal-card{overflow:hidden;}
+.modal-body{overflow:auto;-webkit-overflow-scrolling:touch;}
+.modal-actions,.modal-footer,.modal-head{min-width:0;}
+
+/* Action groups wrap instead of pushing controls off-screen. */
+.action-bar,.footer-actions,.actions,.button-row,.form-actions,.toolbar,.search-bar{min-width:0;display:flex;flex-wrap:wrap;}
+
+/* Loading/empty/error states have stable spacing and readable contrast. */
+.loading,.empty,.error,.banner,.search-loading{min-width:0;box-sizing:border-box;}
+
+@media(max-width:760px){
+  .app{padding-left:10px !important;padding-right:10px !important;}
+  .header{align-items:flex-start;}
+  .header .brand{flex-basis:100%;}
+  .header .user-info{width:100%;justify-content:flex-start;}
+  .header .user-info .btn-sm{flex:0 1 auto;}
+  .theme-toggle{width:100%;}
+  .theme-toggle select{width:100%;}
+  .nav{position:sticky !important;top:5px !important;z-index:40 !important;}
+  .nav-rail{overflow-x:auto !important;overflow-y:hidden !important;scrollbar-width:thin;}
+  .nav-item{flex:0 0 128px !important;width:128px !important;max-width:none !important;min-width:128px !important;}
+  .nav-item.active{background:linear-gradient(135deg,#0b63ce 0%,#008fbf 58%,#16865a 100%) !important;color:#fff !important;}
+  .nav-item.active .nav-label{color:#fff !important;}
+  .search-shell{width:100%;}
+  .action-bar,.footer-actions,.actions,.button-row,.form-actions{width:100%;}
+  .action-bar > button,.footer-actions > button,.actions > button,.button-row > button,.form-actions > button{flex:1 1 140px;}
+  .modal-backdrop{padding:8px !important;}
+  .modal-card{width:100% !important;max-width:100% !important;max-height:calc(100dvh - 16px) !important;}
+}
+
+@media(max-width:390px){
+  .app{padding-left:7px !important;padding-right:7px !important;}
+  .nav-item{flex-basis:116px !important;width:116px !important;min-width:116px !important;}
+  .header .user-info{gap:5px;}
+  .header .user-info .badge{max-width:100%;overflow:hidden;text-overflow:ellipsis;}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto !important;transition-duration:.01ms !important;animation-duration:.01ms !important;animation-iteration-count:1 !important;}
+}
+</style></head><body>'+
     '<h1>Battery QC — Namanve Report</h1><p>Generated '+bqcEscapeHtml(stamp)+' · Compatibility report generated by the application.</p>';
   chosen.forEach(([key,label,fn])=>{
     const rows=getExportRows(key,label,fn);
