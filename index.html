@@ -2339,7 +2339,7 @@ function cloudReady(){ return !!(Cloud.cfg && Cloud.cfg.url && Cloud.cfg.key); }
 /* ---- Cache + outbox ---- */
 const LAST_SERVED = {};
 function cacheGet(store){ const v=lsRead(CACHE_PREFIX+store, []); return Array.isArray(v)?v:[]; }
-function cacheSet(store, list){ lsWrite(CACHE_PREFIX+store, list); }
+function cacheSet(store, list){ return lsWrite(CACHE_PREFIX+store, list); }
 function outbox(){ const v=lsRead(OUTBOX_KEY, []); return Array.isArray(v)?v:[]; }
 function outboxSet(list){ lsWrite(OUTBOX_KEY, list); syncBadge(); }
 function outboxPush(ops){ if(!ops.length) return; outboxSet(outbox().concat(ops)); }
@@ -2508,6 +2508,25 @@ function normalizeActorFields(key, rec){
   return out;
 }
 
+function deepMergeChanged(base, incoming, latest){
+  /* Apply only changes made by this browser onto the newest shared record.
+     This prevents a stale technician screen from overwriting fields changed by
+     another technician while still preserving the existing full-record model. */
+  if(base === undefined) return clone(incoming);
+  if(incoming === undefined) return clone(latest);
+  if(stableStr(base) === stableStr(incoming)) return clone(latest);
+  if(incoming === null || typeof incoming !== 'object' || Array.isArray(incoming)) return clone(incoming);
+  if(base === null || typeof base !== 'object' || Array.isArray(base) || latest === null || typeof latest !== 'object' || Array.isArray(latest)) return clone(incoming);
+  const out=clone(latest);
+  Object.keys(incoming).forEach(k=>{
+    const b=base[k], inc=incoming[k], cur=latest[k];
+    if(stableStr(b)===stableStr(inc)) return;
+    if(inc && typeof inc==='object' && !Array.isArray(inc) && b && typeof b==='object' && !Array.isArray(b)) out[k]=deepMergeChanged(b,inc,cur);
+    else out[k]=clone(inc);
+  });
+  return out;
+}
+
 async function saveStore(key, list, options={}){
   if(!BQC_STORES.includes(key)){ console.error('Unknown store', key); return false; }
   const session = currentSession();
@@ -2521,52 +2540,82 @@ async function saveStore(key, list, options={}){
     let rec = clone(r);
     if(!rec.id) rec.id = uid();
     rec.id = String(rec.id);
-    /* Actor identity is captured by the audit event; critical record-specific actor fields are set by their workflow. */
     return rec;
   });
-  const base = LAST_SERVED[key] || cacheGet(key);
-  const baseMap = new Map(base.map(r=>[String(r.id), r]));
-  const nextIds = new Set(incoming.map(r=>r.id));
-  /* Shared stores are updated as upserts by default. A missing row in a stale
-     browser copy is NOT evidence that another user's record should be deleted.
-     Only workflows that explicitly request deletion may generate delete ops. */
+
+  /* The critical shared-queue fix:
+     LAST_SERVED/cache may be older than the cloud because another technician
+     can register or advance a battery at the same time. For O&M, re-read the
+     shared store immediately before constructing the write and merge only the
+     differences made from this browser's base into that newest copy. */
+  const callerBase = clone(LAST_SERVED[key] || cacheGet(key) || []);
+  let latest = callerBase;
+  if(key==='om_chain_records' && !Cloud.localOnly && cloudReady() && navigator.onLine){
+    try{
+      await flushOutbox();
+      latest = clone(applyPending(key, await cloudPull(key)));
+      cacheSet(key, latest); LAST_SERVED[key]=latest;
+      Cloud.lastError=null; Cloud.online=true;
+    }catch(e){
+      console.warn('Fresh O&M read before save failed; retaining local base:', e);
+    }
+  }
+
+  const baseMap = new Map(callerBase.map(r=>[String(r.id), r]));
+  const latestMap = new Map(latest.map(r=>[String(r.id), r]));
+  const incomingIds = new Set(incoming.map(r=>r.id));
   const removed = options.allowDeletes
-    ? base.map(r=>String(r.id)).filter(id=>!nextIds.has(id))
+    ? callerBase.map(r=>String(r.id)).filter(id=>!incomingIds.has(id))
     : [];
 
-  /* Guardrail: a bulk deletion is almost always a bug, not an intention. */
-  if(removed.length >= 5 && removed.length >= base.length*0.5){
-    const ok = confirm('This save would remove '+removed.length+' of '+base.length+' records from "'+(STORE_LABEL[key]||key)+'".\n\nIf you did not intend to delete them, click Cancel and refresh the page to reload the latest data.');
+  if(removed.length >= 5 && removed.length >= callerBase.length*0.5){
+    const ok = confirm('This save would remove '+removed.length+' of '+callerBase.length+' records from "'+(STORE_LABEL[key]||key)+'".\n\nIf you did not intend to delete them, click Cancel and refresh the page to reload the latest data.');
     if(!ok) return false;
   }
 
   const who = session ? session.name : '';
   const ops = [];
-  incoming.forEach(rec=>{
-    const prev = baseMap.get(rec.id);
-    const { id, ...payload } = rec;
-    if(!prev || stableStr(prev) !== stableStr(rec)) ops.push({type:'upsert', store:key, id:rec.id, payload, by:who, at:Date.now()});
-  });
-  removed.forEach(id=> ops.push({type:'delete', store:key, id, by:who, at:Date.now()}));
+  const merged = new Map(latest.map(r=>[String(r.id),clone(r)]));
 
-  const cacheOk=cacheSet(key, incoming);
-  if(cacheOk===false){
-    console.error('Local persistence failed for',key);
-    return false;
-  }
-  LAST_SERVED[key] = incoming;
+  incoming.forEach(rec=>{
+    const id=String(rec.id), before=baseMap.get(id), current=latestMap.get(id);
+    let finalRec;
+    if(key==='om_chain_records' && before && current){
+      finalRec=deepMergeChanged(before,rec,current);
+    }else if(!current){
+      finalRec=clone(rec);
+    }else{
+      finalRec=clone(rec);
+    }
+    finalRec.id=id;
+    const prev=current;
+    if(!prev || stableStr(prev)!==stableStr(finalRec)){
+      const {id:omitId,...payload}=finalRec;
+      ops.push({type:'upsert',store:key,id, payload, by:who, at:Date.now()});
+      merged.set(id,finalRec);
+    }
+  });
+
+  removed.forEach(id=>{
+    ops.push({type:'delete',store:key,id,by:who,at:Date.now()});
+    merged.delete(id);
+  });
+
+  const finalList=[...merged.values()];
+  const cacheOk=cacheSet(key, finalList);
+  if(cacheOk===false){ console.error('Local persistence failed for',key); return false; }
+  LAST_SERVED[key]=finalList;
   outboxPush(ops);
   const cloudAttempted=!Cloud.localOnly && cloudReady() && navigator.onLine && ops.length>0;
   const cloudSaved=cloudAttempted ? await flushOutbox() : true;
   STATE.lastSaveStatus={store:key,localSaved:true,cloudAttempted,cloudSaved,pending:pendingCount(),at:Date.now()};
   if(key!=='accountability_audit_records' && !options.skipAudit){
-    const changes=auditDiffs(key,base,incoming,removed);
+    const changes=auditDiffs(key,latest,finalList,removed);
     if(changes.length) appendAccountabilityAudit(changes);
   }
   EXPORT_ROWS_CACHE.clear();
-    return true;
+  return true;
 }
-
 
 async function deleteStoreRecord(store,id){
   const session=currentSession();
@@ -2593,13 +2642,7 @@ async function deleteAllStoreRecords(store){
 }
 
 async function loadOm(){ return loadStore('om_chain_records'); }
-async function saveOm(list, options={}){
-  /* O&M is a shared multi-technician queue. Normal stage updates must NEVER
-     delete another technician's newly-created record just because this browser
-     loaded its list a moment earlier. Explicit cleanup operations can opt into
-     deletions with {allowDeletes:true}. */
-  return saveStore('om_chain_records',list,{...options,allowDeletes:!!options.allowDeletes});
-}
+async function saveOm(list, options={}){ return saveStore('om_chain_records',list,{...options,allowDeletes:!!options.allowDeletes}); }
 async function loadPlant(){ return loadStore('plant_records'); }
 async function savePlant(list){ return saveStore('plant_records',list); }
 async function loadPlantStock(){ return loadStore('plant_stock_records'); }
@@ -5247,11 +5290,23 @@ function Stage1EditCard(rec){
         sopAttempted:'No applicable SOP after re-inspection — routed directly.', assignedEngineer:'',
         status: BSA_STATUSES[0], rcaSummary:'', repairNotes:'', omRecordId: rec.id, createdAt: nowIso() };
     } else { rec.stage = 2; rec.status = 'STAGE2_OPEN'; }
+    STATE.intakeSaving = true; render();
     const fresh = await loadOm();
     const idx = fresh.findIndex(r=>r.id===rec.id);
-    if(idx===-1){ STATE.intakeError = 'This record no longer exists in the shared docket — it may have been edited elsewhere. Refreshing.'; STATE.omRecords = fresh; render(); return; }
-    fresh[idx] = rec;
-    STATE.intakeSaving = true; render();
+    if(idx===-1){ STATE.intakeSaving=false; STATE.intakeError = 'This record no longer exists in the shared docket — it may have been edited elsewhere. Refreshing.'; STATE.omRecords = fresh; render(); return; }
+    /* Preserve the newest shared record and apply only Stage 1's fields. */
+    const latestRec = fresh[idx];
+    latestRec.model = rec.model;
+    latestRec.imei = rec.imei;
+    latestRec.site = rec.site;
+    latestRec.stage1 = clone(rec.stage1);
+    latestRec.stage = rec.stage;
+    latestRec.status = rec.status;
+    latestRec.finalDisposition = rec.finalDisposition;
+    latestRec.closedAt = rec.closedAt;
+    latestRec.updatedBy = STATE.techName;
+    latestRec.updatedAt = nowIso();
+    fresh[idx] = latestRec;
     const ok = await saveOm(fresh);
     if(ok && bsaRec){ const freshBsa = await loadBsa(); await saveBsa([...freshBsa, bsaRec]); STATE.bsaRecords=[...freshBsa,bsaRec]; }
     STATE.intakeSaving = false;
@@ -5307,11 +5362,18 @@ function Stage2Card(rec){
     s2.completedBy = STATE.techName;
     s2.completedAt = nowIso();
     rec.stage = 3; rec.status = 'STAGE3_OPEN';
+    STATE.intakeSaving = true; render();
     const fresh = await loadOm();
     const idx = fresh.findIndex(r=>r.id===rec.id);
-    if(idx===-1){ STATE.intakeError = 'This record no longer exists in the shared docket — it may have been edited elsewhere. Refreshing.'; STATE.omRecords = fresh; render(); return; }
-    fresh[idx] = rec;
-    STATE.intakeSaving = true; render();
+    if(idx===-1){ STATE.intakeSaving=false; STATE.intakeError = 'This record no longer exists in the shared docket — it may have been edited elsewhere. Refreshing.'; STATE.omRecords = fresh; render(); return; }
+    /* Preserve the newest shared record and apply only Stage 2's repair data and handoff. */
+    const latestRec = fresh[idx];
+    latestRec.stage2 = clone(rec.stage2);
+    latestRec.stage = 3;
+    latestRec.status = 'STAGE3_OPEN';
+    latestRec.updatedBy = STATE.techName;
+    latestRec.updatedAt = nowIso();
+    fresh[idx] = latestRec;
     const ok = await saveOm(fresh);
     STATE.intakeSaving = false;
     if(!ok){
@@ -5410,11 +5472,25 @@ function Stage3Card(rec){
       rec.status = returnTo===1 ? 'STAGE1_OPEN' : 'STAGE2_OPEN';
       s3.qcPassed = '';
     }
+    STATE.intakeSaving = true; render();
     const fresh = await loadOm();
     const idx = fresh.findIndex(r=>r.id===rec.id);
-    if(idx===-1){ STATE.intakeError = 'This record no longer exists in the shared docket — it may have been edited elsewhere. Refreshing.'; STATE.omRecords = fresh; render(); return; }
-    fresh[idx] = rec;
-    STATE.intakeSaving = true; render();
+    if(idx===-1){ STATE.intakeSaving=false; STATE.intakeError = 'This record no longer exists in the shared docket — it may have been edited elsewhere. Refreshing.'; STATE.omRecords = fresh; render(); return; }
+    /* Preserve the newest shared record and apply only Stage 3 QC/disposition data. */
+    const latestRec = fresh[idx];
+    latestRec.stage3 = clone(rec.stage3);
+    latestRec.stage = rec.stage;
+    latestRec.status = rec.status;
+    latestRec.finalDisposition = rec.finalDisposition;
+    latestRec.closedAt = rec.closedAt;
+    latestRec.capaCycles = rec.capaCycles;
+    latestRec.isCorrectiveAction = rec.isCorrectiveAction;
+    latestRec.capaLog = clone(rec.capaLog);
+    latestRec.bsaEscalatedAt = rec.bsaEscalatedAt;
+    latestRec.bsaEscalatedBy = rec.bsaEscalatedBy;
+    latestRec.updatedBy = STATE.techName;
+    latestRec.updatedAt = nowIso();
+    fresh[idx] = latestRec;
     const ok = await saveOm(fresh);
     STATE.intakeSaving = false;
     if(!ok){
@@ -8980,6 +9056,7 @@ async function autoRefreshDocket(){
      saving/transferring a battery. This was a major source of the reported
      'jumping' feeling and could make a handoff look as if it had not registered. */
   if(STATE?.intakeSaving) return;
+  if(STATE?.openId) return;
   if(userIsTypingInForm()) return;
   if(STATE?.role==='omtech' && STATE?.stage===1 && draftHasUserData(STATE.intakeDraft)){
     const beforeDraft=stableStr(STATE.intakeDraft);
