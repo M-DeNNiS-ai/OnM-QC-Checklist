@@ -11073,3 +11073,296 @@ function AttachedWorkbookView(){
   }
 })();
 </script>
+
+
+
+<style id="readable-auto-chart-final">
+/* ============================================================
+   FINAL CHART BEHAVIOUR:
+   - moderate, automatic sizing
+   - one Expand button
+   - readable X/Y axes
+   - no oversized default charts
+   ============================================================ */
+
+.chart-card .chart-wrap {
+  height: 420px !important;
+  min-height: 320px !important;
+  max-height: 560px !important;
+  resize: none !important;
+  overflow: hidden !important;
+}
+
+.chart-card .chart-wrap::after {
+  display: none !important;
+}
+
+.chart-card .chart-resize-controls {
+  margin: 6px 0 8px !important;
+  gap: 6px !important;
+}
+
+.chart-card .chart-resize-controls > button {
+  display: none !important;
+}
+
+.chart-card .chart-resize-controls > button.chart-expand-one {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 6px 12px;
+  font-weight: 600;
+}
+
+.chart-card .chart-resize-controls .chart-size-label {
+  margin-left: 0 !important;
+  font-size: 12px;
+}
+
+.chart-card.chart-expanded-one .chart-wrap {
+  height: min(680px, 72vh) !important;
+  max-height: 680px !important;
+}
+
+.chart-card.chart-expanded-one .chart-expand-one::before {
+  content: "Collapse";
+}
+
+/* Hide the original button text while the replacement label is supplied. */
+.chart-card .chart-expand-one {
+  font-size: 0;
+}
+
+.chart-card .chart-expand-one::before {
+  content: "Expand";
+  font-size: 13px;
+}
+
+/* Good readable canvas defaults without making the chart huge. */
+.chart-card canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* On smaller displays use a little less vertical space. */
+@media (max-width: 800px) {
+  .chart-card .chart-wrap {
+    height: 370px !important;
+    min-height: 300px !important;
+  }
+
+  .chart-card.chart-expanded-one .chart-wrap {
+    height: 560px !important;
+    max-height: 560px !important;
+  }
+}
+
+@media print {
+  .chart-card .chart-wrap,
+  .chart-card.chart-expanded-one .chart-wrap {
+    height: 440px !important;
+    max-height: 440px !important;
+  }
+}
+</style>
+
+<script id="readable-auto-chart-final-script">
+(function () {
+  "use strict";
+
+  function clamp(n, min, max) {
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function getChart(canvas) {
+    try {
+      return window.Chart && Chart.getChart ? Chart.getChart(canvas) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function countUsefulLabels(chart) {
+    try {
+      const labels = chart.data && chart.data.labels;
+      return Array.isArray(labels) ? labels.length : 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  function automaticHeight(chart) {
+    const labels = countUsefulLabels(chart);
+    const datasets = chart && chart.data && Array.isArray(chart.data.datasets)
+      ? chart.data.datasets.length : 1;
+
+    /*
+      Enough room for axes, legend, tooltips and labels, but deliberately
+      capped so charts never become unnecessarily tall.
+    */
+    let h = 350;
+    if (labels > 8) h += Math.min(120, (labels - 8) * 9);
+    if (labels > 18) h += Math.min(60, (labels - 18) * 4);
+    if (datasets > 2) h += Math.min(35, (datasets - 2) * 12);
+
+    return clamp(h, 350, 520);
+  }
+
+  function improveAxes(chart) {
+    if (!chart || !chart.options) return;
+
+    const options = chart.options;
+    options.responsive = true;
+    options.maintainAspectRatio = false;
+
+    options.layout = options.layout || {};
+    options.layout.padding = options.layout.padding || {};
+    options.layout.padding.left = Math.max(Number(options.layout.padding.left) || 0, 6);
+    options.layout.padding.right = Math.max(Number(options.layout.padding.right) || 0, 10);
+    options.layout.padding.top = Math.max(Number(options.layout.padding.top) || 0, 8);
+    options.layout.padding.bottom = Math.max(Number(options.layout.padding.bottom) || 0, 8);
+
+    options.plugins = options.plugins || {};
+    options.plugins.legend = options.plugins.legend || {};
+    options.plugins.legend.labels = options.plugins.legend.labels || {};
+    options.plugins.legend.labels.font = Object.assign(
+      {},
+      options.plugins.legend.labels.font || {},
+      { size: 12 }
+    );
+    options.plugins.legend.labels.padding = Math.max(
+      Number(options.plugins.legend.labels.padding) || 0, 10
+    );
+
+    options.scales = options.scales || {};
+
+    Object.keys(options.scales).forEach(function (axisKey) {
+      const scale = options.scales[axisKey] || {};
+      scale.ticks = scale.ticks || {};
+
+      const isX = axisKey === "x" || scale.axis === "x";
+      const isY = axisKey === "y" || scale.axis === "y";
+
+      scale.ticks.font = Object.assign(
+        {},
+        scale.ticks.font || {},
+        { size: 12, weight: 500 }
+      );
+
+      scale.ticks.padding = Math.max(Number(scale.ticks.padding) || 0, 6);
+
+      if (isY) {
+        scale.ticks.maxTicksLimit = Math.max(
+          Number(scale.ticks.maxTicksLimit) || 0, 7
+        );
+      }
+
+      if (isX) {
+        const labelCount = countUsefulLabels(chart);
+
+        /*
+          Avoid unreadable X-axis labels:
+          - few labels: show all
+          - many labels: Chart.js can skip intelligently
+          - long labels: rotate rather than overlap
+        */
+        scale.ticks.autoSkip = labelCount > 12;
+        scale.ticks.maxTicksLimit = labelCount > 24 ? 12 : Math.min(
+          Math.max(labelCount, 2), 18
+        );
+        scale.ticks.maxRotation = 45;
+        scale.ticks.minRotation = labelCount > 8 ? 20 : 0;
+      }
+
+      options.scales[axisKey] = scale;
+    });
+
+    chart.options = options;
+  }
+
+  function configureCard(card) {
+    const canvas = card.querySelector("canvas");
+    const controls = card.querySelector(".chart-resize-controls");
+    const wrap = card.querySelector(".chart-wrap");
+    if (!canvas || !wrap) return;
+
+    let expandButton = controls && controls.querySelector(".chart-expand-one");
+
+    if (!expandButton) {
+      if (!controls) return;
+
+      expandButton = document.createElement("button");
+      expandButton.type = "button";
+      expandButton.className = "chart-expand-one";
+      expandButton.setAttribute("aria-label", "Expand chart");
+      controls.insertBefore(expandButton, controls.firstChild);
+
+      expandButton.addEventListener("click", function () {
+        const expanded = card.classList.toggle("chart-expanded-one");
+        expandButton.setAttribute(
+          "aria-label",
+          expanded ? "Collapse chart" : "Expand chart"
+        );
+
+        const chart = getChart(canvas);
+        requestAnimationFrame(function () {
+          if (chart) {
+            improveAxes(chart);
+            chart.resize();
+            chart.update("none");
+          }
+        });
+      });
+    }
+
+    const chart = getChart(canvas);
+    if (!chart) return;
+
+    improveAxes(chart);
+
+    /* Automatically choose a sensible, moderate height from chart content. */
+    if (!card.classList.contains("chart-expanded-one")) {
+      const h = automaticHeight(chart);
+      wrap.style.height = h + "px";
+      wrap.style.minHeight = h + "px";
+      wrap.style.maxHeight = "560px";
+    }
+
+    requestAnimationFrame(function () {
+      try {
+        chart.resize();
+        chart.update("none");
+      } catch (_) {}
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll(".chart-card").forEach(configureCard);
+  }
+
+  /*
+    Chart.js charts may be created after the page loads, so watch the app
+    and reconfigure only when chart canvases/cards appear.
+  */
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initAll);
+  } else {
+    initAll();
+  }
+
+  if (window.MutationObserver && document.body) {
+    let timer = null;
+    const observer = new MutationObserver(function () {
+      clearTimeout(timer);
+      timer = setTimeout(initAll, 120);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  window.addEventListener("resize", function () {
+    clearTimeout(window.__readableChartResizeTimer);
+    window.__readableChartResizeTimer = setTimeout(initAll, 180);
+  });
+})();
+</script>
