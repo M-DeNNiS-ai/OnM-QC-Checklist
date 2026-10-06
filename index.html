@@ -12450,3 +12450,341 @@ function AttachedWorkbookView(){
   window.addEventListener('resize',schedule);
 })();
 </script>
+
+
+<!-- DEFINITIVE READABILITY FIX
+     Uses a real scroll stage around the Chart.js canvas.
+     This is intentionally different from simply changing canvas CSS width:
+     Chart.js responsive sizing is controlled by its parent container, so the
+     stage itself receives the calculated width. This guarantees that labels,
+     grid positions and data points use the same category geometry. -->
+<style id="definitive-chart-scroll-stage">
+  .chart-card .chart-wrap{
+    position:relative !important;
+    width:100% !important;
+    height:340px !important;
+    min-height:340px !important;
+    max-height:460px !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    -webkit-overflow-scrolling:touch !important;
+    overscroll-behavior-x:contain;
+    scrollbar-width:auto;
+    scrollbar-color:rgba(90,105,125,.55) rgba(90,105,125,.10);
+  }
+
+  .chart-card.final-chart-expanded .chart-wrap{
+    height:400px !important;
+    min-height:400px !important;
+    max-height:460px !important;
+  }
+
+  .chart-card .wce-scroll-stage{
+    position:relative !important;
+    display:block !important;
+    height:100% !important;
+    min-height:300px !important;
+  }
+
+  .chart-card .wce-scroll-stage > canvas{
+    display:block !important;
+    position:relative !important;
+    width:100% !important;
+    height:100% !important;
+    max-width:none !important;
+    min-width:0 !important;
+  }
+
+  .chart-card .wce-scroll-hint{
+    position:sticky;
+    z-index:20;
+    left:0;
+    bottom:2px;
+    width:max-content;
+    max-width:calc(100% - 12px);
+    margin:0 0 2px 6px;
+    padding:3px 8px;
+    border:1px solid rgba(90,105,125,.20);
+    border-radius:999px;
+    background:rgba(255,255,255,.88);
+    backdrop-filter:blur(4px);
+    font-size:10px;
+    line-height:14px;
+    color:rgba(80,90,105,.78);
+    pointer-events:none;
+  }
+
+  @media(max-width:700px){
+    .chart-card .chart-wrap{
+      height:320px !important;
+      min-height:320px !important;
+    }
+    .chart-card.final-chart-expanded .chart-wrap{
+      height:380px !important;
+      min-height:380px !important;
+    }
+  }
+</style>
+
+<script id="definitive-chart-scroll-stage-js">
+(function(){
+  'use strict';
+
+  const FIX = {
+    hooked: new WeakSet(),
+
+    isDateLabel(v){
+      return /^(\d{4})-(\d{2})-(\d{2})$/.test(String(v ?? ''));
+    },
+
+    dateLabel(v){
+      const s=String(v ?? '');
+      const m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if(!m) return null;
+      const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]));
+      if(Number.isNaN(d.getTime())) return s;
+      return d.toLocaleDateString(undefined,{day:'2-digit',month:'short'});
+    },
+
+    displayLabel(v, count){
+      const s=String(v ?? '');
+      const date=this.dateLabel(s);
+      if(date) return date;
+
+      if(s.length<=18) return s;
+
+      const words=s.split(/\s+/);
+      const lines=[];
+      let line='';
+      words.forEach(word=>{
+        const next=line ? line+' '+word : word;
+        if(next.length>16 && line){
+          lines.push(line);
+          line=word;
+        }else{
+          line=next;
+        }
+      });
+      if(line) lines.push(line);
+      return lines.slice(0,3);
+    },
+
+    spacing(chart, expanded){
+      const labels=Array.isArray(chart.data?.labels) ? chart.data.labels : [];
+      const count=labels.length;
+      const type=String(chart.config?.type || '').toLowerCase();
+
+      /*
+       * This is the important part:
+       * the stage, not the canvas, becomes wide.
+       * Every category gets a fixed minimum horizontal lane.
+       */
+      const px =
+        expanded
+          ? (count >= 50 ? 128 :
+             count >= 40 ? 122 :
+             count >= 30 ? 116 :
+             count >= 20 ? 108 :
+             count >= 12 ? 100 :
+             count >= 8  ? 92 : 110)
+          : (count >= 50 ? 82 :
+             count >= 40 ? 78 :
+             count >= 30 ? 76 :
+             count >= 20 ? 72 :
+             count >= 12 ? 68 :
+             count >= 8  ? 62 : 0);
+
+      const wrap=chart.canvas.closest('.chart-wrap');
+      if(!wrap) return;
+
+      const viewport=Math.max(360,wrap.clientWidth || 760);
+      const stage=chart.canvas.parentElement;
+
+      if(stage && stage.classList.contains('wce-scroll-stage')){
+        const width=px ? Math.max(viewport, count*px) : viewport;
+        stage.style.width=width+'px';
+        stage.style.minWidth=width+'px';
+        stage.style.maxWidth='none';
+      }
+
+      const x=chart.options.scales?.x;
+      if(x){
+        /*
+         * Line/scatter: offset false means the first and last points sit
+         * directly on their category ticks.
+         * Bar: offset true gives each bar a centered category lane.
+         */
+        x.offset = type==='bar';
+
+        x.ticks=Object.assign({},x.ticks||{},{
+          autoSkip:false,
+          maxTicksLimit:undefined,
+          sampleSize:count,
+          padding:10,
+          maxRotation: count>6 ? 35 : 0,
+          minRotation: count>6 ? 25 : 0,
+          align:'center',
+          color:(x.ticks||{}).color || '#667085',
+          font:Object.assign({},(x.ticks||{}).font||{},{
+            size:11,
+            weight:'500'
+          }),
+          callback:function(value,index){
+            const raw=labels[index];
+            return raw===undefined ? '' : FIX.displayLabel(raw,count);
+          }
+        });
+
+        x.grid=Object.assign({},x.grid||{},{
+          offset:type==='bar',
+          drawTicks:true
+        });
+      }
+
+      /* Compact visual marks inside the wider category lanes. */
+      if(type==='bar'){
+        (chart.data.datasets||[]).forEach(ds=>{
+          ds.barPercentage=0.34;
+          ds.categoryPercentage=0.52;
+          ds.maxBarThickness=28;
+          ds.borderRadius=3;
+        });
+      }
+
+      if(type==='line'){
+        (chart.data.datasets||[]).forEach(ds=>{
+          ds.pointRadius=count>40 ? 2.5 : 3.5;
+          ds.pointHoverRadius=7;
+          ds.pointHitRadius=14;
+          ds.borderWidth=2.2;
+        });
+      }
+    },
+
+    buildStage(chart){
+      const canvas=chart.canvas;
+      const wrap=canvas.closest('.chart-wrap');
+      if(!canvas || !wrap) return null;
+
+      let stage=canvas.parentElement;
+      if(!stage || !stage.classList.contains('wce-scroll-stage')){
+        stage=document.createElement('div');
+        stage.className='wce-scroll-stage';
+
+        /* Move the existing chart canvas into the stage without recreating it. */
+        wrap.insertBefore(stage,canvas);
+        stage.appendChild(canvas);
+      }
+
+      if(!wrap.querySelector('.wce-scroll-hint')){
+        const hint=document.createElement('div');
+        hint.className='wce-scroll-hint';
+        hint.textContent='Scroll horizontally to read all X-axis labels';
+        wrap.appendChild(hint);
+      }
+
+      return stage;
+    },
+
+    configure(chart){
+      if(!chart || !chart.canvas || !chart.data) return;
+
+      const card=chart.canvas.closest('.chart-card');
+      if(!card) return;
+
+      const stage=this.buildStage(chart);
+      if(!stage) return;
+
+      chart.options.responsive=true;
+      chart.options.maintainAspectRatio=false;
+      chart.options.animation=false;
+
+      const expanded=card.classList.contains('final-chart-expanded');
+      this.spacing(chart,expanded);
+
+      /*
+       * Critical Chart.js behavior:
+       * let the stage determine the responsive chart dimensions.
+       * Do not repeatedly assign canvas.width/canvas.height ourselves.
+       */
+      chart.canvas.style.width='100%';
+      chart.canvas.style.height='100%';
+      chart.canvas.style.minWidth='0';
+      chart.canvas.style.maxWidth='none';
+
+      try{
+        chart.resize();
+        chart.update('none');
+      }catch(e){}
+
+      /* The stage may be resized by Chart.js one frame later. Re-apply once. */
+      requestAnimationFrame(()=>{
+        try{
+          this.spacing(chart,expanded);
+          chart.resize();
+          chart.update('none');
+        }catch(e){}
+      });
+    },
+
+    hookCard(card){
+      if(!card || this.hooked.has(card)) return;
+      const canvas=card.querySelector('canvas');
+      if(!canvas || typeof Chart==='undefined') return;
+
+      let chart;
+      try{ chart=Chart.getChart(canvas); }catch(e){ return; }
+      if(!chart) return;
+
+      this.hooked.add(card);
+
+      const button=card.querySelector('.final-chart-expand');
+      if(button){
+        button.addEventListener('click',()=>{
+          setTimeout(()=>this.configure(chart),60);
+          setTimeout(()=>this.configure(chart),250);
+          setTimeout(()=>this.configure(chart),700);
+        });
+      }
+
+      this.configure(chart);
+
+      /* Keep the chart's internal stage synchronized with card width. */
+      if(typeof ResizeObserver!=='undefined'){
+        const ro=new ResizeObserver(()=>{
+          clearTimeout(card.__wceFinalResize);
+          card.__wceFinalResize=setTimeout(()=>this.configure(chart),80);
+        });
+        ro.observe(card);
+        card.__wceFinalRO=ro;
+      }
+    },
+
+    scan(){
+      if(typeof Chart==='undefined') return;
+      document.querySelectorAll('.chart-card').forEach(card=>this.hookCard(card));
+    }
+  };
+
+  window.DefinitiveChartScrollFix=FIX;
+
+  function boot(){
+    FIX.scan();
+    setTimeout(()=>FIX.scan(),250);
+    setTimeout(()=>FIX.scan(),800);
+    setTimeout(()=>FIX.scan(),1600);
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',boot);
+  }else{
+    boot();
+  }
+
+  new MutationObserver(()=>{
+    clearTimeout(window.__definitiveChartScan);
+    window.__definitiveChartScan=setTimeout(()=>FIX.scan(),100);
+  }).observe(document.documentElement,{childList:true,subtree:true});
+
+})();
+</script>
