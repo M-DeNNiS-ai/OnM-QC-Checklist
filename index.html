@@ -12788,3 +12788,438 @@ function AttachedWorkbookView(){
 
 })();
 </script>
+
+
+<!-- ================================================================
+     FINAL CHART FIX — REAL HORIZONTAL SCROLLING + TRUE LABEL/POINT ALIGNMENT
+     This is the final rendering layer. It deliberately overrides earlier
+     chart-sizing layers because Chart.js responsive canvas sizing was
+     causing the X-axis labels to be compressed into the viewport.
+     Existing application data, chart configs, workflows and interactions
+     are preserved.
+     ================================================================ -->
+<style id="final-world-class-chart-fix">
+  .chart-card .chart-wrap{
+    width:100% !important;
+    height:340px !important;
+    min-height:340px !important;
+    max-height:460px !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    display:block !important;
+    position:relative !important;
+    box-sizing:border-box !important;
+    scrollbar-width:thin !important;
+    -webkit-overflow-scrolling:touch !important;
+    overscroll-behavior-x:contain !important;
+  }
+
+  .chart-card.final-chart-expanded .chart-wrap{
+    height:400px !important;
+    min-height:400px !important;
+    max-height:460px !important;
+  }
+
+  /* The viewport is the visible window. The content becomes genuinely wider
+     than it, so browser scrolling—not CSS canvas compression—handles long axes. */
+  .chart-card .wc-final-viewport{
+    width:100% !important;
+    height:100% !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    position:relative !important;
+    display:block !important;
+  }
+
+  .chart-card .wc-final-content{
+    height:100% !important;
+    position:relative !important;
+    display:block !important;
+  }
+
+  .chart-card .wc-final-content canvas{
+    display:block !important;
+    position:relative !important;
+    margin:0 !important;
+    padding:0 !important;
+    max-width:none !important;
+  }
+
+  .chart-card .wc-final-scroll-note{
+    position:sticky !important;
+    left:8px !important;
+    bottom:4px !important;
+    z-index:30 !important;
+    display:block !important;
+    width:max-content !important;
+    max-width:calc(100% - 16px) !important;
+    padding:3px 8px !important;
+    margin:0 0 3px 8px !important;
+    border:1px solid rgba(90,105,125,.20) !important;
+    border-radius:999px !important;
+    background:rgba(255,255,255,.90) !important;
+    backdrop-filter:blur(4px) !important;
+    font-size:10px !important;
+    line-height:14px !important;
+    color:rgba(70,80,95,.78) !important;
+    pointer-events:none !important;
+  }
+
+  @media(max-width:700px){
+    .chart-card .chart-wrap{
+      height:320px !important;
+      min-height:320px !important;
+    }
+    .chart-card.final-chart-expanded .chart-wrap{
+      height:380px !important;
+      min-height:380px !important;
+    }
+  }
+</style>
+
+<script id="final-world-class-chart-fix-js">
+(function(){
+  'use strict';
+
+  const FINAL_CHARTS = {
+    cards: new WeakSet(),
+    timer: null,
+
+    shortDate(value){
+      const s=String(value ?? '');
+      let m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if(!m) m=s.match(/^(\d{2})-(\w{3})-(\d{2,4})$/i);
+
+      if(/^\d{4}-\d{2}-\d{2}$/.test(s)){
+        const d=new Date(Number(s.slice(0,4)),Number(s.slice(5,7))-1,Number(s.slice(8,10)));
+        if(!Number.isNaN(d.getTime())){
+          return [
+            d.toLocaleDateString(undefined,{day:'2-digit'}),
+            d.toLocaleDateString(undefined,{month:'short'})
+          ];
+        }
+      }
+      return null;
+    },
+
+    labelLines(value){
+      const s=String(value ?? '');
+      const date=this.shortDate(s);
+      if(date) return date;
+
+      /* Common ISO week labels remain compact but unambiguous. */
+      if(/^\d{4}-W\d{1,2}$/i.test(s)){
+        return [s.slice(0,4),s.slice(5)];
+      }
+
+      if(s.length<=14) return s;
+
+      const words=s.split(/\s+/);
+      const lines=[];
+      let line='';
+      words.forEach(word=>{
+        const next=line ? line+' '+word : word;
+        if(next.length>14 && line){
+          lines.push(line);
+          line=word;
+        }else{
+          line=next;
+        }
+      });
+      if(line) lines.push(line);
+      return lines.slice(0,3);
+    },
+
+    fullLabel(value){
+      return String(value ?? '');
+    },
+
+    chartHeight(card){
+      return card.classList.contains('final-chart-expanded') ? 400 : 340;
+    },
+
+    pixelsPerCategory(chart,expanded){
+      const count=Array.isArray(chart.data?.labels) ? chart.data.labels.length : 0;
+      if(count<=1) return 0;
+
+      /* Deliberately generous spacing. The point is to READ the axis,
+         not to make all 30 days fit into a 700px card. */
+      if(expanded){
+        if(count>=60) return 125;
+        if(count>=45) return 120;
+        if(count>=30) return 115;
+        if(count>=20) return 110;
+        if(count>=12) return 105;
+        return 100;
+      }
+
+      if(count>=60) return 82;
+      if(count>=45) return 78;
+      if(count>=30) return 74;
+      if(count>=20) return 70;
+      if(count>=12) return 66;
+      return 0;
+    },
+
+    setupContainer(chart){
+      const canvas=chart.canvas;
+      const wrap=canvas.closest('.chart-wrap');
+      if(!canvas || !wrap) return null;
+
+      let viewport=wrap.querySelector('.wc-final-viewport');
+      let content=wrap.querySelector('.wc-final-content');
+
+      if(!viewport){
+        viewport=document.createElement('div');
+        viewport.className='wc-final-viewport';
+
+        content=document.createElement('div');
+        content.className='wc-final-content';
+
+        /* Preserve the actual canvas and its existing Chart.js listeners. */
+        const parent=canvas.parentNode;
+        parent.insertBefore(viewport,canvas);
+        viewport.appendChild(content);
+        content.appendChild(canvas);
+
+        /* Remove any previous scroll-stage wrappers that may now be empty. */
+        Array.from(wrap.children).forEach(el=>{
+          if(el!==viewport && el.classList?.contains('wce-scroll-stage')){
+            while(el.firstChild){
+              content.appendChild(el.firstChild);
+            }
+            el.remove();
+          }
+        });
+      }else if(!content){
+        content=document.createElement('div');
+        content.className='wc-final-content';
+        viewport.appendChild(content);
+        content.appendChild(canvas);
+      }else if(canvas.parentElement!==content){
+        content.appendChild(canvas);
+      }
+
+      let note=wrap.querySelector('.wc-final-scroll-note');
+      if(!note){
+        note=document.createElement('div');
+        note.className='wc-final-scroll-note';
+        note.textContent='Scroll horizontally to read every label';
+        wrap.appendChild(note);
+      }
+
+      return {wrap,viewport,content,canvas};
+    },
+
+    configure(chart){
+      if(!chart || !chart.canvas || !chart.data) return;
+
+      const card=chart.canvas.closest('.chart-card');
+      if(!card) return;
+
+      const parts=this.setupContainer(chart);
+      if(!parts) return;
+
+      const {wrap,viewport,content,canvas}=parts;
+      const labels=Array.isArray(chart.data.labels) ? chart.data.labels : [];
+      const count=labels.length;
+      const expanded=card.classList.contains('final-chart-expanded');
+      const height=this.chartHeight(card);
+      const per=this.pixelsPerCategory(chart,expanded);
+      const viewportWidth=Math.max(360,viewport.clientWidth || wrap.clientWidth || 760);
+
+      /* TRUE fixed-size Chart.js mode.
+         This is the key correction: Chart.js is no longer allowed to
+         squeeze the canvas to the card width. */
+      chart.options.responsive=false;
+      chart.options.maintainAspectRatio=false;
+      chart.options.animation=false;
+
+      const targetWidth=per
+        ? Math.max(viewportWidth,Math.ceil(count*per))
+        : viewportWidth;
+
+      content.style.width=targetWidth+'px';
+      content.style.minWidth=targetWidth+'px';
+      content.style.maxWidth='none';
+      content.style.height=height+'px';
+
+      canvas.style.width=targetWidth+'px';
+      canvas.style.height=height+'px';
+      canvas.style.minWidth=targetWidth+'px';
+      canvas.style.maxWidth='none';
+
+      const x=chart.options.scales?.x;
+      if(x){
+        const type=String(chart.config?.type || '').toLowerCase();
+
+        x.type='category';
+        x.offset=(type==='bar');
+
+        x.ticks=Object.assign({},x.ticks||{},{
+          autoSkip:false,
+          maxTicksLimit:undefined,
+          sampleSize:count,
+          includeBounds:true,
+          padding:8,
+          maxRotation:0,
+          minRotation:0,
+          align:'center',
+          color:(x.ticks||{}).color || '#667085',
+          font:Object.assign({},(x.ticks||{}).font||{},{
+            size:11,
+            weight:'500'
+          }),
+          callback:function(value,index){
+            return FINAL_CHARTS.labelLines(labels[index]);
+          }
+        });
+
+        x.grid=Object.assign({},x.grid||{},{
+          offset:(type==='bar'),
+          drawTicks:true,
+          color:(x.grid||{}).color || 'rgba(100,115,135,.16)'
+        });
+
+        x.border=Object.assign({},x.border||{},{
+          color:(x.border||{}).color || 'rgba(100,115,135,.40)'
+        });
+      }
+
+      const y=chart.options.scales?.y;
+      if(y){
+        y.ticks=Object.assign({},y.ticks||{},{
+          maxTicksLimit:7,
+          padding:8,
+          color:(y.ticks||{}).color || '#667085',
+          font:Object.assign({},(y.ticks||{}).font||{},{
+            size:11,
+            weight:'500'
+          })
+        });
+      }
+
+      /* Keep visual marks compact inside the generous category spacing. */
+      const type=String(chart.config?.type || '').toLowerCase();
+      if(type==='bar'){
+        (chart.data.datasets||[]).forEach(ds=>{
+          ds.barPercentage=0.34;
+          ds.categoryPercentage=0.50;
+          ds.maxBarThickness=28;
+          ds.borderRadius=3;
+          ds.borderSkipped=false;
+        });
+      }
+
+      if(type==='line'){
+        (chart.data.datasets||[]).forEach(ds=>{
+          ds.pointRadius=count>45 ? 2.5 : 3.5;
+          ds.pointHoverRadius=7;
+          ds.pointHitRadius=14;
+          ds.borderWidth=2.2;
+        });
+      }
+
+      try{
+        /*
+         * Chart.resize(width,height) is used explicitly. This makes the
+         * category geometry, grid, labels and points all share the exact
+         * same wide coordinate system.
+         */
+        chart.resize(targetWidth,height);
+        chart.update('none');
+      }catch(e){
+        try{
+          chart.canvas.width=targetWidth;
+          chart.canvas.height=height;
+          chart.update('none');
+        }catch(ignore){}
+      }
+
+      /* Keep horizontal scroll position stable when a chart is re-rendered. */
+      if(viewport.__finalScrollLeft!=null){
+        viewport.scrollLeft=Math.min(
+          viewport.__finalScrollLeft,
+          Math.max(0,viewport.scrollWidth-viewport.clientWidth)
+        );
+      }
+    },
+
+    hook(card){
+      const canvas=card.querySelector('canvas');
+      if(!canvas || typeof Chart==='undefined') return;
+
+      let chart;
+      try{ chart=Chart.getChart(canvas); }catch(e){ return; }
+      if(!chart) return;
+
+      this.configure(chart);
+
+      if(this.cards.has(card)) return;
+      this.cards.add(card);
+
+      const parts=this.setupContainer(chart);
+      const viewport=parts?.viewport;
+
+      if(viewport){
+        viewport.addEventListener('scroll',()=>{
+          viewport.__finalScrollLeft=viewport.scrollLeft;
+        },{passive:true});
+      }
+
+      const button=card.querySelector('.final-chart-expand');
+      if(button){
+        button.addEventListener('click',()=>{
+          setTimeout(()=>this.configure(chart),40);
+          setTimeout(()=>this.configure(chart),180);
+          setTimeout(()=>this.configure(chart),500);
+        });
+      }
+    },
+
+    scan(){
+      if(typeof Chart==='undefined') return;
+      document.querySelectorAll('.chart-card').forEach(card=>this.hook(card));
+    }
+  };
+
+  window.FinalWorldClassCharts=FINAL_CHARTS;
+
+  /* Neutralize the older width setters so they cannot immediately undo
+     the fixed-width scroll model. */
+  try{
+    if(window.WorldClassCharts){
+      window.WorldClassCharts.setCanvasWidth=function(){};
+    }
+    if(window.DefinitiveChartScrollFix){
+      window.DefinitiveChartScrollFix.spacing=function(){};
+    }
+    window.applyScrollableChartXAxis=function(){};
+  }catch(e){}
+
+  function boot(){
+    FINAL_CHARTS.scan();
+    setTimeout(()=>FINAL_CHARTS.scan(),100);
+    setTimeout(()=>FINAL_CHARTS.scan(),400);
+    setTimeout(()=>FINAL_CHARTS.scan(),900);
+    setTimeout(()=>FINAL_CHARTS.scan(),1800);
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',boot);
+  }else{
+    boot();
+  }
+
+  new MutationObserver(()=>{
+    clearTimeout(FINAL_CHARTS.timer);
+    FINAL_CHARTS.timer=setTimeout(()=>FINAL_CHARTS.scan(),100);
+  }).observe(document.documentElement,{childList:true,subtree:true});
+
+  window.addEventListener('resize',()=>{
+    clearTimeout(FINAL_CHARTS.timer);
+    FINAL_CHARTS.timer=setTimeout(()=>FINAL_CHARTS.scan(),180);
+  });
+
+})();
+</script>
