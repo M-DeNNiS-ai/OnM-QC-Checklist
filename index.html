@@ -12331,3 +12331,122 @@ function AttachedWorkbookView(){
   });
 })();
 </script>
+
+
+<!-- EXTRA-WIDE HORIZONTAL EXPAND
+     Expand now gives substantially more X-axis room per category.
+     Vertical size stays deliberately restrained. -->
+<style id="extra-wide-horizontal-expand">
+  .chart-card.final-chart-expanded .chart-wrap{
+    height:clamp(340px, 45vh, 460px) !important;
+    min-height:340px !important;
+    max-height:460px !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+  }
+
+  .chart-card.final-chart-expanded .chart-wrap > canvas{
+    height:100% !important;
+    max-width:none !important;
+  }
+</style>
+
+<script id="extra-wide-horizontal-expand-js">
+(function(){
+  'use strict';
+
+  function applyExtraWide(card){
+    if(!card || !card.classList.contains('chart-card')) return;
+    const canvas=card.querySelector('canvas');
+    if(!canvas || typeof Chart==='undefined') return;
+
+    let chart;
+    try{ chart=Chart.getChart(canvas); }catch(e){ return; }
+    if(!chart) return;
+
+    const wrap=canvas.closest('.chart-wrap');
+    if(!wrap) return;
+
+    const labels=Array.isArray(chart.data?.labels) ? chart.data.labels : [];
+    const count=labels.length;
+    const viewport=wrap.clientWidth || 800;
+
+    if(card.classList.contains('final-chart-expanded')){
+      /*
+        Extra-wide mode:
+        100px/category for large datasets, up to 120px/category for
+        very dense labels. This makes the horizontal scroll the primary
+        mechanism instead of shrinking labels.
+      */
+      const pxPerLabel =
+        count >= 50 ? 120 :
+        count >= 40 ? 115 :
+        count >= 30 ? 110 :
+        count >= 20 ? 105 :
+        count >= 12 ? 98 :
+        count >= 8  ? 90 : 0;
+
+      const targetWidth=pxPerLabel
+        ? Math.max(viewport, count*pxPerLabel)
+        : Math.max(viewport, 1200);
+
+      canvas.style.width=targetWidth+'px';
+      canvas.style.minWidth=targetWidth+'px';
+      canvas.style.maxWidth='none';
+
+      const x=chart.options.scales?.x;
+      if(x){
+        x.ticks=Object.assign({},x.ticks||{},{
+          autoSkip:false,
+          maxTicksLimit:undefined,
+          maxRotation:25,
+          minRotation:0,
+          padding:12,
+          align:'center'
+        });
+      }
+
+      (chart.data.datasets||[]).forEach(ds=>{
+        if(String(chart.config?.type||'').toLowerCase()==='bar'){
+          ds.barPercentage=0.28;
+          ds.categoryPercentage=0.46;
+          ds.maxBarThickness=24;
+        }
+      });
+    }
+
+    try{
+      chart.resize();
+      chart.update('none');
+    }catch(e){}
+  }
+
+  function applyAll(){
+    document.querySelectorAll('.chart-card').forEach(applyExtraWide);
+  }
+
+  function schedule(){
+    clearTimeout(window.__extraWideTimer);
+    window.__extraWideTimer=setTimeout(applyAll,100);
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',()=>{
+      setTimeout(applyAll,150);
+      setTimeout(applyAll,700);
+      setTimeout(applyAll,1500);
+    });
+  }else{
+    setTimeout(applyAll,150);
+    setTimeout(applyAll,700);
+    setTimeout(applyAll,1500);
+  }
+
+  new MutationObserver(schedule).observe(document.documentElement,{
+    childList:true,
+    subtree:true
+  });
+
+  window.addEventListener('resize',schedule);
+})();
+</script>
