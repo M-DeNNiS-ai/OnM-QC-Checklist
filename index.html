@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -3713,7 +3713,7 @@ function restoreBqcNavigationState(user){
 
   const allowed={
     omtech:['main','progress','rca','knowledge','sop','myclosed','analytics','notes','imports','search'],
-    omadmin:['dashboard','progress','analytics','integrity','history','notes','rca','knowledge','imports','search'],
+    omadmin:['manager','dashboard','progress','analytics','integrity','history','notes','rca','knowledge','imports','search'],
     plantinv:['dashboard','progress','daily','qualityChecks','stock','newStock','warrantyStock','operations','notes','integrity','knowledge','sop','imports','search'],
     quality:['warranty','bsa','progress','overview','ledger','analytics','integrity','notes','rca','knowledge','imports','search'],
     bsa:['activity','newcase','progress','rca','knowledge','analytics','notes','history','imports','search']
@@ -4659,7 +4659,7 @@ function Header(){
     el('h1',{},'Battery QC'),
     el('p',{}, STATE.role==='omtech' ? STAGE_LABEL[STATE.stage] : (SECTOR_LABEL[STATE.role]||''))
   ]);
-  const ROLE_TAGS = { omadmin:'O&M MANAGER', plantinv:'PLANT & INVENTORY', quality:'QUALITY ENGINEER', bsa:'BSA ENGINEER' };
+  const ROLE_TAGS = { omadmin:'OVERALL MANAGER', plantinv:'PLANT & INVENTORY', quality:'QUALITY ENGINEER', bsa:'BSA ENGINEER' };
   const roleTag = STATE.role==='omtech' ? ('QA TECH · STAGE '+STATE.stage) : (ROLE_TAGS[STATE.role] || STATE.role.toUpperCase());
   const user = el('div',{class:'user-info'},[
     el('span',{class:'badge'}, roleTag),
@@ -4780,9 +4780,10 @@ function View(){
     else if(STATE.view==='imports') content.appendChild(AttachedWorkbookView());
     else content.appendChild(OmTechDocketView());
   } else if(STATE.role==='omadmin'){
-    wrap.appendChild(Nav(['dashboard','progress','analytics','integrity','history','notes','rca','knowledge','imports'], {dashboard:'Pipeline Oversight', progress:'Daily Progress', analytics:'Analytics', integrity:'Data Integrity', history:'Full Chain History', notes:'NOTES CENTER', rca:'RCA Register', knowledge:'5S & Battery Insights', imports:'ATTACHED DATA'}));
+    wrap.appendChild(Nav(['manager','dashboard','progress','analytics','integrity','history','notes','rca','knowledge','imports'], {manager:'MANAGERS VIEW', dashboard:'Pipeline Oversight', progress:'Daily Progress', analytics:'Analytics', integrity:'Data Integrity', history:'Full Chain History', notes:'NOTES CENTER', rca:'RCA Register', knowledge:'5S & Battery Insights', imports:'ATTACHED DATA'}));
     wrap.appendChild(SearchBar());
     if(STATE.view==='search') content.appendChild(SearchResultsView());
+    else if(STATE.view==='manager') content.appendChild(ManagersOverallView());
     else if(STATE.view==='progress') content.appendChild(DailyWorkProgressView());
     else if(STATE.view==='analytics') content.appendChild(OmAdminAnalyticsView());
     else if(STATE.view==='integrity') content.appendChild(DataIntegrityView());
@@ -5904,6 +5905,99 @@ function OmTechAnalyticsView(){
  
 /* ==================== O&M ADMIN — oversight of the chain ==================== */
  
+
+function ManagersOverallView(){
+  const c=el('div',{class:'manager-view'});
+  const now=todayStr();
+  const om=STATE.omRecords||[], bsa=STATE.bsaRecords||[], warranty=STATE.warrantyRecords||[];
+  const qc=STATE.plantQualityChecks||[], daily=STATE.dailyStockRecords||[], stock=STATE.plantStockRecords||[];
+  const issues=STATE.qualityIssueRecords||[], daylogs=STATE.dayLogRecords||[], iotG=STATE.iotGiven||[], iotR=STATE.iotReturned||[];
+  const openOm=om.filter(r=>!String(r.status||'').startsWith('CLOSED'));
+  const capa=om.filter(r=>(parseInt(r.capaCycles)||0)>0 && !String(r.status||'').startsWith('CLOSED'));
+  const activeWarranty=warranty.filter(w=>warrantyIsActiveStatus(w.status));
+  const openBsa=bsa.filter(r=>!['Returned to O&M for Deployment','Scrapped'].includes(r.status));
+  const passQc=qc.filter(r=>String(r.result||'').toUpperCase()==='PASS').length;
+  const failQc=qc.filter(r=>String(r.result||'').toUpperCase()==='FAIL').length;
+  const incompleteQc=qc.filter(r=>String(r.result||'').toUpperCase()==='INCOMPLETE').length;
+  const iotGiven=iotG.reduce((a,r)=>a+(parseInt(r.quantity)||0),0), iotReturned=iotR.reduce((a,r)=>a+(parseInt(r.quantity)||0),0);
+  const iotBalance=iotGiven-iotReturned;
+  const latestDaily=[...daily].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).pop();
+  const ledger=computeStockLedger(stock); const latestLedger=ledger.length?ledger[ledger.length-1]:null;
+  const totalQualityIssues=issues.reduce((a,r)=>a+(parseInt(r.count)||0),0);
+  const todayLogs=daylogs.filter(r=>String(r.date||'')===now);
+
+  c.appendChild(el('div',{class:'card manager-hero'},[
+    el('div',{style:'display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;'},[
+      el('div',{},[
+        el('div',{class:'sector-tag'},'EXECUTIVE OPERATIONS CONTROL'),
+        el('h2',{},'Overall Managers View'),
+        el('div',{class:'sub'},'A read-only command centre for the O&M, Plant & Inventory, Quality and BSA operation. Use the operational menus for edits.')
+      ]),
+      el('button',{class:'btn-primary',onClick:async()=>{await autoRefreshDocket();toast('✓ Manager data refreshed');}},'↻ Refresh Now')
+    ])
+  ]));
+
+  const kpi=el('div',{class:'stat-grid manager-kpis'});
+  [[openOm.length,'O&M Open Pipeline'],[capa.length,'Open CAPA'],[activeWarranty.length,'Active Warranty'],[openBsa.length,'Open BSA'],[passQc,'QC Passed'],[failQc,'QC Failed'],[iotBalance,'IoT Outstanding'],[totalQualityIssues,'Tracked Quality Issues']].forEach(([n,l])=>kpi.appendChild(statBox(n,l)));
+  c.appendChild(kpi);
+
+  const grid=el('div',{class:'grid manager-dept-grid'});
+  function dept(title,sub,stats,view,label){
+    const card=el('div',{class:'card manager-dept'});
+    card.appendChild(el('div',{style:'display:flex;justify-content:space-between;gap:8px;align-items:flex-start;'},[
+      el('div',{},[el('h3',{},title),el('div',{class:'sub'},sub)]),
+      el('button',{class:'btn-sm',onClick:()=>{STATE.view=view;saveBqcUiState();render();}},label)
+    ]));
+    const sg=el('div',{class:'mini-stat-grid'});
+    stats.forEach(([n,l])=>{const x=el('div',{class:'mini-stat'},[el('strong',{},String(n)),el('span',{},l)]);sg.appendChild(x);});
+    card.appendChild(sg); return card;
+  }
+  grid.appendChild(dept('O&M Repair Chain','Repairs, stage flow and corrective action',[[om.length,'Total intakes'],[openOm.length,'Open'],[capa.length,'CAPA'],[om.filter(r=>r.status==='CLOSED_PASS').length,'Passed']], 'dashboard','Open O&M'));
+  grid.appendChild(dept('Plant & Inventory','Daily stock, movement and quality',[[latestDaily?computeDailyStockGrandTotal(latestDaily):0,'Latest daily stock'],[latestLedger?latestLedger.totals.closing:0,'OEM closing stock'],[totalQualityIssues,'Quality issues'],[qc.length,'QC checks']], 'manager','View Plant Summary'));
+  grid.appendChild(dept('Quality','Warranty and quality-control exceptions',[[activeWarranty.length,'Active warranty'],[passQc,'QC pass'],[failQc,'QC fail'],[incompleteQc,'QC incomplete']], 'manager','View Quality Summary'));
+  grid.appendChild(dept('BSA / Escalations','Cases requiring specialist action',[[bsa.length,'Total cases'],[openBsa.length,'Open'],[bsa.filter(r=>!r.assignedEngineer && !['Returned to O&M for Deployment','Scrapped'].includes(r.status)).length,'Unassigned'],[bsa.filter(r=>r.status==='Scrapped').length,'Scrapped']], 'rca','Open RCA'));
+  c.appendChild(grid);
+
+  const alertCard=el('div',{class:'card'});
+  alertCard.appendChild(el('h3',{},'Management Attention Queue'));
+  const alerts=[];
+  if(openOm.length) alerts.push(['warn',`${openOm.length} O&M repair record(s) remain open.`,'dashboard']);
+  if(capa.length) alerts.push(['capa',`${capa.length} open repair record(s) are under CAPA.`,'analytics']);
+  if(activeWarranty.length) alerts.push(['warn',`${activeWarranty.length} active warranty record(s) require visibility.`,'analytics']);
+  if(openBsa.length) alerts.push(['capa',`${openBsa.length} BSA case(s) are still open.`,'rca']);
+  if(failQc) alerts.push(['err',`${failQc} Plant Quality Check(s) are marked FAIL.`,'manager']);
+  if(incompleteQc) alerts.push(['warn',`${incompleteQc} Plant Quality Check(s) are incomplete.`,'manager']);
+  if(iotBalance>0) alerts.push(['warn',`${iotBalance} IoT unit(s) are outstanding from the issue/return balance.`,'manager']);
+  if(!latestDaily || String(latestDaily.date||'')!==now) alerts.push(['warn','No daily plant stock entry is recorded for today.','daily']);
+  if(!alerts.length) alerts.push(['ok','No major management exceptions detected in the loaded operational data.','manager']);
+  alerts.slice(0,12).forEach(([kind,msg,view])=>{
+    const b=el('button',{class:'manager-alert '+kind,onClick:()=>{if(view==='manager')return; STATE.view=view;saveBqcUiState();render();}},[
+      el('span',{class:'manager-alert-dot'},kind==='err'?'!':kind==='capa'?'↗':kind==='ok'?'✓':'•'),el('span',{},msg),el('span',{style:'margin-left:auto;opacity:.65;'},view==='manager'?'':'Open →')
+    ]); alertCard.appendChild(b);
+  });
+  c.appendChild(alertCard);
+
+  const bottom=el('div',{class:'grid manager-bottom-grid'});
+  const inv=el('div',{class:'card'}); inv.appendChild(el('h3',{},'Inventory Snapshot')); inv.appendChild(el('div',{class:'sub'},latestDaily?`Latest daily physical count: ${formatNamanveDate(latestDaily.date)}`:'No daily count available.'));
+  if(latestDaily){
+    const g=el('div',{class:'mini-stat-grid'}); g.appendChild(el('div',{class:'mini-stat'},[el('strong',{},String(computeDailyStockGrandTotal(latestDaily))),el('span',{},'Total batteries')]));
+    g.appendChild(el('div',{class:'mini-stat'},[el('strong',{},String(latestDaily.qualityIssues||0)),el('span',{},'Quality issues')]));
+    g.appendChild(el('div',{class:'mini-stat'},[el('strong',{},String(latestDaily.activeBatteries||0)),el('span',{},'Active batteries')]));
+    inv.appendChild(g);
+  }
+  if(latestLedger) inv.appendChild(el('div',{class:'sync-line'},`OEM ledger latest: ${formatNamanveDate(latestLedger.date)} · closing stock ${latestLedger.totals.closing}`));
+  bottom.appendChild(inv);
+
+  const activity=el('div',{class:'card'}); activity.appendChild(el('h3',{},'Today & Recent Activity'));
+  if(todayLogs.length){ todayLogs.slice(-5).reverse().forEach(r=>activity.appendChild(el('div',{class:'sop-box'},[el('strong',{},r.enteredBy||'Operations'),el('div',{class:'meta'},r.notes||r.pending||'Daily note recorded.')]))) }
+  else activity.appendChild(el('div',{class:'empty-note'},'No day-log entries for today.'));
+  activity.appendChild(el('div',{class:'sync-line'},`QC checks recorded: ${qc.length} · BSA cases: ${bsa.length} · Warranty records: ${warranty.length}`));
+  bottom.appendChild(activity);
+  c.appendChild(bottom);
+  c.appendChild(SharedOperationalSnapshotCard('Cross-Sector Operational Snapshot'));
+  return c;
+}
+
 function OmDashboardView(){
   const container = el('div');
   const introCard = el('div',{class:'card'});
@@ -10142,3 +10236,535 @@ function AttachedWorkbookView(){
 </script>
 </body>
 </html>
+
+
+<!-- ================================================================
+     READABILITY + INTERACTIVE CHART UPGRADE
+     Additive layer only: existing data, workflows and functions are preserved.
+     ================================================================ -->
+<style id="readability-interactive-upgrade">
+  :root{
+    --ri-text-size: 1;
+    --ri-chart-height: 360px;
+    --ri-focus: #0b63ce;
+  }
+
+  /* Global readability */
+  body.ri-readable{
+    font-size: calc(14px * var(--ri-text-size));
+  }
+  body.ri-readable .sub,
+  body.ri-readable .meta,
+  body.ri-readable .server-badge,
+  body.ri-readable .search-hint{
+    font-size: calc(12px * var(--ri-text-size)) !important;
+    line-height: 1.55 !important;
+  }
+  body.ri-readable label,
+  body.ri-readable .status-chip,
+  body.ri-readable .badge{
+    font-size: calc(11px * var(--ri-text-size)) !important;
+  }
+  body.ri-readable input,
+  body.ri-readable select,
+  body.ri-readable textarea,
+  body.ri-readable button{
+    font-size: calc(13px * var(--ri-text-size));
+  }
+  body.ri-readable h1{font-size:calc(22px * var(--ri-text-size)) !important;}
+  body.ri-readable h2{font-size:calc(18px * var(--ri-text-size)) !important;}
+  body.ri-readable h3{font-size:calc(15px * var(--ri-text-size)) !important;}
+
+  /* Tables become much easier to scan */
+  body.ri-readable table{
+    font-size:calc(13px * var(--ri-text-size)) !important;
+  }
+  body.ri-readable th{
+    font-size:calc(11px * var(--ri-text-size)) !important;
+    letter-spacing:.04em;
+  }
+  body.ri-readable th,
+  body.ri-readable td{
+    padding:9px 11px !important;
+    vertical-align:top;
+  }
+  body.ri-readable td{
+    white-space:normal !important;
+    overflow-wrap:anywhere;
+  }
+
+  /* Better cards / forms */
+  body.ri-readable .card,
+  body.ri-readable .chart-card,
+  body.ri-readable .panel,
+  body.ri-readable .form-card{
+    line-height:1.5;
+  }
+  body.ri-readable .check-row,
+  body.ri-readable .bool-row,
+  body.ri-readable .docket-item,
+  body.ri-readable .takeover-row{
+    padding-top:9px;
+    padding-bottom:9px;
+  }
+
+  /* Chart workspace */
+  .ri-chart-toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:7px;
+    flex-wrap:wrap;
+    margin:-2px 0 8px;
+    padding:7px 8px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:var(--panel2);
+  }
+  .ri-chart-tools{
+    display:flex;
+    gap:5px;
+    flex-wrap:wrap;
+  }
+  .ri-chart-toolbar button{
+    min-height:31px;
+    padding:5px 9px;
+    border-radius:8px;
+    font-size:11px;
+  }
+  .ri-chart-readout{
+    color:var(--muted);
+    font:600 10px/1.35 var(--font-sans);
+    min-height:14px;
+  }
+  .ri-chart-stage{
+    position:relative;
+    min-height:var(--ri-chart-height);
+    border-radius:10px;
+  }
+  .ri-chart-stage canvas{
+    width:100% !important;
+    height:var(--ri-chart-height) !important;
+    cursor:crosshair !important;
+  }
+  .ri-chart-crosshair{
+    position:absolute;
+    top:0;
+    bottom:0;
+    width:1px;
+    background:var(--ri-focus);
+    opacity:0;
+    pointer-events:none;
+    box-shadow:0 0 0 1px rgba(11,99,206,.08);
+  }
+  .ri-chart-crosshair-label{
+    position:absolute;
+    top:5px;
+    transform:translateX(-50%);
+    padding:3px 6px;
+    border-radius:6px;
+    background:var(--ri-focus);
+    color:#fff;
+    font:700 9px/1 var(--font-mono);
+    opacity:0;
+    pointer-events:none;
+    white-space:nowrap;
+    z-index:4;
+  }
+  .ri-chart-stage.is-focused{
+    outline:2px solid rgba(11,99,206,.25);
+    outline-offset:3px;
+  }
+
+  /* Make chart cards clearly actionable */
+  .chart-card.ri-enhanced{
+    border-color:rgba(11,99,206,.20);
+  }
+  .chart-card.ri-enhanced:hover{
+    border-color:rgba(11,99,206,.48);
+  }
+
+  /* Focus mode */
+  body.ri-focus-mode .card,
+  body.ri-focus-mode .chart-card{
+    transition:opacity .2s ease, filter .2s ease, transform .2s ease;
+  }
+  body.ri-focus-mode .card:not(.ri-focused),
+  body.ri-focus-mode .chart-card:not(.ri-focused){
+    opacity:.38;
+    filter:saturate(.55);
+  }
+  body.ri-focus-mode .ri-focused{
+    opacity:1 !important;
+    filter:none !important;
+    transform:translateY(-1px);
+  }
+
+  /* Readability controls */
+  #ri-readability-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    flex-wrap:wrap;
+    margin:0 0 12px;
+    padding:8px 10px;
+    border:1px solid var(--line-dark);
+    border-radius:12px;
+    background:var(--panel);
+    box-shadow:var(--shadow-sm);
+  }
+  #ri-readability-bar .ri-title{
+    font-weight:800;
+    color:var(--text);
+    font-size:11px;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+  }
+  #ri-readability-bar .ri-controls{
+    display:flex;
+    gap:5px;
+    flex-wrap:wrap;
+  }
+  #ri-readability-bar button{
+    min-height:30px;
+    padding:5px 9px;
+    border-radius:8px;
+    font-size:11px;
+  }
+  #ri-readability-bar button.ri-active{
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent);
+  }
+
+  @media(max-width:760px){
+    :root{--ri-chart-height:300px;}
+    #ri-readability-bar{
+      position:sticky;
+      top:5px;
+      z-index:28;
+    }
+    .ri-chart-toolbar{
+      position:sticky;
+      top:54px;
+      z-index:10;
+    }
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    .ri-chart-stage *,
+    #ri-readability-bar *{
+      transition:none !important;
+      animation:none !important;
+    }
+  }
+</style>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ---------------------------------------------------------------
+     1. Readability controls
+     --------------------------------------------------------------- */
+  const RI_KEY='bqc_readability_preferences';
+
+  function riLoad(){
+    try{return JSON.parse(localStorage.getItem(RI_KEY)||'{}')||{};}catch(e){return {};}
+  }
+  function riSave(p){
+    try{localStorage.setItem(RI_KEY,JSON.stringify(p));}catch(e){}
+  }
+
+  function riApply(){
+    const p=riLoad();
+    document.body.classList.toggle('ri-readable',p.readable!==false);
+    document.body.classList.toggle('ri-focus-mode',!!p.focus);
+    document.documentElement.style.setProperty('--ri-text-size',String(p.scale||1));
+    const bar=document.getElementById('ri-readability-bar');
+    if(!bar)return;
+    bar.querySelector('[data-ri="readable"]')?.classList.toggle('ri-active',p.readable!==false);
+    bar.querySelector('[data-ri="focus"]')?.classList.toggle('ri-active',!!p.focus);
+    const label=bar.querySelector('[data-ri-scale]');
+    if(label)label.textContent=Math.round((p.scale||1)*100)+'%';
+  }
+
+  function riMakeBar(){
+    if(document.getElementById('ri-readability-bar'))return;
+    const root=document.querySelector('#root');
+    if(!root)return;
+
+    const bar=document.createElement('div');
+    bar.id='ri-readability-bar';
+    bar.innerHTML=
+      '<span class="ri-title">Readable view</span>'+
+      '<div class="ri-controls">'+
+        '<button type="button" data-ri="minus" aria-label="Decrease text size">A−</button>'+
+        '<button type="button" data-ri-scale aria-label="Current text size">100%</button>'+
+        '<button type="button" data-ri="plus" aria-label="Increase text size">A+</button>'+
+        '<button type="button" data-ri="readable">Readable</button>'+
+        '<button type="button" data-ri="focus">Focus</button>'+
+      '</div>';
+
+    root.insertBefore(bar,root.firstChild);
+
+    bar.addEventListener('click',function(e){
+      const b=e.target.closest('button');
+      if(!b)return;
+      const p=riLoad();
+      if(b.dataset.ri==='minus'){
+        p.scale=Math.max(.9,Math.round(((p.scale||1)-.05)*100)/100);
+      }else if(b.dataset.ri==='plus'){
+        p.scale=Math.min(1.35,Math.round(((p.scale||1)+.05)*100)/100);
+      }else if(b.dataset.ri==='readable'){
+        p.readable=p.readable===false;
+      }else if(b.dataset.ri==='focus'){
+        p.focus=!p.focus;
+      }else return;
+      riSave(p);riApply();
+    });
+
+    riApply();
+  }
+
+  /* ---------------------------------------------------------------
+     2. Universal chart upgrade
+        - crosshair/readout
+        - PNG export
+        - CSV export
+        - focus mode
+        - reset
+        - min/max readout
+        - existing chart click handlers remain untouched
+     --------------------------------------------------------------- */
+  const enhanced=new WeakSet();
+
+  function chartDataRows(chart){
+    const labels=(chart?.data?.labels||[]).map(String);
+    const sets=chart?.data?.datasets||[];
+    const rows=[];
+    const max=Math.max(labels.length,...sets.map(s=>(s.data||[]).length),0);
+    for(let i=0;i<max;i++){
+      const row=[labels[i]??String(i+1)];
+      sets.forEach(ds=>{
+        const v=ds.data?.[i];
+        row.push(typeof v==='number'?v:(v==null?'':String(v)));
+      });
+      rows.push(row);
+    }
+    return {labels,sets,rows};
+  }
+
+  function csvEscape(v){
+    const s=String(v??'');
+    return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+  }
+
+  function downloadText(name,text,type){
+    const blob=new Blob([text],{type});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+  }
+
+  function exportCsv(chart){
+    const {sets,rows}=chartDataRows(chart);
+    const header=['Label',...sets.map(s=>s.label||'Series')];
+    const csv=[header,...rows].map(r=>r.map(csvEscape).join(',')).join('\n');
+    downloadText('battery-qc-chart.csv','\uFEFF'+csv,'text/csv;charset=utf-8');
+  }
+
+  function chartTitle(chart){
+    const card=chart.canvas?.closest('.chart-card');
+    return (card?.querySelector('h3,h2,.title')?.textContent||'Battery QC Chart').trim();
+  }
+
+  function showStats(chart,readout){
+    const {sets}=chartDataRows(chart);
+    const parts=[];
+    sets.forEach(ds=>{
+      const nums=(ds.data||[]).map(Number).filter(Number.isFinite);
+      if(!nums.length)return;
+      const min=Math.min(...nums),max=Math.max(...nums);
+      const minAt=(ds.data||[]).findIndex(v=>Number(v)===min);
+      const maxAt=(ds.data||[]).findIndex(v=>Number(v)===max);
+      parts.push(
+        (ds.label||'Series')+
+        ': min '+min+' @ '+(chart.data.labels?.[minAt]??minAt)+
+        ' · max '+max+' @ '+(chart.data.labels?.[maxAt]??maxAt)
+      );
+    });
+    readout.textContent=parts.join('   |   ')||'Move the pointer over the chart for a synchronized readout.';
+  }
+
+  function enhanceChart(chart){
+    if(!chart || !chart.canvas || enhanced.has(chart))return;
+    enhanced.add(chart);
+
+    const card=chart.canvas.closest('.chart-card');
+    if(!card)return;
+    card.classList.add('ri-enhanced');
+
+    const oldWrap=chart.canvas.parentElement;
+    if(!oldWrap)return;
+
+    const stage=document.createElement('div');
+    stage.className='ri-chart-stage';
+    oldWrap.insertBefore(stage,chart.canvas);
+    stage.appendChild(chart.canvas);
+
+    const cross=document.createElement('div');
+    cross.className='ri-chart-crosshair';
+    const crossLabel=document.createElement('div');
+    crossLabel.className='ri-chart-crosshair-label';
+    stage.append(cross,crossLabel);
+
+    const toolbar=document.createElement('div');
+    toolbar.className='ri-chart-toolbar';
+    const tools=document.createElement('div');
+    tools.className='ri-chart-tools';
+
+    const makeBtn=(text,fn,title)=>{
+      const b=document.createElement('button');
+      b.type='button';b.textContent=text;
+      if(title)b.title=title;
+      b.addEventListener('click',e=>{e.stopPropagation();fn();});
+      tools.appendChild(b);
+      return b;
+    };
+
+    makeBtn('PNG',()=>{
+      try{
+        const a=document.createElement('a');
+        a.href=chart.toBase64Image('image/png',1);
+        a.download=(chartTitle(chart).replace(/[^\w-]+/g,'-')||'battery-qc-chart')+'.png';
+        a.click();
+      }catch(e){console.warn('PNG export failed',e);}
+    },'Export this chart as PNG');
+
+    makeBtn('CSV',()=>exportCsv(chart),'Export chart data as CSV');
+
+    makeBtn('Stats',()=>showStats(chart,readout),'Show minimum and maximum values');
+
+    makeBtn('Focus',()=>{
+      const p=riLoad();
+      p.focus=true;riSave(p);
+      document.body.classList.add('ri-focus-mode');
+      document.querySelectorAll('.ri-focused').forEach(x=>x.classList.remove('ri-focused'));
+      card.classList.add('ri-focused');
+      riApply();
+    },'Focus on this chart');
+
+    makeBtn('Reset',()=>{
+      try{
+        chart.reset();
+        chart.update('none');
+      }catch(e){}
+      cross.style.opacity='0';
+      crossLabel.style.opacity='0';
+      showStats(chart,readout);
+    },'Reset chart state');
+
+    const readout=document.createElement('div');
+    readout.className='ri-chart-readout';
+    toolbar.append(tools,readout);
+
+    oldWrap.parentElement.insertBefore(toolbar,stage);
+    showStats(chart,readout);
+
+    function move(e){
+      const r=stage.getBoundingClientRect();
+      const x=Math.max(0,Math.min(r.width,e.clientX-r.left));
+      const area=chart.chartArea;
+      if(!area)return;
+      const canvasRect=chart.canvas.getBoundingClientRect();
+      const canvasX=e.clientX-canvasRect.left;
+      if(canvasX<area.left||canvasX>area.right){
+        cross.style.opacity='0';crossLabel.style.opacity='0';return;
+      }
+
+      const scaleX=area.width/(area.right-area.left);
+      const px=area.left+(canvasX-area.left);
+      const ratio=(px-area.left)/(area.right-area.left);
+      const idx=Math.max(0,Math.min((chart.data.labels?.length||1)-1,
+        Math.round(ratio*Math.max(0,(chart.data.labels?.length||1)-1))));
+      const label=chart.data.labels?.[idx]??idx;
+
+      cross.style.left=(px/chart.width*100)+'%';
+      cross.style.opacity='1';
+      crossLabel.style.left=(px/chart.width*100)+'%';
+      crossLabel.textContent=String(label);
+      crossLabel.style.opacity='1';
+
+      const vals=(chart.data.datasets||[]).map(ds=>{
+        const v=ds.data?.[idx];
+        return ds.label+': '+(v==null?'—':v);
+      });
+      readout.textContent=String(label)+'  ·  '+vals.join('  |  ');
+    }
+
+    stage.addEventListener('pointermove',move,{passive:true});
+    stage.addEventListener('pointerleave',()=>{
+      cross.style.opacity='0';
+      crossLabel.style.opacity='0';
+      showStats(chart,readout);
+    },{passive:true});
+
+    stage.addEventListener('dblclick',()=>{
+      try{chart.reset();chart.update('none');}catch(e){}
+    });
+
+    /* Preserve the application's existing click-to-details behaviour. */
+  }
+
+  function riScanCharts(){
+    if(typeof Chart==='undefined')return;
+    document.querySelectorAll('canvas').forEach(canvas=>{
+      try{
+        const c=Chart.getChart(canvas);
+        if(c)enhanceChart(c);
+      }catch(e){}
+    });
+  }
+
+  /* Existing app loads Chart.js asynchronously, so observe the page rather
+     than replacing its rendering path. */
+  function riBoot(){
+    riMakeBar();
+    riApply();
+    riScanCharts();
+
+    const observer=new MutationObserver(()=>{
+      riMakeBar();
+      riScanCharts();
+    });
+    observer.observe(document.body,{childList:true,subtree:true});
+
+    /* Keyboard shortcuts */
+    document.addEventListener('keydown',e=>{
+      if(e.target.matches('input,textarea,select,[contenteditable="true"]'))return;
+      if(e.key==='+'||e.key==='='){
+        const b=document.querySelector('#ri-readability-bar [data-ri="plus"]');
+        if(b)b.click();
+      }else if(e.key==='-'){
+        const b=document.querySelector('#ri-readability-bar [data-ri="minus"]');
+        if(b)b.click();
+      }else if(e.key.toLowerCase()==='f'){
+        const b=document.querySelector('#ri-readability-bar [data-ri="focus"]');
+        if(b)b.click();
+      }
+    });
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',riBoot,{once:true});
+  }else{
+    riBoot();
+  }
+})();
+</script>
+
