@@ -576,6 +576,13 @@ body{
 .nav-kicker{font-size:9px;font-weight:950;letter-spacing:1.8px;color:#16865a}
 .nav-title{font-size:15px;letter-spacing:-.25px;color:var(--text)}
 .nav-context{font-size:9px;font-weight:850;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-rail{display:flex;gap:5px;padding:7px;overflow-x:auto;scrollbar-width:thin;scroll-behavior:smooth;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+.nav-rail:focus-visible{outline:2px solid rgba(11,99,206,.35);outline-offset:2px}
+.nav-item{scroll-snap-align:center}
+.inventory-quick-card{border-color:rgba(22,134,90,.20);background:linear-gradient(135deg,rgba(255,255,255,.97),rgba(240,250,247,.92))}
+.inventory-quick-card .footer-actions{margin-top:10px}
+.daily-stock-history-anchor{scroll-margin-top:18px}
+@media(max-width:760px){.inventory-quick-card .footer-actions{display:grid;grid-template-columns:1fr;gap:7px}.inventory-quick-card button{width:100%}}
 .nav-rail{display:flex;gap:5px;padding:7px;overflow-x:auto;scrollbar-width:thin}
 .nav-rail::-webkit-scrollbar{height:4px}.nav-rail::-webkit-scrollbar-thumb{background:rgba(11,99,206,.18);border-radius:99px}
 .nav-item{
@@ -1808,6 +1815,35 @@ input,select,textarea,button{max-width:100%;min-width:0;}
 @media(max-width:980px){.inventory-kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.inventory-two-col{grid-template-columns:1fr}}
 @media(max-width:700px){.inventory-hero{padding:18px;flex-direction:column;border-radius:17px}.inventory-hero h1{font-size:21px}.inventory-hero-badge{align-self:flex-start;min-width:0}.inventory-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.inventory-source-note{width:100%;margin-left:0}.inventory-panel{padding:13px;border-radius:15px}.inventory-panel-head{flex-direction:column}.inventory-hero p{font-size:11px}.warranty-queue-item{align-items:flex-start;flex-direction:column}.warranty-queue-actions{width:100%;justify-content:space-between}}
 @media(max-width:430px){.inventory-kpi-grid{grid-template-columns:1fr 1fr;gap:7px}.inventory-kpi{padding:11px}.inventory-kpi-value{font-size:21px}.inventory-workspace .grid{grid-template-columns:1fr}.inventory-hero{margin-bottom:10px}.inventory-separation-note{flex-direction:column}}
+
+/* ---------- SOP Center + scan UI ---------- */
+.sop-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.sop-search-row input{width:100%;min-height:44px}
+.sop-cat-rail{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.sop-cat{border:1px solid var(--line);background:rgba(255,255,255,.72);color:var(--text);border-radius:999px;padding:8px 11px;font-weight:800;font-size:11px;cursor:pointer;transition:.18s ease}
+.sop-cat:hover{transform:translateY(-1px);border-color:rgba(11,99,206,.35)}
+.sop-cat.active{color:#fff;background:linear-gradient(135deg,#0b63ce,#008fbf,#16865a);border-color:rgba(255,255,255,.3);box-shadow:0 8px 20px rgba(11,99,206,.2)}
+.sop-results{display:grid;gap:10px}
+.sop-result-card{overflow:hidden}
+.sop-result-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start}
+.sop-kicker,.inventory-kicker{letter-spacing:.08em;text-transform:uppercase;font-size:10px;font-weight:900;color:var(--muted)}
+.sop-result-head h3{margin:5px 0 4px}
+.sop-procedure-body{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:grid;gap:8px}
+.sop-step{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.45)}
+.sop-step-num{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-weight:900;font-size:11px;background:rgba(11,99,206,.1);color:var(--text)}
+.sop-source-note{font-size:11px;line-height:1.55;color:var(--muted);padding:10px 12px;border-left:3px solid rgba(11,99,206,.45);background:rgba(11,99,206,.05);border-radius:8px}
+.sop-safety-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.sop-box{border:1px solid var(--line);border-radius:12px;padding:11px;background:rgba(255,255,255,.45)}
+.sop-box strong{display:block;margin-bottom:4px}
+.qr-id-field input,.smart-id input{min-width:0}
+.smart-id-top{display:grid;grid-template-columns:115px 76px minmax(0,1fr) auto;gap:7px;align-items:stretch}
+.smart-id-top .btn-primary{padding-inline:10px}
+@media(max-width:760px){
+  .sop-search-row,.sop-result-head{grid-template-columns:1fr}
+  .sop-safety-grid{grid-template-columns:1fr}
+  .smart-id-top{grid-template-columns:1fr 76px minmax(0,1fr)}
+  .smart-id-top .btn-primary{grid-column:1/-1;width:100%}
+}
 </style>
 </head>
 <body>
@@ -2245,7 +2281,7 @@ const BQC_STORES = [
   'om_chain_records','plant_records','plant_stock_records','new_battery_records',
   'inventory_adjustments','warranty_records','daily_stock_records','iot_given_records',
   'iot_returned_records','day_log_records','bsa_records','quality_issue_records',
-  'accountability_audit_records','rca_records','takeover_request_records'
+  'accountability_audit_records','rca_records','takeover_request_records','plant_quality_checks'
 ];
 var EXPORT_ROWS_CACHE = new Map();
 const STORE_LABEL = {
@@ -2254,7 +2290,7 @@ const STORE_LABEL = {
   warranty_records:'Warranty', daily_stock_records:'Daily stock', iot_given_records:'IoT given',
   iot_returned_records:'IoT returned', day_log_records:'Day log', bsa_records:'BSA', quality_issue_records:'Quality Issue Breakdown',
   accountability_audit_records:'Technician Accountability Audit', rca_records:'RCA / Root Cause Analysis',
-  takeover_request_records:'Technician Takeover Requests'
+  takeover_request_records:'Technician Takeover Requests', plant_quality_checks:'Plant Quality Checks'
 };
 
 /* ---- Access rules (same matrix the old server enforced) ---- */
@@ -2265,12 +2301,12 @@ const PLANTINV_READ_STORES = [
   'om_chain_records',
   'plant_records','plant_stock_records','new_battery_records','inventory_adjustments',
   'warranty_records','daily_stock_records','iot_given_records','iot_returned_records',
-  'day_log_records','quality_issue_records'
+  'day_log_records','quality_issue_records','plant_quality_checks'
 ];
 const PLANTINV_WRITE_STORES = [
   'plant_records','plant_stock_records','new_battery_records','inventory_adjustments',
   'warranty_records','daily_stock_records','iot_given_records','iot_returned_records',
-  'day_log_records','quality_issue_records'
+  'day_log_records','quality_issue_records','plant_quality_checks'
 ];
 function roleCanRead(role, store){
   if(role==='omadmin'||role==='quality') return true;
@@ -2692,6 +2728,8 @@ async function loadBsa(){ return loadStore('bsa_records'); }
 async function saveBsa(list){ return saveStore('bsa_records',list); }
 async function loadQualityIssues(){ return loadStore('quality_issue_records'); }
 async function saveQualityIssues(list){ return saveStore('quality_issue_records',list); }
+async function loadPlantQualityChecks(){ return loadStore('plant_quality_checks'); }
+async function savePlantQualityChecks(list){ return saveStore('plant_quality_checks',list); }
 async function loadAccountabilityAudit(){ return loadStore('accountability_audit_records'); }
 async function loadRca(){ return loadStore('rca_records'); }
 async function saveRca(list){ return saveStore('rca_records',list); }
@@ -2716,6 +2754,7 @@ const STORE_STATE_KEYS = {
   accountability_audit_records:'accountabilityAuditRecords',
   rca_records:'rcaRecords',
   takeover_request_records:'takeoverRequestRecords',
+  plant_quality_checks:'plantQualityChecks',
 };
 
 async function loadStoresIntoState(keys=BQC_STORES, options={}){
@@ -2783,7 +2822,7 @@ function scheduleBackgroundDataRefresh(){
       const keys=visibleStoreKeys();
       if(!keys.length) return;
       const before={}; keys.forEach(k=>{const sk=STORE_STATE_KEYS[k]; before[k]=sk?STATE[sk]:undefined;});
-      await loadStoresIntoState(keys,{ensureNamanve:true,ensureQualityIssues:true});
+      await loadStoresIntoState(keys,{ensureNamanve:false,ensureQualityIssues:false});
       const after={}; keys.forEach(k=>{const sk=STORE_STATE_KEYS[k]; after[k]=sk?STATE[sk]:undefined;});
       const changed=keys.some(k=>visibleStateChanged(before[k],after[k]));
       STATE.globalLastRefreshed=nowTime(); STATE.omLastRefreshed=nowTime();
@@ -3622,6 +3661,9 @@ function saveBqcUiState(){
       openId:STATE.openId||null,
       batteryModalId:STATE.batteryModalId||'',
       chartModal:STATE.chartModal||null,
+      sopQuery:STATE.sopQuery||'',
+      sopCategory:STATE.sopCategory||'ALL',
+      sopOpenId:STATE.sopOpenId||'',
       scrollY:window.scrollY||document.documentElement.scrollTop||0,
       nestedScroll:captureBqcNestedScroll(),
       savedAt:Date.now()
@@ -3665,11 +3707,14 @@ function restoreBqcNavigationState(user){
   if(saved.openId!=null) STATE.openId=saved.openId;
   if(saved.batteryModalId!=null) STATE.batteryModalId=saved.batteryModalId;
   if(saved.chartModal!=null) STATE.chartModal=saved.chartModal;
+  if(saved.sopQuery!=null) STATE.sopQuery=saved.sopQuery;
+  if(saved.sopCategory!=null) STATE.sopCategory=saved.sopCategory;
+  if(saved.sopOpenId!=null) STATE.sopOpenId=saved.sopOpenId;
 
   const allowed={
-    omtech:['main','progress','rca','knowledge','myclosed','analytics','notes','imports','search'],
+    omtech:['main','progress','rca','knowledge','sop','myclosed','analytics','notes','imports','search'],
     omadmin:['dashboard','progress','analytics','integrity','history','notes','rca','knowledge','imports','search'],
-    plantinv:['dashboard','progress','daily','stock','newStock','warrantyStock','operations','notes','integrity','knowledge','imports','search'],
+    plantinv:['dashboard','progress','daily','qualityChecks','stock','newStock','warrantyStock','operations','notes','integrity','knowledge','sop','imports','search'],
     quality:['warranty','bsa','progress','overview','ledger','analytics','integrity','notes','rca','knowledge','imports','search'],
     bsa:['activity','newcase','progress','rca','knowledge','analytics','notes','history','imports','search']
   };
@@ -3696,9 +3741,13 @@ let STATE = {
   deepDiveId: '',
   batteryModalId: '',
   chartModal: null,
+  sopQuery: '',
+  sopCategory: 'ALL',
+  sopOpenId: '',
  
   omRecords: [],
   plantRecords: [],
+  plantQualityChecks: [],
   plantStockRecords: [],
   newBatteryRecords: [],
   adjustments: [],
@@ -4081,6 +4130,82 @@ function field(label, inputEl){
   w.appendChild(inputEl);
   return w;
 }
+/* ---------- Native QR + barcode battery-number scanner ---------- */
+let BQC_CODE_STREAM=null;
+let BQC_CODE_ANIM=0;
+function stopBatteryCodeScanner(){
+  if(BQC_CODE_ANIM) cancelAnimationFrame(BQC_CODE_ANIM);
+  BQC_CODE_ANIM=0;
+  if(BQC_CODE_STREAM){ BQC_CODE_STREAM.getTracks().forEach(t=>t.stop()); BQC_CODE_STREAM=null; }
+}
+async function supportedBatteryScanFormats(){
+  const preferred=['qr_code','code_128','code_39','code_93','codabar','ean_13','ean_8','upc_a','upc_e','itf','data_matrix','aztec','pdf417'];
+  try{
+    if(window.BarcodeDetector?.getSupportedFormats){
+      const supported=await BarcodeDetector.getSupportedFormats();
+      return preferred.filter(f=>supported.includes(f));
+    }
+  }catch(e){}
+  return ['qr_code'];
+}
+function openBatteryQrScanner(onDetected){
+  const modal=el('div',{class:'modal-backdrop',id:'bqc-code-modal'});
+  const card=el('div',{class:'modal-card',style:'max-width:680px;width:min(95vw,680px);'});
+  const close=el('button',{class:'btn'},'Close');
+  close.addEventListener('click',()=>{stopBatteryCodeScanner();modal.remove();});
+  card.appendChild(el('div',{style:'display:flex;justify-content:space-between;align-items:center;gap:12px;'},[
+    el('div',{},[el('h2',{},'Scan Battery QR / Barcode'),el('div',{class:'sub'},'Use the camera to read a battery QR code or supported 1D/2D barcode. The result is placed into the battery ID field.')]),close
+  ]));
+  const mode=el('div',{style:'display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;'},[
+    el('span',{class:'badge'},'QR'),el('span',{class:'badge'},'CODE 128'),el('span',{class:'badge'},'EAN / UPC'),el('span',{class:'badge'},'OTHER SUPPORTED FORMATS')
+  ]);
+  const status=el('div',{class:'banner',style:'margin-top:10px;'},'Checking camera and barcode support…');
+  const video=el('video',{autoplay:'true',playsinline:'true',muted:'true',style:'width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:16px;background:#07111f;margin-top:10px;'});
+  const manual=el('input',{type:'text',placeholder:'Enter / paste battery number, QR value or barcode value',style:'margin-top:10px;width:100%;'});
+  const use=el('button',{class:'btn-primary',style:'margin-top:8px;width:100%;'},'Use Entered Battery ID');
+  const foot=el('div',{class:'sub',style:'margin-top:8px;'},'Camera scanning requires HTTPS (or localhost) and browser camera permission. A USB/Bluetooth barcode scanner also works by typing directly into the focused input field.');
+  use.addEventListener('click',()=>{const v=manual.value.trim();if(!v){toast('Enter a battery ID first.');return;}stopBatteryCodeScanner();modal.remove();onDetected(v,'manual');});
+  card.appendChild(mode);card.appendChild(status);card.appendChild(video);card.appendChild(manual);card.appendChild(use);card.appendChild(foot);modal.appendChild(card);document.body.appendChild(modal);
+  if(!('BarcodeDetector' in window)){status.textContent='This browser does not expose the native QR/barcode scanner. Use the manual field or a USB/Bluetooth scanner.';return;}
+  if(!navigator.mediaDevices?.getUserMedia){status.textContent='Camera access is unavailable in this browser. Use the manual field or a USB/Bluetooth scanner.';return;}
+  supportedBatteryScanFormats().then(formats=>{
+    if(!formats.length){status.textContent='No supported QR/barcode formats were reported by this browser. Use manual entry or a hardware scanner.';return;}
+    navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false}).then(stream=>{
+      if(!modal.isConnected){stream.getTracks().forEach(t=>t.stop());return;}
+      BQC_CODE_STREAM=stream; video.srcObject=stream;
+      status.textContent='Scanning… move the QR/barcode into view and hold it steady.';
+      let detector;
+      try{ detector=new BarcodeDetector({formats}); }catch(e){ status.textContent='Barcode detector could not be initialized. Use manual entry or a hardware scanner.'; return; }
+      const scan=async()=>{
+        if(!BQC_CODE_STREAM||!modal.isConnected)return;
+        try{
+          if(video.readyState>=2){
+            const codes=await detector.detect(video);
+            if(codes.length){
+              const hit=codes.find(c=>String(c.rawValue||'').trim());
+              if(hit){const value=String(hit.rawValue||'').trim();stopBatteryCodeScanner();modal.remove();onDetected(value,hit.format||'camera');return;}
+            }
+          }
+        }catch(e){}
+        BQC_CODE_ANIM=requestAnimationFrame(scan);
+      };
+      video.addEventListener('loadeddata',()=>{if(!BQC_CODE_ANIM)BQC_CODE_ANIM=requestAnimationFrame(scan);},{once:true});
+    }).catch(e=>{console.error('QR/barcode camera error',e);status.textContent='Camera could not be opened. Check browser permission, then use the manual field or a hardware scanner.';});
+  });
+}
+function qrBatteryIdField(value,onChange,opts={}){
+  const wrap=el('div',{class:'qr-id-field'});
+  const row=el('div',{style:'display:flex;gap:8px;align-items:stretch;'});
+  const inp=el('input',{type:'text',value:String(value||''),placeholder:opts.placeholder||'Battery / BMS number'});
+  if(opts.key)inp.dataset.fkey=opts.key;
+  inp.addEventListener('input',()=>onChange(inp.value.trim().toUpperCase()));
+  const scan=el('button',{class:'btn-primary',type:'button',style:'white-space:nowrap;'},'▣ Scan QR / Barcode');
+  scan.addEventListener('click',()=>openBatteryQrScanner(v=>{inp.value=v.trim().toUpperCase();onChange(inp.value);}));
+  row.appendChild(inp);row.appendChild(scan);wrap.appendChild(row);
+  wrap.appendChild(el('div',{class:'smart-id-hint'},'Scan QR or barcode, use a hardware scanner, or enter the battery/BMS number manually.'));
+  return wrap;
+}
+
 function smartBatteryIdInput(value, onChange, opts={}){
   const wrap = el('div',{class:'smart-id'});
   let current = String(value||'').trim().toUpperCase();
@@ -4095,7 +4220,9 @@ function smartBatteryIdInput(value, onChange, opts={}){
   if(opts.placeholder) inp.setAttribute('placeholder',opts.placeholder);
   if(opts.key) inp.dataset.fkey=opts.key;
   if(opts.readonly) inp.setAttribute('readonly','true');
-  top.appendChild(sel); top.appendChild(prefix); top.appendChild(inp);
+  const scanBtn=el('button',{class:'btn-primary',type:'button',style:'white-space:nowrap;'},'▣ Scan');
+  scanBtn.addEventListener('click',()=>openBatteryQrScanner(v=>{const raw=String(v||'').trim().toUpperCase(); inp.value=raw; commit(raw);}));
+  top.appendChild(sel); top.appendChild(prefix); top.appendChild(inp); top.appendChild(scanBtn);
   wrap.appendChild(top);
   const hint = el('div',{class:'smart-id-hint'});
   hint.innerHTML = smartIdHint(platform);
@@ -4218,7 +4345,7 @@ async function executeGlobalSearch(){
   STATE.searchBusy=true; STATE.searchActive=true; STATE.view='search'; render();
   try{
     const keys=visibleStoreKeys();
-    await loadStoresIntoState(keys,{ensureNamanve:true,ensureQualityIssues:true});
+    await loadStoresIntoState(keys,{ensureNamanve:false,ensureQualityIssues:false});
     const hits=[];
     keys.forEach(store=>{
       const stateKey=STORE_STATE_KEYS[store];
@@ -4567,7 +4694,7 @@ function Nav(items, labels){
     el('span',{class:'nav-context'}, STATE.role==='omtech' ? ('STAGE '+STATE.stage+' · '+STATE.techName) : (SECTOR_LABEL[STATE.role]||'OPERATIONS'))
   ]);
   nav.appendChild(head);
-  const rail = el('div',{class:'nav-rail'});
+  const rail = el('div',{class:'nav-rail','tabindex':'0','aria-label':'Swipe or use arrow keys to move through menu pages'});
   items.forEach((k,i)=>{
     const active = STATE.view===k;
     const b = el('button',{class:'nav-item '+(active?'active':''),'aria-current':active?'page':null,'title':labels[k],'aria-label':labels[k]},[
@@ -4578,11 +4705,35 @@ function Nav(items, labels){
     b.addEventListener('click', ()=>{
       STATE.navLoading = false;
       STATE.view=k; STATE.openId=null;
+      // Persist the selected destination BEFORE rendering so an immediate reload
+      // cannot restore the previous menu. The active item is then rebuilt from
+      // STATE.view and remains visibly selected, including hidden/mobile labels.
+      saveBqcUiState();
       // Navigation is never gated by network/data refresh. Paint first, refresh second.
       render();
-      requestAnimationFrame(()=>{ scheduleBackgroundDataRefresh().catch(()=>{}); });
+      requestAnimationFrame(()=>{
+        saveBqcUiState();
+        scheduleBackgroundDataRefresh().catch(()=>{});
+      });
     });
     rail.appendChild(b);
+  });
+  // Keep the current destination comfortably visible without changing the existing menu layout.
+  requestAnimationFrame(()=>{
+    const active=rail.querySelector('.nav-item.active');
+    if(active) active.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  });
+  // Desktop trackpads/mice can horizontally scroll the same way a technician swipes on mobile.
+  rail.addEventListener('wheel',e=>{
+    if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){ rail.scrollLeft += e.deltaY; e.preventDefault(); }
+  },{passive:false});
+  rail.addEventListener('keydown',e=>{
+    if(e.key!=='ArrowLeft' && e.key!=='ArrowRight') return;
+    e.preventDefault();
+    const nodes=[...rail.querySelectorAll('.nav-item')];
+    const idx=Math.max(0,nodes.findIndex(n=>n.classList.contains('active')));
+    const next=nodes[Math.max(0,Math.min(nodes.length-1,idx+(e.key==='ArrowRight'?1:-1)))];
+    if(next){ next.focus(); next.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}); }
   });
   nav.appendChild(rail);
   return nav;
@@ -4616,12 +4767,13 @@ function View(){
   try {
  
   if(STATE.role==='omtech'){
-    wrap.appendChild(Nav(['main','progress','rca','knowledge','myclosed','analytics','notes','imports'], {main:'My Docket', progress:'Daily Progress', rca:'Technician RCA', knowledge:'5S & Battery Insights', myclosed:'My Completed Work', analytics:'My Analytics', notes:'NOTES CENTER', imports:'ATTACHED DATA'}));
+    wrap.appendChild(Nav(['main','progress','rca','knowledge','sop','myclosed','analytics','notes','imports'], {main:'My Docket', progress:'Daily Progress', rca:'Technician RCA', knowledge:'5S & Battery Insights', sop:'SOP CENTER', myclosed:'My Completed Work', analytics:'My Analytics', notes:'NOTES CENTER', imports:'ATTACHED DATA'}));
     wrap.appendChild(SearchBar());
     if(STATE.view==='search') content.appendChild(SearchResultsView());
     else if(STATE.view==='progress') content.appendChild(DailyWorkProgressView());
     else if(STATE.view==='rca') content.appendChild(RcaWorkspaceView());
     else if(STATE.view==='knowledge') content.appendChild(KnowledgeInsightsView());
+    else if(STATE.view==='sop') content.appendChild(SopCenterView());
     else if(STATE.view==='myclosed') content.appendChild(OmTechClosedView());
     else if(STATE.view==='analytics') content.appendChild(OmTechAnalyticsView());
     else if(STATE.view==='notes') content.appendChild(DayLogView());
@@ -4643,17 +4795,18 @@ function View(){
   } else if(STATE.role==='plantinv'){
     const legacyToCombined = {main:'dashboard',bulk:'stock',ledger:'stock',dailystock:'daily',warrantystock:'warrantyStock',newintake:'newStock',adjust:'stock',stock:'stock',iot:'operations',analytics:'dashboard',history:'daily',daylog:'notes'};
     if(legacyToCombined[STATE.view]) STATE.view = legacyToCombined[STATE.view];
-    if(!['dashboard','progress','daily','stock','newStock','warrantyStock','operations','notes','integrity','knowledge','imports','search'].includes(STATE.view)) STATE.view='dashboard';
-    wrap.appendChild(Nav(['dashboard','progress','daily','stock','newStock','warrantyStock','operations','notes','integrity','knowledge'], {
-      dashboard:'Plant Dashboard', progress:'Daily Progress', daily:'Daily Stock & Quality', stock:'Stock & Movement',
+    if(!['dashboard','progress','daily','qualityChecks','stock','newStock','warrantyStock','operations','notes','integrity','knowledge','sop','imports','search'].includes(STATE.view)) STATE.view='dashboard';
+    wrap.appendChild(Nav(['dashboard','progress','daily','qualityChecks','stock','newStock','warrantyStock','operations','notes','integrity','knowledge','sop','imports'], {
+      dashboard:'Plant Dashboard', progress:'Daily Progress', daily:'Daily Stock & Quality', qualityChecks:'QUALITY CHECKS', stock:'Stock & Movement',
       newStock:'NEW BATTERY STOCK', warrantyStock:'KYEBANDO WARRANTY', operations:'IoT & Operations',
-      notes:'NOTES CENTER', integrity:'Data Integrity', knowledge:'5S & Battery Insights', imports:'ATTACHED DATA'
+      notes:'NOTES CENTER', integrity:'Data Integrity', knowledge:'5S & Battery Insights', sop:'SOP CENTER', imports:'ATTACHED DATA'
     }));
     wrap.appendChild(SearchBar());
     if(STATE.view==='search') content.appendChild(SearchResultsView());
     else if(STATE.view==='dashboard') content.appendChild(PlantDashboardView());
     else if(STATE.view==='progress') content.appendChild(DailyWorkProgressView());
     else if(STATE.view==='daily') content.appendChild(PlantDailyCombinedView());
+    else if(STATE.view==='qualityChecks') content.appendChild(PlantQualityChecksView());
     else if(STATE.view==='stock') content.appendChild(PlantStockOperationsView());
     else if(STATE.view==='newStock') content.appendChild(PlantNewBatteryStockView());
     else if(STATE.view==='warrantyStock') content.appendChild(PlantKyebandoWarrantyView());
@@ -4661,6 +4814,7 @@ function View(){
     else if(STATE.view==='notes') content.appendChild(DayLogView());
     else if(STATE.view==='integrity') content.appendChild(DataIntegrityView());
     else if(STATE.view==='knowledge') content.appendChild(KnowledgeInsightsView());
+    else if(STATE.view==='sop') content.appendChild(SopCenterView());
     else if(STATE.view==='imports') content.appendChild(AttachedWorkbookView());
   } else if(STATE.role==='quality'){
     wrap.appendChild(Nav(['warranty','bsa','progress','overview','ledger','analytics','integrity','notes','rca','knowledge','imports'], {warranty:'Warranty & Escalations', bsa:'BSA Escalations', progress:'Daily Progress', overview:'Sector Overview', ledger:'Stock Ledger', analytics:'Analytics & Reports', integrity:'Data Integrity', notes:'NOTES CENTER', rca:'RCA Register', knowledge:'5S & Battery Insights', imports:'ATTACHED DATA'}));
@@ -6245,6 +6399,23 @@ function PlantDashboardView(){
   }
   container.appendChild(snap);
 
+  // Daily inventory is a living physical count, so put the two common actions directly on the dashboard.
+  const quick=el('div',{class:'card inventory-quick-card'});
+  quick.appendChild(el('h3',{},'Daily Inventory — Quick Update'));
+  quick.appendChild(el('div',{class:'sub'},latest && latest.date===todayStr()
+    ? 'Today’s count is already recorded. Open it to correct quantities, notes or the person who entered it.'
+    : 'Start today’s physical count in one click, or copy yesterday’s categories and adjust only what changed.'));
+  const qa=el('div',{class:'footer-actions'});
+  const todayBtn=el('button',{class:'btn-primary'},latest && latest.date===todayStr()?'Edit Today’s Inventory':'Enter Today’s Inventory');
+  todayBtn.addEventListener('click',openTodayDailyStock);
+  const copyBtn=el('button',{class:'btn'},'Copy Latest → Today');
+  copyBtn.addEventListener('click',copyLatestDailyStockToToday);
+  const historyBtn=el('button',{class:'btn'},'Open Stock History');
+  historyBtn.addEventListener('click',()=>{ STATE.view='daily'; STATE.dailyStockDraft=emptyDailyStockDraft(); saveBqcUiState(); render(); requestAnimationFrame(()=>{ const elx=root.querySelector('.daily-stock-history-anchor'); if(elx) elx.scrollIntoView({behavior:'smooth',block:'start'}); }); });
+  qa.append(todayBtn,copyBtn,historyBtn);
+  quick.appendChild(qa);
+  container.appendChild(quick);
+
   const info=el('div',{class:'card'});
   info.appendChild(el('h3',{},'Plant Pages'));
   info.appendChild(el('div',{class:'sub'},'Detailed entries and histories are grouped into Daily Stock & Quality, Stock & Movement, and Battery Operations so the same chart or information is not repeated on multiple pages.'));
@@ -6332,6 +6503,62 @@ function NamanvePlantNewBatteryStockCard(){
   )));
   card.appendChild(el('div',{class:'banner',style:'margin-top:10px;'},'This is Namanve New Battery Stock. It is separate from the OEM Bulk Ledger and separate from Kyebando Warranty Stock. Do not add the three pools together. Uncharged and Batteries in Bikes are shown as operational states and are not added again to Grand Total.'));
   return card;
+}
+
+/* =====================================================================
+   PLANT — COMPLETE QUALITY CHECK WORKSPACE
+   Reuses the established QC vocabulary and stores plant inspections separately.
+   ===================================================================== */
+function emptyPlantQualityDraft(){return {date:todayStr(),batteryNumber:'',platform:'',inspector:STATE.techName||'',location:'Namanve Plant A',pre:{},issues:{},post:{},tests:{packVoltage:'',minCell:'',maxCell:'',irMeasured:'',irThreshold:550},testBools:{},notes:'',disposition:''};}
+function plantQualityOverall(d){const pre=checklistResult(d.pre,CHECK_ITEMS),post=checklistResult(d.post,POST_ITEMS),tests=testsResult({tests:d.tests,testBools:d.testBools}),defect=ISSUE_ITEMS.some(([k])=>!!d.issues[k]);if(pre==='FAIL'||post==='FAIL'||tests==='FAIL'||defect)return 'FAIL';if(pre==='INCOMPLETE'||post==='INCOMPLETE'||tests==='INCOMPLETE')return 'INCOMPLETE';return 'PASS';}
+function PlantQualityChecksView(){
+  try{
+    if(!STATE.plantQualityDraft)STATE.plantQualityDraft=emptyPlantQualityDraft();
+    if(!Array.isArray(STATE.plantQualityChecks))STATE.plantQualityChecks=[];
+    const d=STATE.plantQualityDraft,container=el('div',{class:'inventory-workspace plant-quality-workspace'}),result=plantQualityOverall(d);
+    container.appendChild(el('div',{class:'inventory-hero'},[el('div',{class:'inventory-hero-copy'},[el('div',{class:'inventory-kicker'},'PLANT · QUALITY CONTROL'),el('h1',{},'Battery Quality Checks'),el('p',{},'Complete the plant-side quality inspection for one battery. Scan the battery QR code, complete every applicable check, record measurements and leave a traceable disposition.')]),el('div',{class:'inventory-hero-badge'},[el('span',{},'QC WORKSPACE'),el('strong',{},'TRACEABLE')])]));
+    const scanBar=el('div',{class:'card',style:'margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;'},[el('div',{},[el('strong',{},'Fast battery identification'),el('div',{class:'sub'},'Scan QR or barcode before opening the inspection record.')]),el('button',{class:'btn-primary',onClick:()=>openBatteryQrScanner(v=>{d.batteryNumber=String(v||'').trim().toUpperCase();render();})},'▣ Scan QR / Barcode')]);
+    container.appendChild(scanBar);
+    const kpis=el('div',{class:'inventory-kpi-grid'});[['Total Checks',STATE.plantQualityChecks.length,'Saved plant QC records'],['PASS',STATE.plantQualityChecks.filter(x=>x.result==='PASS').length,'Completed without recorded defects'],['FAIL',STATE.plantQualityChecks.filter(x=>x.result==='FAIL').length,'Requires action / disposition'],['INCOMPLETE',STATE.plantQualityChecks.filter(x=>x.result==='INCOMPLETE').length,'Not fully completed']].forEach(([l,v,sub])=>kpis.appendChild(el('div',{class:'inventory-kpi'},[el('span',{class:'inventory-kpi-label'},l),el('strong',{class:'inventory-kpi-value'},String(v)),el('span',{class:'inventory-kpi-sub'},sub)])));container.appendChild(kpis);
+    const identity=el('div',{class:'inventory-panel'});identity.appendChild(el('div',{class:'inventory-panel-head'},[el('div',{},[el('h2',{},'1. Battery Identification & Traceability'),el('p',{},'Identify the exact battery before starting the inspection.')]),el('span',{class:'inventory-panel-tag'},'IDENTITY')]));
+    const ig=el('div',{class:'grid'});ig.appendChild(field('Battery Number / BMS ID',qrBatteryIdField(d.batteryNumber,v=>d.batteryNumber=v,{placeholder:'Scan or enter battery number',key:'plant-qc-battery'})));ig.appendChild(field('Platform',selectInput(d.platform||'', [['','Select platform'],...PLATFORMS.map(p=>[p,p])],v=>d.platform=v)));ig.appendChild(field('Inspection Date',textInput(d.date,v=>d.date=v,{type:'date'})));ig.appendChild(field('Inspector',textInput(d.inspector||STATE.techName||'',v=>d.inspector=v)));ig.appendChild(field('Location',textInput(d.location||'Namanve Plant A',v=>d.location=v)));identity.appendChild(ig);container.appendChild(identity);
+    container.appendChild(ChecklistCard('2. Pre-Opening / Physical Inspection',d.pre,CHECK_ITEMS,(k,v)=>d.pre[k]=v));
+    const issues=el('div',{class:'card'});issues.appendChild(el('h3',{},'3. Defect Diagnostics'));issues.appendChild(el('div',{class:'sub'},'Select every applicable failure mode. Any recorded defect makes the overall plant QC result FAIL until an approved disposition is recorded.'));ISSUE_ITEMS.forEach(([key,label])=>{const row=el('div',{class:'bool-row'}),cb=el('input',{type:'checkbox'});cb.checked=!!d.issues[key];cb.addEventListener('change',()=>{d.issues[key]=cb.checked;render();});row.appendChild(cb);row.appendChild(el('label',{},label));row.appendChild(el('span',{class:'badge',style:'margin-left:auto;opacity:.7;'},issueCategory(key)));issues.appendChild(row);});container.appendChild(issues);
+    const tests=el('div',{class:'inventory-panel'});tests.appendChild(el('div',{class:'inventory-panel-head'},[el('div',{},[el('h2',{},'4. Electrical / Functional Verification'),el('p',{},'Record the verification measurements and functional checks used by the existing final QC workflow.')]),el('span',{class:'inventory-panel-tag'},'MEASUREMENTS')]));const tg=el('div',{class:'grid narrow'});tg.appendChild(field('Pack Voltage (V)',textInput(d.tests.packVoltage,v=>d.tests.packVoltage=v,{type:'number',step:'0.01',mono:true})));tg.appendChild(field('Minimum Cell (V)',textInput(d.tests.minCell,v=>d.tests.minCell=v,{type:'number',step:'0.001',mono:true})));tg.appendChild(field('Maximum Cell (V)',textInput(d.tests.maxCell,v=>d.tests.maxCell=v,{type:'number',step:'0.001',mono:true})));tg.appendChild(field('IR Measured (MΩ)',textInput(d.tests.irMeasured,v=>d.tests.irMeasured=v,{type:'number',step:'0.1',mono:true,placeholder:'e.g. 650'})));tg.appendChild(field('IR Threshold (MΩ)',textInput(d.tests.irThreshold,v=>d.tests.irThreshold=v,{type:'number',step:'0.1',mono:true})));tests.appendChild(tg);TEST_BOOLS.forEach(([key,label])=>{const row=el('div',{class:'bool-row'}),cb=el('input',{type:'checkbox'});cb.checked=!!d.testBools[key];cb.addEventListener('change',()=>{d.testBools[key]=cb.checked;render();});row.appendChild(cb);row.appendChild(el('label',{},label));tests.appendChild(row);});container.appendChild(tests);
+    container.appendChild(ChecklistCard('5. Post-Service / Reassembly Inspection',d.post,POST_ITEMS,(k,v)=>d.post[k]=v));
+    const disp=el('div',{class:'inventory-panel'});disp.appendChild(el('div',{class:'inventory-panel-head'},[el('div',{},[el('h2',{},'6. Result, Notes & Disposition'),el('p',{},'The result is calculated from the recorded checks and cannot be manually overridden.')]),el('span',{class:'status-chip '+result},result)]));const dg=el('div',{class:'detail-grid'});addDetailKV(dg,'Calculated Result',result);addDetailKV(dg,'Battery Number',d.batteryNumber||'—');addDetailKV(dg,'Platform',d.platform||'—');disp.appendChild(dg);disp.appendChild(field('Disposition',selectInput(d.disposition||'',[['','Select disposition'],['RELEASED','Released to normal stock'],['HOLD','Quality hold / quarantine'],['REWORK','Send for rework'],['WARRANTY','Warranty escalation'],['SCRAP','Scrap / approved disposal'],['BSA','Escalate to BSA']],v=>d.disposition=v)));disp.appendChild(field('Quality Notes / Evidence',textareaInput(d.notes||'',v=>d.notes=v,{placeholder:'Record measured values, observations, evidence, charger/test conditions or required action.'})));
+    const actions=el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;'}),reset=el('button',{class:'btn'},'Reset Check'),save=el('button',{class:'btn-primary',disabled:STATE.plantQualitySaving},STATE.plantQualitySaving?'Saving…':'Save Quality Check');reset.addEventListener('click',()=>{STATE.plantQualityDraft=emptyPlantQualityDraft();render();});save.addEventListener('click',async()=>{if(STATE.plantQualitySaving)return;if(!d.batteryNumber.trim()){toast('Battery Number / BMS ID is required.');return;}if(!d.platform){toast('Select the battery platform.');return;}if(!d.inspector.trim()){toast('Inspector name is required.');return;}if(result==='INCOMPLETE'){toast('Complete all required checks and measurements before saving.');return;}if(!d.disposition){toast('Select a disposition.');return;}const fresh=await loadPlantQualityChecks(),entry={id:uid(),createdAt:nowIso(),updatedAt:nowIso(),...JSON.parse(JSON.stringify(d)),result,batteryNumber:d.batteryNumber.trim().toUpperCase()};STATE.plantQualitySaving=true;render();const ok=await savePlantQualityChecks([...fresh,entry]);STATE.plantQualitySaving=false;if(!ok){toast('Could not save the plant quality check.');render();return;}STATE.plantQualityChecks=[...fresh,entry];STATE.plantQualityDraft=emptyPlantQualityDraft();toast('✓ Plant quality check saved for '+entry.batteryNumber);render();});actions.appendChild(reset);actions.appendChild(save);disp.appendChild(actions);container.appendChild(disp);
+    const history=el('div',{class:'inventory-panel'});
+    history.appendChild(el('div',{class:'inventory-panel-head'},[
+      el('div',{},[
+        el('h2',{},'Saved Plant Quality Checks'),
+        el('p',{},'Searchable history of plant inspections; records remain separate from the O&M repair-chain docket.')
+      ]),
+      el('span',{class:'inventory-panel-tag'},'HISTORY')
+    ]));
+    const rows=searchFilter([...STATE.plantQualityChecks].reverse(),r=>`${r.batteryNumber} ${r.platform} ${r.result} ${r.inspector} ${r.date} ${r.disposition}`);
+    if(!rows.length){
+      history.appendChild(el('div',{class:'inventory-empty'},'No saved plant quality checks yet.'));
+    }else{
+      const wrap=el('div',{class:'table-wrap'}),tbl=el('table');
+      tbl.appendChild(el('thead',{},[
+        el('tr',{},['Date','Battery Number','Platform','Result','Inspector','Disposition'].map(x=>el('th',{},x)))
+      ]));
+      const tb=el('tbody');
+      rows.slice(0,100).forEach(r=>{
+        tb.appendChild(el('tr',{},[
+          el('td',{class:'mono'},r.date||'—'),
+          el('td',{class:'mono'},r.batteryNumber||'—'),
+          el('td',{},r.platform||'—'),
+          el('td',{},el('span',{class:'status-chip '+(r.result||'INCOMPLETE')},r.result||'INCOMPLETE')),
+          el('td',{},r.inspector||'—'),
+          el('td',{},r.disposition||'—')
+        ]));
+      });
+      tbl.appendChild(tb);wrap.appendChild(tbl);history.appendChild(wrap);
+    }
+    container.appendChild(history);return container;
+  }catch(e){console.error('Plant quality checks view error',e);return el('div',{class:'card'},[el('h3',{},'Plant Quality Checks'),el('div',{class:'banner err'},'Could not render the quality-check workspace: '+(e.message||e))]);}
 }
 
 function PlantStockOperationsView(){
@@ -6676,6 +6903,38 @@ function PlantHistoryView(){
   return container;
 }
  
+/* ---- Daily inventory quick actions ---- */
+function openTodayDailyStock(){
+  const today=todayStr();
+  const existing=(STATE.dailyStockRecords||[]).find(r=>r.date===today && (r.plant||'Namanve Plant A')==='Namanve Plant A');
+  STATE.dailyStockDraft=existing ? JSON.parse(JSON.stringify(existing)) : emptyDailyStockDraft();
+  STATE.view='daily';
+  STATE.openId=null;
+  saveBqcUiState();
+  render();
+}
+function copyLatestDailyStockToToday(){
+  const today=todayStr();
+  const latest=[...(STATE.dailyStockRecords||[])].filter(r=>r.plant==='Namanve Plant A' && r.date!==today).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  const d=emptyDailyStockDraft();
+  if(latest){
+    NAMANVE_STOCK_COLUMNS.forEach(([k])=>d[k]=latest[k]??'');
+    d.notes='Copied from '+formatNamanveDate(latest.date)+' — verify and update today\'s physical count.';
+  }
+  STATE.dailyStockDraft=d;
+  STATE.view='daily';
+  saveBqcUiState();
+  render();
+}
+function editDailyStockRecord(id){
+  const r=(STATE.dailyStockRecords||[]).find(x=>x.id===id);
+  if(!r) return;
+  STATE.dailyStockDraft=JSON.parse(JSON.stringify(r));
+  STATE.view='daily';
+  saveBqcUiState();
+  render();
+}
+
 /* ---- Daily Stock Data (Namanve-style daily physical count sheet) — separate from OEM bulk ledger and from Warranty/Scrap ---- */
 function DailyStockView(){
   const d = STATE.dailyStockDraft;
@@ -6751,13 +7010,13 @@ function newBatteryFpyByDay(){
 function DailyStockHistoryView(){
   const container = el('div');
   container.appendChild(el('div',{class:'sector-tag'},'Plant & Inventory — Daily Stock History'));
-  const card = el('div',{class:'card'});
+  const card = el('div',{class:'card daily-stock-history-anchor'});
   card.appendChild(el('h3',{},'Daily Stock Data — Full History'));
   const rows = searchFilter([...STATE.dailyStockRecords].sort((a,b)=>b.date.localeCompare(a.date)), r=>`${r.date} ${r.plant} ${r.notes}`);
   if(rows.length===0){ card.appendChild(el('div',{class:'empty-note'},'No daily stock entries recorded yet.')); container.appendChild(card); return container; }
   const wrap = el('div',{class:'table-wrap'});
   const tbl = el('table');
-  const headCells = ['Date','Plant', ...NAMANVE_STOCK_COLUMNS.map(([,l])=>l), 'Grand Total','Notes'];
+  const headCells = ['Date','Plant', ...NAMANVE_STOCK_COLUMNS.map(([,l])=>l), 'Grand Total','Notes','Action'];
   tbl.appendChild(el('thead',{},[el('tr',{}, headCells.map(h=>el('th',{},h)))]));
   const tbody = el('tbody');
   rows.forEach(r=>{
@@ -6765,6 +7024,11 @@ function DailyStockHistoryView(){
     NAMANVE_STOCK_COLUMNS.forEach(([k])=> { if(k==='qualityIssues') cells.push(el('td',{class:'mono'},qualityIssueButton(r[k]||0))); else cells.push(el('td',{class:'mono'},String(r[k]||0))); });
     cells.push(el('td',{class:'mono',style:'font-weight:700;'}, String(computeDailyStockGrandTotal(r))));
     cells.push(el('td',{}, r.notes||'—'));
+    const action=el('td',{});
+    const edit=el('button',{class:'btn-sm'},'Edit');
+    edit.addEventListener('click',()=>editDailyStockRecord(r.id));
+    action.appendChild(edit);
+    cells.push(action);
     tbody.appendChild(el('tr',{}, cells));
   });
   tbl.appendChild(tbody); wrap.appendChild(tbl); card.appendChild(wrap);
@@ -7061,6 +7325,264 @@ function RcaWorkspaceView(){
 }
 
 /* ==================== 5S + LITHIUM / LiFePO4 KNOWLEDGE INSIGHTS ==================== */
+
+/* ==================== TECHNICIAN SOP CENTER ====================
+   Source: uploaded Battery After-Sales Maintenance / DM632 SOP manual.
+   The wording below intentionally follows the source terminology and keeps
+   source page references so technicians can revise the original procedure.
+   ==================== */
+const BQC_SOP_LIBRARY=[
+  {id:'dm632-repair',cat:'Core repair flow',title:'DM632 Battery Repair — Standard Replacement / Diagnosis Flow',pages:'1–2',tags:'DM632 repair charger discharger cell balance BMS casing discharge charge aging',summary:'Main repair sequence: identify the faulty component by charger/discharger substitution, verify charge level and cell balance, inspect the pack, test charging/discharging, read software data and alarms, inspect cells/welds, balance cells, replace BMS when required, program, reassemble and age-test.',steps:[
+    'Before replacing parts, check the battery pack charge level and whether cell balance is good.',
+    'Inspect the exterior: battery casing, discharge contact spring, charging port, LED light and other visible damage. Damaged parts are to be replaced according to the SOP.',
+    'Perform a charging test using the charger designed for the corresponding battery model. If charging fails, repeat the test with a new charger.',
+    'Measure voltage at the discharge port with a multimeter. If voltage is normal, verify discharge using the dedicated discharge tester or by installing the battery in the vehicle. Use the male discharge plug compatible with the battery model; abnormal loose/tight fit indicates the discharge port should be replaced.',
+    'Read battery software data with the host computer and verify the data is within the normal range. Check error codes and determine whether they indicate a battery issue.',
+    'Remove the casing and inspect the interior for water ingress.',
+    'Inspect charge and discharge circuits.',
+    'Measure individual cell voltages for consistency.',
+    'If cell voltages are inconsistent, inspect the anomalous cell spot welds for cold joints, poor welds and incorrect cell orientation.',
+    'Balance cells using a constant-current source or dedicated balancing equipment. The source states the battery is scrapped if any single cell falls below 2 V.',
+    'For BMS replacement: power down by unplugging the signal cable, disconnecting B+/P+ and then B-/P-. Power up by connecting B-/P-, then B+/P+, then the signal cable. Insulate and secure BMS solder joints and connector sockets with adhesive.',
+    'After writing the battery-specific program, verify that the host computer reads the data correctly.',
+    'Install the casing without pinching internal battery wiring.',
+    'Perform charge/discharge aging-cycle testing.',
+    'Return the battery to the customer and finish the process.'
+  ]},
+  {id:'no-communication',cat:'BMS / LED troubleshooting',title:'No Communication — BMS Analysis and Replacement',pages:'5–7',tags:'no communication LED off BMS TVS terminal connector 46V RTC serial number barcode',summary:'The source separates no-communication causes into connector damage, battery-dead conditions and BMS issues, then provides BMS replacement and programming/RTC steps.',steps:[
+    'For the all-LED-off no-communication case, open the cover according to the referenced procedure and measure battery voltage from P+ to P-.',
+    'The source flow uses >46 V as the branch for BMS replacement.',
+    'Disassemble P- and P+ terminals and remove connector 3; then remove connectors 1 and 2 after connector 3 is removed.',
+    'Remove the old BMS and assemble the new BMS to the top cover.',
+    'Assemble P+ and P- terminals with the BMS, including the + / − connections and connectors 1 and 2; assemble connector 3 last.',
+    'After BMS replacement, plug in the discharging connector to wake up the BMS.',
+    'For the software recovery sequence: connect monitor software, enter Debug mode, read PC time, write RTC, write BMS series number, read the new BMS barcode, write the old BMS SN, then enter normal mode.'
+  ]},
+  {id:'led-issue',cat:'BMS / LED troubleshooting',title:'LED Issue — LED Board Check',pages:'8',tags:'LED blinking LED off multimeter button charge upgrade',summary:'The source recommends reproducing the LED symptom by charging, pressing the LED button or upgrading the battery, then testing the LED board individually.',steps:[
+    'Charge the battery and observe whether some LEDs remain off.',
+    'Press the LED button and observe whether some LEDs remain off.',
+    'Alternatively upgrade the battery and observe the LED indication.',
+    'Remove the LED board.',
+    'Check the LEDs one by one with a multimeter and distinguish good from NG LEDs.'
+  ]},
+  {id:'tvs-j8',cat:'BMS / LED troubleshooting',title:'No Communication — J8 / TVS Check',pages:'9',tags:'J8 TVS resistance pin 1 pin 2 0 ohm 10 ohm flux solder',summary:'The source gives a specific resistance check at J8 and a TVS removal test.',steps:[
+    'Check resistance between Pin 1 and Pin 2 in the J8 connector. The source identifies 0 Ω as abnormal and >10 Ω as normal.',
+    'Remove glue to expose the TVS component under J8.',
+    'Apply flux and solder to remove the TVS.',
+    'After TVS removal, re-measure resistance between Pin 1 and Pin 2; the source states >10 Ω as normal.'
+  ]},
+  {id:'afe-reset',cat:'BMS / LED troubleshooting',title:'LED Blinking with AFE-Comm Alarm — AFE Reset',pages:'10',tags:'AFE AFE-Comm voltage data reset B+ B- sampling cable WAH7446',summary:'For communication available but no voltage data / AFE-Comm alarm, the source instructs a BMS power-off and AFE reset sequence.',steps:[
+    'Open the top case.',
+    'Disconnect B+ and B-.',
+    'Remove glue and unplug the AFE voltage acquisition cable.',
+    'Plug the AFE voltage acquisition cable back in.',
+    'Reconnect B+ and B-.',
+    'If the condition cannot be recovered, the source instructs changing the BMS.'
+  ]},
+  {id:'voltage-imbalance',cat:'Cell / voltage troubleshooting',title:'Voltage Imbalance — AFE, Connector, Fuse and Cell Analysis',pages:'11–13',tags:'voltage imbalance AFE fuse cell 0V water ingress corrosion one high one low cell 11 cell 23',summary:'Use BMS data together with physical inspection and actual P+/P− measurement to separate AFE, connector, fuse, BMS and cell causes.',steps:[
+    'Read BMS data. If communication is available but voltage imbalance is shown, investigate the specific branch indicated by the alarm/data.',
+    'For AFE-Comm / missing voltage data: reset AFE. For loose connections: unplug and reconnect. For pin corrosion: inspect for water ingress and corrosion.',
+    'If one cell is high and the next is low, the source identifies BMS or fuse issues as possible causes.',
+    'If a single cell reads 0 V, investigate BMS, fuse and cell issues. If multiple cells read 0 V, the source points to AFE reset, loose connection, corrosion/water ingress and fuse issues.',
+    'Open the top cover and inspect for water ingress, loose connectors, connector-pin corrosion and terminal corrosion.',
+    'Measure actual voltage between P+ and P− and compare it with total voltage reported by the BMS. The source states that actual voltage greater than BMS total voltage may indicate BMS, AFE or fuse rather than a cell issue.',
+    'The source uses BMS replacement as a confirmation path; if the confirmed issue is cell/fuse, it instructs scrapping the core pack.'
+  ]},
+  {id:'cell-low',cat:'Cell / voltage troubleshooting',title:'Cell Voltage Defect — Low Cell / Fuse Decision Flow',pages:'13',tags:'cell 11 cell 23 0.5V fuse broken connector water ingress pack scrap BMS',summary:'A decision flow for very low cells, adjacent high/low readings and multiple low cells.',steps:[
+    'Check whether cell 11 or cell 23 is below 0.5 V and follow the corresponding fuse decision branch in the source flow.',
+    'If one cell is below 0.5 V and one cell is high while another is low, inspect the corresponding cell fuse; the source gives a cell-5 example where a 2 V / 4 V mismatch indicates a broken fuse.',
+    'If the connector is loose, plug it in again.',
+    'If water ingress is confirmed, the source flow marks the pack for scrap.',
+    'For low module cell voltage with BMS OK, distinguish BMS defect from multiple cell-fuse failures using the source decision path.'
+  ]},
+  {id:'soc-jump',cat:'BMS data / software',title:'SOC Jump Fast Issue',pages:'14',tags:'SOC jump BCU history data',summary:'The source gives a short diagnostic sequence for rapid SOC jumps.',steps:[
+    'Read BMS BCU data and SOC data.',
+    'Read history data and use it to investigate the abnormal SOC behaviour.'
+  ]},
+  {id:'zero-v-false',cat:'BMS data / software',title:'False Cell 0 V Indication — 0 V Alarm Clear',pages:'15',tags:'cell 0V BCU TE mode alarm clear monitor software R1.1',summary:'When BMS communication is available, a cell is reported at 0 V but the physical cell voltage is normal (>2.0 V), the source gives a software recovery path.',steps:[
+    'Confirm that the real cell voltage is normal (>2.0 V) even though the BMS reports 0 V.',
+    'Use the upgraded monitor software referenced by the source (R1.1 in the manual).',
+    'Enter TE mode and select “0V alarm clear”.',
+    'Check the BCU to confirm whether the alarm has cleared; if not, repeat the source sequence as instructed.'
+  ]},
+  {id:'led-firmware',cat:'Firmware / programming',title:'LED Blinking — Firmware Upgrade Sequence',pages:'18–19',tags:'firmware boot 2 V1.3 APP V1.0.6 command SN monitor software',summary:'The source provides a command and firmware-upgrade path for a particular LED-blinking recovery case.',steps:[
+    'Open the specified software, enter the battery SN and connect.',
+    'The source provides the command 84060201de0201de04ab for the indicated step and instructs sending it before disconnecting the battery.',
+    'Repeat the corresponding step with 84060201DB0201DB8806 and disconnect the battery.',
+    'Open monitor software, choose the Boot 2 file, connect and start the upgrade.',
+    'Upgrade Boot 2 V1.3 Bin, then repeat to upgrade V1.0.6 APP.',
+    'Only perform firmware operations with the authorized tooling, correct battery/model firmware and stable power, following the site/OEM authorization process.'
+  ]},
+  {id:'offline-iot',cat:'IoT / offline',title:'Offline Battery — EOS, IoT IP and Server Check',pages:'20–30',tags:'offline EOS IOT ICCID APN GPRS GSM nRF Connector UUID IP server Spiro Horwin',summary:'The source uses EOS to inspect IoT status, nRF Connector App to inspect the IP address, and server/port identification to determine whether the device points to Spiro or Horwin.',steps:[
+    'Use EOS to check IoT status.',
+    'Open EOS, press Start scan, then Connect.',
+    'Check ICCID: an ID means the source considers it OK.',
+    'Check GPRS APN: the source identifies iot-eu.aer.net as OK.',
+    'Check GSM strength: the source states >35% as OK.',
+    'Disconnect the battery after the EOS check.',
+    'On a smartphone, open Bluetooth and nRF Connector App; connect to the target battery by SN.',
+    'Find UUID 01020304-0506-1000-8000-00805F9B34FB and enable the write command.',
+    'Input 84030201783e0e and write to obtain the IP address.',
+    'The source identifies 13.233.33.222.91 with ports 9001–9009/9010–9011 as Spiro APP server in its decision table, and 3.0.37.178 with ports 26005–26006 as Horwin APP server. Verify against the current approved configuration before changing any device.',
+    'The source provides HEX/ASCII port mappings 9001 through 9011 and uses 9008 as the target port in the later recovery sequence.'
+  ]},
+  {id:'spiro-ip',cat:'IoT / offline',title:'Modify IoT IP Address to Spiro Server',pages:'31–37',tags:'Spiro IP 133.233.222.91 9008 EOS DEV BLE Operation Set IP Port nRF reset',summary:'The source describes changing the server/port configuration for local/global SIM cases and verifying recovery on the Spiro server.',steps:[
+    'For the local SIM case, the source states that the battery is offline when using the listed server IP and ports and instructs changing the port to 9008.',
+    'For a global SIM, the source instructs changing the server from Horwin to Spiro and fixing the port to 9008 in the app.',
+    'Use EOS to connect the battery pack.',
+    'Enter DEV → BLE → Operation → Set IP and Port.',
+    'Input IP 133.233.222.91 and Port 9008, then press Submit.',
+    'Disconnect the battery.',
+    'Open Bluetooth and nRF Connector App; connect to the target battery by SN.',
+    'Find UUID 01020304-0506-1000-8000-00805F9B34FB, enable write, input 84040301F1017eeb and write it to reset the IoT.',
+    'Disconnect, then open the Spiro server, search the battery SN and check status. The source treats an online result as recovery.'
+  ]},
+  {id:'unable-charge',cat:'Charging failure',title:'Unable to Charge — Hardware and Upper-Computer Checks',pages:'37–42',tags:'unable charge harness terminal continuity connector oxidation calibration cell voltage SOC firmware',summary:'The after-sales manual separates charging failure into harness/terminal faults, host-computer calibration, firmware communication recovery and over-discharge.',steps:[
+    'Check communication and power harnesses for breakage, damage and poor connection using a multimeter for continuity.',
+    'Inspect charging harness terminals for ablation, oxidation, deformation and abnormal wear; replace abnormal terminal harnesses and recheck continuity.',
+    'If cell voltage and SOC information are normal but charging is impossible, check the host-computer software version identification. The source associates a missing underscore before the version with abnormal standard identification and instructs recalibration of cell voltage.',
+    'If the upper computer cannot communicate but firmware flashing can recover it, the source instructs using the specified CAN box to flash the corresponding firmware and then verifying communication and charging.',
+    'If the upper computer shows cell undervoltage below 1.5 V, measure total voltage, confirm over-discharge and use the module charger to bring cell voltage to ≥3.0 V before testing discharge.',
+    'If the host computer reports “Three codes not written”, enter the factory code, IoT code and SIM-card code in the specified order, save and retry charging.'
+  ]},
+  {id:'home-charge-lock',cat:'Charging failure',title:'Charging Inhibited by Home-Charging Lock — Fault 149',pages:'42–47',tags:'fault 149 UART CAN 115200 TX RX GND 4G_RX 4G_TX unlock home charging',summary:'The source identifies fault code 149 as an IoT-issued home-charging prohibition and gives UART and CAN release paths.',steps:[
+    'Connect the upper computer and read voltage, SOC, temperature and other parameters to confirm the battery has no obvious hardware fault.',
+    'Read BMS history and confirm fault code 149. The source states that 149 means IoT issued a home-charging disable command.',
+    'Use the authorized Level 1 administrator access to enter the project interface and History Record, read the BMS history and confirm fault 149 using the fault-code table.',
+    'For UART release, connect according to the equipment UART specification and verify communication parameters.',
+    'The source specifies three jumper caps at TX, RX and GND on the communication box and a three-wire cable to the BMS IoT interface.',
+    'The source wiring is black → G1, white → 4G_RX, yellow → 4G_TX on the BMS IoT interface.',
+    'In Chaoliyuan host software: Project → Communication Test → UART; set baud rate to 115200 and use the source command 80 10 50 07 00 01 00 01 70 3A. Verify a BMS response, then connect the charger and verify charging recovery.',
+    'For CAN release, connect USBCAN to CAN-H/CAN-L, read BMS messages in CANtest, and use the source extended-frame 12D data 00 00 00 FF 00 00 00 00; then verify charging recovery.'
+  ]},
+  {id:'hard-reset',cat:'BMS recovery',title:'Complete / No Communication — Hard Reset',pages:'47–54',tags:'hard reset B+ B- sampling one minute communication charging discharging BMS',summary:'The after-sales manual uses a hard-reset branch for no-communication conditions and provides a separate maintenance safety requirement at the end of the manual.',steps:[
+    'For the specific hard-reset recovery branch, disconnect B+, B− and sampling wires.',
+    'The source procedure states to let the pack stand for 1 minute and then reconnect to activate the BMS.',
+    'After reset, connect the upper computer and check communication plus the applicable charge/discharge function.',
+    'Use the maintenance safety section for the broader pre-maintenance isolation requirement; do not confuse the hard-reset sequence duration with the general maintenance waiting requirement.'
+  ]},
+  {id:'unable-discharge',cat:'Discharging failure',title:'Unable to Discharge — Hardware and Recovery Paths',pages:'48–52',tags:'unable discharge B2.7 SOC 9 blind charge 10min standard charger 30s',summary:'The source covers harness/terminal inspection, no-communication firmware recovery, over-discharge, low SOC and blind-charging recovery.',steps:[
+    'Check communication and power harness continuity and inspect terminals for ablation, oxidation, deformation and wear.',
+    'If the light board is off but buttons are on, the source instructs flashing B2.7 firmware using a CAN box and then checking discharge.',
+    'For forced reset, disconnect B+, B− and sampling wires, stand for 1 minute, reconnect to activate the BMS, then verify communication and discharge.',
+    'If over-discharge is confirmed, use the module charger until each cell is above 3.0 V and then check discharge.',
+    'If communication is normal but SOC <9%, charge until SOC >9%, disconnect the charger and retry discharge.',
+    'If inability to discharge followed blind charging for 10 minutes with a program above B2.5, stop blind charging, connect the standard charger for more than 30 seconds, restart the device and check discharge.',
+    'If cell voltage/SOC are normal but charging is not possible and the software identification underscore is missing, use the source calibration procedure and retry.'
+  ]},
+  {id:'complete-loss',cat:'Communication / firmware',title:'Complete Loss of Communication',pages:'53–54',tags:'complete loss communication B2.7 hard reset over discharge CAN box',summary:'The source starts with physical continuity checks, then provides B2.7 firmware recovery, hard reset and over-discharge recovery branches.',steps:[
+    'Inspect terminals, communication cables and power cables for breakage, damage, loose terminals and oxidation; repair/replace and retry communication.',
+    'If the light board is not lit but the buttons are lit, reflash B2.7 using a CAN box and verify upper-computer communication after automatic restart.',
+    'If required, execute the hard-reset procedure: disconnect B+, B− and sampling wires, stand for 1 minute, reconnect, then reconnect the upper computer and verify communication.',
+    'If over-discharge is confirmed, measure total voltage and use the module charger to raise cells above 3.0 V, restart and retry communication.'
+  ]},
+  {id:'firmware-abnormal',cat:'Communication / firmware',title:'Firmware Abnormality',pages:'55',tags:'firmware B2.7 button light software version underscore calibration',summary:'The source gives two firmware-related cases: button failure with light board active, and a charging/calibration case where the software-version identification is abnormal.',steps:[
+    'For light board lit but button not lit, use the CAN box to reflash B2.7.',
+    'Maintain stable device power during flashing, restart after flashing and check button operation.',
+    'For normal cell/SOC information but no charging with missing software-version underscore, enter calibration mode and recalibrate cell voltage, then restart the host software and retry charging.'
+  ]},
+  {id:'mos-burnout',cat:'BMS hardware',title:'MOS Burnout — Replace BMS',pages:'57',tags:'MOS burnout BMS replace B+ B- sampling communication',summary:'The source treats MOS burnout as a BMS replacement case.',steps:[
+    'Disconnect all battery connections: B+, B−, sampling lines, communication lines and other connected lines.',
+    'Remove the damaged BMS.',
+    'Install a new BMS and reconnect all lines correctly and firmly.',
+    'Restart the device and verify all functions.'
+  ]},
+  {id:'over-discharge',cat:'Cell / charging recovery',title:'Over-Discharge — Module Recovery',pages:'57–58',tags:'over discharge 1.5V 23 cells 3.0V module charger',summary:'The source defines a severe over-discharge branch around cell voltage below 1.5 V or total voltage below 1.5 × 23 and uses module charging to recover cells above 3.0 V.',steps:[
+    'Measure each module cell voltage and total voltage with a multimeter.',
+    'Confirm the over-discharge condition. The source uses cell <1.5 V or total voltage <1.5 × 23 as the trigger.',
+    'Connect the module charger and monitor cell voltage during supplemental charging.',
+    'Continue until all cell voltages are above 3.0 V according to the source procedure.',
+    'After charging, check the battery functions.'
+  ]},
+  {id:'bms-hardware',cat:'BMS hardware',title:'BMS Hardware Issues',pages:'58',tags:'CAN voltage temperature MOS IOT power light board zero drift BMS',summary:'The source lists CAN communication, voltage/temperature acquisition, MOS, IoT power and light-board power faults as BMS hardware issues, with BMS replacement as the listed solution; zero drift uses B2.7 recovery.',steps:[
+    'Recognize the listed BMS hardware issue categories: CAN communication abnormality; voltage/temperature collection abnormality; MOS failure; IoT power-supply abnormality; light-board power-supply abnormality.',
+    'The source solution is to replace the BMS using the replacement procedure.',
+    'For zero drift, the source instructs restoring with B2.7, then restarting, calibrating relevant parameters and confirming resolution.'
+  ]},
+  {id:'maintenance-safety',cat:'Safety / close-out',title:'Maintenance Safety and Close-Out Requirements',pages:'59',tags:'PPE B+ B- 10 minutes gloves shoes multimeter records traceability',summary:'The manual’s final page provides mandatory maintenance precautions and record-keeping requirements.',steps:[
+    'Before maintenance, disconnect B+ and B− and leave the battery standing for more than 10 minutes to discharge residual voltage and reduce electric-shock risk.',
+    'Wear insulating gloves, insulating shoes and other required PPE; use qualified measuring and programming tools.',
+    'When replacing parts, use accessories matching the original specification; the source prohibits unqualified or mismatched parts.',
+    'After maintenance, fully check line connections and equipment parameters, perform functional tests and ensure there are no safety hazards before delivery.',
+    'Record fault symptoms, troubleshooting process, replaced parts and test results for traceability and future maintenance.'
+  ]}
+];
+
+function SopCenterView(){
+  const container=el('div',{class:'sop-center'});
+  const [query,setQuery]=[STATE.sopQuery||'',v=>{STATE.sopQuery=v;}];
+  const activeCat=STATE.sopCategory||'ALL';
+  const cats=['ALL',...Array.from(new Set(BQC_SOP_LIBRARY.map(x=>x.cat)))];
+  const normalized=String(query).trim().toLowerCase();
+  const results=BQC_SOP_LIBRARY.filter(x=>{
+    const catOk=activeCat==='ALL'||x.cat===activeCat;
+    if(!catOk)return false;
+    if(!normalized)return true;
+    return [x.title,x.cat,x.summary,x.tags,x.pages,...x.steps].join(' ').toLowerCase().includes(normalized);
+  });
+  container.appendChild(el('div',{class:'inventory-hero'},[
+    el('div',{class:'inventory-hero-copy'},[
+      el('div',{class:'inventory-kicker'},'TECHNICIAN KNOWLEDGE · SOURCE-BASED'),
+      el('h1',{},'SOP Center'),
+      el('p',{},'Search the approved battery repair and troubleshooting procedures from the uploaded maintenance manual. Use it for revision, fault-path reminders and consistent close-out. Always apply the exact battery/model/site safety requirements before physical work.')
+    ]),
+    el('div',{class:'inventory-hero-badge'},[el('span',{},'PROCEDURES'),el('strong',{},String(BQC_SOP_LIBRARY.length)+' INDEXED')])
+  ]));
+
+  const searchCard=el('div',{class:'card'});
+  searchCard.appendChild(el('div',{class:'sop-search-row'},[
+    el('input',{type:'search',value:query,placeholder:'Search: no communication, fault 149, B2.7, over-discharge, AFE, IoT, charging…',oninput:e=>{STATE.sopQuery=e.target.value;render();}}),
+    el('button',{class:'btn',onClick:()=>{STATE.sopQuery='';render();}},'Clear')
+  ]));
+  const catRail=el('div',{class:'sop-cat-rail'});
+  cats.forEach(cat=>{const b=el('button',{class:'sop-cat '+(cat===activeCat?'active':''),onClick:()=>{STATE.sopCategory=cat;render();}},cat);catRail.appendChild(b);});
+  searchCard.appendChild(catRail);
+  searchCard.appendChild(el('div',{class:'sub'},`${results.length} procedure${results.length===1?'':'s'} match · Source pages are shown on every procedure.`));
+  container.appendChild(searchCard);
+
+  const safety=el('div',{class:'card',style:'border-color:rgba(245,158,11,.35);'});
+  safety.appendChild(el('h3',{},'Before you touch a battery — safety gate'));
+  safety.appendChild(el('div',{class:'sop-safety-grid'},[
+    el('div',{class:'sop-box'},[el('strong',{},'SOURCE PRECAUTION'),el('div',{},'Disconnect B+ and B− and leave the battery standing for more than 10 minutes before maintenance, as stated on page 59.'),]),
+    el('div',{class:'sop-box'},[el('strong',{},'PPE'),el('div',{},'Use insulating gloves, insulating shoes and qualified measuring/programming tools.'),]),
+    el('div',{class:'sop-box'},[el('strong',{},'TRACEABILITY'),el('div',{},'Record fault symptoms, troubleshooting, replaced parts and test results before close-out.')])
+  ]));
+  container.appendChild(safety);
+
+  const quick=el('div',{class:'card'});quick.appendChild(el('h3',{},'Quick revision — technician reminders'));
+  [
+    'Identify the battery/BMS number before starting work. Use the new QR/barcode scanner or a hardware scanner.',
+    'Check physical condition, charge level, cell balance and relevant BMS data before replacing parts.',
+    'Separate charger, discharge, communication, cell, fuse, AFE, BMS, IoT and firmware branches instead of replacing parts blindly.',
+    'Measure and record evidence: total voltage, cell voltages, BMS values, alarms, connector condition and test result.',
+    'After repair, verify communication plus the affected charge/discharge/LED function, then complete the required aging/function test and traceable disposition.'
+  ].forEach((x,i)=>quick.appendChild(el('div',{class:'check-row'},[el('span',{class:'badge'},String(i+1).padStart(2,'0')),el('span',{},x)])));
+  container.appendChild(quick);
+
+  if(!results.length){container.appendChild(el('div',{class:'card'},[el('h3',{},'No SOP match'),el('div',{class:'sub'},'Try a fault symptom, component, alarm, firmware version, tool or exact phrase from the manual.')]));return container;}
+  const list=el('div',{class:'sop-results'});
+  results.forEach(item=>{
+    const open=STATE.sopOpenId===item.id;
+    const card=el('div',{class:'card sop-result-card'});
+    const head=el('div',{class:'sop-result-head'});
+    const left=el('div',{},[el('div',{class:'sop-kicker'},item.cat+' · SOURCE PAGES '+item.pages),el('h3',{},item.title),el('div',{class:'sub'},item.summary)]);
+    const right=el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;'},[
+      el('span',{class:'badge'},String(item.steps.length)+' steps'),
+      el('button',{class:open?'btn-primary':'btn',onClick:()=>{STATE.sopOpenId=open?'':item.id;render();}},open?'Hide steps':'Open procedure')
+    ]);
+    head.appendChild(left);head.appendChild(right);card.appendChild(head);
+    if(open){
+      const body=el('div',{class:'sop-procedure-body'});
+      item.steps.forEach((step,i)=>body.appendChild(el('div',{class:'sop-step'},[el('div',{class:'sop-step-num'},String(i+1)),el('div',{},step)])));
+      body.appendChild(el('div',{class:'sop-source-note'},'Source reference: uploaded Battery After-Sales Maintenance / DM632 SOP manual, pages '+item.pages+'. The app preserves the source procedure wording/thresholds for revision; verify the current approved model/site instruction before execution.'));
+      card.appendChild(body);
+    }
+    list.appendChild(card);
+  });
+  container.appendChild(list);
+  return container;
+}
+
 function KnowledgeInsightsView(){
   const container=el('div');container.appendChild(el('div',{class:'sector-tag'},'Battery Operations Insights — 5S, Li-ion / LiFePO4 and technician reminders'));
   const five=el('div',{class:'card'});five.appendChild(el('h3',{},'5S — 日本語 + English'));
@@ -9368,6 +9890,7 @@ async function exportMyReport(){
     } else if(STATE.role==='plantinv'){
       add('ledger','OEM Stock Ledger',buildStockLedgerExportRows); add('oemid','OEM ID Log',buildOemIdLogExportRows); add('dailystock','Daily Stock Data',buildDailyStockExportRows);
       add('qualityissues','Quality Issue Breakdown',()=>rowsOrEmpty((STATE.qualityIssueRecords||[]).map(r=>({'Issue':r.label||r.id,'Platform':r.platform||'','Current Qty':parseInt(r.count)||0,'Last Updated':r.updatedAt||'','Updated By':r.updatedBy||''}))));
+      add('plantquality','Plant Quality Checks',()=>rowsOrEmpty((STATE.plantQualityChecks||[]).map(r=>({'Date':r.date||'','Battery Number':r.batteryNumber||'','Platform':r.platform||'','Result':r.result||'','Inspector':r.inspector||'','Disposition':r.disposition||'','Notes':r.notes||''}))));
       add('newbattery','New Battery Intake',buildNewBatteryExportRows); add('movements','Stock Movements',buildAdjustmentExportRows); add('stocksummary','OEM Ledger Stock',buildStockSummaryRows); add('newstocksummary','New Battery Stock',buildNewBatteryStockSummaryRows);
       add('warranty','Warranty — Kyebando',buildWarrantyExportRows); add('warrantysummary','Warranty Summary',buildWarrantySummaryRows); add('iot','IoT Upgrade Tracker',buildIotExportRows); add('daylog','Day Notes',buildDayLogExportRows);
       filename=`plant-inventory-report-${todayStr()}.xlsx`;
