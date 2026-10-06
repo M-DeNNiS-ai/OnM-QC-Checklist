@@ -10768,3 +10768,308 @@ function AttachedWorkbookView(){
 })();
 </script>
 
+
+
+
+<style id="large-adjustable-chart-upgrade">
+/* ============================================================
+   LARGE + ADJUSTABLE CHARTS
+   Additive upgrade: existing content and chart logic remain intact.
+   ============================================================ */
+
+/* Let chart cards use the available horizontal space. */
+.chart-card,
+.chart-card.card,
+.chart-card.panel,
+.chart-card .card {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box;
+}
+
+.chart-card .chart-wrap,
+.chart-card canvas {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* Bigger default chart area. */
+.chart-card .chart-wrap {
+  position: relative;
+  min-height: 460px !important;
+  height: clamp(460px, 62vh, 760px) !important;
+  resize: vertical;
+  overflow: auto;
+  min-width: 0;
+  box-sizing: border-box;
+  border-radius: 12px;
+}
+
+/* Canvas must fill the resized chart area. */
+.chart-card .chart-wrap > canvas {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+}
+
+/* Larger chart cards on wide screens. */
+@media (min-width: 1200px) {
+  .chart-card .chart-wrap {
+    min-height: 520px !important;
+    height: clamp(520px, 66vh, 860px) !important;
+  }
+}
+
+@media (min-width: 1600px) {
+  .chart-card .chart-wrap {
+    min-height: 580px !important;
+    height: clamp(580px, 70vh, 980px) !important;
+  }
+}
+
+/* Keep charts usable on phones without forcing horizontal overflow. */
+@media (max-width: 700px) {
+  .chart-card .chart-wrap {
+    min-height: 360px !important;
+    height: 55vh !important;
+  }
+}
+
+/* Resize handle should be obvious. */
+.chart-card .chart-wrap::after {
+  content: "↕ Drag bottom edge to resize";
+  position: absolute;
+  right: 10px;
+  bottom: 6px;
+  z-index: 5;
+  pointer-events: none;
+  font-size: 11px;
+  line-height: 1;
+  opacity: .55;
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: rgba(127,127,127,.12);
+}
+
+/* Optional full-space mode added by the JS controls. */
+.chart-card.chart-full-space {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+}
+
+.chart-card.chart-full-space .chart-wrap {
+  height: min(78vh, 1000px) !important;
+  min-height: 620px !important;
+}
+
+/* Chart controls stay readable and accessible. */
+.chart-card .chart-resize-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin: 8px 0 10px;
+}
+
+.chart-card .chart-resize-controls button,
+.chart-card .chart-resize-controls select {
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.chart-card .chart-resize-controls .chart-size-label {
+  font-size: 12px;
+  opacity: .75;
+  margin-left: auto;
+}
+
+/* Avoid chart text becoming clipped by a parent overflow rule. */
+.chart-card,
+.chart-card .chart-wrap {
+  overflow-x: hidden;
+}
+
+/* Print-friendly override. */
+@media print {
+  .chart-card .chart-wrap {
+    height: 620px !important;
+    min-height: 620px !important;
+    resize: none !important;
+  }
+  .chart-resize-controls {
+    display: none !important;
+  }
+}
+</style>
+
+<script id="large-adjustable-chart-upgrade-script">
+(function () {
+  "use strict";
+
+  const STORAGE_KEY = "batteryQC.chartSizes.v1";
+
+  function getStore() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); }
+    catch (_) { return {}; }
+  }
+
+  function saveStore(store) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }
+    catch (_) {}
+  }
+
+  function chartKey(card, index) {
+    const title = card.querySelector("h1,h2,h3,h4,h5,.chart-title,.card-title");
+    const text = title ? title.textContent.trim() : "";
+    const canvas = card.querySelector("canvas");
+    return text || (canvas && canvas.id) || ("chart-" + index);
+  }
+
+  function resizeChartInstance(canvas) {
+    try {
+      if (window.Chart && typeof Chart.getChart === "function") {
+        const chart = Chart.getChart(canvas);
+        if (chart) {
+          chart.resize();
+          chart.update("none");
+        }
+      }
+    } catch (_) {}
+    try {
+      window.dispatchEvent(new Event("resize"));
+    } catch (_) {}
+  }
+
+  function setChartHeight(card, height) {
+    const wrap = card.querySelector(".chart-wrap");
+    if (!wrap) return;
+    wrap.style.height = height + "px";
+    wrap.style.minHeight = height + "px";
+
+    const canvas = wrap.querySelector("canvas");
+    if (canvas) {
+      canvas.style.height = "100%";
+      canvas.style.width = "100%";
+      requestAnimationFrame(function () {
+        resizeChartInstance(canvas);
+      });
+    }
+  }
+
+  function addControls(card, index) {
+    if (card.querySelector(".chart-resize-controls")) return;
+
+    const wrap = card.querySelector(".chart-wrap");
+    const canvas = card.querySelector("canvas");
+    if (!wrap || !canvas) return;
+
+    const key = chartKey(card, index);
+    const store = getStore();
+
+    const controls = document.createElement("div");
+    controls.className = "chart-resize-controls";
+    controls.setAttribute("aria-label", "Chart size controls");
+
+    const label = document.createElement("span");
+    label.textContent = "Chart size";
+    controls.appendChild(label);
+
+    const sizes = [
+      ["Compact", 360],
+      ["Large", 520],
+      ["XL", 680],
+      ["Full height", Math.min(Math.max(window.innerHeight * 0.78, 620), 1000)]
+    ];
+
+    sizes.forEach(function (item) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = item[0];
+      button.addEventListener("click", function () {
+        setChartHeight(card, Math.round(item[1]));
+        const current = getStore();
+        current[key] = Math.round(item[1]);
+        saveStore(current);
+      });
+      controls.appendChild(button);
+    });
+
+    const reset = document.createElement("button");
+    reset.type = "button";
+    reset.textContent = "Reset";
+    reset.addEventListener("click", function () {
+      const defaultHeight = window.innerWidth >= 1200 ? 600 : 500;
+      setChartHeight(card, defaultHeight);
+      const current = getStore();
+      delete current[key];
+      saveStore(current);
+    });
+    controls.appendChild(reset);
+
+    const full = document.createElement("button");
+    full.type = "button";
+    full.textContent = "Use full width";
+    full.addEventListener("click", function () {
+      card.classList.toggle("chart-full-space");
+      requestAnimationFrame(function () {
+        resizeChartInstance(canvas);
+      });
+    });
+    controls.appendChild(full);
+
+    const sizeLabel = document.createElement("span");
+    sizeLabel.className = "chart-size-label";
+    sizeLabel.textContent = "Drag the chart's bottom edge for any custom height.";
+    controls.appendChild(sizeLabel);
+
+    wrap.parentNode.insertBefore(controls, wrap);
+
+    /* Restore the user's last size for this chart. */
+    if (Number.isFinite(store[key])) {
+      setChartHeight(card, store[key]);
+    }
+
+    /* Persist manual resize using ResizeObserver. */
+    if (window.ResizeObserver) {
+      let timer = null;
+      const ro = new ResizeObserver(function (entries) {
+        if (!entries.length) return;
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+          const h = Math.round(entries[0].contentRect.height);
+          if (h >= 250 && h <= 1400) {
+            const current = getStore();
+            current[key] = h;
+            saveStore(current);
+            sizeLabel.textContent = "Custom height: " + h + " px";
+          }
+        }, 250);
+      });
+      ro.observe(wrap);
+    }
+  }
+
+  function init() {
+    const cards = document.querySelectorAll(".chart-card");
+    cards.forEach(addControls);
+
+    /* Also catch charts created later by existing app code. */
+    if (window.MutationObserver) {
+      const observer = new MutationObserver(function () {
+        document.querySelectorAll(".chart-card").forEach(addControls);
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+</script>
