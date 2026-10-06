@@ -11366,3 +11366,228 @@ function AttachedWorkbookView(){
   });
 })();
 </script>
+
+
+<!-- FINAL CLEAN CHART READABILITY OVERRIDE
+     Keeps all existing data/functionality. This layer only simplifies chart controls
+     and makes bar dimensions compact while prioritizing readable labels. -->
+<style id="final-clean-chart-readability">
+  .chart-card .chart-wrap{
+    position:relative !important;
+    width:100% !important;
+    min-height:280px !important;
+    height:clamp(280px, 42vh, 420px) !important;
+    max-height:420px !important;
+    padding:8px 8px 12px !important;
+    overflow:visible !important;
+  }
+
+  .chart-card canvas{
+    width:100% !important;
+    height:100% !important;
+    max-width:100% !important;
+  }
+
+  /* Compact bars: enough width to communicate magnitude without becoming bulky. */
+  .chart-card .chart-wrap canvas{
+    --chart-bar-width: 34px;
+  }
+
+  /* Hide all previously-added chart control groups/buttons except the single
+     Expand/Collapse control created below. */
+  .chart-card .chart-controls,
+  .chart-card .chart-actions,
+  .chart-card .chart-toolbar,
+  .chart-card .chart-size-controls,
+  .chart-card .chart-resize-controls,
+  .chart-card .chart-presets,
+  .chart-card .chart-export-controls,
+  .chart-card [class*="chart-control"],
+  .chart-card [class*="chart-action"],
+  .chart-card [class*="chart-size"],
+  .chart-card [class*="chart-resize"],
+  .chart-card [class*="chart-preset"]{
+    display:none !important;
+  }
+
+  .chart-card .final-chart-expand{
+    display:inline-flex !important;
+    align-items:center;
+    justify-content:center;
+    margin:4px 0 6px auto;
+    min-width:92px;
+    height:30px;
+    padding:0 10px;
+    border:1px solid rgba(127,127,127,.35);
+    border-radius:7px;
+    background:transparent;
+    font-size:12px;
+    line-height:1;
+    cursor:pointer;
+  }
+
+  .chart-card.final-chart-expanded .chart-wrap{
+    height:clamp(360px, 58vh, 560px) !important;
+    max-height:560px !important;
+  }
+
+  /* More room for every label; avoid crowded ticks and overlapping text. */
+  .chart-card .chart-wrap,
+  .chart-card .chart-wrap *{
+    box-sizing:border-box;
+  }
+
+  @media (max-width:700px){
+    .chart-card .chart-wrap{
+      height:320px !important;
+      min-height:260px !important;
+    }
+    .chart-card.final-chart-expanded .chart-wrap{
+      height:440px !important;
+    }
+  }
+</style>
+
+<script id="final-clean-chart-readability-js">
+(function(){
+  'use strict';
+
+  function isChartCard(el){
+    return el && el.classList && el.classList.contains('chart-card');
+  }
+
+  function addSingleExpandButton(card){
+    if(!isChartCard(card) || card.querySelector('.final-chart-expand')) return;
+
+    var wrap = card.querySelector('.chart-wrap');
+    if(!wrap) return;
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'final-chart-expand';
+    btn.textContent = 'Expand';
+    btn.setAttribute('aria-expanded','false');
+    btn.title = 'Expand or collapse this chart';
+
+    wrap.parentNode.insertBefore(btn, wrap);
+
+    btn.addEventListener('click', function(){
+      var expanded = card.classList.toggle('final-chart-expanded');
+      btn.textContent = expanded ? 'Collapse' : 'Expand';
+      btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+
+      var canvases = card.querySelectorAll('canvas');
+      canvases.forEach(function(canvas){
+        try{
+          if(window.Chart){
+            var instance = Chart.getChart(canvas);
+            if(instance){
+              instance.resize();
+              instance.update('none');
+            }
+          }
+        }catch(e){}
+      });
+    });
+  }
+
+  function compactChartOptions(chart){
+    try{
+      if(!chart || !chart.options) return;
+
+      chart.options.responsive = true;
+      chart.options.maintainAspectRatio = false;
+
+      chart.options.layout = chart.options.layout || {};
+      chart.options.layout.padding = Object.assign({
+        top: 8, right: 12, bottom: 8, left: 8
+      }, chart.options.layout.padding || {});
+
+      var scales = chart.options.scales || {};
+      var x = scales.x || {};
+      var y = scales.y || {};
+
+      x.ticks = Object.assign({}, x.ticks || {}, {
+        autoSkip: true,
+        maxTicksLimit: 10,
+        maxRotation: 35,
+        minRotation: 0,
+        padding: 6,
+        font: Object.assign({}, (x.ticks || {}).font || {}, {size:12})
+      });
+
+      y.ticks = Object.assign({}, y.ticks || {}, {
+        maxTicksLimit: 8,
+        padding: 6,
+        font: Object.assign({}, (y.ticks || {}).font || {}, {size:12})
+      });
+
+      x.title = Object.assign({}, x.title || {}, {
+        display: !!(x.title && x.title.text),
+        font: Object.assign({}, (x.title || {}).font || {}, {size:12, weight:'600'}),
+        padding: {top:6, bottom:2}
+      });
+
+      y.title = Object.assign({}, y.title || {}, {
+        display: !!(y.title && y.title.text),
+        font: Object.assign({}, (y.title || {}).font || {}, {size:12, weight:'600'}),
+        padding: {top:2, bottom:6}
+      });
+
+      chart.options.scales.x = x;
+      chart.options.scales.y = y;
+
+      if(Array.isArray(chart.data && chart.data.datasets)){
+        chart.data.datasets.forEach(function(ds){
+          if(ds.type === 'bar' || chart.config && chart.config.type === 'bar'){
+            ds.barPercentage = 0.48;
+            ds.categoryPercentage = 0.68;
+            ds.maxBarThickness = 34;
+            ds.barThickness = undefined;
+          }
+        });
+      }
+
+      chart.resize();
+      chart.update('none');
+    }catch(e){}
+  }
+
+  function clean(){
+    document.querySelectorAll('.chart-card').forEach(function(card){
+      addSingleExpandButton(card);
+    });
+
+    if(window.Chart && Chart.instances){
+      Object.keys(Chart.instances).forEach(function(key){
+        compactChartOptions(Chart.instances[key]);
+      });
+    }
+
+    document.querySelectorAll('.chart-card canvas').forEach(function(canvas){
+      try{
+        if(window.Chart){
+          var chart = Chart.getChart(canvas);
+          if(chart) compactChartOptions(chart);
+        }
+      }catch(e){}
+    });
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){
+      setTimeout(clean, 100);
+      setTimeout(clean, 600);
+      setTimeout(clean, 1500);
+    });
+  }else{
+    setTimeout(clean, 100);
+    setTimeout(clean, 600);
+    setTimeout(clean, 1500);
+  }
+
+  new MutationObserver(function(){
+    setTimeout(clean, 50);
+  }).observe(document.documentElement, {childList:true, subtree:true});
+})();
+</script>
