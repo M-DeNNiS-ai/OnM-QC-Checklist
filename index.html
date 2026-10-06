@@ -3574,6 +3574,113 @@ function oldestPendingIotDate(){
 }
  
 /* ---------- App state ---------- */
+/* ---------- Reload-safe UI continuity ----------
+   Keeps the user's working place across a full browser reload without touching operational
+   records. sessionStorage is intentionally used so a separate browser tab does not inherit
+   another tab's position, while the same tab survives refreshes. */
+const BQC_UI_STATE_KEY = 'bqc_ui_continuity_v1';
+let BQC_RESTORE_UI = null;
+let BQC_SCROLL_SAVE_RAF = 0;
+
+function readBqcUiState(){
+  try{
+    const raw=sessionStorage.getItem(BQC_UI_STATE_KEY);
+    if(!raw) return null;
+    const value=JSON.parse(raw);
+    return value && typeof value==='object' ? value : null;
+  }catch(e){ return null; }
+}
+function clearBqcUiState(){
+  try{ sessionStorage.removeItem(BQC_UI_STATE_KEY); }catch(e){}
+  BQC_RESTORE_UI=null;
+}
+function captureBqcNestedScroll(){
+  const selectors=['.nav-rail','.glass-tabs','.table-wrap','.preview-scroll','.modal-body'];
+  const out=[];
+  selectors.forEach(selector=>{
+    document.querySelectorAll(selector).forEach((node,index)=>{
+      if(node.scrollTop || node.scrollLeft){
+        out.push({selector,index,top:node.scrollTop||0,left:node.scrollLeft||0});
+      }
+    });
+  });
+  return out;
+}
+function saveBqcUiState(){
+  if(!STATE || !STATE.role) return;
+  try{
+    const payload={
+      v:1,
+      role:STATE.role,
+      techName:STATE.techName||'',
+      stage:STATE.stage??null,
+      view:STATE.view||'main',
+      searchQuery:STATE.searchQuery||'',
+      searchCommitted:STATE.searchCommitted||'',
+      searchReturnView:STATE.searchReturnView||'main',
+      searchActive:!!STATE.searchActive,
+      openId:STATE.openId||null,
+      batteryModalId:STATE.batteryModalId||'',
+      chartModal:STATE.chartModal||null,
+      scrollY:window.scrollY||document.documentElement.scrollTop||0,
+      nestedScroll:captureBqcNestedScroll(),
+      savedAt:Date.now()
+    };
+    sessionStorage.setItem(BQC_UI_STATE_KEY,JSON.stringify(payload));
+  }catch(e){ /* Storage may be unavailable; app continues normally. */ }
+}
+function scheduleBqcUiStateSave(){
+  if(BQC_SCROLL_SAVE_RAF) return;
+  BQC_SCROLL_SAVE_RAF=requestAnimationFrame(()=>{
+    BQC_SCROLL_SAVE_RAF=0;
+    saveBqcUiState();
+  });
+}
+function restoreBqcUiPosition(){
+  const saved=BQC_RESTORE_UI;
+  if(!saved) return;
+  const y=Math.max(0,Number(saved.scrollY)||0);
+  try{
+    window.scrollTo({top:y,left:0,behavior:'auto'});
+  }catch(e){ window.scrollTo(0,y); }
+  (saved.nestedScroll||[]).forEach(item=>{
+    const nodes=document.querySelectorAll(item.selector||'');
+    const node=nodes[item.index||0];
+    if(!node) return;
+    node.scrollLeft=Number(item.left)||0;
+    node.scrollTop=Number(item.top)||0;
+  });
+}
+function restoreBqcNavigationState(user){
+  const saved=readBqcUiState();
+  if(!saved || !user) return;
+  const sameRole=saved.role===STATE.role;
+  const sameName=!saved.techName || !STATE.techName || saved.techName===STATE.techName;
+  if(!sameRole || !sameName) return;
+  BQC_RESTORE_UI=saved;
+  if(saved.searchQuery!=null) STATE.searchQuery=saved.searchQuery;
+  if(saved.searchCommitted!=null) STATE.searchCommitted=saved.searchCommitted;
+  if(saved.searchReturnView!=null) STATE.searchReturnView=saved.searchReturnView;
+  STATE.searchActive=!!saved.searchActive;
+  if(saved.openId!=null) STATE.openId=saved.openId;
+  if(saved.batteryModalId!=null) STATE.batteryModalId=saved.batteryModalId;
+  if(saved.chartModal!=null) STATE.chartModal=saved.chartModal;
+
+  const allowed={
+    omtech:['main','progress','rca','knowledge','myclosed','analytics','notes','imports','search'],
+    omadmin:['dashboard','progress','analytics','integrity','history','notes','rca','knowledge','imports','search'],
+    plantinv:['dashboard','progress','daily','stock','newStock','warrantyStock','operations','notes','integrity','knowledge','imports','search'],
+    quality:['warranty','bsa','progress','overview','ledger','analytics','integrity','notes','rca','knowledge','imports','search'],
+    bsa:['activity','newcase','progress','rca','knowledge','analytics','notes','history','imports','search']
+  };
+  if(Array.isArray(allowed[STATE.role]) && allowed[STATE.role].includes(saved.view)) STATE.view=saved.view;
+}
+
+try{ history.scrollRestoration='manual'; }catch(e){}
+window.addEventListener('scroll',scheduleBqcUiStateSave,{passive:true});
+window.addEventListener('pagehide',saveBqcUiState,{capture:true});
+window.addEventListener('beforeunload',saveBqcUiState,{capture:true});
+
 let STATE = {
   role: null,
   stage: null,
@@ -3708,6 +3815,7 @@ let renderInProgress = false;
 let renderPending = false;
 function render(){
   if(renderInProgress){ renderPending=true; return; }
+  saveBqcUiState();
   renderInProgress = true;
   renderPending = false;
   const active = document.activeElement;
@@ -3778,6 +3886,15 @@ function render(){
       }
       window.scrollTo(0, scrollY);
     }
+  }
+  if(BQC_RESTORE_UI){
+    requestAnimationFrame(()=>{
+      restoreBqcUiPosition();
+      requestAnimationFrame(()=>{
+        restoreBqcUiPosition();
+        BQC_RESTORE_UI=null;
+      });
+    });
   }
 }
  
@@ -4391,6 +4508,7 @@ function LoginView(){
         errBox.textContent='';
         try{
           const auth=await apiFetch('/api/auth/login',{method:'POST',body:JSON.stringify({mode,pin:inp.value})});
+          clearBqcUiState();
           STATE.role=mode; STATE.view='main';
           if(mode==='omadmin') STATE.view='dashboard';
           else if(mode==='plantinv') STATE.view='bulk';
@@ -4422,6 +4540,7 @@ function Header(){
     el('button',{class:'btn-sm', disabled: STATE.myReportExporting, onClick: exportMyReport}, STATE.myReportExporting ? loadingLabel(true,'Preparing…') : '⬇ Download My Report'),
     el('button',{class:'btn-sm', onClick:()=>{
       apiFetch('/api/auth/logout',{method:'POST'}).catch(()=>{});
+      clearBqcUiState();
       STATE.role=null; STATE.stage=null; STATE.view='main'; STATE.openId=null; STATE.serialWarning=null; STATE.searchQuery='';STATE.searchCommitted='';
       render();
     }},'Sign Out')
@@ -9353,6 +9472,7 @@ async function restoreSession(){
     else if(STATE.role==='plantinv' || STATE.role==='plant' || STATE.role==='inventory'){ STATE.role='plantinv'; STATE.view='bulk'; }
     else if(STATE.role==='quality') STATE.view='warranty';
     else if(STATE.role==='bsa') STATE.view='activity';
+    restoreBqcNavigationState(s.user);
     // Paint shell immediately after authentication; role data is loaded off the critical path.
     render(); removeBootLoader();
     const hydrate=async()=>{
