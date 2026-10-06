@@ -11591,3 +11591,399 @@ function AttachedWorkbookView(){
   }).observe(document.documentElement, {childList:true, subtree:true});
 })();
 </script>
+
+
+<!-- WORLD-CLASS CHART ENGINE
+     Final additive layer: preserves application data and workflows while fixing
+     label/point alignment, scale, typography, interaction and responsive layout. -->
+<style id="world-class-chart-engine">
+  .chart-card .chart-wrap{
+    position:relative !important;
+    width:100% !important;
+    height:clamp(300px, 44vh, 440px) !important;
+    min-height:300px !important;
+    max-height:440px !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    padding:4px 4px 8px !important;
+    scrollbar-width:thin;
+  }
+
+  .chart-card .chart-wrap > canvas{
+    display:block !important;
+    height:100% !important;
+    min-height:290px !important;
+    max-height:none !important;
+  }
+
+  .chart-card.final-chart-expanded .chart-wrap{
+    height:clamp(380px, 58vh, 560px) !important;
+    min-height:380px !important;
+    max-height:560px !important;
+  }
+
+  .chart-card .final-chart-expand{
+    margin:3px 0 5px auto !important;
+    min-width:92px !important;
+    height:29px !important;
+    font-size:12px !important;
+  }
+
+  @media(max-width:700px){
+    .chart-card .chart-wrap{
+      height:330px !important;
+      min-height:280px !important;
+    }
+    .chart-card.final-chart-expanded .chart-wrap{
+      height:450px !important;
+    }
+  }
+</style>
+
+<script id="world-class-chart-engine-js">
+(function(){
+  'use strict';
+
+  const WCE = {
+    enhanced: new WeakSet(),
+    scheduled: false,
+
+    css(name, fallback){
+      try{
+        const v=getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return v || fallback;
+      }catch(e){ return fallback; }
+    },
+
+    numeric(v){
+      if(v === null || v === undefined || v === '') return null;
+      const n=Number(v);
+      return Number.isFinite(n) ? n : null;
+    },
+
+    /* Make every dataset exactly correspond to the category labels by index.
+       This prevents hidden/extra values from shifting the visual interpretation. */
+    normalizeData(chart){
+      if(!chart || !chart.data) return;
+      const labels=Array.isArray(chart.data.labels) ? chart.data.labels.slice() : [];
+      chart.data.labels=labels;
+
+      (chart.data.datasets || []).forEach(ds=>{
+        const original=Array.isArray(ds.data) ? ds.data : [];
+        const aligned=new Array(labels.length);
+
+        for(let i=0;i<labels.length;i++){
+          const v=original[i];
+          aligned[i]=(v === null || v === undefined || v === '') ? null : v;
+        }
+
+        /* Preserve the original array length only when there are no labels. */
+        ds.data=labels.length ? aligned : original.slice();
+      });
+    },
+
+    wrapLabel(value, maxChars){
+      const s=String(value ?? '');
+      if(s.length <= maxChars) return s;
+      const words=s.split(/\s+/);
+      const lines=[];
+      let line='';
+      words.forEach(word=>{
+        const next=line ? line+' '+word : word;
+        if(next.length > maxChars && line){
+          lines.push(line);
+          line=word;
+        }else{
+          line=next;
+        }
+      });
+      if(line) lines.push(line);
+      return lines.length ? lines.slice(0,3) : [s];
+    },
+
+    prepareLabels(chart){
+      const labels=chart.data?.labels || [];
+      const count=labels.length;
+      const x=chart.options.scales?.x;
+      if(!x) return;
+
+      x.type='category';
+      x.offset=true;
+
+      x.ticks=Object.assign({},x.ticks||{},{
+        autoSkip:false,
+        maxRotation: count > 8 ? 45 : 0,
+        minRotation: count > 8 ? 35 : 0,
+        padding: count > 12 ? 5 : 7,
+        color: WCE.css('--muted','#667085'),
+        font:{size:11, weight:'500'}
+      });
+
+      /* Every displayed tick comes from the exact label at that index.
+         No sampling that can make a label appear to belong to another point. */
+      x.ticks.callback=function(value,index){
+        const raw=labels[index];
+        if(raw===undefined) return '';
+        return WCE.wrapLabel(raw, count > 10 ? 14 : 20);
+      };
+
+      x.grid=Object.assign({},x.grid||{},{
+        drawTicks:true,
+        color:'rgba(120,130,145,.14)',
+        tickLength:4
+      });
+
+      x.border=Object.assign({},x.border||{},{
+        color:'rgba(120,130,145,.45)'
+      });
+    },
+
+    prepareY(chart){
+      const y=chart.options.scales?.y;
+      if(!y) return;
+
+      y.ticks=Object.assign({},y.ticks||{},{
+        maxTicksLimit:7,
+        padding:7,
+        color:WCE.css('--muted','#667085'),
+        font:{size:11, weight:'500'},
+        callback:function(value){
+          const n=Number(value);
+          if(!Number.isFinite(n)) return value;
+          if(Math.abs(n)>=1000000) return (n/1000000).toFixed(n%1000000 ? 1 : 0)+'M';
+          if(Math.abs(n)>=1000) return (n/1000).toFixed(n%1000 ? 1 : 0)+'k';
+          return Number.isInteger(n) ? String(n) : n.toFixed(1);
+        }
+      });
+
+      y.grid=Object.assign({},y.grid||{},{
+        color:'rgba(120,130,145,.16)',
+        lineWidth:1,
+        drawTicks:true
+      });
+
+      y.border=Object.assign({},y.border||{},{
+        color:'rgba(120,130,145,.45)'
+      });
+    },
+
+    prepareDatasets(chart){
+      const type=String(chart.config?.type||'').toLowerCase();
+      const labels=chart.data?.labels || [];
+      const count=labels.length;
+      const datasets=chart.data?.datasets || [];
+
+      datasets.forEach((ds,di)=>{
+        ds.data=Array.isArray(ds.data) ? ds.data.slice(0,count) : [];
+        ds.label=ds.label || `Series ${di+1}`;
+
+        if(type==='bar'){
+          /* Compact, consistent bars. Chart.js determines exact category
+             positions, so labels and bars remain index-locked. */
+          ds.barPercentage=count > 12 ? 0.42 : 0.52;
+          ds.categoryPercentage=count > 12 ? 0.66 : 0.72;
+          ds.maxBarThickness=count > 12 ? 24 : 30;
+          ds.borderWidth=ds.borderWidth ?? 1;
+          ds.borderRadius=ds.borderRadius ?? 3;
+          ds.borderSkipped=false;
+        }
+
+        if(type==='line'){
+          ds.tension=ds.tension ?? 0.18;
+          ds.borderWidth=ds.borderWidth ?? 2;
+          ds.pointRadius=count > 30 ? 2 : 3;
+          ds.pointHoverRadius=6;
+          ds.pointHitRadius=12;
+          ds.spanGaps=false;
+        }
+      });
+    },
+
+    setCanvasWidth(chart){
+      const canvas=chart.canvas;
+      const wrap=canvas.closest('.chart-wrap');
+      if(!canvas || !wrap) return;
+
+      const count=(chart.data?.labels||[]).length;
+      const available=wrap.clientWidth || 700;
+
+      /* Long category series get a controlled internal width. The wrapper
+         scrolls instead of squeezing labels until they become unreadable. */
+      const perCategory = count > 24 ? 54 : count > 16 ? 48 : count > 10 ? 42 : 0;
+      const desired = perCategory ? Math.max(available, count*perCategory) : available;
+
+      canvas.style.width=desired+'px';
+      canvas.style.height='100%';
+      canvas.width=canvas.width; /* let Chart.js recalculate from CSS size */
+      return desired;
+    },
+
+    interaction(chart){
+      chart.options.interaction=Object.assign({},chart.options.interaction||{},{
+        mode:'index',
+        intersect:false,
+        axis:'x'
+      });
+
+      chart.options.plugins=chart.options.plugins||{};
+
+      chart.options.plugins.tooltip=Object.assign({},chart.options.plugins.tooltip||{},{
+        enabled:true,
+        mode:'index',
+        intersect:false,
+        axis:'x',
+        padding:10,
+        titleFont:{size:12,weight:'700'},
+        bodyFont:{size:12},
+        displayColors:true,
+        callbacks:{
+          title:function(items){
+            if(!items || !items.length) return '';
+            return String(chart.data.labels[items[0].dataIndex] ?? '');
+          },
+          label:function(ctx){
+            const value=ctx.raw;
+            const n=WCE.numeric(value);
+            const shown=n===null ? String(value ?? '') :
+              (Math.abs(n)>=1000000 ? (n/1000000).toFixed(2)+'M' :
+               Math.abs(n)>=1000 ? (n/1000).toFixed(2)+'k' :
+               (Number.isInteger(n)?String(n):n.toFixed(2)));
+            return `${ctx.dataset.label}: ${shown}`;
+          }
+        }
+      });
+
+      chart.options.plugins.legend=Object.assign({},chart.options.plugins.legend||{},{
+        display:(chart.data?.datasets||[]).length > 1,
+        position:'top',
+        align:'start',
+        labels:{
+          usePointStyle:true,
+          pointStyle:'circle',
+          boxWidth:8,
+          boxHeight:8,
+          padding:14,
+          font:{size:11,weight:'600'}
+        }
+      });
+    },
+
+    accessibility(chart){
+      const canvas=chart.canvas;
+      if(!canvas) return;
+
+      canvas.setAttribute('role','img');
+      const title=canvas.closest('.chart-card')?.querySelector('h3')?.textContent || 'Chart';
+      canvas.setAttribute('aria-label',title);
+
+      /* Keyboard focus gives the same high-quality tooltip interaction. */
+      canvas.tabIndex=0;
+      canvas.addEventListener('keydown',function(e){
+        if(e.key!=='ArrowLeft' && e.key!=='ArrowRight') return;
+        const labels=chart.data?.labels||[];
+        if(!labels.length) return;
+        const active=chart.getActiveElements?.() || [];
+        let index=active.length ? active[0].index : 0;
+        index += e.key==='ArrowRight' ? 1 : -1;
+        index=Math.max(0,Math.min(labels.length-1,index));
+        chart.setActiveElements(
+          (chart.data.datasets||[]).map((_,di)=>({datasetIndex:di,index:index}))
+        );
+        chart.tooltip?.setActiveElements(
+          [{datasetIndex:0,index:index}],
+          {x:chart.scales.x?.getPixelForValue(index) || 0,y:chart.scales.y?.getPixelForValue(chart.data.datasets?.[0]?.data?.[index] || 0) || 0}
+        );
+        chart.update('none');
+        e.preventDefault();
+      });
+    },
+
+    enhance(chart){
+      if(!chart || WCE.enhanced.has(chart)) return;
+      WCE.enhanced.add(chart);
+
+      try{
+        WCE.normalizeData(chart);
+        chart.options.responsive=true;
+        chart.options.maintainAspectRatio=false;
+        chart.options.animation=false;
+
+        chart.options.layout=Object.assign({},chart.options.layout||{},{
+          padding:{top:8,right:14,bottom:8,left:8}
+        });
+
+        WCE.prepareDatasets(chart);
+        WCE.prepareLabels(chart);
+        WCE.prepareY(chart);
+        WCE.interaction(chart);
+        WCE.setCanvasWidth(chart);
+        WCE.accessibility(chart);
+
+        chart.resize();
+        chart.update('none');
+      }catch(e){
+        console.warn('World-class chart enhancement:',e);
+      }
+    },
+
+    scan(){
+      if(typeof Chart==='undefined') return;
+      document.querySelectorAll('.chart-card canvas').forEach(canvas=>{
+        try{
+          const chart=Chart.getChart(canvas);
+          if(chart) WCE.enhance(chart);
+        }catch(e){}
+      });
+    },
+
+    resize(){
+      if(typeof Chart==='undefined') return;
+      document.querySelectorAll('.chart-card canvas').forEach(canvas=>{
+        try{
+          const chart=Chart.getChart(canvas);
+          if(!chart) return;
+          WCE.setCanvasWidth(chart);
+          chart.resize();
+          chart.update('none');
+        }catch(e){}
+      });
+    },
+
+    start(){
+      const run=()=>{
+        WCE.scan();
+        WCE.scheduled=false;
+      };
+      if(!WCE.scheduled){
+        WCE.scheduled=true;
+        requestAnimationFrame(run);
+      }
+    }
+  };
+
+  window.WorldClassCharts=WCE;
+
+  /* Repeated scans are intentional because this application creates charts
+     dynamically after view renders and after Chart.js loads. */
+  const boot=()=>{
+    WCE.start();
+    setTimeout(()=>WCE.start(),300);
+    setTimeout(()=>WCE.start(),900);
+    setTimeout(()=>WCE.start(),1800);
+  };
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',boot);
+  }else boot();
+
+  new MutationObserver(()=>WCE.start()).observe(document.documentElement,{
+    childList:true,subtree:true
+  });
+
+  window.addEventListener('resize',()=>{
+    clearTimeout(window.__wceResize);
+    window.__wceResize=setTimeout(()=>WCE.resize(),120);
+  });
+
+})();
+</script>
