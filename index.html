@@ -12158,3 +12158,176 @@ function AttachedWorkbookView(){
   window.applyScrollableChartXAxis=applyAll;
 })();
 </script>
+
+
+<!-- WIDE EXPAND MODE
+     Expand is intentionally horizontal-first: it substantially increases
+     the X-axis working width while only modestly increasing chart height. -->
+<style id="wide-expand-mode">
+  .chart-card.final-chart-expanded .chart-wrap{
+    height:clamp(340px, 46vh, 470px) !important;
+    min-height:340px !important;
+    max-height:470px !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+  }
+
+  .chart-card.final-chart-expanded .chart-wrap > canvas{
+    height:100% !important;
+    max-width:none !important;
+  }
+
+  .chart-card.final-chart-expanded .final-chart-expand{
+    font-weight:600;
+  }
+</style>
+
+<script id="wide-expand-mode-js">
+(function(){
+  'use strict';
+
+  function wideExpand(chart, card){
+    if(!chart || !card || !chart.canvas) return;
+
+    const wrap=chart.canvas.closest('.chart-wrap');
+    if(!wrap) return;
+
+    const labels=Array.isArray(chart.data?.labels) ? chart.data.labels : [];
+    const count=labels.length;
+    const viewport=wrap.clientWidth || 760;
+
+    /*
+      Normal mode remains compact.
+      Expanded mode gives the X-axis substantially more room:
+      roughly 90px per category for longer datasets, while preserving
+      a moderate vertical dimension.
+    */
+    const pxPerLabel =
+      count >= 40 ? 92 :
+      count >= 30 ? 88 :
+      count >= 20 ? 84 :
+      count >= 12 ? 78 :
+      count >= 8  ? 70 : 0;
+
+    const targetWidth=pxPerLabel
+      ? Math.max(viewport, count * pxPerLabel)
+      : Math.max(viewport, 900);
+
+    chart.canvas.style.width=targetWidth+'px';
+    chart.canvas.style.minWidth=targetWidth+'px';
+    chart.canvas.style.maxWidth='none';
+
+    const x=chart.options.scales?.x;
+    if(x){
+      x.ticks=Object.assign({},x.ticks||{},{
+        autoSkip:false,
+        maxTicksLimit:undefined,
+        maxRotation:30,
+        minRotation:0,
+        padding:10,
+        align:'center'
+      });
+    }
+
+    (chart.data.datasets||[]).forEach(ds=>{
+      if(String(chart.config?.type||'').toLowerCase()==='bar'){
+        ds.barPercentage=0.34;
+        ds.categoryPercentage=0.55;
+        ds.maxBarThickness=26;
+      }
+    });
+
+    try{
+      chart.resize();
+      chart.update('none');
+    }catch(e){}
+  }
+
+  function normalSize(chart){
+    if(!chart || !chart.canvas) return;
+
+    const wrap=chart.canvas.closest('.chart-wrap');
+    if(!wrap) return;
+
+    const labels=Array.isArray(chart.data?.labels) ? chart.data.labels : [];
+    const count=labels.length;
+    const viewport=wrap.clientWidth || 760;
+
+    const pxPerLabel =
+      count >= 40 ? 72 :
+      count >= 30 ? 68 :
+      count >= 20 ? 64 :
+      count >= 12 ? 58 :
+      count >= 8  ? 52 : 0;
+
+    const target=pxPerLabel
+      ? Math.max(viewport,count*pxPerLabel)
+      : viewport;
+
+    chart.canvas.style.width=target+'px';
+    chart.canvas.style.minWidth=target+'px';
+    chart.canvas.style.maxWidth='none';
+
+    try{
+      chart.resize();
+      chart.update('none');
+    }catch(e){}
+  }
+
+  function refresh(card){
+    if(!card || !card.classList.contains('chart-card')) return;
+    const canvas=card.querySelector('canvas');
+    if(!canvas || typeof Chart==='undefined') return;
+
+    try{
+      const chart=Chart.getChart(canvas);
+      if(!chart) return;
+
+      if(card.classList.contains('final-chart-expanded')){
+        wideExpand(chart,card);
+      }else{
+        normalSize(chart);
+      }
+    }catch(e){}
+  }
+
+  function hook(){
+    document.querySelectorAll('.chart-card').forEach(card=>{
+      const button=card.querySelector('.final-chart-expand');
+      if(!button || button.dataset.wideExpandHooked) return;
+
+      button.dataset.wideExpandHooked='1';
+
+      button.addEventListener('click',function(){
+        /* Let the existing expand/collapse handler finish first. */
+        setTimeout(()=>refresh(card),80);
+        setTimeout(()=>refresh(card),350);
+      });
+    });
+
+    document.querySelectorAll('.chart-card').forEach(refresh);
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',()=>{
+      setTimeout(hook,150);
+      setTimeout(hook,700);
+      setTimeout(hook,1500);
+    });
+  }else{
+    setTimeout(hook,150);
+    setTimeout(hook,700);
+    setTimeout(hook,1500);
+  }
+
+  new MutationObserver(()=>{
+    clearTimeout(window.__wideExpandHookTimer);
+    window.__wideExpandHookTimer=setTimeout(hook,80);
+  }).observe(document.documentElement,{childList:true,subtree:true});
+
+  window.addEventListener('resize',()=>{
+    clearTimeout(window.__wideExpandResizeTimer);
+    window.__wideExpandResizeTimer=setTimeout(hook,120);
+  });
+})();
+</script>
