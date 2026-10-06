@@ -11987,3 +11987,174 @@ function AttachedWorkbookView(){
 
 })();
 </script>
+
+
+<!-- FINAL X-AXIS SCROLL / SPACING UPGRADE
+     Every category receives enough horizontal space. Users can scroll
+     horizontally instead of having labels compressed or skipped. -->
+<style id="final-x-axis-scroll">
+  .chart-card .chart-wrap{
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    -webkit-overflow-scrolling:touch !important;
+    scrollbar-width:thin;
+    scroll-behavior:smooth;
+  }
+
+  .chart-card .chart-wrap > canvas{
+    display:block !important;
+    max-width:none !important;
+    flex:none !important;
+  }
+
+  .chart-card .chart-wrap::after{
+    content:"Scroll horizontally to view additional labels";
+    display:block;
+    position:sticky;
+    right:0;
+    bottom:0;
+    width:max-content;
+    margin-left:auto;
+    padding:2px 7px;
+    font-size:10px;
+    line-height:14px;
+    opacity:.58;
+    pointer-events:none;
+  }
+
+  @media(max-width:700px){
+    .chart-card .chart-wrap{
+      padding-bottom:14px !important;
+    }
+  }
+</style>
+
+<script id="final-x-axis-scroll-js">
+(function(){
+  'use strict';
+
+  function applyScrollableXAxis(chart){
+    if(!chart || !chart.canvas || !chart.data) return;
+
+    const wrap=chart.canvas.closest('.chart-wrap');
+    if(!wrap) return;
+
+    const labels=Array.isArray(chart.data.labels) ? chart.data.labels : [];
+    const count=labels.length;
+
+    /* Give every category a minimum amount of physical horizontal space.
+       More categories => a wider internal canvas => user scrolls instead
+       of getting unreadable compressed labels. */
+    const minPerLabel =
+      count >= 40 ? 72 :
+      count >= 30 ? 68 :
+      count >= 20 ? 64 :
+      count >= 12 ? 58 :
+      count >= 8  ? 52 : 0;
+
+    const viewport=wrap.clientWidth || 760;
+    const requiredWidth=minPerLabel
+      ? Math.max(viewport, count * minPerLabel)
+      : viewport;
+
+    chart.canvas.style.width=requiredWidth+'px';
+    chart.canvas.style.minWidth=requiredWidth+'px';
+    chart.canvas.style.maxWidth='none';
+    chart.canvas.style.height='100%';
+
+    const x=chart.options.scales && chart.options.scales.x;
+    if(x){
+      x.type='category';
+      x.offset=true;
+
+      x.ticks=Object.assign({},x.ticks||{},{
+        autoSkip:false,
+        maxTicksLimit:undefined,
+        maxRotation:35,
+        minRotation:count > 8 ? 25 : 0,
+        padding:8,
+        align:'center',
+        includeBounds:true
+      });
+
+      /* The callback uses the exact label index supplied by Chart.js. */
+      x.ticks.callback=function(value,index){
+        const label=labels[index];
+        if(label===undefined || label===null) return '';
+
+        const s=String(label);
+        if(s.length<=22) return s;
+
+        /* Wrap long labels rather than cutting them off. */
+        const words=s.split(/\s+/);
+        const lines=[];
+        let line='';
+        words.forEach(word=>{
+          const next=line ? line+' '+word : word;
+          if(next.length>18 && line){
+            lines.push(line);
+            line=word;
+          }else{
+            line=next;
+          }
+        });
+        if(line) lines.push(line);
+        return lines.slice(0,3);
+      };
+    }
+
+    /* Keep bars narrow even though the plotting area becomes wider. */
+    (chart.data.datasets||[]).forEach(ds=>{
+      if(String(chart.config?.type||'').toLowerCase()==='bar'){
+        ds.barPercentage=0.42;
+        ds.categoryPercentage=0.62;
+        ds.maxBarThickness=28;
+      }
+    });
+
+    try{
+      chart.resize();
+      chart.update('none');
+    }catch(e){}
+  }
+
+  function applyAll(){
+    if(typeof Chart==='undefined') return;
+
+    document.querySelectorAll('.chart-card canvas').forEach(canvas=>{
+      try{
+        const chart=Chart.getChart(canvas);
+        if(chart) applyScrollableXAxis(chart);
+      }catch(e){}
+    });
+  }
+
+  function schedule(){
+    clearTimeout(window.__xAxisScrollTimer);
+    window.__xAxisScrollTimer=setTimeout(applyAll,80);
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',()=>{
+      setTimeout(applyAll,100);
+      setTimeout(applyAll,700);
+      setTimeout(applyAll,1600);
+    });
+  }else{
+    setTimeout(applyAll,100);
+    setTimeout(applyAll,700);
+    setTimeout(applyAll,1600);
+  }
+
+  new MutationObserver(schedule).observe(document.documentElement,{
+    childList:true,
+    subtree:true
+  });
+
+  window.addEventListener('resize',schedule);
+
+  /* Expose a small utility so dynamically created charts can immediately
+     receive the same treatment. */
+  window.applyScrollableChartXAxis=applyAll;
+})();
+</script>
