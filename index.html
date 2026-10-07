@@ -1852,6 +1852,7 @@ html{overflow-anchor:none;scroll-behavior:auto;}
 #root *{scroll-behavior:auto;}
 .nav-rail{overscroll-behavior-x:contain;overscroll-behavior-y:none;}
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -3982,7 +3983,9 @@ function render(){
         if(!canvas.isConnected || typeof Chart==='undefined') return;
         try{
           const prior=Chart.getChart(canvas); if(prior) prior.destroy();
+          try{window.bqcPolish&&window.bqcPolish(config,title);}catch(e){console.warn('polish',e);}
           const chart=new Chart(canvas.getContext('2d'), config);
+          try{window.bqcDecorate&&window.bqcDecorate(chart,canvas,title);}catch(e){console.warn('decorate',e);}
           canvas.style.cursor='pointer';
           canvas.addEventListener('click', evt=>{
             const pts=chart.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
@@ -10366,6 +10369,116 @@ function AttachedWorkbookView(){
  sheets.forEach(s=>{const o=el("option",{value:s.name},`${s.name} · ${s.rows.length} rows`);if(s.name===name)o.selected=true;sel.appendChild(o)});picker.appendChild(sel);root.appendChild(picker);
  root.appendChild(AttachedRecords(kind,name));return root;
 }
+</script>
+
+<style id="bqc-polish">
+:root{--font-sans:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--accent:#4338ca;--accent2:#0891b2;--pass:#0f9d6e;--fail:#e11d48;--warn:#d98a06;--capa:#7c3aed;--radius-card:14px}
+body{font-family:var(--font-sans);font-feature-settings:"tnum" 1,"cv11" 1;-webkit-font-smoothing:antialiased}
+.stat,.stat-card,.inventory-kpi,.chart-card,.card{font-variant-numeric:tabular-nums}
+.chart-card{border-radius:var(--radius-card)!important;border:1px solid var(--line)!important;padding:16px 18px!important;box-shadow:0 1px 2px rgba(16,20,42,.05),0 8px 24px rgba(16,20,42,.05)!important;position:relative}
+.chart-card:hover{transform:none!important;border-color:var(--accent)!important;box-shadow:0 2px 4px rgba(16,20,42,.06),0 14px 34px rgba(67,56,202,.12)!important}
+.chart-card h3{font-size:14px!important;font-weight:700!important;letter-spacing:-.1px;margin:0 84px 2px 0!important;line-height:1.3}
+.chart-card .chart-source-date{font-size:11px!important;color:var(--muted);margin-bottom:10px}
+.chart-card .chart-wrap{height:300px!important;min-height:300px!important;max-height:none!important}
+.chart-card .chart-wrap::after{display:none!important}
+.chart-row{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))!important;gap:14px!important}
+.bqc-tools{position:absolute;top:12px;right:12px;display:flex;gap:6px;z-index:2}
+.bqc-tools button{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);font-size:14px;line-height:1;cursor:pointer;display:grid;place-items:center;transition:background .15s,color .15s,border-color .15s}
+.bqc-tools button:hover,.bqc-tools button:focus-visible{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);outline:none}
+#bqc-zoom{position:fixed;inset:0;z-index:9800;display:none;align-items:center;justify-content:center;background:rgba(10,14,30,.66);backdrop-filter:blur(6px);padding:18px}
+#bqc-zoom.open{display:flex}
+#bqc-zoom .zbox{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:18px;width:min(1100px,100%);height:min(680px,92vh);padding:18px 20px;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
+#bqc-zoom .zhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+#bqc-zoom h3{margin:0;font-size:16px;font-weight:700}
+#bqc-zoom .zbody{position:relative;flex:1;min-height:0}
+#bqc-zoom .zclose{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;padding:7px 14px;font:600 12px var(--font-sans);cursor:pointer}
+#bqc-zoom .zclose:hover{border-color:var(--accent);color:var(--accent)}
+.stat,.stat-card{border-radius:var(--radius-card)!important}
+button,.btn{transition:transform .12s ease,box-shadow .15s ease,background .15s ease}
+button:active,.btn:active{transform:translateY(1px)}
+:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+table th{font-weight:700}
+@media(max-width:620px){.chart-card .chart-wrap{height:250px!important;min-height:250px!important}.chart-row{grid-template-columns:1fr!important}.chart-card h3{margin-right:76px!important}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+[data-theme="dark"]{--accent:#818cf8;--accent2:#22d3ee;--pass:#34d399;--fail:#fb7185;--warn:#fbbf24;--capa:#a78bfa}
+[data-theme="dark"] .chart-card{box-shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.28)!important}
+
+</style>
+<script id="bqc-chart-polish">
+(function(){
+const PAL=['#4f46e5','#0891b2','#10b981','#f59e0b','#e11d48','#8b5cf6','#14b8a6','#ec4899','#84cc16','#f97316'];
+const css=n=>(getComputedStyle(document.documentElement).getPropertyValue(n)||'').trim();
+const ISO=/^\d{4}-\d{2}-\d{2}$/;
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const short=s=>ISO.test(s)?(+s.slice(8))+' '+MON[+s.slice(5,7)-1]:s;
+const full=s=>ISO.test(s)?(+s.slice(8))+' '+MON[+s.slice(5,7)-1]+' '+s.slice(0,4):s;
+const fmt=v=>typeof v==='number'?(Math.abs(v)>=1000?v.toLocaleString():(Number.isInteger(v)?v:+v.toFixed(1))):v;
+const alpha=(c,a)=>{if(typeof c!=='string'||c[0]!=='#'||c.length<7)return c;return c.slice(0,7)+Math.round(a*255).toString(16).padStart(2,'0')};
+const valueLabels={id:'bqcValues',afterDatasetsDraw(ch){
+  if(ch.config.type!=='bar'||ch.options.scales&&ch.options.scales.x&&ch.options.scales.x.stacked)return;
+  if((ch.data.labels||[]).length>16)return;
+  const c=ch.ctx,horiz=ch.options.indexAxis==='y';c.save();c.font='600 11px Manrope,sans-serif';c.fillStyle=css('--text');
+  c.textAlign=horiz?'left':'center';c.textBaseline=horiz?'middle':'bottom';
+  ch.data.datasets.forEach((d,i)=>{if(!ch.isDatasetVisible(i))return;ch.getDatasetMeta(i).data.forEach((b,j)=>{const v=d.data[j];if(!v)return;
+    horiz?c.fillText(fmt(v),b.x+6,b.y):c.fillText(fmt(v),b.x,b.y-5)})});c.restore()}};
+const centre={id:'bqcCentre',afterDraw(ch){
+  if(ch.config.type!=='doughnut')return;const d=ch.data.datasets[0];if(!d)return;
+  const meta=ch.getDatasetMeta(0);let t=0;d.data.forEach((v,i)=>{if(!meta.data[i]||!meta.data[i].hidden)t+=+v||0});
+  if(ch.data.labels&&ch.data.labels[0]==='No data')return;
+  const a=ch.chartArea,x=(a.left+a.right)/2,y=(a.top+a.bottom)/2,c=ch.ctx;c.save();c.textAlign='center';c.textBaseline='middle';
+  c.fillStyle=css('--text');c.font='800 24px Manrope,sans-serif';c.fillText(fmt(t),x,y-8);
+  c.fillStyle=css('--muted');c.font='600 11px Manrope,sans-serif';c.fillText('Total',x,y+13);c.restore()}};
+window.bqcPolish=function(cfg,title){
+  if(typeof Chart==='undefined'||cfg.__polished)return;cfg.__polished=true;
+  const D=Chart.defaults;D.font.family='Manrope,-apple-system,Segoe UI,sans-serif';D.font.size=12;
+  const txt=css('--muted'),grid=css('--line'),panel=css('--panel')||'#fff',ink=css('--text');
+  const o=cfg.options=cfg.options||{};o.plugins=o.plugins||{};cfg.plugins=(cfg.plugins||[]).concat([valueLabels,centre]);
+  o.animation={duration:650,easing:'easeOutQuart'};
+  o.layout={padding:{top:18,right:8}};
+  const type=cfg.type,labels=(cfg.data&&cfg.data.labels)||[],dateLike=labels.length&&labels.every(l=>ISO.test(String(l)));
+  const round=type==='pie'||type==='doughnut';
+  o.plugins.legend=Object.assign(o.plugins.legend||{},{position:'bottom',labels:{color:ink,usePointStyle:true,pointStyle:'circle',boxWidth:8,boxHeight:8,padding:14,font:{size:12,weight:'600'}}});
+  o.plugins.tooltip={backgroundColor:'rgba(15,23,42,.94)',titleColor:'#fff',bodyColor:'#e2e8f0',padding:12,cornerRadius:10,boxPadding:5,usePointStyle:true,displayColors:true,titleFont:{weight:'700',size:13},bodyFont:{size:12},
+    callbacks:{title:it=>it.length?full(String(it[0].label)):'',label:c=>{const v=c.parsed&&typeof c.parsed==='object'?(c.parsed.y!=null?c.parsed.y:c.parsed.x):c.parsed;
+      let s=' '+(c.dataset.label&&!round?c.dataset.label+': ':(round?c.label+': ':''))+fmt(v);
+      if(round){const tot=c.dataset.data.reduce((a,b)=>a+(+b||0),0);if(tot)s+='  ('+(v/tot*100).toFixed(1)+'%)'}return s}}};
+  o.onHover=(e,els)=>{const t=e.native&&e.native.target;if(t)t.style.cursor=els.length?'pointer':'default'};
+  if(round){
+    cfg.type='doughnut';o.cutout='62%';o.layout={padding:8};
+    cfg.data.datasets.forEach(d=>{const n=d.data.length;let bg=d.backgroundColor;
+      if(!Array.isArray(bg)||new Set(bg).size<Math.min(n,2))d.backgroundColor=d.data.map((_,i)=>PAL[i%PAL.length]);
+      d.borderColor=panel;d.borderWidth=3;d.hoverOffset=10;d.borderRadius=4});
+    return}
+  const sc=o.scales=o.scales||{};
+  if(sc.x){sc.x.ticks=Object.assign(sc.x.ticks||{},{color:txt,font:{size:11,weight:'600'},maxRotation:dateLike?0:40,autoSkip:true,maxTicksLimit:dateLike?9:14});
+    sc.x.grid=Object.assign(sc.x.grid||{},{display:false});sc.x.border={color:grid};
+    if(dateLike)sc.x.ticks.callback=function(v){return short(String(this.getLabelForValue(v)))}}
+  if(sc.y){sc.y.ticks=Object.assign(sc.y.ticks||{},{color:txt,font:{size:11},padding:6});sc.y.grid={color:alpha(txt.length===7?txt:'#667085',.18),drawTicks:false};sc.y.border={display:false};
+    sc.y.grace='8%'}
+  if(type==='bar'){o.interaction={mode:'index',intersect:false};
+    cfg.data.datasets.forEach((d,i)=>{if(!d.backgroundColor)d.backgroundColor=PAL[i%PAL.length];d.borderRadius=7;d.borderSkipped=false;d.maxBarThickness=44;d.hoverBackgroundColor=d.backgroundColor})}
+  if(type==='line'){o.interaction={mode:'index',intersect:false};
+    cfg.data.datasets.forEach((d,i)=>{const col=typeof d.borderColor==='string'?d.borderColor:PAL[i%PAL.length];
+      d.borderColor=col;d.borderWidth=2.5;d.tension=.35;d.pointRadius=labels.length>20?0:3.5;d.pointHoverRadius=7;d.pointBackgroundColor=panel;d.pointBorderColor=col;d.pointBorderWidth=2;
+      if(cfg.data.datasets.length===1){d.fill=true;d.backgroundColor=ctx=>{const a=ctx.chart.chartArea;if(!a)return alpha(col,.15);const g=ctx.chart.ctx.createLinearGradient(0,a.top,0,a.bottom);g.addColorStop(0,alpha(col,.32));g.addColorStop(1,alpha(col,0));return g}}})}
+};
+let zoom;function zoomBox(){if(zoom)return zoom;zoom=document.createElement('div');zoom.id='bqc-zoom';
+  zoom.innerHTML='<div class="zbox" role="dialog" aria-modal="true"><div class="zhead"><h3></h3><button class="zclose" type="button">Close</button></div><div class="zbody"><canvas></canvas></div></div>';
+  document.body.appendChild(zoom);const close=()=>{zoom.classList.remove('open');const c=Chart.getChart(zoom.querySelector('canvas'));if(c)c.destroy()};
+  zoom.addEventListener('click',e=>{if(e.target===zoom||e.target.classList.contains('zclose'))close()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&zoom.classList.contains('open'))close()});return zoom}
+window.bqcDecorate=function(chart,canvas,title){
+  const card=canvas.closest('.chart-card');if(!card||card.querySelector('.bqc-tools'))return;
+  const bar=document.createElement('div');bar.className='bqc-tools';
+  const mk=(t,l,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.title=l;b.setAttribute('aria-label',l);b.onclick=e=>{e.stopPropagation();fn()};bar.appendChild(b)};
+  mk('⤢','Expand chart',()=>{const z=zoomBox();z.querySelector('h3').textContent=title;const old=Chart.getChart(z.querySelector('canvas'));if(old)old.destroy();z.classList.add('open');
+    const o=Object.assign({},chart.config.options,{maintainAspectRatio:false,responsive:true,animation:{duration:400}});
+    new Chart(z.querySelector('canvas').getContext('2d'),{type:chart.config.type,data:{labels:chart.config.data.labels,datasets:chart.config.data.datasets.map(d=>Object.assign({},d))},options:o,plugins:chart.config.plugins})});
+  mk('⭳','Download as PNG',()=>{const a=document.createElement('a');a.href=chart.toBase64Image('image/png',1);a.download=title.replace(/[^\w]+/g,'_')+'.png';a.click()});
+  card.appendChild(bar);
+};
+})();
+
 </script>
 </body>
 </html>
