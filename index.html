@@ -13717,3 +13717,140 @@ body.bqc-rendering #root{min-height:100vh;}
 
 })();
 </script>
+
+<!-- ===== GLASS UI FINAL — paste as the LAST thing in index.html (after the final </script>) =====
+     Visual layer only. No data, logic or layout structure is touched. -->
+<style id="glass-ui-final">
+:root{
+  --g-ink:#0e1b2c; --g-ink-2:#51657c;
+  --g-a:#1d6ff2; --g-b:#0aa5b8; --g-ok:#12945f; --g-warn:#c26a0a; --g-bad:#d03a3a;
+  --g-surface:rgba(255,255,255,.74); --g-surface-2:rgba(255,255,255,.52); --g-solid:#f7fafd;
+  --g-edge:rgba(255,255,255,.85); --g-line:rgba(34,64,102,.14);
+  --g-shadow:0 1px 2px rgba(14,27,44,.06),0 10px 28px rgba(14,27,44,.08);
+  --g-shadow-up:0 2px 4px rgba(14,27,44,.08),0 18px 40px rgba(14,27,44,.12);
+  --g-r:16px; --g-r-sm:10px; --g-ease:cubic-bezier(.2,.7,.2,1);
+}
+[data-theme="dark"]{
+  --g-ink:#ecf3fb; --g-ink-2:#9fb2c7;
+  --g-a:#5aa2ff; --g-b:#2cc7d6; --g-ok:#3fdc92; --g-warn:#ffb454; --g-bad:#ff7f7f;
+  --g-surface:rgba(17,28,45,.72); --g-surface-2:rgba(24,38,60,.55); --g-solid:#0e1928;
+  --g-edge:rgba(255,255,255,.10); --g-line:rgba(160,190,225,.16);
+  --g-shadow:0 1px 2px rgba(0,0,0,.4),0 12px 30px rgba(0,0,0,.34);
+  --g-shadow-up:0 2px 4px rgba(0,0,0,.45),0 20px 46px rgba(0,0,0,.46);
+}
+
+/* ---- Calmer backdrop: the work surface leads, the scene supports ---- */
+#physics-ambience-canvas{opacity:.34!important}
+.physics-law,.motion-label{display:none!important}
+.ambient-scene::before,.ambient-scene::after{opacity:.16!important}
+.motion-grid{opacity:.05!important}
+body{color:var(--g-ink)!important}
+h1,h2,h3,h4{color:var(--g-ink)!important;letter-spacing:-.01em}
+.sub,.meta,label,.search-hint{color:var(--g-ink-2)!important}
+
+/* ---- One surface language. Blur only where it earns its cost ---- */
+.card,.chart-card,.stat,.glass-stat,.table-wrap,.sop-box,.inventory-panel,.inventory-kpi,
+.glass-section,.glass-card,.attached-record,.takeover-row,.bqc-current-page,.search-results-card,.form-card,.panel{
+  background:linear-gradient(180deg,var(--g-surface),var(--g-surface-2))!important;
+  border:1px solid var(--g-line)!important;
+  border-radius:var(--g-r)!important;
+  box-shadow:inset 0 1px 0 var(--g-edge),var(--g-shadow)!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  transition:box-shadow .22s var(--g-ease),border-color .22s var(--g-ease)!important;
+}
+.card:hover,.chart-card:hover,.inventory-panel:hover,.takeover-row:hover{
+  transform:none!important;border-color:color-mix(in srgb,var(--g-a) 35%,var(--g-line))!important;
+  box-shadow:inset 0 1px 0 var(--g-edge),var(--g-shadow-up)!important}
+.stat{border-left:3px solid var(--g-a)!important;border-radius:var(--g-r-sm)!important}
+.stat:hover{transform:none!important}
+.stat .n,.glass-stat-value,.inventory-kpi-value{color:var(--g-ink)!important;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.card::before,.card::after{display:none!important}
+
+/* ---- Floating chrome: the only truly frosted layers ---- */
+.header,.nav,.global-searchbar,.search-shell,.sync-badge,.cp-card,.modal-card,#bqc-update-available,#bqc-live-toast,.banner.toast-float{
+  background:linear-gradient(180deg,var(--g-surface),var(--g-surface-2))!important;
+  border:1px solid var(--g-edge)!important;
+  box-shadow:inset 0 1px 0 var(--g-edge),0 0 0 1px var(--g-line),var(--g-shadow-up)!important;
+  backdrop-filter:blur(22px) saturate(150%)!important;-webkit-backdrop-filter:blur(22px) saturate(150%)!important;
+}
+.header{border-radius:20px!important}
+.nav{border-radius:18px!important}
+.nav::before,.nav::after{opacity:.55!important}
+.nav-item{border-radius:12px!important;color:var(--g-ink-2)!important;background:transparent!important;border:1px solid transparent!important;box-shadow:none!important;backdrop-filter:none!important}
+.nav-item:hover{background:color-mix(in srgb,var(--g-a) 9%,transparent)!important;color:var(--g-ink)!important;transform:none!important;box-shadow:none!important}
+.nav-item.active{color:#fff!important;border-color:transparent!important;
+  background:linear-gradient(135deg,var(--g-a),var(--g-b))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 18px color-mix(in srgb,var(--g-a) 38%,transparent)!important}
+.nav-item.active .nav-label,.nav-item.active .nav-index,.nav-item.active .nav-arrow{color:#fff!important}
+
+/* ---- Controls ---- */
+button,.btn,.btn-sm{border-radius:11px!important;font-weight:600;letter-spacing:.005em;
+  background:var(--g-surface)!important;color:var(--g-ink)!important;border:1px solid var(--g-line)!important;
+  box-shadow:inset 0 1px 0 var(--g-edge),0 1px 2px rgba(14,27,44,.06)!important;backdrop-filter:none!important;
+  transition:background .16s,box-shadow .16s,transform .08s,border-color .16s!important}
+button:hover:not(:disabled){transform:none!important;border-color:color-mix(in srgb,var(--g-a) 45%,var(--g-line))!important;
+  background:color-mix(in srgb,var(--g-a) 7%,var(--g-surface))!important}
+button:active:not(:disabled){transform:scale(.98)!important}
+.btn-primary,button.btn-primary{color:#fff!important;border-color:transparent!important;
+  background:linear-gradient(135deg,var(--g-a),var(--g-b))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.38),0 6px 16px color-mix(in srgb,var(--g-a) 34%,transparent)!important}
+.btn-primary:hover:not(:disabled){filter:brightness(1.06);background:linear-gradient(135deg,var(--g-a),var(--g-b))!important}
+.btn-danger{color:var(--g-bad)!important;border-color:color-mix(in srgb,var(--g-bad) 45%,transparent)!important;background:color-mix(in srgb,var(--g-bad) 9%,var(--g-surface))!important}
+.btn-capa{color:#7c4dd6!important;border-color:color-mix(in srgb,#7c4dd6 40%,transparent)!important}
+button:disabled{opacity:.5!important;filter:saturate(.6)}
+
+input,select,textarea{
+  background:color-mix(in srgb,var(--g-solid) 82%,transparent)!important;color:var(--g-ink)!important;
+  border:1px solid var(--g-line)!important;border-radius:11px!important;
+  box-shadow:inset 0 1px 2px rgba(14,27,44,.06)!important;backdrop-filter:none!important}
+input::placeholder,textarea::placeholder{color:color-mix(in srgb,var(--g-ink-2) 75%,transparent)!important}
+input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(--g-a)!important;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--g-a) 24%,transparent),inset 0 1px 2px rgba(14,27,44,.04)!important}
+:focus-visible{outline:2.5px solid color-mix(in srgb,var(--g-a) 80%,#fff)!important;outline-offset:2px!important}
+
+/* ---- Tables: legible first ---- */
+.table-wrap{overflow:auto;border-radius:var(--g-r)!important}
+table{background:transparent!important}
+th{position:sticky;top:0;z-index:2;background:var(--g-solid)!important;color:var(--g-ink-2)!important;
+  border-bottom:1px solid var(--g-line)!important;font-weight:700}
+td{border-color:var(--g-line)!important;color:var(--g-ink)!important;background:transparent!important}
+tbody tr{background:transparent!important}
+tr:hover td{background:color-mix(in srgb,var(--g-a) 8%,transparent)!important}
+tr:nth-child(even) td{background:transparent!important}
+
+/* ---- Status, banners, chips ---- */
+.status-chip,.status-pill,.badge{border-radius:999px!important;font-weight:700;backdrop-filter:none!important}
+.banner{border-radius:12px!important}
+.banner.ok{background:color-mix(in srgb,var(--g-ok) 12%,var(--g-surface))!important;color:var(--g-ok)!important;border-color:color-mix(in srgb,var(--g-ok) 40%,transparent)!important}
+.banner.err{background:color-mix(in srgb,var(--g-bad) 12%,var(--g-surface))!important;color:var(--g-bad)!important;border-color:color-mix(in srgb,var(--g-bad) 40%,transparent)!important}
+.banner:not(.ok):not(.err):not(.capa){background:color-mix(in srgb,var(--g-warn) 12%,var(--g-surface))!important;color:var(--g-warn)!important;border-color:color-mix(in srgb,var(--g-warn) 40%,transparent)!important}
+
+/* ---- Overlays ---- */
+#battery-modal,#chart-modal,#cloud-panel{background:rgba(8,16,28,.46)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important}
+.modal-card,.cp-card{border-radius:20px!important}
+.modal-head,.cp-head{border-bottom:1px solid var(--g-line)!important}
+
+/* ---- Charts sit on the glass instead of fighting it ---- */
+.chart-card canvas{filter:none!important}
+.chart-card .wc-final-scroll-note,.chart-card .wce-scroll-hint{background:var(--g-surface)!important;color:var(--g-ink-2)!important;border-color:var(--g-line)!important}
+
+/* ---- Fine detail ---- */
+::selection{background:color-mix(in srgb,var(--g-a) 30%,transparent)}
+*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--g-ink-2) 45%,transparent) transparent}
+
+/* ---- Phones: keep text crisp, skip the expensive blur ---- */
+@media(max-width:760px){
+  .header,.nav,.global-searchbar,.search-shell,.sync-badge{backdrop-filter:blur(12px) saturate(130%)!important}
+  .card,.chart-card,.stat,.inventory-panel{background:var(--g-surface)!important;border-radius:14px!important}
+  #physics-ambience-canvas{opacity:.18!important}
+}
+/* ---- Accessibility fallbacks ---- */
+@media(prefers-reduced-transparency:reduce){
+  .card,.chart-card,.stat,.header,.nav,.modal-card,.cp-card,.global-searchbar,.search-shell,.sync-badge{
+    background:var(--g-solid)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+  #physics-ambience-canvas,.ambient-scene{display:none!important}
+}
+@media(prefers-contrast:more){:root{--g-line:rgba(20,40,70,.45)}[data-theme="dark"]{--g-line:rgba(200,220,245,.5)}}
+@media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+@media print{.ambient-scene,#physics-ambience-canvas,.nav,.header,.sync-badge{display:none!important}.card,.chart-card{background:#fff!important;box-shadow:none!important}}
+</style>
