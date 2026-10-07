@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -13854,3 +13854,97 @@ tr:nth-child(even) td{background:transparent!important}
 @media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation-duration:.01ms!important}}
 @media print{.ambient-scene,#physics-ambience-canvas,.nav,.header,.sync-badge{display:none!important}.card,.chart-card{background:#fff!important;box-shadow:none!important}}
 </style>
+
+<!-- ===== GLASS UI PREMIUM (final layer, additive, visual only) ===== -->
+<style id="glass-ui-premium">
+:root{--mx:50%;--my:0%;--g-font:"Inter","SF Pro Text","Segoe UI Variable","Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+body,button,input,select,textarea{font-family:var(--g-font)!important;font-feature-settings:"cv11","ss01","tnum"}
+body{font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+h1{font-weight:800}h2,h3{font-weight:750}
+
+/* Light that follows the pointer: a soft specular sheen on every surface */
+.card,.chart-card,.stat,.inventory-panel,.inventory-kpi,.glass-section,.header,.nav,.gate{
+  background:
+    radial-gradient(420px circle at var(--mx) var(--my),color-mix(in srgb,#fff 38%,transparent),transparent 62%),
+    linear-gradient(180deg,var(--g-surface),var(--g-surface-2))!important;
+  background-attachment:scroll!important}
+[data-theme="dark"] .card,[data-theme="dark"] .chart-card,[data-theme="dark"] .stat,[data-theme="dark"] .inventory-panel,
+[data-theme="dark"] .inventory-kpi,[data-theme="dark"] .glass-section,[data-theme="dark"] .header,[data-theme="dark"] .nav,[data-theme="dark"] .gate{
+  background:
+    radial-gradient(420px circle at var(--mx) var(--my),color-mix(in srgb,var(--g-a) 16%,transparent),transparent 62%),
+    linear-gradient(180deg,var(--g-surface),var(--g-surface-2))!important}
+
+/* Header: hairline accent, calmer identity */
+.header{position:sticky;top:8px;z-index:60}
+.header::after{content:"";position:absolute;left:18px;right:18px;bottom:0;height:1px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--g-a) 55%,transparent),color-mix(in srgb,var(--g-b) 55%,transparent),transparent)}
+.brand h1{background:linear-gradient(135deg,var(--g-ink),var(--g-a));-webkit-background-clip:text;background-clip:text;color:transparent!important}
+
+/* Stat tiles: lit from above, numbers lead */
+.stat{position:relative;overflow:hidden;border-left-width:1px!important}
+.stat::before{content:"";display:block!important;position:absolute;inset:0 0 auto 0;height:3px;opacity:.9;
+  background:linear-gradient(90deg,var(--g-a),var(--g-b))}
+.stat .n{font-size:28px!important;font-weight:800}
+.stat .l,.glass-stat-label,.inventory-kpi-label{text-transform:none!important;font-weight:650;letter-spacing:0}
+
+/* Segmented controls and checklists read as real controls */
+.seg{border-radius:11px!important;overflow:hidden;background:var(--g-surface-2)!important;border:1px solid var(--g-line)!important}
+.seg button{border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
+.seg button.sel-pass{background:color-mix(in srgb,var(--g-ok) 18%,transparent)!important;color:var(--g-ok)!important}
+.seg button.sel-fail{background:color-mix(in srgb,var(--g-bad) 18%,transparent)!important;color:var(--g-bad)!important}
+.check-row,.bool-row,.docket-item{border-radius:10px;transition:background .15s}
+.check-row:hover,.bool-row:hover,.docket-item:hover{background:color-mix(in srgb,var(--g-a) 7%,transparent)!important}
+input[type=checkbox],input[type=radio]{accent-color:var(--g-a)}
+
+/* Sign-in: a proper glass doorway */
+.gate{max-width:440px!important;padding:30px!important;border-radius:26px!important;
+  border:1px solid var(--g-edge)!important;backdrop-filter:blur(26px) saturate(160%)!important;-webkit-backdrop-filter:blur(26px) saturate(160%)!important;
+  box-shadow:inset 0 1px 0 var(--g-edge),0 0 0 1px var(--g-line),0 30px 80px rgba(8,20,40,.28)!important}
+.gate h2{font-size:26px!important;letter-spacing:-.02em}
+.gate .btn-block{min-height:44px}
+
+/* Sync badge as a calm status pill */
+.sync-badge{border-radius:999px!important;font-weight:650;padding:8px 14px!important}
+.sync-badge .sync-dot{box-shadow:0 0 0 4px color-mix(in srgb,currentColor 12%,transparent)}
+
+/* Search: the primary action on every screen */
+.search-shell,.global-searchbar{border-radius:16px!important}
+.global-search-input{font-size:14px!important}
+.search-go{min-width:96px}
+
+/* Panels breathe; sections separate without heavy borders */
+.card{padding:18px 20px!important}
+.card h3{margin-bottom:4px}
+.sector-tag{border-radius:999px!important;background:color-mix(in srgb,var(--g-a) 10%,transparent)!important;
+  color:var(--g-a)!important;border:1px solid color-mix(in srgb,var(--g-a) 28%,transparent)!important;text-transform:none!important;letter-spacing:0!important}
+.empty-note{padding:22px 12px;text-align:center;color:var(--g-ink-2)!important;border:1px dashed var(--g-line);border-radius:12px;background:var(--g-surface-2)}
+
+/* Sticky footers stay readable over content */
+.footer-actions{background:linear-gradient(180deg,transparent,var(--g-solid) 38%)!important;border-top:0!important;padding-top:18px!important}
+
+/* Gentle entrance only for freshly opened modals (never for background refresh) */
+#battery-modal .modal-card,#chart-modal .modal-card{animation:gPop .22s var(--g-ease,ease-out)}
+@keyframes gPop{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+
+/* Touch devices: no hover lift, bigger targets, no pointer sheen */
+@media(pointer:coarse){button,.btn,.btn-sm,.nav-item,select,input{min-height:44px}
+  .card,.chart-card,.stat,.header,.nav{background:linear-gradient(180deg,var(--g-surface),var(--g-surface-2))!important}}
+@media(max-width:760px){.header{position:relative;top:0}.stat .n{font-size:24px!important}.gate{padding:22px!important;border-radius:22px!important}}
+@media(prefers-reduced-motion:reduce){#battery-modal .modal-card,#chart-modal .modal-card{animation:none}}
+@media(prefers-reduced-transparency:reduce){.gate{backdrop-filter:none!important;background:var(--g-solid)!important}}
+</style>
+<script id="glass-ui-premium-js">
+(function(){'use strict';
+  if(window.matchMedia&&matchMedia('(pointer:coarse)').matches)return;
+  var raf=0,tx=null,pt=null,sel='.card,.chart-card,.stat,.inventory-panel,.inventory-kpi,.glass-section,.header,.nav,.gate';
+  document.addEventListener('pointermove',function(e){
+    pt=e.target;tx=e;if(raf)return;
+    raf=requestAnimationFrame(function(){raf=0;
+      var el=pt&&pt.closest&&pt.closest(sel);if(!el||!tx)return;
+      var r=el.getBoundingClientRect();
+      el.style.setProperty('--mx',(tx.clientX-r.left)+'px');
+      el.style.setProperty('--my',(tx.clientY-r.top)+'px');
+    });
+  },{passive:true});
+})();
+</script>
