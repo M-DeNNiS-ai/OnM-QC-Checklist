@@ -273,7 +273,7 @@ tr:hover td { background: var(--accent-soft); }
 @keyframes softGlow { 0%,100%{ box-shadow: 0 0 0 0 var(--accent-soft);} 50%{ box-shadow: 0 0 0 6px var(--accent-soft);} }
 @keyframes popIn { from{ opacity:0; transform: scale(.92) translateY(4px);} to{ opacity:1; transform: scale(1) translateY(0);} }
 
-.view-fade { animation: viewFade .28s cubic-bezier(.2,.7,.3,1); }
+.view-fade { animation:none !important; opacity:1 !important; transform:none !important; visibility:visible !important; }
 .card, .chart-card, .stat { animation: popIn .3s cubic-bezier(.34,1.56,.64,1) both; }
 tbody tr, .docket-item, .day-log-item { animation-delay: calc(var(--row-i, 0) * 30ms); }
 input, select, textarea, button { transition: transform .1s ease, box-shadow .12s ease, background-color .12s ease, border-color .12s ease, opacity .12s ease; }
@@ -649,7 +649,7 @@ body{
   border-radius:14px!important;background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(239,248,252,.65))!important;
 }
 [data-theme="dark"] .stat{background:linear-gradient(145deg,rgba(19,43,62,.9),rgba(11,31,47,.75))!important}
-.view-fade{animation:viewFade .38s cubic-bezier(.2,.75,.2,1)}
+.view-fade{animation:none !important;opacity:1 !important;transform:none !important;visibility:visible !important}
 /* more premium ambient depth */
 .ambient-scene::before,.ambient-scene::after{
   content:'';position:absolute;border-radius:50%;filter:blur(2px);mix-blend-mode:screen;opacity:.34;
@@ -1844,6 +1844,13 @@ input,select,textarea,button{max-width:100%;min-width:0;}
   .smart-id-top{grid-template-columns:1fr 76px minmax(0,1fr)}
   .smart-id-top .btn-primary{grid-column:1/-1;width:100%}
 }
+</style>
+<style id="bqc-top-tier-navigation-ux">
+html{overflow-anchor:none;scroll-behavior:auto;}
+#root{overflow-anchor:none;}
+#root .view-fade{animation:none!important;transition:none!important;}
+#root *{scroll-behavior:auto;}
+.nav-rail{overscroll-behavior-x:contain;overscroll-behavior-y:none;}
 </style>
 </head>
 <body>
@@ -3904,20 +3911,59 @@ function render(){
     }
   }
   if(nextViewReady){
-    /* Atomic visual commit: there is no intermediate empty #root state. */
-    root.replaceChildren(...Array.from(staging.childNodes));
+    /*
+       TRUE NO-FLASH DOUBLE BUFFER:
+       Keep the currently painted screen in the DOM while the replacement is
+       inserted completely hidden. Only after the browser has had a chance to
+       lay out/paint the replacement do we reveal it and remove the old screen.
+       This means a slow render can never expose #root, body background, or an
+       empty frame to the user.
+    */
+    const oldNodes = Array.from(root.childNodes);
+    const newNodes = Array.from(staging.childNodes);
+    const lockedScrollX = window.scrollX || document.documentElement.scrollLeft || 0;
+    const lockedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+
+    /*
+       IMPORTANT: never put two full application pages into normal document flow.
+       Doing that makes the document temporarily twice as tall and browsers can
+       visibly jump the user's viewport to the top. Instead, keep the new screen
+       display:none, attach it, remove the old screen, then reveal the new screen
+       in the SAME JavaScript turn. The browser paints only the final state.
+    */
+    newNodes.forEach(node=>{
+      if(node.nodeType===1){
+        node.classList.add('bqc-next-view');
+        node.style.display='none';
+        node.style.visibility='hidden';
+        node.style.pointerEvents='none';
+      }
+      root.appendChild(node);
+    });
+
+    oldNodes.forEach(node=>{
+      try{ node.remove(); }catch(e){}
+    });
+
+    newNodes.forEach(node=>{
+      if(node.nodeType===1){
+        node.classList.remove('bqc-next-view');
+        node.style.display='';
+        node.style.visibility='visible';
+        node.style.pointerEvents='auto';
+      }
+    });
+
+    /* Lock the viewport immediately and again after layout settles. */
+    try{ window.scrollTo({left:lockedScrollX,top:lockedScrollY,behavior:'auto'}); }catch(e){ window.scrollTo(lockedScrollX,lockedScrollY); }
+    requestAnimationFrame(()=>{
+      try{ window.scrollTo({left:lockedScrollX,top:lockedScrollY,behavior:'auto'}); }catch(e){ window.scrollTo(lockedScrollX,lockedScrollY); }
+    });
   } else {
     /* Keep the current screen intact if even the recovery view cannot be built. */
     console.error('Screen build failed; preserving the previous view.');
   }
-  try{
-    if(nextViewReady){
-      /* The staging clone is what is actually displayed. Rebuild pending chart references
-         against the live DOM when necessary rather than exposing an empty frame. */
-    }
-  } finally {
-    renderInProgress = false;
-  }
+  renderInProgress = false;
   if(renderPending){
     renderPending=false;
     queueMicrotask(()=>render());
@@ -4714,7 +4760,7 @@ function Nav(items, labels){
   const head = el('div',{class:'nav-head'},[
     el('div',{class:'nav-title-wrap'},[
       el('span',{class:'nav-kicker'},'CONTROL CENTER'),
-      el('strong',{class:'nav-title'},'Main Menu')
+      el('strong',{class:'nav-title'},labels[STATE.view] || (STATE.view==='search' ? 'Search Results' : 'Main Menu'))
     ]),
     el('span',{class:'nav-context'}, STATE.role==='omtech' ? ('STAGE '+STATE.stage+' · '+STATE.techName) : (SECTOR_LABEL[STATE.role]||'OPERATIONS'))
   ]);
@@ -4734,7 +4780,7 @@ function Nav(items, labels){
       // cannot restore the previous menu. The active item is then rebuilt from
       // STATE.view and remains visibly selected, including hidden/mobile labels.
       saveBqcUiState();
-      // Navigation is never gated by network/data refresh. Paint first, refresh second.
+      // Render is atomic and preserves the current viewport; there is no page reload.
       render();
       requestAnimationFrame(()=>{
         saveBqcUiState();
@@ -4746,7 +4792,12 @@ function Nav(items, labels){
   // Keep the current destination comfortably visible without changing the existing menu layout.
   requestAnimationFrame(()=>{
     const active=rail.querySelector('.nav-item.active');
-    if(active) active.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+    if(active){
+      /* Center only inside the horizontal menu rail. Never use scrollIntoView(),
+         because it is allowed to move the document viewport vertically. */
+      const target = active.offsetLeft - Math.max(0,(rail.clientWidth-active.offsetWidth)/2);
+      rail.scrollTo({left:Math.max(0,target),behavior:'auto'});
+    }
   });
   // Desktop trackpads/mice can horizontally scroll the same way a technician swipes on mobile.
   rail.addEventListener('wheel',e=>{
@@ -4758,12 +4809,49 @@ function Nav(items, labels){
     const nodes=[...rail.querySelectorAll('.nav-item')];
     const idx=Math.max(0,nodes.findIndex(n=>n.classList.contains('active')));
     const next=nodes[Math.max(0,Math.min(nodes.length-1,idx+(e.key==='ArrowRight'?1:-1)))];
-    if(next){ next.focus(); next.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}); }
+    if(next){ next.focus(); next.scrollIntoView({behavior:'auto',block:'nearest',inline:'center'}); }
   });
   nav.appendChild(rail);
   return nav;
 }
  
+/* ---------- User-facing page names and plain-language guidance ---------- */
+const BQC_PAGE_META={
+  main:['My Work Docket','See the batteries assigned to you and move each job through the required steps.'],
+  progress:['Daily Progress','Track today’s work, completed steps, delays and outstanding actions.'],
+  rca:['Root Cause Analysis','Investigate faults, record evidence and document corrective actions.'],
+  knowledge:['5S & Battery Insights','Use practical battery, workplace and improvement guidance while working.'],
+  sop:['Work Procedures','Find the correct procedure by fault, component, alarm, tool or symptom.'],
+  myclosed:['My Completed Work','Review work you have completed and the records you have closed.'],
+  analytics:['Analytics & Trends','Review your work activity, trends and key performance indicators.'],
+  notes:['Notes & Handover','Record important observations, follow-ups and information for the next shift.'],
+  imports:['Reference Files','Open approved supporting files and attached operational data.'],
+  manager:['Manager Overview','See the overall operational position, risks, workload and management attention points.'],
+  dashboard:['O&M Pipeline','Monitor open work, progress, ownership and items requiring attention.'],
+  integrity:['Data Quality','Check record completeness, consistency and data issues.'],
+  history:['Chain History','Trace battery work and decisions across the operational chain.'],
+  warranty:['Warranty & Escalations','Manage warranty cases, escalations and actions requiring follow-up.'],
+  bsa:['BSA Escalations','Review battery service assessment cases and their next actions.'],
+  overview:['Quality Overview','See quality performance, issues and the current sector position.'],
+  ledger:['Stock Ledger','Review stock movements, balances and transaction history.'],
+  activity:['BSA Work Queue','See BSA cases waiting for action and work already in progress.'],
+  newcase:['Log New Case','Create a new BSA case and capture the information needed for follow-up.'],
+  newStock:['New Battery Intake','Record newly received batteries and their intake details.'],
+  warrantyStock:['Kyebando Warranty','Manage batteries and records associated with Kyebando warranty work.'],
+  qualityChecks:['Quality Checks','Inspect batteries, record findings and confirm the correct disposition.'],
+  daily:['Daily Stock & Quality','Update today’s stock position and review daily quality activity.'],
+  stock:['Stock & Movement','Manage stock levels, movements, adjustments and traceability.'],
+  operations:['IoT & Operations','Track connected-device activity, battery operations and outstanding actions.'],
+  search:['Search Results','Find battery, work, quality and operational records quickly.']
+};
+function BqcPageTitle(view){
+  const meta=BQC_PAGE_META[view] || [String(view||'Operations').replace(/([a-z])([A-Z])/g,'$1 $2'),'Use this section to review and manage the information available to you.'];
+  return el('section',{class:'bqc-current-page','aria-label':'Current page'},[
+    el('div',{},[el('div',{class:'bqc-page-kicker'},'CURRENT PAGE'),el('h1',{class:'bqc-page-title'},meta[0]),el('div',{class:'bqc-page-help'},meta[1])]),
+    el('span',{class:'bqc-page-state'},'READY')
+  ]);
+}
+
 /* ---------- Top level router ---------- */
 function PageLoadRecoveryView(error){
   const card=el('div',{class:'card',style:'border:1px solid rgba(239,68,68,.28);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(247,252,255,.96));'});
@@ -4792,8 +4880,9 @@ function View(){
   try {
  
   if(STATE.role==='omtech'){
-    wrap.appendChild(Nav(['main','progress','rca','knowledge','sop','myclosed','analytics','notes','imports'], {main:'My Docket', progress:'Daily Progress', rca:'Technician RCA', knowledge:'5S & Battery Insights', sop:'SOP CENTER', myclosed:'My Completed Work', analytics:'My Analytics', notes:'NOTES CENTER', imports:'ATTACHED DATA'}));
+    wrap.appendChild(Nav(['main','progress','rca','knowledge','sop','myclosed','analytics','notes','imports'], {main:'My Work Docket', progress:'Daily Progress', rca:'Root Cause Analysis', knowledge:'5S & Battery Insights', sop:'Work Procedures', myclosed:'My Completed Work', analytics:'My Performance', notes:'Notes & Handover', imports:'Reference Files'}));
     wrap.appendChild(SearchBar());
+    content.appendChild(BqcPageTitle(STATE.view));
     if(STATE.view==='search') content.appendChild(SearchResultsView());
     else if(STATE.view==='progress') content.appendChild(DailyWorkProgressView());
     else if(STATE.view==='rca') content.appendChild(RcaWorkspaceView());
@@ -4805,8 +4894,9 @@ function View(){
     else if(STATE.view==='imports') content.appendChild(AttachedWorkbookView());
     else content.appendChild(OmTechDocketView());
   } else if(STATE.role==='omadmin'){
-    wrap.appendChild(Nav(['manager','dashboard','progress','analytics','integrity','history','notes','rca','knowledge','imports'], {manager:'MANAGERS VIEW', dashboard:'Pipeline Oversight', progress:'Daily Progress', analytics:'Analytics', integrity:'Data Integrity', history:'Full Chain History', notes:'NOTES CENTER', rca:'RCA Register', knowledge:'5S & Battery Insights', imports:'ATTACHED DATA'}));
+    wrap.appendChild(Nav(['manager','dashboard','progress','analytics','integrity','history','notes','rca','knowledge','imports'], {manager:'Manager Overview', dashboard:'O&M Pipeline', progress:'Daily Progress', analytics:'Analytics', integrity:'Data Quality', history:'Chain History', notes:'Notes & Handover', rca:'Root Cause Analysis', knowledge:'5S & Battery Insights', imports:'Reference Files'}));
     wrap.appendChild(SearchBar());
+    content.appendChild(BqcPageTitle(STATE.view));
     if(STATE.view==='search') content.appendChild(SearchResultsView());
     else if(STATE.view==='manager') content.appendChild(ManagersOverallView());
     else if(STATE.view==='progress') content.appendChild(DailyWorkProgressView());
@@ -4823,11 +4913,12 @@ function View(){
     if(legacyToCombined[STATE.view]) STATE.view = legacyToCombined[STATE.view];
     if(!['dashboard','progress','daily','qualityChecks','stock','newStock','warrantyStock','operations','notes','integrity','knowledge','sop','imports','search'].includes(STATE.view)) STATE.view='dashboard';
     wrap.appendChild(Nav(['dashboard','progress','daily','qualityChecks','stock','newStock','warrantyStock','operations','notes','integrity','knowledge','sop','imports'], {
-      dashboard:'Plant Dashboard', progress:'Daily Progress', daily:'Daily Stock & Quality', qualityChecks:'QUALITY CHECKS', stock:'Stock & Movement',
-      newStock:'NEW BATTERY STOCK', warrantyStock:'KYEBANDO WARRANTY', operations:'IoT & Operations',
-      notes:'NOTES CENTER', integrity:'Data Integrity', knowledge:'5S & Battery Insights', sop:'SOP CENTER', imports:'ATTACHED DATA'
+      dashboard:'Plant Dashboard', progress:'Daily Progress', daily:'Daily Stock & Quality', qualityChecks:'Quality Checks', stock:'Stock & Movement',
+      newStock:'New Battery Intake', warrantyStock:'Kyebando Warranty', operations:'IoT & Operations',
+      notes:'Notes & Handover', integrity:'Data Quality', knowledge:'5S & Battery Insights', sop:'Work Procedures', imports:'Reference Files'
     }));
     wrap.appendChild(SearchBar());
+    content.appendChild(BqcPageTitle(STATE.view));
     if(STATE.view==='search') content.appendChild(SearchResultsView());
     else if(STATE.view==='dashboard') content.appendChild(PlantDashboardView());
     else if(STATE.view==='progress') content.appendChild(DailyWorkProgressView());
@@ -4843,8 +4934,9 @@ function View(){
     else if(STATE.view==='sop') content.appendChild(SopCenterView());
     else if(STATE.view==='imports') content.appendChild(AttachedWorkbookView());
   } else if(STATE.role==='quality'){
-    wrap.appendChild(Nav(['warranty','bsa','progress','overview','ledger','analytics','integrity','notes','rca','knowledge','imports'], {warranty:'Warranty & Escalations', bsa:'BSA Escalations', progress:'Daily Progress', overview:'Sector Overview', ledger:'Stock Ledger', analytics:'Analytics & Reports', integrity:'Data Integrity', notes:'NOTES CENTER', rca:'RCA Register', knowledge:'5S & Battery Insights', imports:'ATTACHED DATA'}));
+    wrap.appendChild(Nav(['warranty','bsa','progress','overview','ledger','analytics','integrity','notes','rca','knowledge','imports'], {warranty:'Warranty & Escalations', bsa:'BSA Escalations', progress:'Daily Progress', overview:'Quality Overview', ledger:'Stock Ledger', analytics:'Analytics & Trends', integrity:'Data Quality', notes:'Notes & Handover', rca:'Root Cause Analysis', knowledge:'5S & Battery Insights', imports:'Reference Files'}));
     wrap.appendChild(SearchBar());
+    content.appendChild(BqcPageTitle(STATE.view));
     if(STATE.view==='search') content.appendChild(SearchResultsView());
     else if(STATE.view==='overview') content.appendChild(QualityOverviewView());
     else if(STATE.view==='bsa') content.appendChild(QualityBsaView());
@@ -4858,8 +4950,9 @@ function View(){
     else if(STATE.view==='imports') content.appendChild(AttachedWorkbookView());
     else content.appendChild(WarrantyView());
   } else if(STATE.role==='bsa'){
-    wrap.appendChild(Nav(['activity','newcase','progress','rca','knowledge','analytics','notes','history','imports'], {activity:'BSA Queue', newcase:'Log New Case', progress:'Daily Progress', rca:'RCA Room', knowledge:'5S & Battery Insights', analytics:'Analytics', notes:'NOTES CENTER', history:'Completed Cases', imports:'ATTACHED DATA'}));
+    wrap.appendChild(Nav(['activity','newcase','progress','rca','knowledge','analytics','notes','history','imports'], {activity:'BSA Work Queue', newcase:'Log New Case', progress:'Daily Progress', rca:'Root Cause Analysis', knowledge:'5S & Battery Insights', analytics:'Analytics', notes:'Notes & Handover', history:'Completed Cases', imports:'Reference Files'}));
     wrap.appendChild(SearchBar());
+    content.appendChild(BqcPageTitle(STATE.view));
     if(STATE.view==='search') content.appendChild(SearchResultsView());
     else if(STATE.view==='newcase') content.appendChild(BsaNewCaseView());
     else if(STATE.view==='progress') content.appendChild(DailyWorkProgressView());
@@ -9707,6 +9800,16 @@ th,td{overflow-wrap:anywhere;}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto !important;transition-duration:.01ms !important;animation-duration:.01ms !important;animation-iteration-count:1 !important;}
 }
+/* ==================== FINAL NAVIGATION UX / NO-FLASH LAYER ====================
+.view-fade,#root > .app > .view-fade,#root > .view-fade{animation:none !important;opacity:1 !important;transform:none !important;visibility:visible !important;}
+#root{min-height:100vh;background:transparent !important;}
+#root>.app{min-height:100vh;}
+.bqc-current-page{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 13px;padding:10px 13px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:var(--shadow-sm);}
+.bqc-current-page .bqc-page-kicker{font-size:9px;font-weight:900;letter-spacing:1.5px;color:var(--accent2);text-transform:uppercase;}
+.bqc-current-page .bqc-page-title{margin:2px 0 0;font-size:19px;line-height:1.15;color:var(--text);font-weight:900;letter-spacing:-.35px;}
+.bqc-current-page .bqc-page-help{font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.35;}
+.bqc-current-page .bqc-page-state{flex:none;font-size:9px;font-weight:800;color:var(--muted);padding:5px 8px;border:1px solid var(--line);border-radius:999px;background:var(--panel2);white-space:nowrap;}
+@media(max-width:620px){.bqc-current-page{align-items:flex-start;flex-direction:column;gap:5px;padding:10px 11px}.bqc-current-page .bqc-page-title{font-size:17px}.bqc-current-page .bqc-page-state{align-self:flex-start}}
 </style></head><body>`+
     '<h1>Battery QC — Namanve Report</h1><p>Generated '+bqcEscapeHtml(stamp)+' · Compatibility report generated by the application.</p>';
   chosen.forEach(([key,label,fn])=>{
@@ -13393,10 +13496,13 @@ function AttachedWorkbookView(){
 
 <style id="bqc-instant-render-stability">
 /* Never let the application expose an empty root while a view is being rebuilt. */
-#root{min-height:100vh;contain:layout style;}
+#root{min-height:100vh;contain:layout;}
 body.bqc-rendering #root{min-height:100vh;}
 /* A screen swap should feel like navigation, not a page reload. */
 #root>.view-fade{animation:none!important;}
+/* Double-buffered navigation: the new screen is prepared invisibly while the
+   current screen remains painted. No blank/black intermediate frame. */
+#root>.bqc-next-view{visibility:hidden!important;pointer-events:none!important;}
 @media(prefers-reduced-motion:reduce){#root>.view-fade{animation:none!important;}}
 </style>
 
@@ -13469,24 +13575,23 @@ body.bqc-rendering #root{min-height:100vh;}
   };
 
   /* ---------- Scroll / focus continuity ----------
-     Every normal render keeps the user's current reading position.
-     Navigation is the one intentional exception: it starts the destination
-     at its natural top position. */
-  let navigationResetPending=false;
-
-  document.addEventListener('click',function(e){
-    const nav=e.target.closest && e.target.closest('.nav-item');
-    if(nav) navigationResetPending=true;
-  },true);
-
+     Every render, including menu navigation, preserves the user's viewport.
+     Selecting a menu item must never behave like a browser page reload or jump
+     the user to the top of the document. */
   const originalRender=window.render;
 
   window.render=function(){
-    const preserve=!navigationResetPending;
-    navigationResetPending=false;
-
-    const y=window.scrollY || document.documentElement.scrollTop || 0;
-
+    /*
+       HARD VIEWPORT LOCK
+       Rebuilding a large SPA view can trigger the browser's layout/scroll anchoring
+       before the replacement DOM is ready. The user should never see that intermediate
+       state. Temporarily pin the document itself at the exact viewport position while
+       the internal render runs, then release it without changing the perceived position.
+    */
+    const docEl=document.documentElement;
+    const body=document.body;
+    const y=window.scrollY || docEl.scrollTop || 0;
+    const x=window.scrollX || docEl.scrollLeft || 0;
     const active=document.activeElement;
     const hadInput=active && document.getElementById('root')?.contains(active);
     const fkey=hadInput ? active.dataset?.fkey : null;
@@ -13498,16 +13603,42 @@ body.bqc-rendering #root{min-height:100vh;}
       try{ nested=captureBqcNestedScroll(); }catch(e){}
     }
 
-    originalRender();
+    const saved={
+      position:body.style.position, top:body.style.top, left:body.style.left,
+      right:body.style.right, width:body.style.width, overflow:body.style.overflow,
+      overscroll:docEl.style.overscrollBehavior, anchor:docEl.style.overflowAnchor,
+      scrollBehavior:docEl.style.scrollBehavior
+    };
 
-    if(!preserve) return;
+    try{
+      /* Freeze the visible viewport. No top-of-page state can be painted now. */
+      docEl.style.scrollBehavior='auto';
+      docEl.style.overflowAnchor='none';
+      docEl.style.overscrollBehavior='none';
+      body.style.position='fixed';
+      body.style.top=(-y)+'px';
+      body.style.left=(-x)+'px';
+      body.style.right='auto';
+      body.style.width='calc(100% + '+Math.max(0,x)+'px)';
+      body.style.overflow='hidden';
+
+      originalRender();
+    } finally {
+      /* Restore the exact document styling before the browser gets another frame. */
+      body.style.position=saved.position;
+      body.style.top=saved.top;
+      body.style.left=saved.left;
+      body.style.right=saved.right;
+      body.style.width=saved.width;
+      body.style.overflow=saved.overflow;
+      docEl.style.overscrollBehavior=saved.overscroll;
+      docEl.style.overflowAnchor=saved.anchor;
+      docEl.style.scrollBehavior=saved.scrollBehavior;
+      try{ window.scrollTo({left:x,top:y,behavior:'auto'}); }catch(e){ window.scrollTo(x,y); }
+    }
 
     const restore=()=>{
-      try{
-        window.scrollTo({top:y,left:0,behavior:'auto'});
-      }catch(e){
-        window.scrollTo(0,y);
-      }
+      try{ window.scrollTo({left:x,top:y,behavior:'auto'}); }catch(e){ window.scrollTo(x,y); }
 
       if(Array.isArray(nested)){
         nested.forEach(item=>{
@@ -13528,16 +13659,13 @@ body.bqc-rendering #root{min-height:100vh;}
         if(node){
           try{
             node.focus({preventScroll:true});
-            if(selStart!=null && typeof node.setSelectionRange==='function'){
-              node.setSelectionRange(selStart,selEnd);
-            }
+            if(selStart!=null && typeof node.setSelectionRange==='function') node.setSelectionRange(selStart,selEnd);
           }catch(e){}
         }
       }
     };
 
-    /* Two passes handle charts/tables that settle their dimensions on the
-       following frame without visibly moving the user's page. */
+    /* A pair of silent corrections protects against late chart/table layout changes. */
     requestAnimationFrame(restore);
     requestAnimationFrame(()=>requestAnimationFrame(restore));
   };
