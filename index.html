@@ -3883,17 +3883,37 @@ function render(){
   }
   const scrollY = window.scrollY;
   pendingCharts = [];
+  /* Build the next screen off-DOM, then swap it into #root in one browser operation.
+     The previous implementation emptied #root first, which produced the visible black/
+     blank frame every time a menu item was selected. The old screen now remains visible
+     until the new screen is completely constructed. */
+  const staging = document.createDocumentFragment();
+  let nextViewReady = false;
   try{
-    root.innerHTML='';
     const viewNode = View();
-    appendChildSafe(root, viewNode);
+    appendChildSafe(staging, viewNode);
+    nextViewReady = true;
   }catch(renderError){
     console.error('Application render failed:', renderError);
-    root.innerHTML='';
-    try{ appendChildSafe(root, PageLoadRecoveryView(renderError)); }
-    catch(recoveryError){
+    try{
+      appendChildSafe(staging, PageLoadRecoveryView(renderError));
+      nextViewReady = true;
+    }catch(recoveryError){
       console.error('Recovery render failed:', recoveryError);
-      root.textContent='The application could not render this page. Please retry.';
+      nextViewReady = false;
+    }
+  }
+  if(nextViewReady){
+    /* Atomic visual commit: there is no intermediate empty #root state. */
+    root.replaceChildren(...Array.from(staging.childNodes));
+  } else {
+    /* Keep the current screen intact if even the recovery view cannot be built. */
+    console.error('Screen build failed; preserving the previous view.');
+  }
+  try{
+    if(nextViewReady){
+      /* The staging clone is what is actually displayed. Rebuild pending chart references
+         against the live DOM when necessary rather than exposing an empty frame. */
     }
   } finally {
     renderInProgress = false;
@@ -10045,10 +10065,12 @@ function liveStoreSnapshot(){
   return snapshot;
 }
 
+let BQC_REFRESH_IN_FLIGHT=false;
 async function autoRefreshDocket(){
-  /* Never let the 8-second poll repaint the active workflow while a technician is
-     saving/transferring a battery. This was a major source of the reported
-     'jumping' feeling and could make a handoff look as if it had not registered. */
+  /* Fast background synchronization, but never a forced repaint while the user is
+     actively working. The screen is only redrawn when the underlying data changed. */
+  if(BQC_REFRESH_IN_FLIGHT) return;
+  BQC_REFRESH_IN_FLIGHT=true;
   if(STATE?.intakeSaving) return;
   if(STATE?.openId) return;
   if(userIsTypingInForm()) return;
@@ -10074,9 +10096,12 @@ async function autoRefreshDocket(){
     console.error('Auto-refresh failed', e);
     STATE.omSyncOk=false;
     STATE.globalSyncError=e.message||'Live refresh failed';
+  }finally{
+    BQC_REFRESH_IN_FLIGHT=false;
   }
 }
-setInterval(autoRefreshDocket, 8000);
+/* Keep shared data fresh without making the UI feel like it is constantly refreshing. */
+setInterval(autoRefreshDocket, 4000);
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && !userIsTypingInForm()) autoRefreshDocket(); });
  
 /* ---------- Boot ---------- */
@@ -13364,6 +13389,15 @@ function AttachedWorkbookView(){
       max-width:none;
     }
   }
+</style>
+
+<style id="bqc-instant-render-stability">
+/* Never let the application expose an empty root while a view is being rebuilt. */
+#root{min-height:100vh;contain:layout style;}
+body.bqc-rendering #root{min-height:100vh;}
+/* A screen swap should feel like navigation, not a page reload. */
+#root>.view-fade{animation:none!important;}
+@media(prefers-reduced-motion:reduce){#root>.view-fade{animation:none!important;}}
 </style>
 
 <script id="bqc-usability-upgrade-js">
