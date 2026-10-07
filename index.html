@@ -3041,9 +3041,12 @@ function exportBackup(){
   BQC_STORES.forEach(s=> dump.stores[s]=cacheGet(s));
   const blob = new Blob([JSON.stringify(dump,null,2)], {type:'application/json'});
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(blob);
+  a.href = url;
   a.download = 'battery-qc-backup-'+new Date().toISOString().slice(0,10)+'.json';
-  a.click(); URL.revokeObjectURL(a.href);
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{try{URL.revokeObjectURL(url);}catch(e){} try{a.remove();}catch(e){}},15000);
 }
 function importBackup(input){
   const file = input.files && input.files[0]; if(!file) return;
@@ -9554,9 +9557,18 @@ function exportCacheKey(key,label){
   return sig.join('|');
 }
 function getExportRows(key,label,fn){
-  const cacheKey=exportCacheKey(key,label), hit=EXPORT_ROWS_CACHE.get(cacheKey), now=Date.now();
-  if(hit && now-hit.at<EXPORT_CACHE_TTL) return hit.rows;
-  const rows=fn(); EXPORT_ROWS_CACHE.set(cacheKey,{at:now,rows}); return rows;
+  // Reports must reflect the current STATE after the export refresh. Cache entries are only
+  // safe when the exact activity data has not changed, so exports use fresh rows by default.
+  // Keep the cache for other callers, but never trust its coarse row-count signature for export.
+  try{
+    const rows=fn();
+    const safeRows=Array.isArray(rows)?rows:[];
+    EXPORT_ROWS_CACHE.set(exportCacheKey(key,label),{at:Date.now(),rows:safeRows});
+    return safeRows;
+  }catch(err){
+    console.error('Could not build report section:',label,err);
+    throw new Error('Could not prepare report section "'+label+'": '+(err?.message||String(err)));
+  }
 }
 
 const EXPORT_SHEETS = [
@@ -9851,9 +9863,12 @@ function bqcSelectedExportSets(){
 
 async function bqcRefreshForExportBounded(){
   try{
-    await bqcWithTimeout(refreshAllStoresForExport(false), BQC_EXPORT_REFRESH_TIMEOUT_MS, 'Live refresh timed out');
+    await bqcWithTimeout(refreshAllStoresForExport(true), BQC_EXPORT_REFRESH_TIMEOUT_MS, 'Live refresh timed out');
   }catch(e){
-    console.warn('Report export using current cached state:',e.message);
+    // A network refresh can fail, but cached records remain usable. Clear derived rows so the
+    // report is rebuilt from the best available STATE rather than a stale export cache.
+    EXPORT_ROWS_CACHE.clear();
+    console.warn('Report export using current cached state after refresh issue:',e.message);
   }
 }
 
@@ -9883,10 +9898,22 @@ async function bqcDownloadReport(chosen, filename){
     const XLSXlib=await bqcGetXlsx();
     if(!XLSXlib) throw new Error('Excel library unavailable');
     const wb=XLSXlib.utils.book_new();
+    const usedNames=new Set();
+    let totalRows=0;
     chosen.forEach(([key,label,fn])=>{
-      XLSXlib.utils.book_append_sheet(wb,XLSXlib.utils.json_to_sheet(getExportRows(key,label,fn)),label.slice(0,31));
+      const rows=getExportRows(key,label,fn);
+      // Keep each sheet valid and non-empty, including an explicit note where no records exist.
+      const safeRows=(Array.isArray(rows)&&rows.length)?rows:[{Note:'No data recorded for this section'}];
+      totalRows+=safeRows.length;
+      const baseName=String(label||key||'Report').slice(0,31);
+      let sheetName=baseName, suffix=2;
+      while(usedNames.has(sheetName)){const tail=' ('+suffix++ +')';sheetName=baseName.slice(0,31-tail.length)+tail;}
+      usedNames.add(sheetName);
+      XLSXlib.utils.book_append_sheet(wb,XLSXlib.utils.json_to_sheet(safeRows),sheetName);
     });
+    if(!wb.SheetNames.length || totalRows===0) throw new Error('No report sections could be prepared.');
     const data=XLSXlib.write(wb,{bookType:'xlsx',type:'array',compression:false});
+    if(!data || !data.byteLength) throw new Error('The Excel workbook was generated without content.');
     bqcNativeDownloadBlob(new Blob([data],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),filename);
     return {kind:'xlsx',filename};
   }catch(xlsxError){
@@ -10064,9 +10091,13 @@ function buildBsaExportRows(){
 let LAST_EXPORT_REFRESH_AT=0;
 async function refreshAllStoresForExport(force=false){
   const now=Date.now();
+  // A report is an explicit request for current data; do not skip the refresh due to polling TTL.
+  // The force argument remains for compatibility with existing callers.
   if(!force && now-LAST_EXPORT_REFRESH_AT<12000) return;
-  await loadStoresIntoState(BQC_STORES);
+  const readable=await loadStoresIntoState(BQC_STORES);
+  EXPORT_ROWS_CACHE.clear();
   LAST_EXPORT_REFRESH_AT=Date.now();
+  return readable;
 }
 async function exportAllDataToExcel(){
   if(!STATE.exportSelection){ STATE.exportSelection = {}; EXPORT_SHEETS.forEach(([k])=>STATE.exportSelection[k]=true); }
