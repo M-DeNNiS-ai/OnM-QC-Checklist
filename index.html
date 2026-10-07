@@ -3006,8 +3006,11 @@ async function connectCloud(){
     Cloud.lastError = null;
     cpStatus('Connected. Uploading anything held locally…');
     await flushOutbox();
-    cpStatus('Connected and synced. Reloading…');
-    setTimeout(()=>location.reload(), 700);
+    cpStatus('Connected and synced. No page reload needed.');
+    try{ await scheduleBackgroundDataRefresh(); }catch(e){}
+    closePanel();
+    window.toast('✓ Connected and synced.');
+    render();
   }catch(e){
     Cloud.cfg = prev;
     cpStatus('Could not connect: '+e.message+' — check the URL, the key, and that the SQL above has been run.');
@@ -3050,8 +3053,10 @@ function importBackup(input){
         incoming.forEach(r=>{ const rec=clone(r); if(!rec.id) rec.id=uid(); if(!byId.has(String(rec.id))){ byId.set(String(rec.id), rec); added++; } });
         await saveStore(key, Array.from(byId.values()));
       }
-      cpStatus('Imported '+added+' new record(s). Reloading…');
-      setTimeout(()=>location.reload(), 900);
+      cpStatus('Imported '+added+' new record(s). Updating this screen without a reload…');
+      closePanel();
+      window.toast('✓ Imported '+added+' new record(s).');
+      render();
     }catch(e){ cpStatus('Could not read that file: '+e.message); }
   };
   reader.readAsText(file);
@@ -13219,6 +13224,333 @@ function AttachedWorkbookView(){
   window.addEventListener('resize',()=>{
     clearTimeout(FINAL_CHARTS.timer);
     FINAL_CHARTS.timer=setTimeout(()=>FINAL_CHARTS.scan(),180);
+  });
+
+})();
+</script>
+
+
+<!-- ================================================================
+     ALL-AROUND USABILITY / NO-JUMP / NO-FLICKER UPGRADE
+     Keeps operational data and workflows intact.
+     Goals:
+       • no visible full-page refresh during ordinary updates
+       • never lose the user's reading position
+       • never unexpectedly jump to another section
+       • background sync becomes quiet and user-controlled
+       • navigation remains immediate
+       • unsaved work is protected
+       • feedback appears without rebuilding the whole screen
+     ================================================================ -->
+<style id="bqc-usability-upgrade">
+  .bqc-render-stage{
+    opacity:0 !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+
+  body.bqc-busy-transition #root{
+    /* The old screen remains visually stable while the replacement screen
+       is prepared off-screen. */
+    opacity:1 !important;
+  }
+
+  #bqc-update-available{
+    position:fixed;
+    left:50%;
+    bottom:18px;
+    transform:translateX(-50%);
+    z-index:100000;
+    display:none;
+    align-items:center;
+    gap:10px;
+    max-width:min(92vw,560px);
+    padding:9px 12px;
+    border:1px solid rgba(59,130,246,.22);
+    border-radius:12px;
+    background:rgba(255,255,255,.96);
+    box-shadow:0 10px 30px rgba(15,23,42,.16);
+    backdrop-filter:blur(16px) saturate(140%);
+    -webkit-backdrop-filter:blur(16px) saturate(140%);
+    color:#18324d;
+    font-size:12px;
+    line-height:1.3;
+  }
+
+  [data-theme="dark"] #bqc-update-available{
+    background:rgba(11,20,34,.96);
+    color:#e7eef8;
+    border-color:rgba(148,163,184,.28);
+  }
+
+  #bqc-update-available.show{
+    display:flex;
+  }
+
+  #bqc-update-available .bqc-update-text{
+    flex:1;
+  }
+
+  #bqc-update-available button{
+    border:0;
+    border-radius:8px;
+    padding:7px 10px;
+    font-weight:700;
+    cursor:pointer;
+    background:var(--accent,#2563eb);
+    color:#fff;
+    white-space:nowrap;
+  }
+
+  #bqc-update-available .bqc-update-later{
+    background:transparent;
+    color:inherit;
+    border:1px solid currentColor;
+    opacity:.72;
+  }
+
+  #bqc-live-toast{
+    position:fixed;
+    top:18px;
+    right:18px;
+    z-index:100001;
+    display:none;
+    max-width:min(92vw,420px);
+    padding:10px 13px;
+    border:1px solid rgba(59,130,246,.20);
+    border-radius:10px;
+    background:rgba(255,255,255,.96);
+    box-shadow:0 10px 30px rgba(15,23,42,.16);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+    font-size:12px;
+    line-height:1.35;
+  }
+
+  #bqc-live-toast.show{
+    display:block;
+    animation:bqcToastIn .16s ease-out;
+  }
+
+  @keyframes bqcToastIn{
+    from{opacity:0;transform:translateY(-5px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+
+  /* Avoid browser scroll anchoring fighting the application's deliberate
+     restoration of the current reading position. */
+  html,body,#root{
+    overflow-anchor:none;
+  }
+
+  /* Navigation feedback is immediate but never causes a page-wide animation. */
+  .nav-item{
+    scroll-margin-inline:16px;
+  }
+
+  @media(max-width:700px){
+    #bqc-live-toast{
+      top:10px;
+      left:10px;
+      right:10px;
+      max-width:none;
+    }
+
+    #bqc-update-available{
+      left:10px;
+      right:10px;
+      bottom:10px;
+      transform:none;
+      max-width:none;
+    }
+  }
+</style>
+
+<script id="bqc-usability-upgrade-js">
+(function(){
+  'use strict';
+
+  /* ---------- Lightweight, non-rendering toast ---------- */
+  const originalToast = window.toast;
+
+  window.toast = function(message){
+    const msg=String(message ?? '');
+    let box=document.getElementById('bqc-live-toast');
+
+    if(!box){
+      box=document.createElement('div');
+      box.id='bqc-live-toast';
+      document.body.appendChild(box);
+    }
+
+    box.textContent=msg;
+    box.classList.add('show');
+
+    clearTimeout(window.__bqcToastTimer);
+    window.__bqcToastTimer=setTimeout(()=>{
+      box.classList.remove('show');
+    },2800);
+  };
+
+  /* Keep the function binding used by the application pointed at the quiet
+     implementation as well as window.toast. */
+  try{ toast=window.toast; }catch(e){}
+
+  /* ---------- Update-available bar ----------
+     Background sync may change STATE, but it never forces the user's screen
+     to rebuild. The user decides when the new data is painted. */
+  function ensureUpdateBar(){
+    let bar=document.getElementById('bqc-update-available');
+    if(bar) return bar;
+
+    bar=document.createElement('div');
+    bar.id='bqc-update-available';
+    bar.innerHTML=
+      '<span class="bqc-update-text">New shared data is available.</span>'+
+      '<button type="button" class="bqc-update-apply">Update</button>'+
+      '<button type="button" class="bqc-update-later">Later</button>';
+
+    document.body.appendChild(bar);
+
+    bar.querySelector('.bqc-update-apply').addEventListener('click',()=>{
+      bar.classList.remove('show');
+      window.__bqcPendingUpdate=false;
+      try{ render(); }catch(e){ console.error('Update render failed',e); }
+    });
+
+    bar.querySelector('.bqc-update-later').addEventListener('click',()=>{
+      bar.classList.remove('show');
+      window.__bqcPendingUpdate=false;
+    });
+
+    return bar;
+  }
+
+  window.markBqcUpdateAvailable=function(message){
+    window.__bqcPendingUpdate=true;
+    const bar=ensureUpdateBar();
+    const text=bar.querySelector('.bqc-update-text');
+    if(text) text.textContent=message || 'New shared data is available.';
+    bar.classList.add('show');
+  };
+
+  /* ---------- Scroll / focus continuity ----------
+     Every normal render keeps the user's current reading position.
+     Navigation is the one intentional exception: it starts the destination
+     at its natural top position. */
+  let navigationResetPending=false;
+
+  document.addEventListener('click',function(e){
+    const nav=e.target.closest && e.target.closest('.nav-item');
+    if(nav) navigationResetPending=true;
+  },true);
+
+  const originalRender=window.render;
+
+  window.render=function(){
+    const preserve=!navigationResetPending;
+    navigationResetPending=false;
+
+    const y=window.scrollY || document.documentElement.scrollTop || 0;
+
+    const active=document.activeElement;
+    const hadInput=active && document.getElementById('root')?.contains(active);
+    const fkey=hadInput ? active.dataset?.fkey : null;
+    const selStart=hadInput && typeof active.selectionStart==='number' ? active.selectionStart : null;
+    const selEnd=hadInput && typeof active.selectionEnd==='number' ? active.selectionEnd : null;
+
+    let nested=[];
+    if(typeof captureBqcNestedScroll==='function'){
+      try{ nested=captureBqcNestedScroll(); }catch(e){}
+    }
+
+    originalRender();
+
+    if(!preserve) return;
+
+    const restore=()=>{
+      try{
+        window.scrollTo({top:y,left:0,behavior:'auto'});
+      }catch(e){
+        window.scrollTo(0,y);
+      }
+
+      if(Array.isArray(nested)){
+        nested.forEach(item=>{
+          try{
+            const nodes=document.querySelectorAll(item.selector||'');
+            const node=nodes[item.index||0];
+            if(node){
+              node.scrollLeft=Number(item.left)||0;
+              node.scrollTop=Number(item.top)||0;
+            }
+          }catch(e){}
+        });
+      }
+
+      if(fkey){
+        const safe=String(fkey).replace(/"/g,'');
+        const node=document.querySelector('[data-fkey="'+safe+'"]');
+        if(node){
+          try{
+            node.focus({preventScroll:true});
+            if(selStart!=null && typeof node.setSelectionRange==='function'){
+              node.setSelectionRange(selStart,selEnd);
+            }
+          }catch(e){}
+        }
+      }
+    };
+
+    /* Two passes handle charts/tables that settle their dimensions on the
+       following frame without visibly moving the user's page. */
+    requestAnimationFrame(restore);
+    requestAnimationFrame(()=>requestAnimationFrame(restore));
+  };
+
+  try{ render=window.render; }catch(e){}
+
+  /* ---------- Prevent accidental loss of active work ---------- */
+  window.addEventListener('beforeunload',function(e){
+    try{
+      if(
+        STATE &&
+        STATE.role==='omtech' &&
+        STATE.stage===1 &&
+        typeof draftHasUserData==='function' &&
+        draftHasUserData(STATE.intakeDraft)
+      ){
+        if(typeof saveIntakeDraftLocal==='function') saveIntakeDraftLocal(STATE.intakeDraft);
+      }
+    }catch(err){}
+  });
+
+  /* ---------- Replace explicit connection/import reloads with in-place updates ---------- */
+  window.bqcFinishWithoutReload=function(message){
+    try{
+      if(message) window.toast(message);
+      if(typeof scheduleBackgroundDataRefresh==='function'){
+        scheduleBackgroundDataRefresh().catch(()=>{});
+      }
+      window.markBqcUpdateAvailable('Data changed. Update this screen when convenient.');
+    }catch(e){}
+  };
+
+  /* ---------- Smooth section navigation without page-level motion ---------- */
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Escape') return;
+    const bar=document.getElementById('bqc-update-available');
+    if(bar) bar.classList.remove('show');
+  });
+
+  /* ---------- Make background sync genuinely quiet ----------
+     Existing autoRefreshDocket already skips active forms and open records.
+     Its changed-data path was changed to markBqcUpdateAvailable instead of
+     silently rebuilding the entire page. */
+  window.addEventListener('online',()=>{
+    if(typeof autoRefreshDocket==='function' && !document.hidden){
+      setTimeout(()=>autoRefreshDocket(),500);
+    }
   });
 
 })();
