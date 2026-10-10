@@ -2158,12 +2158,22 @@ function detectModelFromBMS(bmsId) {
   const match = BMS_MODEL_PREFIXES.find(p => cleanId.startsWith(p.prefix));
   return match ? match.model : '';
 }
-const CBAK_ID_LENGTH = 18;
+const BATTERY_ID_LENGTH = 18;
+const CBAK_ID_LENGTH = BATTERY_ID_LENGTH; // Backward-compatible name used by existing UI.
 function cbakLengthError(bmsId, model){
-  if(model !== 'CBAK') return null;
-  const len = (bmsId||'').trim().length;
-  if(len === 0) return null;
-  if(len !== CBAK_ID_LENGTH) return `CBAK BMS IDs must be exactly ${CBAK_ID_LENGTH} characters (this one is ${len}).`;
+  const clean = String(bmsId||'').trim().toUpperCase().replace(/\\s+/g,'');
+  if(!clean) return null;
+  const detected = platformForId(clean);
+  const resolvedModel = detected || String(model||'').trim().toUpperCase();
+  if(clean.length !== BATTERY_ID_LENGTH){
+    return `Battery IDs must be exactly ${BATTERY_ID_LENGTH} characters after the platform prefix is attached (this one is ${clean.length}). Select the correct platform and enter the remaining characters, or enter the full 18-character ID.`;
+  }
+  if(resolvedModel && !prefixForPlatform(resolvedModel)){
+    return 'Select a valid battery platform or enter a recognized full battery ID.';
+  }
+  if(resolvedModel && !clean.startsWith(prefixForPlatform(resolvedModel))){
+    return `The ${resolvedModel} battery ID must start with ${prefixForPlatform(resolvedModel)}. Check the platform or enter the correct full 18-character ID.`;
+  }
   return null;
 }
  
@@ -3107,12 +3117,15 @@ function platformForId(id){
   return found ? found.model : '';
 }
 function normalizeBatteryId(token, platform){
-  const raw = String(token||'').trim().toUpperCase();
+  const raw = String(token||'').trim().toUpperCase().replace(/\\s+/g,'');
   if(!raw) return '';
+  // A complete recognized OEM ID must be preserved exactly as entered.
   const detected = platformForId(raw);
   if(detected) return raw;
   const prefix = prefixForPlatform(platform);
-  return prefix ? prefix + raw : raw;
+  // Only attach a prefix to a suffix; never prepend a prefix to a full-length ID.
+  if(prefix && raw.length < 18) return prefix + raw;
+  return raw;
 }
 function parseBatteryIdList(text, platform){
   return Array.from(new Set(parseIdList(text).map(x=>normalizeBatteryId(x, platform)).filter(Boolean)));
@@ -5534,7 +5547,10 @@ function NewIntakeCard(){
   }
  
   const imeiRequired = isImeiRequired(d);
-  const imeiInput = textInput(d.imei, v=>d.imei=v, {mono:true, placeholder: imeiRequired?'Required':'Optional'});
+  const imeiInput = textInput(d.imei, v=>d.imei=v, {mono:true, placeholder: imeiRequired?'Required (max 16 characters)':'Optional (max 16 characters)'});
+  imeiInput.maxLength = 16;
+  imeiInput.setAttribute('maxlength','16');
+  imeiInput.addEventListener('input',()=>{ if(imeiInput.value.length>16){ imeiInput.value=imeiInput.value.slice(0,16); d.imei=imeiInput.value; } });
   if(imeiRequired) imeiInput.style.borderColor='var(--warn)';
   g1.appendChild(field(imeiRequired?'IMEI Number (Mandatory)':'IMEI Number', imeiInput));
  
@@ -5558,12 +5574,18 @@ function NewIntakeCard(){
   if(!STATE.intakeSaving) sendBtn.textContent = toBsa ? 'Send Straight to BSA Team' : 'Send to Stage 2 Docket';
   sendBtn.addEventListener('click', async ()=>{
     if(STATE.intakeSaving) return; // guard against double-click / double-submit while a write is in flight
-    const clean = d.bmsId.trim();
+    const rawBatteryId = String(d.bmsId||'').trim();
     STATE.intakeError = null;
     STATE.omRecords = await loadOm();
-    if(!clean || !d.dateReceived){ STATE.intakeError='BMS ID and intake date are required.'; render(); return; }
+    if(!rawBatteryId || !d.dateReceived){ STATE.intakeError='Battery ID and intake date are required. Enter the battery number in the field, select its platform if entering a suffix, or scan/paste the full 18-character ID.'; render(); return; }
+    const detectedModel = platformForId(rawBatteryId);
+    if(detectedModel) d.model = detectedModel;
+    d.bmsId = normalizeBatteryId(rawBatteryId, d.model);
+    const clean = String(d.bmsId||'').trim().toUpperCase();
+    if(!clean){ STATE.intakeError='Battery ID was not captured. Please re-enter it or scan the barcode, then try again.'; render(); return; }
     const cbakCheck = cbakLengthError(clean, d.model);
     if(cbakCheck){ STATE.intakeError = cbakCheck; render(); return; }
+    if(String(d.imei||'').trim().length > 16){ STATE.intakeError='IMEI number must not exceed 16 characters.'; render(); return; }
     if(isImeiRequired(d) && !d.imei.trim()){ STATE.intakeError='IMEI is required for the selected issue type.'; render(); return; }
     if(isSwapStationRequired(d) && !d.site.trim()){ STATE.intakeError='Swap Station is required for this defect type.'; render(); return; }
     if(d.issues.missingComponent && !(d.missingComponentNote||'').trim()){ STATE.intakeError='Specify which component is missing.'; render(); return; }
