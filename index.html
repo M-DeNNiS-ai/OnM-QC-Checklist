@@ -5537,7 +5537,13 @@ function NewIntakeCard(){
     render();
   });
   g1.appendChild(field('Scan BMS ID Barcode', bmsInput));
-  g1.appendChild(field('Battery Platform', textInput(d.model, v=>d.model=v, {placeholder:'Auto-detected'})));
+  g1.appendChild(field('Battery Platform', textInput(d.model, v=>{
+    const candidate=String(v||'').trim().toUpperCase().replace(/\s+/g,'');
+    const detected=platformForId(candidate);
+    // Recovery for entries typed/pasted into the adjacent platform field by mistake.
+    if(candidate.length>=10 && (detected || candidate.length===18)){ d.bmsId=candidate; d.model=detected||d.model; }
+    else d.model=v;
+  }, {placeholder:'Auto-detected platform'})));
  
   const cbakErr = cbakLengthError(d.bmsId, d.model);
   if(cbakErr){
@@ -5574,7 +5580,9 @@ function NewIntakeCard(){
   if(!STATE.intakeSaving) sendBtn.textContent = toBsa ? 'Send Straight to BSA Team' : 'Send to Stage 2 Docket';
   sendBtn.addEventListener('click', async ()=>{
     if(STATE.intakeSaving) return; // guard against double-click / double-submit while a write is in flight
-    const rawBatteryId = String(d.bmsId||'').trim();
+    const platformFieldValue=String(d.model||'').trim().toUpperCase().replace(/\s+/g,'');
+    const rawBatteryId = String(d.bmsId||'').trim() || (platformFieldValue.length>=10 ? platformFieldValue : '');
+    if(rawBatteryId && !String(d.bmsId||'').trim()) d.bmsId=rawBatteryId;
     STATE.intakeError = null;
     STATE.omRecords = await loadOm();
     if(!rawBatteryId || !d.dateReceived){ STATE.intakeError='Battery ID and intake date are required. Enter the battery number in the field, select its platform if entering a suffix, or scan/paste the full 18-character ID.'; render(); return; }
