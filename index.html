@@ -5620,13 +5620,26 @@ function NewIntakeCard(){
     }
     const updated = [...STATE.omRecords, rec];
     STATE.intakeSaving = true; render();
-    const ok = await saveOm(updated);
-    let bsaOk = true;
-    if(ok && bsaRec){
+    if(bsaRec){
       const freshBsa = await loadBsa();
-      bsaOk = await saveBsa([...freshBsa, bsaRec]);
-      if(bsaOk) STATE.bsaRecords = [...freshBsa, bsaRec];
+      const duplicate = freshBsa.find(x =>
+        (x.omRecordId && x.omRecordId === bsaRec.omRecordId) ||
+        (String(x.bmsId||'').trim().toUpperCase() === String(bsaRec.bmsId||'').trim().toUpperCase() &&
+         x.source === BSA_SOURCES[0] &&
+         !['Returned to O&M for Deployment','Scrapped'].includes(x.status))
+      );
+      if(duplicate) STATE.bsaRecords = freshBsa;
+      else {
+        const bsaOk = await saveBsa([...freshBsa, bsaRec]);
+        if(!bsaOk){
+          STATE.intakeSaving = false;
+          STATE.intakeError = 'BSA escalation was not saved to the shared queue. The intake has not been finalized; check the connection and retry.';
+          render(); return;
+        }
+        STATE.bsaRecords = [...freshBsa, bsaRec];
+      }
     }
+    const ok = await saveOm(updated);
     STATE.intakeSaving = false;
     if(!ok){
       // This is the fix for "the button isn't working": previously a failed write left the
@@ -5645,7 +5658,7 @@ function NewIntakeCard(){
     STATE.intakeError = null;
     STATE.omLastRefreshed = nowTime();
     const saveNote=STATE.lastSaveStatus?.cloudAttempted && !STATE.lastSaveStatus?.cloudSaved ? ' Saved locally and queued for cloud sync.' : ' Saved successfully.';
-    if(toBsa) toast(`✓ BMS ${rec.bmsId} logged and sent straight to the BSA team.` + (!bsaOk ? ' (BSA case log failed to save — notify BSA manually.)' : '') + saveNote);
+    if(toBsa) toast(`✓ BMS ${rec.bmsId} logged and the BSA queue record saved.` + saveNote);
     else toast(`✓ Intake logged — BMS ${rec.bmsId} sent to Stage 2 docket.${saveNote}`);
     render();
   });
@@ -5765,11 +5778,50 @@ function Stage1EditCard(rec){
     latestRec.updatedBy = STATE.techName;
     latestRec.updatedAt = nowIso();
     fresh[idx] = latestRec;
+    // Save and verify the BSA recipient record before closing the O&M docket as transferred.
+    if(bsaRec){
+      const freshBsa = await loadBsa();
+      const duplicate = freshBsa.find(x =>
+        (x.omRecordId && x.omRecordId === bsaRec.omRecordId) ||
+        (String(x.bmsId||'').trim().toUpperCase() === String(bsaRec.bmsId||'').trim().toUpperCase() &&
+         x.source === BSA_SOURCES[0] &&
+         !['Returned to O&M for Deployment','Scrapped'].includes(x.status))
+      );
+      if(duplicate) STATE.bsaRecords = freshBsa;
+      else {
+        const bsaOk = await saveBsa([...freshBsa, bsaRec]);
+        if(!bsaOk){
+          STATE.intakeSaving = false;
+          STATE.intakeError = 'BSA escalation could not be saved to the shared queue. The docket was not transferred; check the connection and retry.';
+          render(); return;
+        }
+        STATE.bsaRecords = [...freshBsa, bsaRec];
+      }
+    }
+    // Idempotent handoff: create/confirm the shared BSA queue item before closing Stage 1.
+    if(bsaRec){
+      const freshBsa = await loadBsa();
+      const duplicate = freshBsa.find(x =>
+        (x.omRecordId && x.omRecordId === bsaRec.omRecordId) ||
+        (String(x.bmsId||'').trim().toUpperCase() === String(bsaRec.bmsId||'').trim().toUpperCase() &&
+         x.source === BSA_SOURCES[0] &&
+         !['Returned to O&M for Deployment','Scrapped'].includes(x.status))
+      );
+      if(duplicate) STATE.bsaRecords = freshBsa;
+      else {
+        const bsaOk = await saveBsa([...freshBsa, bsaRec]);
+        if(!bsaOk){
+          STATE.intakeSaving = false;
+          STATE.intakeError = 'BSA escalation was not saved to the shared queue. The docket has not been transferred; check the connection and retry.';
+          render(); return;
+        }
+        STATE.bsaRecords = [...freshBsa, bsaRec];
+      }
+    }
     const ok = await saveOm(fresh);
-    if(ok && bsaRec){ const freshBsa = await loadBsa(); await saveBsa([...freshBsa, bsaRec]); STATE.bsaRecords=[...freshBsa,bsaRec]; }
     STATE.intakeSaving = false;
     if(!ok){
-      STATE.intakeError = 'Could not save to the shared record — check your connection and tap Resend again.';
+      STATE.intakeError = 'Could not save the docket update — the BSA case may already be queued. Refresh before retrying to avoid duplicate escalations.';
       render();
       return;
     }
