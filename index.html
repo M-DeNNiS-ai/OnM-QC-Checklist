@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Battery QC</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -197,7 +197,7 @@ td.r,th.r{text-align:right}
 .lane-head{display:flex;justify-content:space-between;align-items:baseline;padding:2px 4px 4px}
 .lane-head b{font-family:var(--f-display);font-size:16px}
 .lane-head .n{font-family:var(--f-display);font-size:22px;font-weight:700}
-.lane-list{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto;padding-right:2px}
+.lane-list{min-width:0;display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto;padding-right:2px}
 .jcard{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 10px;cursor:pointer;text-align:left;width:100%;display:grid;gap:4px;border-left:3px solid var(--line-2)}
 .jcard:hover{border-color:var(--line-2)}
 .jcard.age-warn{border-left-color:var(--warn)} .jcard.age-crit{border-left-color:var(--crit)} .jcard.age-ok{border-left-color:var(--good)}
@@ -526,12 +526,12 @@ button.kpi:hover .k-val{color:var(--accent)}
 .bnav{display:none}
 
 /* --- large tablet / small laptop: tabs on their own row --- */
-@media (max-width:1520px){
+@media (max-width:1900px){
   .tb .lbl{display:none} .btn.sm.tb{width:38px;padding:0}
   .pill.sync .s-t{display:none} .pill.sync{width:38px;padding:0;justify-content:center}
-  .pill.sync:not(.good):not(.none) .s-t{display:inline} .pill.sync:not(.good):not(.none){width:auto;padding:0 12px}
+
 }
-@media (max-width:1240px){
+@media (max-width:1360px){
   .top .wrap.top-row{flex-wrap:wrap;row-gap:6px}
   .top .top-tabs{order:5;flex:1 0 100%;margin:0 0 2px;padding:0 0 4px;overflow-x:auto}
   .search{flex:1 1 220px;max-width:420px}
@@ -580,9 +580,9 @@ button.kpi:hover .k-val{color:var(--accent)}
 .avatar{position:relative}
 .avatar[data-sync]::after{content:"";position:absolute;right:-3px;top:-3px;width:11px;height:11px;border-radius:50%;border:2px solid var(--solid);display:none}
 .avatar[data-sync="warn"]::after{background:var(--warn)}.avatar[data-sync="crit"]::after{background:var(--crit)}.avatar[data-sync="info"]::after{background:var(--info)}.avatar[data-sync="good"]::after{background:var(--good)}
-@media (max-width:1240px){.top .top-tabs .tab{flex:none}}
+@media (max-width:1360px){.top .top-tabs .tab{flex:none}}
 @media (max-width:760px){
-  .pill.sync,.brand .demo-flag{display:none!important}
+  .pill.sync,.brand .demo-flag,.top .tools [data-act=export]{display:none!important}
   .avatar[data-sync]::after{display:block}
   .tools{gap:4px} .tb,.only-sm,.avatar{width:40px;height:40px}
   .tools svg{width:18px;height:18px;flex:none}
@@ -604,9 +604,65 @@ button.kpi:hover .k-val{color:var(--accent)}
   table.rtable tbody tr.click:active{background:color-mix(in srgb,var(--accent) 8%,transparent)}
   table.rtable tr.sel{background:var(--accent-soft)}
 }
+.sim-box{margin-top:12px;padding:12px;border-radius:14px;border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line));background:color-mix(in srgb,var(--accent) 6%,var(--panel));display:grid;gap:10px}
+.sim-head{display:flex;gap:10px;align-items:flex-start}.sim-head b{display:block;font-size:13.5px}.sim-head small{display:block;color:var(--ink-2);font-size:12.5px;line-height:1.4}
+.sim-ic{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+.sim-box .form{margin:0}
+.recall{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.recall-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.recall-steps>div{padding:10px 12px;border-radius:12px;background:var(--panel-2);border:1px solid var(--line)}
+.recall-steps b{display:block;font-size:22px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.recall-steps small{color:var(--ink-3);font-size:12px}
+@media (max-width:760px){.recall{grid-template-columns:minmax(0,1fr)}.recall-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpis.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:760px){.kpis.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.bell{position:relative}
+.bell .badge{position:absolute;top:-6px;right:-6px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;font:800 10.5px/19px var(--f-body);color:#fff;text-align:center;border:2px solid var(--solid);box-sizing:content-box}
+.bell .badge.warn{background:var(--warn)} .bell .badge.crit{background:var(--crit);animation:ring 2.4s ease-in-out infinite}
+@keyframes ring{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--crit) 50%,transparent)}50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--crit) 0%,transparent)}}
+@media (min-width:761px) and (max-width:1900px){.bell .lbl{display:none}}
+.jcard .row3{font-size:12px;color:var(--ink-2);margin-top:6px;line-height:1.4;text-align:left}
+.jcard.task .row1 .chip{font-size:11px}
+.jcard.alert-crit{border-left:3px solid var(--crit)} .jcard.alert-warn{border-left:3px solid var(--warn)}
+.att-list{display:grid;gap:6px;grid-template-columns:minmax(0,1fr)}
+.att{min-width:0;display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit;cursor:pointer;transition:border-color .15s,background .15s}
+.att:hover{border-color:color-mix(in srgb,var(--accent) 40%,var(--line));background:color-mix(in srgb,var(--accent) 6%,var(--panel))}
+.att-dot{flex:none;width:9px;height:9px;border-radius:50%}.att.crit .att-dot{background:var(--crit);box-shadow:0 0 0 4px var(--crit-bg)}.att.warn .att-dot{background:var(--warn);box-shadow:0 0 0 4px var(--warn-bg)}
+.att-t{flex:1;min-width:0}.att-t b{display:block;font-size:13.5px}.att-t small{display:block;color:var(--ink-3);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.att-go{color:var(--ink-3);font-size:18px}
+@media (prefers-reduced-motion:reduce){.bell .badge.crit{animation:none}}
+.welcome{margin-bottom:16px;border-radius:var(--r);padding:16px 18px;border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line));
+  background:radial-gradient(600px 220px at 0% 0%,color-mix(in srgb,var(--accent) 14%,transparent),transparent 70%),radial-gradient(500px 200px at 100% 100%,color-mix(in srgb,var(--accent-2) 12%,transparent),transparent 70%),linear-gradient(180deg,var(--panel),var(--panel-2));box-shadow:inset 0 1px 0 var(--edge),var(--shadow)}
+.welcome.fresh{animation:rise .45s cubic-bezier(.2,.7,.2,1) both}
+.w-greet{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.w-greet b{font-size:17px;font-weight:800;letter-spacing:-.01em;background:linear-gradient(135deg,var(--ink),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.w-acts{display:flex;gap:4px;flex:none}
+.w-card{display:flex;gap:14px;align-items:flex-start}
+.w-ic{flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:20px;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 8px 20px color-mix(in srgb,var(--accent) 30%,transparent)}
+.w-body{flex:1;min-width:0}.w-body h3{margin:2px 0 4px;font-size:16px}.w-body p{margin:0 0 8px;color:var(--ink-2);max-width:72ch}
+.phys{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 18px;margin:6px 0 8px}
+.phys label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-2);font-weight:600}.phys label b{color:var(--accent);font-variant-numeric:tabular-nums}
+.phys input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+.phys-out{display:inline-block;padding:8px 12px;border-radius:10px;background:var(--panel-2);border:1px solid var(--line);font-size:13.5px}
+.phys-out .ok{color:var(--good);font-weight:700}.phys-out .bad{color:var(--crit);font-weight:700}
+.login-form{flex-direction:column}
+.farewell{width:min(440px,100%);box-sizing:border-box;display:flex;gap:10px;align-items:center;padding:12px 14px;margin-bottom:12px;border-radius:16px;border:1px solid color-mix(in srgb,var(--good) 35%,var(--line));background:linear-gradient(135deg,color-mix(in srgb,var(--good) 14%,var(--solid)),var(--solid));box-shadow:var(--shadow);font-weight:600;animation:rise .45s cubic-bezier(.2,.7,.2,1) both}
+.farewell>div{flex:1}.fw-ic{font-size:22px}
+@media (max-width:560px){.w-card{flex-direction:column;gap:8px}.w-ic{width:38px;height:38px;font-size:18px}.w-greet b{font-size:15.5px}}
+@media (prefers-reduced-motion:reduce){.welcome.fresh,.farewell{animation:none}}
+.fw-scrim{position:fixed;inset:0;z-index:85;display:grid;place-items:center;padding:16px;background:color-mix(in srgb,#06101c 45%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:fade .2s}
+.fw-panel{width:min(760px,100%);max-height:calc(100dvh - 32px);overflow:auto;border-radius:24px;padding:22px;display:grid;gap:16px;border:1px solid var(--edge);
+  background:radial-gradient(700px 260px at 0% 0%,color-mix(in srgb,var(--good) 16%,transparent),transparent 70%),radial-gradient(600px 240px at 100% 100%,color-mix(in srgb,var(--accent) 14%,transparent),transparent 70%),var(--solid);box-shadow:0 0 0 1px var(--line),0 40px 90px rgba(6,16,28,.35);animation:rise .4s cubic-bezier(.2,.7,.2,1) both}
+.fw-top{display:flex;gap:14px;align-items:flex-start}.fw-top>div{flex:1}.fw-top h2{font-size:21px;line-height:1.3;margin-top:2px}
+.fw-badge{flex:none;width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:26px;background:linear-gradient(135deg,var(--good),var(--accent-2));box-shadow:0 10px 24px color-mix(in srgb,var(--good) 30%,transparent)}
+.fw-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.fw-stats>div{padding:12px 14px;border-radius:14px;background:var(--panel-2);border:1px solid var(--line)}
+.fw-stats b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.fw-stats span{font-size:12px;color:var(--ink-3)}
+.fw-road{padding:14px;border-radius:16px;border:1px solid color-mix(in srgb,var(--accent) 25%,var(--line));background:var(--panel)}
+.fw-foot{display:flex;justify-content:space-between;gap:10px}
+@media (max-width:620px){.fw-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.fw-top h2{font-size:18px}.fw-panel{padding:18px}}
+@media (prefers-reduced-motion:reduce){.fw-scrim,.fw-panel{animation:none}}
 @media print{#bg,.bnav,.top{display:none}}
 </style>
-</head><body>
 <canvas id="bg" aria-hidden="true"></canvas><div id="app"></div>
 <div id="drawer-root"></div>
 <div id="modal-root"></div>
@@ -624,6 +680,16 @@ button.kpi:hover .k-val{color:var(--accent)}
 /* ---------- Domain constants ---------- */
 const STAGE_LABEL = {1:'Stage 1 · Intake & pre-check',2:'Stage 2 · Repair & reassembly',3:'Stage 3 · Final test & QC'};
 const STAGE_SHORT = {1:'Intake',2:'Repair',3:'Final QC'};
+/* Corrective action (CAPA) reasons, parts and supplier holds */
+const CAPA_REASONS = [['part','Needs part replacement'],['rework','Repair not effective · redo repair'],['test','Failed a test (IR, CAN, cell balance)'],['assembly','Assembly / workmanship issue'],['recheck','Needs re-inspection'],['other','Other reason']];
+const CAPA_REASON_LABEL = Object.fromEntries(CAPA_REASONS);
+const PARTS = ['Charging port','LED strip','BMS','Wiring harness','Connector','Cell / cell module','IoT module','SIM card','Casing / cover','Fuse','Fasteners / screws','Thermal pad / paste','Other part'];
+const OTHER_ISSUE_CATS = ['Mechanical','Electrical','Firmware / software','IoT / connectivity','Cosmetic','Customer complaint','Other'];
+/* Charge cycle count (read from the BMS) — required whenever a part is replaced */
+function cyclesError(v){ const x=String(v??'').trim(); if(!x) return 'Enter the battery’s charge cycle count (read it from the BMS).'; if(!/^\d{1,6}$/.test(x)||+x>20000) return 'Cycle count must be a whole number between 0 and 20000.'; return ''; }
+const cyclesField = (path,req) => `<label class="f"><span>Charge cycles (from BMS)${req?' <span class="req">*</span>':''}</span><input class="in mono ${req?'must':''}" id="b-${path.replace(/\./g,'-')}" data-bind="${path}" value="${esc(getPath(S.f,path)??'')}" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g. 412"></label>`;
+/* Alert thresholds (hours) */
+const ALERT_H = {unclaimedWarn:2, unclaimedCrit:8, unfinishedWarn:24, unfinishedCrit:72, holdWarn:72, holdCrit:168, bsaReceiptWarn:48};
 const ROLE_LABEL = {omtech:'O&M Technician',omadmin:'O&M Manager',quality:'Quality Engineer',bsa:'BSA Engineer'};
 const BSA_SOURCES = ['Quality Escalation (O&M Pipeline)','Customer Experience Team Flag','Battery Engineering Team Flag'];
 const BSA_STATUSES = ['Open — Awaiting Retrieval','Retrieved','RCA In Progress','RCA Complete','Repaired','Returned to O&M for Deployment','Scrapped'];
@@ -651,7 +717,7 @@ const ISSUE_ITEMS = [
   ['canFail','CAN fail'],['chargeFail','Charge failure'],['dischargeFail','Discharge failure'],['swelling','Swelling / damage'],
   ['irFail','Insulation failure'],['iotFault','IoT / IMEI mismatch'],['tampered','Vandalism / tampering / water ingress'],
   ['physicalDefect','Physical defect / external damage'],['wetThermalPaste','Wet thermal paste / moisture'],['connectorDamage','Connector damage'],
-  ['cellFailureSingle','Single cell failure'],['cellFailureMultiple','Multiple cell failure'],['missingComponent','Missing component'],['other','Other issue']
+  ['cellFailureSingle','Single cell failure'],['cellFailureMultiple','Multiple cell failure'],['missingComponent','Missing component'],['simReplace','SIM card replacement (recall)'],['other','Other issue']
 ];
 const ISSUE_LABEL = Object.fromEntries(ISSUE_ITEMS);
 /* Issues that bypass the O&M repair chain and go straight to BSA */
@@ -669,7 +735,14 @@ const QUALITY_ISSUE_SEED = [
 ];
 
 const isBsaTriggerIssue = d => BSA_TRIGGER_ISSUES.some(k=>d && d.issues && d.issues[k]);
-const issueCategory = k => SUPPLIER_RELATED_ISSUES.includes(k) ? 'Supplier' : 'Non-supplier';
+const CAMPAIGN_ISSUES = ['simReplace'];
+const issueCategory = k => CAMPAIGN_ISSUES.includes(k) ? 'Recall' : SUPPLIER_RELATED_ISSUES.includes(k) ? 'Supplier' : 'Non-supplier';
+/* SIM card replacement recall */
+const OLD_SIM_DEFAULT = 'AERIS';
+const SIM_TEST = ['simOnline','Functional test on new SIM: tracker online and reporting'];
+const needsSim = r => !!(r && r.stage1 && r.stage1.issues && r.stage1.issues.simReplace);
+const simDigits = v => String(v||'').replace(/[\s-]/g,'');
+function simNumberError(v,label){ const x=simDigits(v); if(!x) return `${label} is required.`; if(!/^[0-9A-Za-z]{8,22}$/.test(x)) return `${label} should be 8 to 22 digits (the ICCID printed on the SIM).`; return ''; }
 function bsaTriggerLabels(d){ return ISSUE_ITEMS.filter(([k])=>BSA_TRIGGER_ISSUES.includes(k) && d && d.issues && d.issues[k]).map(([,l])=>l); }
 function bsaIssueSummary(d){
   let t = bsaTriggerLabels(d).join(', ');
@@ -709,13 +782,13 @@ function batteryIdError(id,model){
 const normId = v => String(v||'').trim().toUpperCase();
 
 function checklistResult(map,items){ const v=items.map(([k])=>(map||{})[k]); if(v.includes('FAIL')) return 'FAIL'; if(v.some(x=>!x)) return 'INCOMPLETE'; return 'PASS'; }
-function testsResult(s3){
-  const ok=TEST_BOOLS.every(([k])=>(s3.testBools||{})[k]===true);
+function testsResult(s3,sim){
+  const ok=TEST_BOOLS.every(([k])=>(s3.testBools||{})[k]===true)&&(!sim||(s3.testBools||{})[SIM_TEST[0]]===true);
   const ir=parseFloat(s3.tests.irMeasured), thr=parseFloat(s3.tests.irThreshold);
   const irOk=!isNaN(ir)&&!isNaN(thr)?ir>=thr:null;
   if(!ok||irOk===false) return 'FAIL'; if(irOk===null) return 'INCOMPLETE'; return 'PASS';
 }
-const isImeiRequired = d => !!(d.issues.noPower||d.issues.bmsFault||d.issues.iotFault);
+const isImeiRequired = d => !!(d.issues.noPower||d.issues.bmsFault||d.issues.iotFault||d.issues.simReplace);
 const isSwapStationRequired = d => !!(d.issues.tampered||d.issues.swelling||d.pre.foreignObjects==='FAIL'||d.pre.corrosion==='FAIL');
 
 /* ---------- Date helpers (local calendar days) ---------- */
@@ -988,11 +1061,11 @@ function emptyBsa(name){ return {bmsId:'',model:'',source:BSA_SOURCES[0],dateFla
 function emptyRca(name){ return {bmsId:'',model:'',linkedRecordId:'',owner:name||'',dateOpened:todayStr(),problemStatement:'',containment:'',immediateAction:'',why1:'',why2:'',why3:'',why4:'',why5:'',fishbone:{},rootCause:'',correctiveAction:'',preventiveAction:'',verificationMethod:'',dueDate:'',status:'RCA IN PROGRESS'}; }
 function newOmRecord(d,visitNumber,tech){
   return {
-    id:uid(),createdAt:nowIso(),bmsId:d.bmsId.trim(),model:d.model,imei:d.imei,site:d.site,dateReceived:d.dateReceived,timeReceived:d.timeReceived,
+    id:uid(),createdAt:nowIso(),bmsId:d.bmsId.trim(),model:d.model,imei:d.imei,site:d.site,cycles:String(d.cycles??'').trim()===''?null:+d.cycles,dateReceived:d.dateReceived,timeReceived:d.timeReceived,
     visitNumber,stage:2,status:'STAGE2_OPEN',capaCycles:0,isCorrectiveAction:false,capaLog:[],
-    stage1:{technician:tech,receivedBy:d.receivedBy||tech,pre:d.pre,issues:d.issues,otherNote:d.otherNote,missingComponentNote:d.missingComponentNote,completedAt:nowIso()},
+    stage1:{technician:tech,receivedBy:d.receivedBy||tech,pre:d.pre,issues:d.issues,otherNote:d.otherNote,missingComponentNote:d.missingComponentNote,...(d.issues&&d.issues.simReplace?{sim:{oldType:String((d.sim||{}).oldType||OLD_SIM_DEFAULT).trim(),oldNumber:simDigits((d.sim||{}).oldNumber)}}:{}),completedAt:nowIso()},
     createdBy:tech,
-    stage2:{technician:'',sopRef:STANDARD_SOPS[0],repairAction:'',partsReplaced:'',post:{},completedAt:null},
+    stage2:{technician:'',sopRef:d.issues&&d.issues.simReplace?STANDARD_SOPS[4]:STANDARD_SOPS[0],repairAction:'',partsReplaced:'',post:{},completedAt:null},
     stage3:{technician:'',tests:{packVoltage:'',minCell:'',maxCell:'',irMeasured:'',irThreshold:550},testBools:{},qcPassed:'',qcNote:'',completedAt:null},
     finalDisposition:null,closedAt:null
   };
@@ -1018,11 +1091,53 @@ function omStatus(r){
   if(s==='CLOSED_PASS') return r.capaCycles>0?['Passed after CAPA','warn','✓']:['Passed first time','good','✓'];
   if(isToBsa(r)) return ['Sent to BSA','serious','⚑'];
   const m=s.match(/STAGE(\d)_OPEN/);
+  if(m&&r.hold) return [`Waiting for supplier · ${r.hold.part||'part'}`,'serious','⏸'];
   if(m) return [`Stage ${m[1]} · ${STAGE_SHORT[m[1]]}`+(r.capaCycles>0?' · CAPA':''),r.capaCycles>0?'warn':'info','⟳'];
   return [s.replace(/_/g,' ').toLowerCase()||'unknown','',''];
 }
 const chip = (label,tone,icon) => `<span class="chip ${tone||''}">${icon?`<i aria-hidden="true">${icon}</i>`:''}${esc(label)}</span>`;
 const issuesOf = r => ISSUE_ITEMS.filter(([k])=>r.stage1&&r.stage1.issues&&r.stage1.issues[k]).map(([k])=>k);
+const onHold = r => !!(r&&r.hold&&!isClosed(r));
+/* when the visit arrived at its current stage */
+function enteredStageAt(r){
+  const n=r.stage, c=(r.capaLog||[]).filter(x=>+x.toStage===n).slice(-1)[0];
+  let t=n===1?r.createdAt:n===2?((r.stage1||{}).completedAt||r.createdAt):((r.stage2||{}).completedAt||r.createdAt);
+  if(c&&c.returnedAt&&String(c.returnedAt)>String(t||'')) t=c.returnedAt;
+  if(r.holdLog&&r.holdLog.length){ const h=r.holdLog.slice(-1)[0]; if(h.releasedAt&&String(h.releasedAt)>String(t||'')) t=h.releasedAt; }
+  return t||r.createdAt;
+}
+const hoursSince = iso => iso?Math.max(0,(Date.now()-new Date(iso).getTime())/36e5):0;
+const fmtHours = h => h<1?'under 1 h':h<48?`${Math.round(h)} h`:`${Math.round(h/24)} days`;
+function otherIssueText(st){ st=st||{}; if(!(st.issues||{}).other) return ''; return `${st.otherCat?st.otherCat+': ':''}${st.otherNote||''}`.trim(); }
+function capaText(c){ if(!c) return ''; const bits=[c.reasonCat?CAPA_REASON_LABEL[c.reasonCat]||c.reasonCat:'']; if(c.part) bits.push(c.part==='Other part'&&c.partNote?c.partNote:c.part); if(c.cycles!=null&&c.cycles!=='') bits.push(`at ${c.cycles} cycles`); if(c.waitSupplier) bits.push('waiting for supplier material'); return bits.filter(Boolean).join(' · ')+(c.reason?` — ${c.reason}`:''); }
+/* ---------- alerts: what needs someone's attention right now ---------- */
+function computeAlerts(){
+  const out=[], s=S.session||{}, role=s.role;
+  const push=(sev,group,title,detail,act,id,sortH)=>out.push({sev,group,title,detail,act,id,h:sortH||0});
+  S.data.om.filter(r=>!isClosed(r)).forEach(r=>{
+    const n=r.stage, st=r['stage'+n]||{}, tech=st.technician, since=enteredStageAt(r), h=hoursSince(since);
+    if(role==='omtech'&&s.stage!==n) return;
+    if(onHold(r)){
+      const hh=hoursSince(r.hold.since);
+      if(hh>=ALERT_H.holdWarn&&role!=='omtech'||role==='omtech'&&hh>=ALERT_H.holdWarn) push(hh>=ALERT_H.holdCrit?'crit':'warn','Waiting for supplier material',`${r.bmsId} waiting ${fmtHours(hh)} for ${r.hold.part||'a part'}`,`Stage ${n} · on hold by ${r.hold.by||'—'}. Chase the supplier or change the plan.`,'open-om',r.id,hh);
+      return;
+    }
+    if(!tech){ if(h>=ALERT_H.unclaimedWarn) push(h>=ALERT_H.unclaimedCrit?'crit':'warn','Not yet claimed',`${r.bmsId} unclaimed at Stage ${n} for ${fmtHours(h)}`,`${r.model||'—'} · visit #${r.visitNumber||1}${r.capaCycles?` · CAPA ${r.capaCycles}`:''}. Someone at ${STAGE_SHORT[n]} needs to pick it up.`,'open-om',r.id,h); }
+    else { const hs=hoursSince(st.startedAt||since); if(role==='omtech'&&tech!==s.name) return;
+      if(hs>=ALERT_H.unfinishedWarn) push(hs>=ALERT_H.unfinishedCrit?'crit':'warn','Not yet finished',`${r.bmsId} claimed by ${tech} ${fmtHours(hs)} ago`,`Stage ${n} · ${STAGE_SHORT[n]} not submitted yet.`,'open-om',r.id,hs); }
+  });
+  if(role==='bsa'||role==='omadmin'||role==='quality'){
+    S.data.bsa.filter(bsaOpen).forEach(c=>{
+      const h=hoursSince(c.createdAt||c.dateFlagged); const t=bsaTechStatus(c);
+      if(!c.bsaReceivedAt&&/Awaiting|Open/.test(t+c.status)&&h>=ALERT_H.bsaReceiptWarn) push(h>=ALERT_H.bsaReceiptWarn*2?'crit':'warn','BSA follow-up',`${c.bmsId} not yet received by BSA (${fmtHours(h)})`,`${c.escalationCategory||'Escalation'} · flagged by ${c.flaggedBy||'—'}`,'open-bsa',c.id,h);
+      else if(!c.assignedEngineer&&role!=='omadmin'&&h>=24) push('warn','BSA follow-up',`${c.bmsId} has no engineer assigned`,`${t} · open ${fmtHours(h)}`,'open-bsa',c.id,h);
+    });
+  }
+  if(role==='quality'||role==='omadmin'){
+    S.data.rca.filter(r=>r.status!=='VERIFIED CLOSED'&&r.dueDate&&r.dueDate<todayStr()).forEach(r=>push('warn','Overdue RCA',`RCA for ${r.bmsId||'—'} is past due (${fmtShort(r.dueDate)})`,`${r.owner||'No owner'} · ${(r.status||'').toLowerCase()}`,'open-rca',r.id,hoursSince(r.dueDate)));
+  }
+  return out.sort((a,b)=>(a.sev==='crit'?0:1)-(b.sev==='crit'?0:1)||b.h-a.h);
+}
 function ageDays(r){ return Math.max(0,daysBetween(r.dateReceived||dkey(r.createdAt),todayStr())); }
 
 function periodStats(p){
@@ -1035,7 +1150,7 @@ function periodStats(p){
   let capaReturns=0; om.forEach(r=>(r.capaLog||[]).forEach(c=>{ if(inP(dkey(c.returnedAt),p)) capaReturns++; }));
   const nonConf=closed.filter(r=>r.finalDisposition==='SCRAPPED'||r.capaCycles>0).length;
   const tats=closed.filter(r=>r.createdAt&&r.closedAt).map(r=>(new Date(r.closedAt)-new Date(r.createdAt))/864e5).filter(x=>x>=0);
-  let sup=0,non=0; intakes.forEach(r=>{ const ks=issuesOf(r); if(ks.some(k=>issueCategory(k)==='Supplier')) sup++; if(ks.some(k=>issueCategory(k)!=='Supplier')) non++; });
+  let sup=0,non=0; intakes.forEach(r=>{ const ks=issuesOf(r); if(ks.some(k=>issueCategory(k)==='Supplier')) sup++; if(ks.some(k=>issueCategory(k)==='Non-supplier')) non++; });
   return {
     intakes:intakes.length, closed:closed.length, firstPass:fp.length, passCapa:passCapa.length, toBsa:toBsa.length,
     other:closed.length-fp.length-passCapa.length-toBsa.length,
@@ -1084,6 +1199,7 @@ function batteryIndex(){
     const rep=closedV.filter(r=>r.createdAt&&r.closedAt).map(r=>(new Date(r.closedAt)-new Date(r.createdAt))/864e5);
     b.repairDays=rep.length?sum(rep):0;
     b.issueKeys=[...new Set(b.visits.flatMap(issuesOf))];
+    { const cv=b.visits.filter(r=>r.cycles!=null&&r.cycles!=='').slice(-1)[0]; b.cycles=cv?+cv.cycles:null; }
     return b;
   });
   S._bidx=list; S._bidxKey=S.dataVersion; return list;
@@ -1153,7 +1269,9 @@ function makeDemoData(){
       const tests={packVoltage:(70+rnd()*12).toFixed(2),minCell:(3.18+rnd()*.12).toFixed(3),maxCell:(3.30+rnd()*.08).toFixed(3),irMeasured:String(Math.round(roll<.08?380+rnd()*150:560+rnd()*400)),irThreshold:550};
       Object.assign(r.stage3,{technician:t3,completedBy:t3,tests,testBools:Object.fromEntries(TEST_BOOLS.map(([k])=>[k,true])),completedAt:iso(d3,14+Math.floor(rnd()*3),0)});
       if(roll<.11){
-        r.capaCycles=1; r.isCorrectiveAction=true; r.capaLog=[{cycle:1,returnedAt:iso(d3,15,0),returnedBy:t3,reason:pick(['IR below threshold after repair','CAN dropped under load','Cell delta > 40 mV on discharge']),toStage:2}];
+        r.capaCycles=1; r.isCorrectiveAction=true; { const cr=pick([['test','IR below threshold after repair',''],['part','Charging port loose, needs replacement','Charging port'],['part','LED strip not lighting','LED strip'],['part','BMS not holding settings','BMS'],['rework','CAN dropped under load',''],['test','Cell delta > 40 mV on discharge','']]);
+        r.capaLog=[{cycle:1,returnedAt:iso(d3,15,0),returnedBy:t3,reason:cr[1],reasonCat:cr[0],part:cr[2],waitSupplier:cr[0]==='part'&&rnd()<.4,toStage:2}];
+        if(r.capaLog[0].waitSupplier){ r.holdLog=[{type:'supplier',part:cr[2],since:iso(d3,15,10),by:t3,releasedAt:iso(addDays(d3,1),9,0),releasedBy:pick(T2)}]; } }
         const d4=addDays(d3,1);
         if(d4>today){ r.stage=2; r.status='STAGE2_OPEN'; r.stage3.qcPassed=''; om.push(r); b.busy='9999'; continue; }
         r.stage2.completedAt=iso(d4,11,0); r.stage3.completedAt=iso(d4,15,30); r.stage3.tests.irMeasured=String(600+Math.floor(rnd()*300));
@@ -1168,6 +1286,33 @@ function makeDemoData(){
       r.status='CLOSED_PASS'; r.finalDisposition='PASS'; r.stage3.qcPassed='PASS'; r.closedAt=r.stage3.completedAt; b.busy=d3; om.push(r);
     }
   }
+  // SIM card replacement recall on AMPACE (last 12 days)
+  const iccid=p=>p+String(Math.floor(rnd()*1e8)).padStart(8,'0')+String(Math.floor(rnd()*1e4)).padStart(4,'0');
+  for(let k=0;k<16;k++){
+    const back=12-Math.floor(k*12/16), day=addDays(today,-back);
+    const b=pool.find(x=>x.plat==='AMPACE'&&(!x.busy||x.busy<day)&&!x.sim); if(!b) break; b.sim=1;
+    const t1=pick(T1), h=9+Math.floor(rnd()*6), visitNumber=om.filter(r=>r.bmsId===b.id).length+1;
+    const d={dateReceived:day,timeReceived:pad(h)+':'+pad(Math.floor(rnd()*60)),bmsId:b.id,model:'AMPACE',imei:String(860000000000000+Math.floor(rnd()*99999999999)).slice(0,15),site:pick(sites),receivedBy:t1,pre:allPass(CHECK_ITEMS),issues:{simReplace:true},sim:{oldType:'AERIS',oldNumber:iccid('8988307')}};
+    const r=newOmRecord(d,visitNumber,t1); r.id='demo-sim-'+k; r.createdAt=iso(day,h,5); r.stage1.completedAt=iso(day,h,20); r.stage1.completedBy=t1;
+    const stageTo=back<=1?(k%2?2:3):3, done=back>2;
+    if(stageTo===2&&!done){ om.push(r); b.busy='9999'; continue; }
+    const t2=pick(T2); Object.assign(r.stage2,{technician:t2,completedBy:t2,sopRef:STANDARD_SOPS[4],repairAction:'Opened IoT bay, swapped SIM card and re-sealed',post:allPass(POST_ITEMS),completedAt:iso(day,h+1,40),sim:{newType:'Local IoT SIM',newNumber:iccid('8925601'),replacedBy:t2,replacedAt:iso(day,h+1,30)}});
+    r.stage=3; r.status='STAGE3_OPEN';
+    if(!done){ om.push(r); b.busy='9999'; continue; }
+    const t3=pick(T3), d3=addDays(day,1);
+    Object.assign(r.stage3,{technician:t3,completedBy:t3,tests:{packVoltage:(72+rnd()*8).toFixed(2),minCell:(3.22+rnd()*.06).toFixed(3),maxCell:(3.31+rnd()*.05).toFixed(3),irMeasured:String(Math.round(600+rnd()*300)),irThreshold:550},testBools:{...Object.fromEntries(TEST_BOOLS.map(([x])=>[x,true])),[SIM_TEST[0]]:true},qcPassed:'PASS',completedAt:iso(d3,11,0)});
+    r.status='CLOSED_PASS'; r.finalDisposition='PASS'; r.closedAt=r.stage3.completedAt; b.busy=d3; om.push(r);
+  }
+  // charge cycles from the BMS: always on part replacements, often otherwise
+  { const cyc={}; om.slice().sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt))).forEach(r=>{ cyc[r.bmsId]=(cyc[r.bmsId]||80+Math.floor(rnd()*500))+20+Math.floor(rnd()*60); const part=(r.capaLog||[]).some(c=>c.reasonCat==='part')||String((r.stage2||{}).partsReplaced||'').trim(); if(part||rnd()<.5){ r.cycles=cyc[r.bmsId]; (r.capaLog||[]).forEach(c=>{ if(c.reasonCat==='part') c.cycles=r.cycles; }); } }); }
+  // open work: some claimed, some on hold waiting for parts; 'other' issues get a category
+  om.forEach(r=>{
+    if(r.stage1&&r.stage1.issues&&r.stage1.issues.other&&!r.stage1.otherCat){ r.stage1.otherCat=pick(['Electrical','Mechanical','Firmware / software','Customer complaint']); r.stage1.otherNote=r.stage1.otherNote||'Rider reports intermittent cut-out under load'; }
+    if(isClosed(r)) return;
+    const n=r.stage, st=r['stage'+n]=r['stage'+n]||{}, roll=rnd();
+    if(n===2&&roll<.18){ const part=pick(['Charging port','LED strip','BMS','Connector','IoT module']); if(r.cycles==null) r.cycles=150+Math.floor(rnd()*600); r.hold={type:'supplier',part,note:'Ordered from supplier',since:iso(addDays(r.dateReceived,0),16,0),by:pick(T2)}; return; }
+    if(roll<.6&&!st.technician){ st.technician=pick(n===2?T2:T3); const t0=new Date(r.stage1&&r.stage1.completedAt||r.createdAt).getTime(); st.startedAt=new Date(Math.min(Date.now()-36e5*.5,t0+36e5*(1+rnd()*3))).toISOString(); }
+  });
   for(let i=0;i<6;i++){ const b=pick(pool.filter(x=>x.busy!=='9999')); addCase(null,{bmsId:b.id,model:b.plat,source:pick(BSA_SOURCES.slice(1)),dateFlagged:addDays(today,-Math.floor(rnd()*40)),flaggedBy:pick(['Customer experience','Battery engineering']),issueDescription:pick(['Range complaints from rider after swap','Pack temperature alarm in field','Repeated BMS lock-out reported by station']),escalationCategory:'Field flag',sopAttempted:'None applicable',createdAt:nowIso()}); }
   const rcaSrc=om.filter(r=>r.capaCycles>0).slice(-8);
   rcaSrc.forEach((r,i)=>rca.push({id:'demo-rca-'+i,bmsId:r.bmsId,model:r.model,linkedRecordId:r.id,owner:pick(T3),dateOpened:dkey(r.capaLog[0].returnedAt),problemStatement:r.capaLog[0].reason+' at final QC.',containment:'Battery held at Stage 2; batch checked.',immediateAction:'Re-repaired and re-tested.',why1:'IR dropped after reassembly',why2:'Moisture trapped under gasket',why3:'Pack not dried before closing',why4:'No drying step in SOP-BAT-04',why5:'SOP not updated after rainy-season returns',fishbone:{Method:'No drying step',Environment:'High humidity'},rootCause:'Missing drying step before casing closure',correctiveAction:'Dry pack 2 h at 40 °C before closing',preventiveAction:'Add drying step to SOP-BAT-04',verificationMethod:'IR ≥ 550 MΩ on next 20 packs',dueDate:addDays(today,7+i),status:RCA_STATUSES[Math.min(3,i%4)],createdAt:r.capaLog[0].returnedAt,updatedAt:r.capaLog[0].returnedAt,openedBy:pick(T3)}));
@@ -1228,7 +1373,7 @@ function render(){
   if(!S.session){ app.innerHTML=LoginView(); $('#drawer-root').innerHTML=''; restoreFocus(f); return; }
   app.innerHTML=Header()+`<main id="main" class="wrap">${safeView()}</main>`+Tabs('bnav');
   renderDrawer(true);
-  restoreFocus(f); window.scrollTo(0,y); drawCharts(); paintSync();
+  restoreFocus(f); window.scrollTo(0,y); drawCharts(); paintSync(); if(S.welcome) S.welcome.shown=true;
 }
 function renderMain(){
   const m=$('#main'); if(!m) return render();
@@ -1236,7 +1381,8 @@ function renderMain(){
   document.querySelectorAll('.tabs').forEach(n=>{ n.outerHTML=Tabs(n.classList.contains('bnav')?'bnav':'top-tabs'); });
 }
 function safeView(){
-  try{ return ({overview:OverviewView,chain:ChainView,batteries:BatteriesView,bsa:BsaView,quality:QualityView}[S.view]||OverviewView)(); }
+  const allowed=roleTabs().map(x=>x[0]); if(!allowed.includes(S.view)) S.view=allowed[0];
+  try{ return WelcomeCard()+({work:MyWorkView,overview:OverviewView,chain:ChainView,batteries:BatteriesView,bsa:BsaView,quality:QualityView}[S.view]||OverviewView)(); }
   catch(e){ console.error(e); return `<div class="banner crit"><div><b>This page couldn't be drawn.</b> ${esc(e.message)} <button class="btn sm" data-act="nav" data-v="overview">Back to overview</button></div></div>`; }
 }
 function renderDrawer(keepScroll){
@@ -1259,9 +1405,12 @@ const ICON = {
   close:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   dl:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>',
   scan:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/></svg>',
+  bell:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2.2 2.2 0 0 0 4 0"/></svg>',
+  sim:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><rect x="8.5" y="11" width="7" height="6.5" rx="1"/><path d="M12 11v6.5M8.5 14.2h7"/></svg>',
   plus:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
 };
 const TAB_IC = {
+  work:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><path d="M8 6H6a1.5 1.5 0 0 0-1.5 1.5v12A1.5 1.5 0 0 0 6 21h12a1.5 1.5 0 0 0 1.5-1.5v-12A1.5 1.5 0 0 0 18 6h-2"/><path d="m8.5 13.5 2.2 2.2 4.8-4.9"/></svg>',
   overview:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="4.5" rx="1.6"/><rect x="13.5" y="11" width="7" height="9.5" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/></svg>',
   chain:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="19" cy="12" r="2.4"/><path d="M7.4 12h2.2M14.4 12h2.2"/></svg>',
   batteries:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="4.5" width="11" height="17" rx="2.2"/><path d="M10 2.5h4M9.5 15.5h5M9.5 12h5"/></svg>',
@@ -1269,6 +1418,13 @@ const TAB_IC = {
   quality:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6z"/><path d="m8.8 12.2 2.2 2.2 4.4-4.6"/></svg>'
 };
 const ACCENTS = [['blue','Blue'],['teal','Teal'],['violet','Violet'],['amber','Amber']];
+function alertBadge(){ const a=computeAlerts(); if(!a.length) return ''; const c=a.some(x=>x.sev==='crit'); return `<span class="badge ${c?'crit':'warn'}">${a.length>99?'99+':a.length}</span>`; }
+function AttentionCard(max){
+  const al=computeAlerts(); if(!al.length) return '';
+  const top=al.slice(0,max||5), crit=al.filter(a=>a.sev==='crit').length;
+  return `<div class="card attention" style="margin-bottom:14px"><div class="card-head"><div><h3>Needs attention</h3><p>${al.length} item${al.length===1?'':'s'}${crit?` · ${crit} urgent`:''}, most urgent first</p></div><button class="btn sm" data-act="alerts">See all</button></div>
+    <div class="att-list">${top.map(a=>`<button class="att ${a.sev}" data-act="${a.act}" data-id="${esc(a.id)}"><span class="att-dot"></span><span class="att-t"><b>${esc(a.title)}</b><small>${esc(a.group)} · ${esc(a.detail)}</small></span><span class="att-go">›</span></button>`).join('')}</div></div>`;
+}
 function initials(t){ const w=String(t||'').replace(/[^A-Za-z0-9 ]/g,' ').trim().split(/\s+/).filter(Boolean); return ((w[0]||'?')[0]+((w[1]||'')[0]||'')).toUpperCase(); }
 function Header(){
   const s=S.session, who=s.role==='omtech'?`${s.name} · Stage ${s.stage}`:ROLE_LABEL[s.role];
@@ -1282,7 +1438,8 @@ function Header(){
       <div class="tools">
         <button class="btn sm icon-btn only-sm" data-act="search-open" aria-label="Find a battery" title="Find a battery">${ICON.search}</button>
         <button class="btn sm tb" data-act="refresh" title="Reload the latest records" aria-label="Refresh" ${S.refreshing?'disabled':''}><span class="${S.refreshing?'spin':''}" style="display:inline-flex">${ICON.refresh}</span><span class="lbl">Refresh</span></button>
-        <button class="btn sm tb" data-act="export" title="Download a formatted Excel workbook or chart report" aria-label="Download">${ICON.dl}<span class="lbl">Download</span></button>
+        <button class="btn sm tb bell" data-act="alerts" id="bell" title="Needs attention" aria-label="Alerts">${ICON.bell}<span class="lbl">Alerts</span>${alertBadge()}</button>
+        ${canExport()?`<button class="btn sm tb" data-act="export" title="Download a formatted Excel workbook or chart report" aria-label="Download">${ICON.dl}<span class="lbl">Download</span></button>`:''}
         <button class="pill sync" id="sync-pill" data-act="storage" title="Storage and connection"></button>
         <div class="menu-wrap">
           <button class="avatar" data-act="menu" aria-haspopup="true" aria-expanded="false" title="${esc(who)}">${esc(initials(s.role==='omtech'?s.name:ROLE_LABEL[s.role]))}</button>
@@ -1300,9 +1457,20 @@ function Header(){
       </div>
   </div></header>`;
 }
+/* what each role sees: technicians their queue, engineers their area, managers everything */
+function roleTabs(s){
+  s=s||S.session||{};
+  if(s.role==='omtech') return [['work','My work'],['chain','O&M chain'],['batteries','Batteries']];
+  if(s.role==='bsa') return [['bsa','BSA'],['batteries','Batteries'],['quality','Quality']];
+  if(s.role==='quality') return [['overview','Overview'],['quality','Quality'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA']];
+  return [['overview','Overview'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA'],['quality','Quality']];
+}
+const canExport = () => S.session&&S.session.role!=='omtech';
 function Tabs(cls='top-tabs'){
-  const openOm=S.data.om.filter(r=>!isClosed(r)).length, openBsa=S.data.bsa.filter(bsaOpen).length;
-  const t=[['overview','Overview'],['chain','O&M chain',openOm],['batteries','Batteries'],['bsa','BSA',openBsa],['quality','Quality']];
+  const openOm=S.data.om.filter(r=>!isClosed(r)).length, openBsa=S.data.bsa.filter(bsaOpen).length, s=S.session;
+  const mineN=s.role==='omtech'?S.data.om.filter(r=>!isClosed(r)&&r.stage===s.stage&&!onHold(r)&&(!(r['stage'+s.stage]||{}).technician||(r['stage'+s.stage]||{}).technician===s.name)).length:0;
+  const counts={work:mineN,chain:s.role==='omtech'?null:openOm,bsa:openBsa};
+  const t=roleTabs(s).map(([k,l])=>[k,l,counts[k]]);
   return `<nav class="tabs ${cls}" aria-label="Sections">${t.map(([k,l,n])=>`<button class="tab ${S.view===k?'on':''}" data-act="nav" data-v="${k}" ${S.view===k?'aria-current="page"':''}><span class="t-ic">${TAB_IC[k]}</span><span class="t-l">${l}</span>${n?`<span class="cnt">${n}</span>`:''}</button>`).join('')}</nav>`;
 }
 function PeriodBar(){
@@ -1328,6 +1496,22 @@ function kpi(label,val,foot,act,tone){
   const tag=act?'button':'div';
   return `<${tag} class="kpi" ${act||''}><div class="k-label">${tone?`<span class="dot ${tone}"></span>`:''}${label}</div><div class="k-val">${val}</div><div class="k-foot">${foot||''}</div></${tag}>`;
 }
+function simRecallStats(){
+  const recs=S.data.om.filter(needsSim);
+  const ids=new Set(recs.map(r=>normId(r.bmsId)));
+  const replaced=new Set(recs.filter(r=>((r.stage2||{}).sim||{}).newNumber).map(r=>normId(r.bmsId)));
+  const passed=new Set(recs.filter(r=>r.finalDisposition==='PASS'&&((r.stage3||{}).testBools||{})[SIM_TEST[0]]).map(r=>normId(r.bmsId)));
+  const open=recs.filter(r=>!isClosed(r)).length, failed=recs.filter(r=>isClosed(r)&&r.finalDisposition!=='PASS').length;
+  return {recs,total:ids.size,replaced:replaced.size,passed:passed.size,open,failed};
+}
+function SimRecallCard(){
+  const x=simRecallStats(); if(!x.total) return '';
+  const pct=Math.round(x.passed/x.total*100);
+  return `<div class="card section" style="margin-bottom:14px"><div class="card-head"><div><h3>SIM card replacement recall</h3><p>AMPACE batteries called back to swap the ${esc(OLD_SIM_DEFAULT)} SIM. Counted per battery, all time.</p></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-act="filter-issue" data-v="simReplace">View visits</button><button class="btn sm" data-act="export">${ICON.dl} SIM register</button></div></div>
+    <div class="recall"><div style="min-width:120px"><div class="muted" style="font-size:12px;font-weight:600">Completed</div><div style="font-size:34px;font-weight:800;letter-spacing:-.03em">${pct}<small style="font-size:16px;color:var(--ink-3)">%</small></div><div class="stackbar" style="height:8px;margin-top:6px"><div style="flex:${x.passed||0.0001};background:var(--good)"></div><div style="flex:${Math.max(x.replaced-x.passed,0)||0.0001};background:var(--info)"></div><div style="flex:${Math.max(x.total-x.replaced,0)||0.0001};background:var(--line-2)"></div></div></div>
+    <div class="recall-steps"><div><b>${x.total}</b><small>batteries received</small></div><div><b>${x.replaced}</b><small>SIM replaced</small></div><div><b>${x.passed}</b><small>passed functional test</small></div><div><b>${x.open}</b><small>still in the chain${x.failed?` · ${x.failed} to BSA`:''}</small></div></div></div></div>`;
+}
 function OverviewView(){
   const p=periodOf(S.anchor,S.gran), prev=periodOf(shiftKey(p.start,S.gran,-1),S.gran);
   const st=periodStats(p), pv=periodStats(prev);
@@ -1352,7 +1536,7 @@ function OverviewView(){
   const counts={}; st.intakeRows.forEach(r=>issuesOf(r).forEach(k=>counts[k]=(counts[k]||0)+1));
   const defects=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
   const dmax=Math.max(1,...defects.map(d=>d[1]));
-  const defectHtml=defects.length?`<div class="legend"><span><i style="background:var(--s1)"></i>Supplier-related</span><span><i style="background:var(--s2)"></i>Handling / field</span></div><div class="bars">${defects.map(([k,v])=>barRow(ISSUE_LABEL[k],[[v,issueCategory(k)==='Supplier'?'--s1':'--s2',`${ISSUE_LABEL[k]}: ${v} intake${v===1?'':'s'} · ${issueCategory(k)}`]],dmax,v,`data-act="filter-issue" data-v="${k}"`)).join('')}</div>`:empty('No intakes in this period.');
+  const defectHtml=defects.length?`<div class="legend"><span><i style="background:var(--s1)"></i>Supplier-related</span><span><i style="background:var(--s2)"></i>Handling / field</span></div><div class="bars">${defects.map(([k,v])=>barRow(ISSUE_LABEL[k],[[v,issueCategory(k)==='Supplier'?'--s1':issueCategory(k)==='Recall'?'--s4':'--s2',`${ISSUE_LABEL[k]}: ${v} intake${v===1?'':'s'} · ${issueCategory(k)}`]],dmax,v,`data-act="filter-issue" data-v="${k}"`)).join('')}</div>`:empty('No intakes in this period.');
 
   // platform
   const plat={}; st.intakeRows.forEach(r=>{ const k=r.model||platformForId(r.bmsId)||'Unknown'; plat[k]=(plat[k]||0)+1; });
@@ -1384,6 +1568,8 @@ function OverviewView(){
     ${kpi('BSA escalations',st.bsaNew,`${st.bsaDone} BSA case${st.bsaDone===1?'':'s'} closed`,`data-act="nav" data-v="bsa"`)}
     ${kpi('Avg. turnaround',st.tat==null?'—':`${r1(st.tat)}<small>days</small>`,'intake to close',null)}
   </div>
+  ${AttentionCard(5)}
+  ${SimRecallCard()}
   <div class="grid g-main">
     <div class="card"><div class="card-head"><div><h3>Throughput</h3><p>Closed batteries by outcome, with intakes as a line · last ${BUCKETS[S.gran]} ${unit}s</p></div></div>
       <div class="legend"><span><i style="background:var(--s1)"></i>Passed first time</span><span><i style="background:var(--s2)"></i>Passed after CAPA</span><span><i style="background:var(--s3)"></i>Sent to BSA</span><span><i class="line" style="background:var(--ink-2)"></i>Received</span></div>${trend}</div>
@@ -1417,10 +1603,11 @@ function ChainView(){
   const p=periodOf(S.anchor,S.gran), F=S.om;
   let rows=S.data.om.slice();
   if(F.scope==='period') rows=rows.filter(r=>inP(r.dateReceived,p)||(isClosed(r)&&inP(closedKey(r),p)));
-  const counts={all:rows.length,open:rows.filter(r=>!isClosed(r)).length,pass:rows.filter(isFirstPass).length,capa:rows.filter(r=>r.capaCycles>0).length,bsa:rows.filter(isToBsa).length};
+  const counts={all:rows.length,open:rows.filter(r=>!isClosed(r)).length,pass:rows.filter(isFirstPass).length,capa:rows.filter(r=>r.capaCycles>0).length,hold:rows.filter(onHold).length,bsa:rows.filter(isToBsa).length};
   if(F.status==='open') rows=rows.filter(r=>!isClosed(r));
   if(F.status==='pass') rows=rows.filter(isFirstPass);
   if(F.status==='capa') rows=rows.filter(r=>r.capaCycles>0);
+  if(F.status==='hold') rows=rows.filter(onHold);
   if(F.status==='bsa') rows=rows.filter(isToBsa);
   if(F.platform!=='all') rows=rows.filter(r=>(r.model||platformForId(r.bmsId))===F.platform);
   if(F.issue) rows=rows.filter(r=>r.stage1&&r.stage1.issues&&r.stage1.issues[F.issue]);
@@ -1428,7 +1615,7 @@ function ChainView(){
   rows.sort((a,b)=>String(b.createdAt||b.dateReceived).localeCompare(String(a.createdAt||a.dateReceived)));
   S._omRows=rows;
   const pageRows=paginate(rows,F,25);
-  const statusChips=[['all','All'],['open','Open'],['pass','Passed first time'],['capa','Had CAPA'],['bsa','Sent to BSA']].map(([k,l])=>`<button class="fchip ${F.status===k?'on':''}" data-act="f" data-g="om" data-k="status" data-v="${k}">${l} <span class="n">${counts[k]}</span></button>`).join('');
+  const statusChips=[['all','All'],['open','Open'],['pass','Passed first time'],['capa','Had CAPA'],['hold','Waiting for supplier'],['bsa','Sent to BSA']].map(([k,l])=>`<button class="fchip ${F.status===k?'on':''}" data-act="f" data-g="om" data-k="status" data-v="${k}">${l} <span class="n">${counts[k]}</span></button>`).join('');
   return `<div class="page-head"><div><div class="eyebrow">O&amp;M repair chain</div><h2>Pipeline &amp; visits</h2><p>Each battery moves Intake → Repair → Final QC. Cards turn amber after 3 days and red after 5.</p></div>
     <div class="period">${s.role==='omtech'&&s.stage===1||s.role==='omadmin'&&false?'':''}${can('om_chain_records')&&(s.role!=='omtech'||s.stage===1)?`<button class="btn pri" data-act="new-intake">${ICON.plus} Receive battery</button>`:''}</div></div>
   <div class="board">${laneHtml}</div>
@@ -1438,17 +1625,56 @@ function ChainView(){
     ${statusChips}
     <select class="inline" id="om-plat" data-filter="om.platform" aria-label="Platform"><option value="all">All platforms</option>${PLATFORMS.map(x=>`<option ${F.platform===x?'selected':''}>${x}</option>`).join('')}</select>
     <input class="finput grow" id="om-q" data-filter="om.q" value="${esc(F.q)}" placeholder="Search ID, site, technician…">
-    <button class="btn sm" data-act="export">${ICON.dl} Download</button>
+    ${canExport()?`<button class="btn sm" data-act="export">${ICON.dl} Download</button>`:''}
   </div>
   <div class="tbl-wrap"><table><thead><tr><th>Received</th><th>BMS ID</th><th>Platform</th><th class="r">Visit</th><th>Status</th><th>Issues reported</th><th>Technicians</th><th class="r">Days</th></tr></thead><tbody>
   ${pageRows.length?pageRows.map(r=>{ const st=omStatus(r); const iss=issuesOf(r); const days=isClosed(r)&&r.closedAt?Math.max(0,daysBetween(r.dateReceived,dkey(r.closedAt))):ageDays(r);
     return `<tr class="click" data-act="open-om" data-id="${esc(r.id)}"><td class="num">${esc(fmtShort(r.dateReceived))}</td><td><span class="idlink">${esc(r.bmsId)}</span></td><td>${esc(r.model||'—')}</td><td class="r num">#${r.visitNumber||1}</td><td>${chip(...st)}</td><td style="max-width:260px;white-space:normal">${iss.length?esc(iss.slice(0,2).map(k=>ISSUE_LABEL[k]).join(', '))+(iss.length>2?` +${iss.length-2}`:''):'<span class="muted">—</span>'}</td><td style="white-space:nowrap">${esc([1,2,3].map(n=>(r['stage'+n]||{}).technician).filter(Boolean).join(' → ')||'—')}</td><td class="r num">${days}</td></tr>`; }).join(''):`<tr><td colspan="8">${empty('No visits match these filters.')}</td></tr>`}
   </tbody></table></div>${pager(rows.length,F,25,'om')}`;
 }
+function taskCard(r,n,mode){
+  const st=r['stage'+n]||{}, h=hoursSince(mode==='mine'?(st.startedAt||enteredStageAt(r)):mode==='hold'?r.hold.since:enteredStageAt(r));
+  const lim=mode==='hold'?[ALERT_H.holdWarn,ALERT_H.holdCrit]:mode==='mine'?[ALERT_H.unfinishedWarn,ALERT_H.unfinishedCrit]:[ALERT_H.unclaimedWarn,ALERT_H.unclaimedCrit];
+  const tone=h>=lim[1]?'crit':h>=lim[0]?'warn':'';
+  const what=r.capaCycles>0?`↺ CAPA ${r.capaCycles}: ${capaText((r.capaLog||[]).slice(-1)[0])}`:issuesOf(r).map(k=>k==='other'&&otherIssueText(r.stage1)?'Other ('+otherIssueText(r.stage1)+')':ISSUE_LABEL[k]).join(', ');
+  return `<button class="jcard task ${tone?'age-'+tone:'age-ok'}" data-act="open-om" data-id="${esc(r.id)}"><div class="row1"><span class="mono" style="font-weight:700;font-size:12.5px">${esc(r.bmsId)}</span><span class="chip ${tone}">${mode==='hold'?'waiting ':mode==='mine'?'started ':'waiting '}${fmtHours(h)}</span></div>
+    <div class="row2"><span>${esc(r.model||'—')}</span><span>·</span><span>visit #${r.visitNumber||1}</span>${needsSim(r)?chip('SIM swap','info'):''}${mode==='hold'?chip(r.hold.part||'part','serious','⏸'):''}<span style="margin-left:auto;font-weight:700;color:var(--accent)">${mode==='claim'?'Open · claim':mode==='hold'?'Open':'Continue'} ›</span></div>
+    ${what?`<div class="row3">${esc(what)}</div>`:''}</button>`;
+}
+const STAGE_GUIDE = {
+  1:'Receive the battery, run the pre-opening inspection and tick every defect you see. Batteries sent back for re-inspection also land here.',
+  2:'Claim a battery, repair it with the right SOP, record parts and the post-service checks, then send it to Final QC. If a part is out of stock, put it on hold as waiting for supplier material.',
+  3:'Claim a battery, run every test and decide: pass, return for corrective action with a reason, or escalate to BSA.'
+};
+function MyWorkView(){
+  const s=S.session, n=s.stage, open=S.data.om.filter(r=>!isClosed(r)&&r.stage===n), tech=r=>(r['stage'+n]||{}).technician;
+  const byAge=(a,b)=>String(enteredStageAt(a)).localeCompare(String(enteredStageAt(b)));
+  const claimQ=open.filter(r=>!onHold(r)&&!tech(r)).sort(byAge), mine=open.filter(r=>!onHold(r)&&tech(r)===s.name).sort(byAge);
+  const held=open.filter(onHold), others=open.filter(r=>!onHold(r)&&tech(r)&&tech(r)!==s.name);
+  const today=todayStr(), done=S.data.om.filter(r=>{ const x=r['stage'+n]||{}; return x.completedBy===s.name&&x.completedAt&&dkey(x.completedAt)===today; }).length
+    +(n===3?0:0);
+  const capaIn=open.filter(r=>r.capaCycles>0).length;
+  const list=(arr,mode,emptyText)=>arr.length?`<div class="lane-list">${arr.map(r=>taskCard(r,n,mode)).join('')}</div>`:`<div class="empty" style="padding:18px">${emptyText}</div>`;
+  return `<div class="page-head"><div><div class="eyebrow">${esc(STAGE_LABEL[n])}</div><h2>Hello ${esc(s.name.split(' ')[0])}, here is your work</h2><p>${esc(STAGE_GUIDE[n])}</p></div>
+    ${n===1?`<button class="btn pri" data-act="new-intake">${ICON.plus} Receive battery</button>`:''}</div>
+  <div class="kpis four">
+    ${kpi('Ready to claim',claimQ.length,claimQ.length?`oldest waiting ${fmtHours(hoursSince(enteredStageAt(claimQ[0])))}`:'queue is clear','',claimQ.some(r=>hoursSince(enteredStageAt(r))>=ALERT_H.unclaimedCrit)?'crit':claimQ.length?'warn':'good')}
+    ${kpi('My open tasks',mine.length,mine.length?'claimed by you, not submitted':'nothing in progress','',mine.some(r=>hoursSince((r['stage'+n]||{}).startedAt)>=ALERT_H.unfinishedWarn)?'warn':'')}
+    ${kpi('Done by me today',done,'submitted at this stage')}
+    ${n===2?kpi('Waiting for supplier',held.length,held.length?'on hold for parts':'none on hold','',held.length?'crit':''):kpi('Corrective actions',capaIn,'returned to this stage','',capaIn?'warn':'')}
+  </div>
+  ${AttentionCard(4)}
+  <div class="grid g2">
+    <div class="card"><div class="card-head"><div><h3>My open tasks</h3><p>Finish these before claiming more</p></div><span class="chip">${mine.length}</span></div>${list(mine,'mine','You have nothing in progress. Claim the oldest battery from Ready to claim.')}</div>
+    <div class="card"><div class="card-head"><div><h3>Ready to claim</h3><p>Oldest first. Corrective actions are marked ↺</p></div><span class="chip">${claimQ.length}</span></div>${list(claimQ,'claim',n===1?'Nothing to re-inspect. New batteries are received with the button above.':'Nothing waiting at your stage.')}</div>
+  </div>
+  ${n===2?`<div class="card section"><div class="card-head"><div><h3>Waiting for supplier material</h3><p>On hold until the part arrives. Open one and mark the part as arrived to resume.</p></div><span class="chip">${held.length}</span></div>${list(held,'hold','Nothing is on hold.')}</div>`:''}
+  ${others.length?`<div class="card section"><div class="card-head"><div><h3>Claimed by colleagues</h3><p>For your awareness</p></div><span class="chip">${others.length}</span></div><div class="lane-list">${others.map(r=>jobCard(r,n)).join('')}</div></div>`:''}`;
+}
 function jobCard(r,n){
   const a=ageDays(r), cls=a>=5?'age-crit':a>=3?'age-warn':'age-ok', tech=(r['stage'+n]||{}).technician;
   return `<button class="jcard ${cls}" data-act="open-om" data-id="${esc(r.id)}"><div class="row1"><span class="mono" style="font-weight:600;font-size:12px">${esc(r.bmsId)}</span><span class="chip ${a>=5?'crit':a>=3?'warn':''}">${a}d</span></div>
-    <div class="row2"><span>${esc(r.model||'—')}</span><span>·</span><span>visit #${r.visitNumber||1}</span>${r.capaCycles>0?chip('CAPA '+r.capaCycles,'warn','↺'):''}<span style="margin-left:auto">${tech?esc(tech):'<em>unclaimed</em>'}</span></div></button>`;
+    <div class="row2"><span>${esc(r.model||'—')}</span><span>·</span><span>visit #${r.visitNumber||1}</span>${r.capaCycles>0?chip('CAPA '+r.capaCycles,'warn','↺'):''}${onHold(r)?chip('Waiting · '+(r.hold.part||'part'),'serious','⏸'):''}<span style="margin-left:auto">${tech?esc(tech):'<em>unclaimed</em>'}</span></div>${r.capaCycles>0&&!onHold(r)?`<div class="row3">${esc(capaText((r.capaLog||[]).slice(-1)[0]))}</div>`:''}</button>`;
 }
 function paginate(rows,F,per){ const pages=Math.max(1,Math.ceil(rows.length/per)); F.page=Math.min(Math.max(1,F.page||1),pages); return rows.slice((F.page-1)*per,F.page*per); }
 function pager(n,F,per,g){ const pages=Math.max(1,Math.ceil(n/per)); return `<div class="pager"><span>${n} record${n===1?'':'s'}</span>${pages>1?`<span style="display:flex;gap:6px;align-items:center"><button class="btn sm" data-act="page" data-g="${g}" data-v="-1" ${F.page<=1?'disabled':''}>‹ Prev</button>Page ${F.page} of ${pages}<button class="btn sm" data-act="page" data-g="${g}" data-v="1" ${F.page>=pages?'disabled':''}>Next ›</button></span>`:''}</div>`; }
@@ -1468,7 +1694,7 @@ function BatteriesView(){
   rows=rows.slice().sort(sorts[F.sort]||sorts.recent); S._batRows=rows;
   const pageRows=paginate(rows,F,30);
   const bar=`<div class="stackbar">${USE_ORDER.map(k=>`<div style="flex:${Math.max(cnt[k],0.0001)};background:var(--${USE_META[k][1]==='good'?'good':USE_META[k][1]==='warn'?'warn':USE_META[k][1]==='info'?'info':USE_META[k][1]==='serious'?'serious':'crit'})" data-tip="${esc(`<b>${USE_META[k][0]}</b><br>${cnt[k]} batter${cnt[k]===1?'y':'ies'}<br>${USE_META[k][3]}`)}"></div>`).join('')}</div>`;
-  return `<div class="page-head"><div><div class="eyebrow">Per-battery usability</div><h2>${all.length} batteries on record</h2><p>Every BMS ID seen by O&amp;M or BSA, with its current state, visit count and corrective-action history. Open one for its full timeline.</p></div><button class="btn sm" data-act="export">${ICON.dl} Download</button></div>
+  return `<div class="page-head"><div><div class="eyebrow">Per-battery usability</div><h2>${all.length} batteries on record</h2><p>Every BMS ID seen by O&amp;M or BSA, with its current state, visit count and corrective-action history. Open one for its full timeline.</p></div>${canExport()?`<button class="btn sm" data-act="export">${ICON.dl} Download</button>`:''}</div>
   <div class="kpis six">
     ${kpi('Usable rate',rate==null?'—':`${Math.round(rate)}<small>%</small>`,`${usable} of ${all.length} usable now`,'','good')}
     ${USE_ORDER.map(k=>kpi(USE_META[k][0],cnt[k],esc(USE_META[k][3]),`data-act="f" data-g="bat" data-k="use" data-v="${k}"`,USE_META[k][1]==='serious'?'warn':USE_META[k][1])).join('')}
@@ -1482,8 +1708,8 @@ function BatteriesView(){
     <select class="inline" id="bat-sort" data-filter="bat.sort" aria-label="Sort"><option value="recent" ${F.sort==='recent'?'selected':''}>Sort: last seen</option><option value="visits" ${F.sort==='visits'?'selected':''}>Sort: most visits</option><option value="capa" ${F.sort==='capa'?'selected':''}>Sort: most CAPA</option><option value="repair" ${F.sort==='repair'?'selected':''}>Sort: most days in repair</option></select>
     <input class="finput grow" id="bat-q" data-filter="bat.q" value="${esc(F.q)}" placeholder="Search BMS ID…">
   </div>
-  <div class="tbl-wrap"><table><thead><tr><th>BMS ID</th><th>Platform</th><th>State</th><th class="r">Visits</th><th class="r">First pass</th><th class="r">CAPA</th><th class="r">BSA cases</th><th class="r">Days in repair</th><th>Last seen</th><th>Main issues</th></tr></thead><tbody>
-  ${pageRows.length?pageRows.map(b=>`<tr class="click" data-act="open-battery" data-id="${esc(b.id)}"><td><span class="idlink">${esc(b.id)}</span>${b.dupOpen?' '+chip('duplicate open','crit','!'):''}</td><td>${esc(b.platform||'—')}</td><td>${chip(...USE_META[b.use].slice(0,3))}</td><td class="r num">${b.visits.length}</td><td class="r num">${b.closedCount?`${b.fp}/${b.closedCount}`:'—'}</td><td class="r num">${b.capa}</td><td class="r num">${b.bsa.length}</td><td class="r num">${Math.round(b.repairDays*10)/10}</td><td class="num">${esc(fmtShort(b.last))}</td><td style="max-width:220px;white-space:normal" class="muted">${esc(b.issueKeys.slice(0,2).map(k=>ISSUE_LABEL[k]).join(', '))||'—'}</td></tr>`).join(''):`<tr><td colspan="10">${empty('No batteries match these filters.')}</td></tr>`}
+  <div class="tbl-wrap"><table><thead><tr><th>BMS ID</th><th>Platform</th><th>State</th><th class="r">Visits</th><th class="r">First pass</th><th class="r">CAPA</th><th class="r">BSA cases</th><th class="r">Cycles</th><th class="r">Days in repair</th><th>Last seen</th><th>Main issues</th></tr></thead><tbody>
+  ${pageRows.length?pageRows.map(b=>`<tr class="click" data-act="open-battery" data-id="${esc(b.id)}"><td><span class="idlink">${esc(b.id)}</span>${b.dupOpen?' '+chip('duplicate open','crit','!'):''}</td><td>${esc(b.platform||'—')}</td><td>${chip(...USE_META[b.use].slice(0,3))}</td><td class="r num">${b.visits.length}</td><td class="r num">${b.closedCount?`${b.fp}/${b.closedCount}`:'—'}</td><td class="r num">${b.capa}</td><td class="r num">${b.bsa.length}</td><td class="r num">${b.cycles==null?'—':b.cycles}</td><td class="r num">${Math.round(b.repairDays*10)/10}</td><td class="num">${esc(fmtShort(b.last))}</td><td style="max-width:220px;white-space:normal" class="muted">${esc(b.issueKeys.slice(0,2).map(k=>ISSUE_LABEL[k]).join(', '))||'—'}</td></tr>`).join(''):`<tr><td colspan="11">${empty('No batteries match these filters.')}</td></tr>`}
   </tbody></table></div>${pager(rows.length,F,30,'bat')}`;
 }
 
@@ -1524,7 +1750,7 @@ function BsaView(){
   <div class="filters section">
     ${[['open','Open'],['awaiting','Awaiting receipt'],['wip','In progress'],['warranty','Warranty'],['closed','Closed'],['all','All']].map(([k,l])=>`<button class="fchip ${F.status===k?'on':''}" data-act="f" data-g="bsaF" data-k="status" data-v="${k}">${l} <span class="n">${groups[k].length}</span></button>`).join('')}
     <input class="finput grow" id="bsa-q" data-filter="bsaF.q" value="${esc(F.q)}" placeholder="Search ID, issue, engineer…">
-    <button class="btn sm" data-act="export">${ICON.dl} Download</button>
+    ${canExport()?`<button class="btn sm" data-act="export">${ICON.dl} Download</button>`:''}
   </div>
   <div class="tbl-wrap"><table><thead><tr><th>Flagged</th><th>BMS ID</th><th>Platform</th><th>Status</th><th>Reason</th><th>Source</th><th>Engineer</th><th class="r">Age</th></tr></thead><tbody>
   ${pageRows.length?pageRows.map(r=>{ const t=ts(r), tone=BSA_TONE[t]||['','']; const age=bsaOpen(r)?daysBetween(r.dateFlagged||todayStr(),todayStr()):(r.dateClosed?daysBetween(r.dateFlagged,dkey(r.dateClosed)):'—');
@@ -1556,7 +1782,7 @@ function QualityView(){
     ${kpi('Handling defects',st.nonSupplier,'intakes with a handling / field issue')}
   </div>
   <div class="card"><div class="card-head"><div><h3>Supplier vs handling defects</h3><p>Intakes per ${S.gran} with at least one defect of each kind</p></div></div><div class="legend"><span><i style="background:var(--s1)"></i>Supplier-related</span><span><i style="background:var(--s2)"></i>Handling / field</span></div>${supChart}</div>
-  <div class="page-head section" style="margin-top:20px"><div><h3>${S.gran==='day'?'Daily':S.gran==='week'?'Weekly':'Monthly'} quality table</h3><p>Newest first. Click a row to make it the selected period.</p></div><button class="btn sm" data-act="export">${ICON.dl} Download</button></div>
+  <div class="page-head section" style="margin-top:20px"><div><h3>${S.gran==='day'?'Daily':S.gran==='week'?'Weekly':'Monthly'} quality table</h3><p>Newest first. Click a row to make it the selected period.</p></div>${canExport()?`<button class="btn sm" data-act="export">${ICON.dl} Download</button>`:''}</div>
   <div class="tbl-wrap"><table><thead><tr><th>${S.gran==='day'?'Day':S.gran==='week'?'Week of':'Month'}</th><th class="r">Received</th><th class="r">Closed</th><th class="r">First pass</th><th class="r">FPY</th><th class="r">PPM</th><th class="r">CAPA returns</th><th class="r">To BSA</th><th class="r">Supplier</th><th class="r">Handling</th><th class="r">Avg days</th></tr></thead><tbody>
   ${rows.map(({b,s})=>`<tr class="click" data-act="pick-period" data-v="${b.start}" ${b.start===p.start?'style="background:var(--accent-soft)"':''}><td style="white-space:nowrap">${esc(periodLabel(b,true))}</td><td class="r num">${s.intakes}</td><td class="r num">${s.closed}</td><td class="r num">${s.firstPass}</td><td class="r num">${s.fpy==null?'—':`<span class="${s.fpy>=85?'ok':s.fpy<70?'bad':''}">${fmtPct(s.fpy)}</span>`}</td><td class="r num">${s.ppm==null?'—':s.ppm.toLocaleString()}</td><td class="r num">${s.capaReturns}</td><td class="r num">${s.toBsa}</td><td class="r num">${s.supplier}</td><td class="r num">${s.nonSupplier}</td><td class="r num">${s.tat==null?'—':(Math.round(s.tat*10)/10)}</td></tr>`).join('')}
   </tbody></table></div>`;
@@ -1687,6 +1913,7 @@ function Drawer(){
   if(d.type==='battery') return BatterySheet(d.id,d.focus);
   if(d.type==='om'){ const r=S.data.om.find(x=>x.id===d.id); if(!r) return sheet('Visit not found','It may have been removed. Refresh to reload.','',''); if(canWork(r)) return WorkSheet(r); return BatterySheet(r.bmsId,r.id); }
   if(d.type==='intake') return IntakeSheet();
+  if(d.type==='alerts') return AlertsSheet();
   if(d.type==='bsa') return BsaSheet(d.id);
   if(d.type==='newbsa') return NewBsaSheet();
   if(d.type==='rca') return RcaSheet();
@@ -1728,12 +1955,44 @@ function checks(path,items){
   return `<div><div class="block-title"><h4>${path.endsWith('post')?'Post-service inspection':'Pre-opening inspection'}</h4>${chip(res.toLowerCase(),res==='PASS'?'good':res==='FAIL'?'crit':'')}</div>
   <div class="checks">${items.map(([k,l])=>{ const v=map[k]; return `<div class="check"><span>${esc(l)}</span><div class="tri" role="group" aria-label="${esc(l)}">${[['PASS','Pass','p'],['FAIL','Fail','f'],['NA','N/A','n']].map(([val,lab,c])=>`<button type="button" class="${v===val?c:''}" data-act="tri" data-p="${path}.${k}" data-v="${val}" aria-pressed="${v===val}">${lab}</button>`).join('')}</div></div>`; }).join('')}</div></div>`;
 }
+function simOldBlock(base,d){
+  if(!d.sim||typeof d.sim!=='object') d.sim={oldType:OLD_SIM_DEFAULT,oldNumber:''};
+  if(d.sim.oldType==null||d.sim.oldType==='') d.sim.oldType=OLD_SIM_DEFAULT;
+  const plat=getPath(S.f,base==='intake'?'intake.model':'edit.model');
+  return `<div class="sim-box"><div class="sim-head"><span class="sim-ic">${ICON.sim}</span><div><b>SIM card replacement</b><small>Write down the SIM that is in the battery now. Stage 2 records the new SIM, and Stage 3 must pass a functional test on it.</small></div></div>
+    <div class="form">${field('Old SIM type',inp(base+'.sim.oldType',{ph:OLD_SIM_DEFAULT}),'',true)}${field('Old SIM number (ICCID)',inp(base+'.sim.oldNumber',{mono:true,ph:'89…',max:26}),'',true)}</div>
+    ${plat&&plat!=='AMPACE'?`<div class="idf-hint">This recall is for AMPACE batteries. This one is ${esc(plat)}.</div>`:''}</div>`;
+}
+function simNewBlock(e){
+  const o=(e.stage1||{}).sim||{}; if(!e.stage2.sim||typeof e.stage2.sim!=='object') e.stage2.sim={newType:'',newNumber:''};
+  return `<div class="sim-box"><div class="sim-head"><span class="sim-ic">${ICON.sim}</span><div><b>SIM card replacement</b><small>Removed: <span class="mono">${esc(o.oldType||'—')} · ${esc(o.oldNumber||'—')}</span></small></div></div>
+    <div class="form">${field('New SIM type',inp('edit.stage2.sim.newType',{ph:'e.g. network / provider'}),'',true)}${field('New SIM number (ICCID)',inp('edit.stage2.sim.newNumber',{mono:true,ph:'89…',max:26}),'',true)}</div></div>`;
+}
+function capaFields(e){
+  const c=e._capa||(e._capa={reasonCat:'',part:'',partNote:'',waitSupplier:''});
+  if(c.reasonCat==='recheck') e._returnTo='1';
+  return `<div class="sim-box"><div class="sim-head"><span class="sim-ic">↺</span><div><b>Corrective action</b><small>Say why it failed and what it needs, so Stage ${c.reasonCat==='recheck'?1:2} and the manager can follow up.</small></div></div>
+    <div class="form">${field('Reason',sel('edit._capa.reasonCat',[['','Choose…'],...CAPA_REASONS],true),'',true)}${field('Send it back to',sel('edit._returnTo',[['2','Stage 2 · repair again'],['1','Stage 1 · re-inspect first']]))}
+    ${c.reasonCat==='part'?`${field('Part to replace',sel('edit._capa.part',[['','Choose…'],...PARTS],true),'',true)}${c.part==='Other part'?field('Which part',inp('edit._capa.partNote',{ph:'Name the part'}),'',true):''}
+    ${cyclesField('edit.cycles',true)}${field('Part availability',sel('edit._capa.waitSupplier',[['','Choose…'],['no','In stock · repair now'],['yes','Waiting for supplier material']],true),'full',true)}`:''}</div>
+    ${c.waitSupplier==='yes'?`<div class="idf-hint">The visit goes back on hold as <b>Waiting for supplier material</b>. Stage 2 releases it when the part arrives.</div>`:''}</div>`;
+}
+function holdBlock(rec,e){
+  if(onHold(rec)){ const h=rec.hold; return `<div class="banner crit" style="margin:0"><div><b>Waiting for supplier material: ${esc(h.part||'part')}</b>${h.note?` · ${esc(h.note)}`:''}<br><span class="muted">On hold since ${esc(fmtDT(h.since))} (${fmtHours(hoursSince(h.since))}) · set by ${esc(h.by||'—')}</span><div style="margin-top:8px"><button class="btn sm pri" data-act="release-hold" data-id="${esc(rec.id)}">Part arrived · resume repair</button></div></div></div>`; }
+  if(!e._holdOpen) return `<div style="display:flex;justify-content:flex-end"><button class="btn sm" data-act="hold-open">⏸ Waiting for supplier material</button></div>`;
+  const h=e._hold||(e._hold={part:'',partNote:'',note:''});
+  return `<div class="sim-box"><div class="sim-head"><span class="sim-ic">⏸</span><div><b>Put on hold: waiting for supplier material</b><small>The battery stays at Stage 2 and shows as waiting until someone marks the part as arrived.</small></div></div>
+    <div class="form">${field('Part needed',sel('edit._hold.part',[['','Choose…'],...PARTS],true),'',true)}${h.part==='Other part'?field('Which part',inp('edit._hold.partNote',{ph:'Name the part'}),'',true):''}${cyclesField('edit.cycles',true)}${field('Note (order no., supplier, expected date)',inp('edit._hold.note'),'full')}</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn sm" data-act="hold-cancel">Cancel</button><button class="btn sm esc" data-act="set-hold" data-id="${esc(e.id)}">Put on hold</button></div></div>`;
+}
+function simSummary(r){ const o=((r.stage1||{}).sim)||{}, n=((r.stage2||{}).sim)||{}; if(!needsSim(r)) return ''; return `${o.oldType||'—'} ${o.oldNumber||'—'} → ${n.newNumber?`${n.newType||'—'} ${n.newNumber}`:'not replaced yet'}`; }
 function issuesBlock(base){
   const d=getPath(S.f,base), is=d.issues||(d.issues={});
   return `<div><div class="block-title"><h4>Defects observed</h4><span class="muted" style="font-size:12px">Items marked BSA skip the repair chain</span></div>
-  <div class="issues">${ISSUE_ITEMS.map(([k,l])=>`<label class="issue ${is[k]?'on':''} ${BSA_TRIGGER_ISSUES.includes(k)?'bsa':''}"><input type="checkbox" id="b-${base}-iss-${k}" data-bind="${base}.issues.${k}" data-rerender ${is[k]?'checked':''}>${esc(l)}<small>${BSA_TRIGGER_ISSUES.includes(k)?'BSA':issueCategory(k)==='Supplier'?'supplier':'handling'}</small></label>`).join('')}</div>
+  <div class="issues">${ISSUE_ITEMS.map(([k,l])=>`<label class="issue ${is[k]?'on':''} ${BSA_TRIGGER_ISSUES.includes(k)?'bsa':''}"><input type="checkbox" id="b-${base}-iss-${k}" data-bind="${base}.issues.${k}" data-rerender ${is[k]?'checked':''}>${esc(l)}<small>${BSA_TRIGGER_ISSUES.includes(k)?'BSA':issueCategory(k)==='Recall'?'recall':issueCategory(k)==='Supplier'?'supplier':'handling'}</small></label>`).join('')}</div>
   ${is.missingComponent?`<div style="margin-top:10px">${field('Which component is missing',inp(base+'.missingComponentNote',{ph:'e.g. BMS board, connector'}),'',true)}</div>`:''}
-  ${is.other?`<div style="margin-top:10px">${field('Describe the other issue',area(base+'.otherNote'))}</div>`:''}
+  ${is.simReplace?simOldBlock(base,d):''}
+  ${is.other?`<div class="sim-box"><div class="sim-head"><span class="sim-ic">?</span><div><b>Other issue</b><small>Pick the closest category and explain what you found, so the next person can follow up.</small></div></div><div class="form">${field('Category',sel(base+'.otherCat',[['','Choose…'],...OTHER_ISSUE_CATS]),'',true)}${field('Explanation',area(base+'.otherNote','What is wrong, where, and how it shows'),'full',true)}</div></div>`:''}
   ${isBsaTriggerIssue(d)?`<div class="banner warn" style="margin:10px 0 0"><div><b>Goes straight to BSA.</b> ${esc(bsaTriggerLabels(d).join(', '))} ${bsaTriggerLabels(d).length===1?'is':'are'} routed to the BSA team instead of Stage 2.</div></div>`:''}</div>`;
 }
 const errBox = () => S.formError?`<div class="banner crit"><div>${esc(S.formError)}</div></div>`:'';
@@ -1751,6 +2010,7 @@ function IntakeSheet(){
     ${field('Date received',inp('intake.dateReceived',{type:'date'}),'',true)}
     ${field('Time received',inp('intake.timeReceived',{type:'time'}))}
     ${field(isImeiRequired(d)?'IMEI (required for this issue)':'IMEI',inp('intake.imei',{mono:true,max:16,must:isImeiRequired(d),ph:'Up to 16 digits'}),'',isImeiRequired(d))}
+    ${cyclesField('intake.cycles',false)}
     ${field(isSwapStationRequired(d)?'Swap station (required)':'Swap station',inp('intake.site',{must:isSwapStationRequired(d),ph:'Where it came from'}),'',isSwapStationRequired(d))}
     ${field('Received by',inp('intake.receivedBy'))}
   </div>
@@ -1768,9 +2028,12 @@ async function submitIntake(){
   if(!id||!d.dateReceived) return fail('Battery ID and date received are required.');
   const e=batteryIdError(id,d.model); if(e) return fail(e);
   if(String(d.imei||'').trim().length>16) return fail('IMEI must be 16 characters or fewer.');
-  if(isImeiRequired(d)&&!String(d.imei||'').trim()) return fail('IMEI is required for no-power, BMS or IoT faults.');
+  if(String(d.cycles??'').trim()!==''&&cyclesError(d.cycles)) return fail(cyclesError(d.cycles));
+  if(isImeiRequired(d)&&!String(d.imei||'').trim()) return fail('IMEI is required for no-power, BMS, IoT or SIM replacement visits.');
   if(isSwapStationRequired(d)&&!String(d.site||'').trim()) return fail('Swap station is required for this defect type.');
   if(d.issues.missingComponent&&!String(d.missingComponentNote||'').trim()) return fail('Say which component is missing.');
+  if(d.issues.other){ if(!d.otherCat) return fail('Pick a category for the other issue.'); if(String(d.otherNote||'').trim().length<5) return fail('Explain the other issue in a few words.'); }
+  if(d.issues.simReplace){ const sm=d.sim||{}; if(!String(sm.oldType||'').trim()) return fail('Old SIM type is required.'); const se=simNumberError(sm.oldNumber,'Old SIM number'); if(se) return fail(se); }
   if(fresh.find(r=>normId(r.bmsId)===id&&!isClosed(r))) return fail('This BMS ID is already open in the chain.');
   const visits=fresh.filter(r=>normId(r.bmsId)===id);
   const lastDate=visits.map(r=>r.closedAt?dkey(r.closedAt):r.dateReceived).filter(Boolean).sort().pop();
@@ -1805,32 +2068,53 @@ function WorkSheet(rec){
   const e=S.f.edit, n=s.stage, owner=(rec['stage'+n]||{}).technician;
   const flagged=issuesOf(rec).map(k=>ISSUE_LABEL[k]);
   const claim=!owner?`<div class="banner"><div>Nobody has claimed this battery at Stage ${n}. <button class="btn sm pri" data-act="claim" data-id="${esc(rec.id)}">Claim it</button></div></div>`:owner!==s.name?`<div class="banner warn"><div>Claimed by <b>${esc(owner)}</b>. Submitting records you as the Stage ${n} technician.</div></div>`:'';
-  const capa=rec.capaCycles>0?`<div class="banner warn"><div><b>Corrective action, cycle ${rec.capaCycles}.</b> ${esc(((rec.capaLog||[]).slice(-1)[0]||{}).reason||'')} This is the same visit returning, not a new failure.</div></div>`:'';
+  const capa=rec.capaCycles>0?`<div class="banner warn"><div><b>Corrective action, cycle ${rec.capaCycles}.</b> ${esc(capaText((rec.capaLog||[]).slice(-1)[0]))} This is the same visit returning, not a new failure.</div></div>`:'';
   const info=`<div class="facts"><div class="fact"><span>Platform</span><b>${esc(rec.model||'—')}</b></div><div class="fact"><span>Visit</span><b>#${rec.visitNumber||1}</b></div><div class="fact"><span>Received</span><b>${esc(fmtShort(rec.dateReceived))}</b></div><div class="fact"><span>In chain</span><b>${ageDays(rec)}d</b></div></div>
     ${flagged.length?`<div class="banner"><div><b>Reported at intake:</b> ${esc(flagged.join(', '))}</div></div>`:''}`;
   let body='', foot='';
   if(n===1){
     const t=isBsaTriggerIssue(e.stage1);
-    body=`<div class="form">${field('Platform',sel('edit.model',[['','—'],...PLATFORMS]))}${field('IMEI',inp('edit.imei',{mono:true,max:16}))}${field('Swap station',inp('edit.site'))}</div>${checks('edit.stage1.pre',CHECK_ITEMS)}${issuesBlock('edit.stage1')}`;
+    body=`<div class="form">${field('Platform',sel('edit.model',[['','—'],...PLATFORMS]))}${field('IMEI',inp('edit.imei',{mono:true,max:16}))}${field('Swap station',inp('edit.site'))}${cyclesField('edit.cycles',false)}</div>${checks('edit.stage1.pre',CHECK_ITEMS)}${issuesBlock('edit.stage1')}`;
     foot=`<button class="btn ${t?'esc':'pri'}" data-act="submit-work" ${S.saving?'disabled':''}>${savingLabel(t?'Send straight to BSA':'Resend to Stage 2',S.saving)}</button>`;
   } else if(n===2){
-    body=`<div class="form">${field('Procedure (SOP)',sel('edit.stage2.sopRef',STANDARD_SOPS),'full')}${field('Parts replaced',inp('edit.stage2.partsReplaced',{ph:'e.g. BMS, harness'}),'full')}${field('Repair notes',area('edit.stage2.repairAction','What you did and what you found'),'full')}</div>${checks('edit.stage2.post',POST_ITEMS)}`;
-    foot=`<button class="btn pri" data-act="submit-work" ${S.saving?'disabled':''}>${savingLabel('Send to Stage 3',S.saving)}</button>`;
+    body=`<div class="form">${field('Procedure (SOP)',sel('edit.stage2.sopRef',STANDARD_SOPS),'full')}${field('Parts replaced',inp('edit.stage2.partsReplaced',{ph:'e.g. BMS, harness'}),'full')}${cyclesField('edit.cycles',!!String(e.stage2.partsReplaced||'').trim()||!!e._holdOpen)}${field('Repair notes',area('edit.stage2.repairAction','What you did and what you found'),'full')}</div>${needsSim(e)?simNewBlock(e):''}${checks('edit.stage2.post',POST_ITEMS)}${holdBlock(rec,e)}`;
+    foot=`<button class="btn pri" data-act="submit-work" ${S.saving||onHold(rec)?'disabled':''}>${savingLabel(onHold(rec)?'On hold · release first':'Send to Stage 3',S.saving)}</button>`;
   } else {
-    const t=e.stage3, res=testsResult(t), ir=parseFloat(t.tests.irMeasured), thr=parseFloat(t.tests.irThreshold);
+    const t=e.stage3, sim=needsSim(e), res=testsResult(t,sim), ir=parseFloat(t.tests.irMeasured), thr=parseFloat(t.tests.irThreshold);
     const irNote=isNaN(ir)?'Enter the measured insulation resistance.':isNaN(thr)?'Set the threshold.':ir>=thr?`<span class="ok">✓ ${ir} MΩ passes (≥ ${thr})</span>`:`<span class="bad">✕ ${ir} MΩ is below ${thr} MΩ</span>`;
     const disp=t.qcPassed;
     body=`<div><div class="block-title"><h4>Verification tests</h4>${chip(res.toLowerCase(),res==='PASS'?'good':res==='FAIL'?'crit':'')}</div>
       <div class="form" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">${field('Pack voltage (V)',inp('edit.stage3.tests.packVoltage',{type:'number',step:'0.01',mono:true}))}${field('Min cell (V)',inp('edit.stage3.tests.minCell',{type:'number',step:'0.001',mono:true}))}${field('Max cell (V)',inp('edit.stage3.tests.maxCell',{type:'number',step:'0.001',mono:true}))}${field('IR measured (MΩ)',inp('edit.stage3.tests.irMeasured',{type:'number',step:'1',mono:true,rr:true}))}${field('IR threshold (MΩ)',inp('edit.stage3.tests.irThreshold',{type:'number',step:'1',mono:true,rr:true}))}</div>
       <div class="idf-hint">${irNote}</div>
+      ${sim?`<div class="sim-box" style="margin-top:10px"><div class="sim-head"><span class="sim-ic">${ICON.sim}</span><div><b>SIM functional test</b><small>New SIM: <span class="mono">${esc(((e.stage2||{}).sim||{}).newType||'—')} · ${esc(((e.stage2||{}).sim||{}).newNumber||'—')}</span></small></div></div><label class="issue ${t.testBools[SIM_TEST[0]]?'on':''}"><input type="checkbox" id="b-tb-${SIM_TEST[0]}" data-bind="edit.stage3.testBools.${SIM_TEST[0]}" data-rerender ${t.testBools[SIM_TEST[0]]?'checked':''}>${esc(SIM_TEST[1])}</label></div>`:''}
       <div class="issues" style="margin-top:10px">${TEST_BOOLS.map(([k,l])=>`<label class="issue ${t.testBools[k]?'on':''}"><input type="checkbox" id="b-tb-${k}" data-bind="edit.stage3.testBools.${k}" data-rerender ${t.testBools[k]?'checked':''}>${esc(l)}</label>`).join('')}</div></div>
       <div><h4 style="margin-bottom:8px">Final QC disposition</h4><div class="seg" role="group">${[['PASS','Pass'],['FAIL','Fail · corrective action'],['ESCALATE_BSA','Escalate to BSA']].map(([v,l])=>`<button class="${disp===v?'on':''}" data-act="tri" data-p="edit.stage3.qcPassed" data-v="${v}">${l}</button>`).join('')}</div></div>
       ${disp==='PASS'&&res!=='PASS'?`<div class="banner warn" style="margin:0"><div>Tests are ${res.toLowerCase()}. Check them before passing this battery.</div></div>`:''}
-      ${disp==='FAIL'?field('Send it back to',sel('edit._returnTo',[['2','Stage 2 · repair again'],['1','Stage 1 · re-inspect first']])):''}
+      ${disp==='FAIL'?capaFields(e):''}
       ${field('QC notes'+(disp&&disp!=='PASS'?' (reason)':''),area('edit.stage3.qcNote'))}`;
     foot=`<button class="btn ${disp&&disp!=='PASS'?'esc':'pri'}" data-act="submit-work" ${S.saving||!disp?'disabled':''}>${savingLabel(!disp?'Pick a disposition':disp==='PASS'?'Pass & close':disp==='FAIL'?'Return for corrective action':'Escalate to BSA',S.saving)}</button>`;
   }
   return sheet(esc(rec.bmsId),`${esc(STAGE_LABEL[n])}`,errBox()+claim+capa+info+body,`<button class="btn" data-act="open-battery" data-id="${esc(rec.bmsId)}">Battery history</button>`+foot,'Your work');
+}
+async function setHold(id,release){
+  const s=S.session, fresh=await loadStore('om_chain_records'), r=fresh.find(x=>x.id===id);
+  if(!r||isClosed(r)){ S.data.om=fresh; bump(); toast('This visit has moved on. The list is refreshed.'); closeDrawer(); render(); return; }
+  if(release){
+    if(!r.hold){ toast('It is not on hold any more.'); S.data.om=fresh; bump(); renderDrawer(true); return; }
+    r.holdLog=[...(r.holdLog||[]),{...r.hold,releasedAt:nowIso(),releasedBy:s.name}]; r.hold=null;
+  } else {
+    const h=(S.f.edit||{})._hold||{}; const part=h.part==='Other part'?String(h.partNote||'').trim():h.part;
+    if(!part){ S.formError='Say which part you are waiting for.'; renderDrawer(true); return; }
+    const ce=cyclesError((S.f.edit||{}).cycles); if(ce){ S.formError='A part replacement needs the cycle count. '+ce; renderDrawer(true); return; } r.cycles=+S.f.edit.cycles;
+    r.hold={type:'supplier',part,cycles:r.cycles,note:String(h.note||'').trim(),since:nowIso(),by:s.name};
+  }
+  if(await saveStore('om_chain_records',fresh)){ S.data.om=fresh; bump(); if(S.f.edit&&S.f.edit.id===id){ S.f.edit.hold=r.hold; S.f.edit.holdLog=r.holdLog; S.f.edit._holdOpen=false; S.f.edit._hold=null; } S.formError=null; render(); toast(release?`${r.bmsId}: part arrived, back in repair.`:`${r.bmsId} is on hold, waiting for ${r.hold.part}.`); }
+}
+function AlertsSheet(){
+  const al=computeAlerts(), groups=[...new Set(al.map(a=>a.group))];
+  const body=al.length?groups.map(g=>`<div><div class="block-title"><h4>${esc(g)}</h4><span class="chip">${al.filter(a=>a.group===g).length}</span></div><div class="lane-list">${al.filter(a=>a.group===g).map(a=>`<button class="jcard alert-${a.sev}" data-act="${a.act}" data-id="${esc(a.id)}"><div class="row1"><b style="font-size:13px">${esc(a.title)}</b>${chip(a.sev==='crit'?'urgent':'follow up',a.sev==='crit'?'crit':'warn')}</div><div class="row2">${esc(a.detail)}</div></button>`).join('')}</div></div>`).join(''):`<div class="empty" style="padding:30px 10px">Nothing needs attention right now. 👍</div>`;
+  const rules=`<div class="muted" style="font-size:12px">Alerts: unclaimed for ${ALERT_H.unclaimedWarn} h (urgent after ${ALERT_H.unclaimedCrit} h) · claimed but not submitted for ${ALERT_H.unfinishedWarn/24} day (urgent after ${ALERT_H.unfinishedCrit/24} days) · waiting for supplier ${ALERT_H.holdWarn/24} days (urgent after ${ALERT_H.holdCrit/24})${S.session.role!=='omtech'?` · BSA not received after ${ALERT_H.bsaReceiptWarn/24} days`:''}.</div>`;
+  return sheet('Needs attention',S.session.role==='omtech'?`Your stage: ${STAGE_LABEL[S.session.stage]}`:'What is late or waiting, most urgent first',body+rules,'','Alerts');
 }
 async function claim(id){
   const s=S.session, fresh=await loadStore('om_chain_records'), r=fresh.find(x=>x.id===id);
@@ -1851,19 +2135,33 @@ async function submitWork(){
   let bsaCase=null, msg='';
   if(n===1){
     const err=batteryIdError(e.bmsId,e.model); if(err) return fail(err);
+    if(String(e.cycles??'').trim()!==''&&cyclesError(e.cycles)) return fail(cyclesError(e.cycles));
+    if(e.stage1.issues&&e.stage1.issues.other){ if(!e.stage1.otherCat) return fail('Pick a category for the other issue.'); if(String(e.stage1.otherNote||'').trim().length<5) return fail('Explain the other issue in a few words.'); }
+    if(e.stage1.issues&&e.stage1.issues.simReplace){ const sm=e.stage1.sim||{}; if(!String(sm.oldType||'').trim()) return fail('Old SIM type is required.'); const se=simNumberError(sm.oldNumber,'Old SIM number'); if(se) return fail(se); e.stage1.sim={oldType:String(sm.oldType).trim(),oldNumber:simDigits(sm.oldNumber)}; }
     Object.assign(e.stage1,{technician:s.name,completedBy:s.name,completedAt:nowIso()});
-    Object.assign(latest,{model:e.model,imei:e.imei,site:e.site,stage1:clone(e.stage1)});
+    Object.assign(latest,{model:e.model,imei:e.imei,site:e.site,cycles:String(e.cycles??'').trim()===''?latest.cycles??null:+e.cycles,stage1:clone(e.stage1)});
     if(isBsaTriggerIssue(e.stage1)){
       Object.assign(latest,{status:'CLOSED_TRANSFERRED_BSA',finalDisposition:'TRANSFERRED_BSA',closedAt:nowIso()});
       bsaCase={bmsId:latest.bmsId,model:latest.model,flaggedBy:s.name,issueDescription:bsaIssueSummary(e.stage1),escalationCategory:bsaEscalationCategory(e.stage1),stage1IssueFlags:bsaTriggerLabels(e.stage1),escalatedFromStage:1,sopAttempted:'No applicable SOP after re-inspection — routed directly.',omRecordId:latest.id};
       msg=`${latest.bmsId} sent straight to BSA.`;
     } else { latest.stage=2; latest.status='STAGE2_OPEN'; msg=`${latest.bmsId} resent to Stage 2.`; }
   } else if(n===2){
+    if(onHold(latest)) return fail('This battery is waiting for supplier material. Mark the part as arrived first.');
+    if(String(e.stage2.partsReplaced||'').trim()){ const ce=cyclesError(e.cycles); if(ce) return fail('Parts were replaced, so the cycle count is required. '+ce); }
+    if(String(e.cycles??'').trim()!==''){ const ce=cyclesError(e.cycles); if(ce) return fail(ce); latest.cycles=+e.cycles; }
+    if(needsSim(latest)){ const sm=e.stage2.sim||{}, old=simDigits(((latest.stage1||{}).sim||{}).oldNumber);
+      if(!String(sm.newType||'').trim()) return fail('New SIM type is required.');
+      const se=simNumberError(sm.newNumber,'New SIM number'); if(se) return fail(se);
+      if(old&&simDigits(sm.newNumber)===old) return fail('The new SIM number is the same as the old one. Check the card you fitted.');
+      e.stage2.sim={newType:String(sm.newType).trim(),newNumber:simDigits(sm.newNumber),replacedBy:s.name,replacedAt:nowIso()}; }
     Object.assign(e.stage2,{technician:s.name,startedAt:e.stage2.startedAt||nowIso(),completedBy:s.name,completedAt:nowIso()});
     Object.assign(latest,{stage2:clone(e.stage2),stage:3,status:'STAGE3_OPEN'}); msg=`${latest.bmsId} sent to Stage 3.`;
   } else {
     const t=e.stage3, disp=t.qcPassed; if(!disp) return fail('Pick a final QC disposition first.');
     if(disp!=='PASS'&&!String(t.qcNote||'').trim()) return fail('Add a QC note explaining why it failed or is being escalated.');
+    const cp=e._capa||{};
+    if(disp==='FAIL'){ if(!cp.reasonCat) return fail('Pick the corrective-action reason.'); if(cp.reasonCat==='part'){ if(!cp.part) return fail('Say which part needs replacing.'); if(cp.part==='Other part'&&!String(cp.partNote||'').trim()) return fail('Name the part that needs replacing.'); const ce=cyclesError(e.cycles); if(ce) return fail('A part replacement needs the cycle count. '+ce); if(!cp.waitSupplier) return fail('Say whether the part is in stock or you are waiting for supplier material.'); latest.cycles=+e.cycles; } }
+    if(disp==='PASS'&&needsSim(latest)&&!(t.testBools||{})[SIM_TEST[0]]) return fail('Run the functional test on the new SIM and tick it before passing this battery.');
     Object.assign(t,{technician:s.name,startedAt:t.startedAt||nowIso(),completedBy:s.name,completedAt:nowIso()});
     if(disp==='PASS'){ Object.assign(latest,{status:'CLOSED_PASS',finalDisposition:'PASS',closedAt:nowIso()}); msg=`${latest.bmsId} passed final QC and is closed.`; }
     else if(disp==='ESCALATE_BSA'){
@@ -1873,9 +2171,11 @@ async function submitWork(){
     } else {
       const to=parseInt(e._returnTo)||2;
       latest.capaCycles=(latest.capaCycles||0)+1; latest.isCorrectiveAction=true;
-      latest.capaLog=[...(latest.capaLog||[]),{cycle:latest.capaCycles,returnedAt:nowIso(),returnedBy:s.name,reason:t.qcNote,toStage:to}];
+      const part=cp.reasonCat==='part'?(cp.part==='Other part'?String(cp.partNote||'').trim()||'Other part':cp.part):'', wait=cp.reasonCat==='part'&&cp.waitSupplier==='yes';
+      latest.capaLog=[...(latest.capaLog||[]),{cycle:latest.capaCycles,returnedAt:nowIso(),returnedBy:s.name,reason:t.qcNote,reasonCat:cp.reasonCat,part,cycles:cp.reasonCat==='part'?+e.cycles:null,waitSupplier:wait,toStage:to}];
+      if(wait) latest.hold={type:'supplier',part,note:t.qcNote,since:nowIso(),by:s.name,fromCapa:latest.capaCycles};
       latest.stage=to; latest.status=to===1?'STAGE1_OPEN':'STAGE2_OPEN'; t.qcPassed='';
-      msg=`${latest.bmsId} returned to Stage ${to} for corrective action.`;
+      msg=`${latest.bmsId} returned to Stage ${to} for corrective action${wait?' and is waiting for supplier material':''}.`;
     }
     latest.stage3=clone(t);
   }
@@ -1901,8 +2201,10 @@ function BatterySheet(id,focus){
   const ev=[];
   b.visits.forEach(r=>{
     ev.push({t:r.createdAt||r.dateReceived,k:'info',h:`Received · visit #${r.visitNumber||1}`,d:`${issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', ')||'No issue flagged'}${r.site?' · '+r.site:''} · by ${(r.stage1||{}).technician||'—'}`});
-    if((r.stage2||{}).completedAt) ev.push({t:r.stage2.completedAt,k:'',h:'Repaired at Stage 2',d:`${(r.stage2.sopRef||'').split(':')[0]} · ${r.stage2.technician||'—'}${r.stage2.partsReplaced?' · parts: '+r.stage2.partsReplaced:''}`});
-    (r.capaLog||[]).forEach(c=>ev.push({t:c.returnedAt,k:'warn',h:`Returned for corrective action (cycle ${c.cycle})`,d:`${c.reason||'—'} · to Stage ${c.toStage} · ${c.returnedBy||''}`}));
+    if((r.stage2||{}).completedAt) ev.push({t:r.stage2.completedAt,k:'',h:'Repaired at Stage 2',d:`${(r.stage2.sopRef||'').split(':')[0]} · ${r.stage2.technician||'—'}${r.stage2.partsReplaced?' · parts: '+r.stage2.partsReplaced:''}${(r.stage2.sim||{}).newNumber?' · SIM replaced':''}`});
+    (r.capaLog||[]).forEach(c=>ev.push({t:c.returnedAt,k:'warn',h:`Returned for corrective action (cycle ${c.cycle})`,d:`${capaText(c)||'—'} · to Stage ${c.toStage} · ${c.returnedBy||''}`}));
+    (r.holdLog||[]).forEach(h=>{ ev.push({t:h.since,k:'serious',h:'Waiting for supplier material',d:`${h.part||'part'} · ${h.by||''}`}); if(h.releasedAt) ev.push({t:h.releasedAt,k:'good',h:'Part arrived · repair resumed',d:`${h.part||'part'} · ${h.releasedBy||''}`}); });
+    if(onHold(r)) ev.push({t:r.hold.since,k:'serious',h:'Waiting for supplier material',d:`${r.hold.part||'part'} · ${r.hold.by||''}`});
     if(isClosed(r)) ev.push({t:r.closedAt,k:r.finalDisposition==='PASS'?'good':'serious',h:r.finalDisposition==='PASS'?'Passed final QC':'Closed and sent to BSA',d:`Visit #${r.visitNumber||1}${(r.stage3||{}).technician?' · '+r.stage3.technician:''}`});
   });
   b.bsa.forEach(c=>{
@@ -1919,11 +2221,11 @@ function BatterySheet(id,focus){
     const postFail=POST_ITEMS.filter(([k])=>((r.stage2||{}).post||{})[k]==='FAIL').map(([,l])=>l);
     const kv=(k,v)=>`<div><span>${k}</span><b>${esc(v==null||v===''?'—':v)}</b></div>`;
     return `<details class="visit" ${focus===r.id||(!focus&&r===b.visits[b.visits.length-1])?'open':''}><summary><span><b>Visit #${r.visitNumber||1}</b> <span class="muted">· ${esc(fmtDay(r.dateReceived))}</span></span>${chip(...st)}</summary>
-      <div class="kv">${kv('Reason',issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', ')+((r.stage1||{}).otherNote?' — '+r.stage1.otherNote:''))}${kv('Swap station',r.site)}${kv('IMEI',r.imei)}
+      <div class="kv">${kv('Reason',issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', '))}${otherIssueText(r.stage1)?kv('Other issue',otherIssueText(r.stage1)):''}${onHold(r)?kv('On hold',`Waiting for supplier: ${r.hold.part||'part'} since ${fmtShort(dkey(r.hold.since))}`):''}${kv('Swap station',r.site)}${kv('IMEI',r.imei)}${kv('Charge cycles',r.cycles==null?'':String(r.cycles))}${needsSim(r)?kv('SIM swap',simSummary(r)):''}
       ${kv('Stage 1',(r.stage1||{}).technician)}${kv('Stage 2',(r.stage2||{}).technician)}${kv('Stage 3',(r.stage3||{}).technician)}
       ${kv('Procedure',(r.stage2||{}).sopRef)}${kv('Parts replaced',(r.stage2||{}).partsReplaced)}${kv('Repair notes',(r.stage2||{}).repairAction)}
       ${kv('Pack voltage',t.packVoltage?t.packVoltage+' V':'')}${kv('Cell min / max',t.minCell?`${t.minCell} / ${t.maxCell} V`:'')}${kv('Insulation',t.irMeasured?`${t.irMeasured} MΩ (min ${t.irThreshold})`:'')}
-      ${kv('Tests',TEST_BOOLS.filter(([k])=>tb[k]).length+' of '+TEST_BOOLS.length+' confirmed')}${kv('QC notes',(r.stage3||{}).qcNote)}${kv('CAPA cycles',r.capaCycles||0)}
+      ${kv('Tests',TEST_BOOLS.filter(([k])=>tb[k]).length+' of '+TEST_BOOLS.length+' confirmed')}${needsSim(r)?kv('SIM functional test',tb[SIM_TEST[0]]?'Passed':(r.stage3||{}).completedAt?'Not confirmed':'Pending'):''}${kv('QC notes',(r.stage3||{}).qcNote)}${kv('CAPA cycles',r.capaCycles||0)}${(r.capaLog||[]).map(c=>kv('CAPA '+c.cycle,capaText(c))).join('')}${(r.holdLog||[]).map(h=>kv('Supplier wait',`${h.part||'part'} · ${fmtShort(dkey(h.since))} → ${fmtShort(dkey(h.releasedAt))}`)).join('')}
       ${preFail.length?kv('Pre-check fails',preFail.join(', ')):''}${postFail.length?kv('Post-check fails',postFail.join(', ')):''}</div>
       ${canDelete()?`<div style="padding:0 14px 12px"><button class="btn sm danger" data-act="del" data-store="om_chain_records" data-id="${esc(r.id)}">Delete this visit</button></div>`:''}</details>`;
   }).join('');
@@ -2312,7 +2614,7 @@ async function exportExcel(){
   wb2.columns=[{width:34},{width:16},{width:12},{width:12}];
   xlTitle(wb2,`Breakdown · ${periodLong}`,'Defects, platforms, technicians and FPY for the selected period. Charts on the right read from these tables.',12);
   let row=5; xlSection(wb2,row,1,'Defects reported at intake',4);
-  const defRows=d.defects.length?d.defects.map(x=>[x.label,{v:x.cat,tone:x.cat==='Supplier'?'info':'serious'},x.v,r1.intakes?x.v/r1.intakes:null]):[['No intakes in this period',null,0,null]];
+  const defRows=d.defects.length?d.defects.map(x=>[x.label,{v:x.cat,tone:x.cat==='Supplier'?'info':x.cat==='Recall'?'good':'serious'},x.v,r1.intakes?x.v/r1.intakes:null]):[['No intakes in this period',null,0,null]];
   const D=xlTable(wb2,row+1,1,[{h:'Issue',w:34},{h:'Category',w:16},{h:'Batteries',align:'right'},{h:'Share of intakes',align:'right',fmt:'0%'}],defRows);
   charts.push({sheetIndex:bIdx,from:[5,4],to:[12,4+Math.max(14,d.defects.length*1.4+4)|0],type:'bar',horizontal:true,title:'Defects at intake',legend:false,gap:40,cats:{ref:ref('Period breakdown',0,D.r1+1,D.r2),vals:defRows.map(r=>r[0])},series:[{name:'Batteries',ref:ref('Period breakdown',2,D.r1+1,D.r2),vals:defRows.map(r=>r[2]),color:XC.s1,labels:true,labelPos:'outEnd'}]});
   row=Math.max(D.r2,4+Math.max(14,d.defects.length*1.4+4)|0)+2; xlSection(wb2,row,1,'Received by platform',4);
@@ -2335,16 +2637,28 @@ async function exportExcel(){
   charts.push({sheetIndex:btIdx,from:[4,4],to:[10,U.r2+8],type:'pie',title:'Fleet state',legendPos:'r',cats:{ref:ref('Batteries',0,U.r1+1,U.r2),vals:d.useCounts.map(x=>x[0])},series:[{name:'Batteries',ref:ref('Batteries',1,U.r1+1,U.r2),vals:d.useCounts.map(x=>x[1]),colors:[XC.good[1],'E0A100',XC.info[1],XC.serious[1],XC.crit[1]]}]});
   const bStart=U.r2+10;
   xlSection(wb3,bStart-1,1,`All batteries · ${d.bat.length}`,3);
-  const batRows=d.bat.slice().sort((a,b)=>b.last.localeCompare(a.last)).map(b=>[b.id,b.platform,{v:USE_META[b.use][0],tone:toneOfUse(b.use)},b.visits.length,b.fp,b.closedCount,b.closedCount?b.fp/b.closedCount:null,b.capa,b.bsa.length,Math.round(b.repairDays*10)/10,toDate(b.first),toDate(b.last),b.issueKeys.map(k=>ISSUE_LABEL[k]).join(', ')]);
-  xlTable(wb3,bStart,1,[{h:'BMS ID',w:24},{h:'Platform',w:12},{h:'State',w:18},{h:'Visits',align:'right',w:9},{h:'First pass',align:'right',w:10},{h:'Closed visits',align:'right',w:10},{h:'First-pass rate',align:'right',fmt:'0%',w:11},{h:'CAPA cycles',align:'right',w:10},{h:'BSA cases',align:'right',w:10},{h:'Days in repair',align:'right',fmt:'0.0',w:11},{h:'First seen',fmt:'d mmm yyyy',w:13},{h:'Last seen',fmt:'d mmm yyyy',w:13},{h:'Issues seen',wrap:true,w:46}],batRows,{filter:true});
+  const batRows=d.bat.slice().sort((a,b)=>b.last.localeCompare(a.last)).map(b=>[b.id,b.platform,{v:USE_META[b.use][0],tone:toneOfUse(b.use)},b.visits.length,b.fp,b.closedCount,b.closedCount?b.fp/b.closedCount:null,b.capa,b.bsa.length,b.cycles,Math.round(b.repairDays*10)/10,toDate(b.first),toDate(b.last),b.issueKeys.map(k=>ISSUE_LABEL[k]).join(', ')]);
+  xlTable(wb3,bStart,1,[{h:'BMS ID',w:24},{h:'Platform',w:12},{h:'State',w:18},{h:'Visits',align:'right',w:9},{h:'First pass',align:'right',w:10},{h:'Closed visits',align:'right',w:10},{h:'First-pass rate',align:'right',fmt:'0%',w:11},{h:'CAPA cycles',align:'right',w:10},{h:'BSA cases',align:'right',w:10},{h:'Charge cycles',align:'right',w:10},{h:'Days in repair',align:'right',fmt:'0.0',w:11},{h:'First seen',fmt:'d mmm yyyy',w:13},{h:'Last seen',fmt:'d mmm yyyy',w:13},{h:'Issues seen',wrap:true,w:46}],batRows,{filter:true});
   wb3.views=[{showGridLines:false,state:'frozen',ySplit:bStart}];
 
   /* 4 · O&M visits */
   const wb4=sheet('O&M visits',XC.accent);
-  xlTitle(wb4,`O&M visits · ${rangeLong}`,'Every visit received or closed in the trend range, newest first.',14);
-  const vRows=d.visits.map(r=>{ const st=omStatus(r); const t=(r.stage3||{}).tests||{}; return [toDate(r.dateReceived),r.bmsId,r.model,r.visitNumber||1,{v:st[0],tone:st[1]||'neutral'},issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', '),(r.stage1||{}).technician,(r.stage2||{}).technician,(r.stage3||{}).technician,((r.stage2||{}).sopRef||'').split(':')[0],(r.stage2||{}).partsReplaced,r.capaCycles||0,t.irMeasured?+t.irMeasured:null,t.packVoltage?+t.packVoltage:null,toDate(r.closedAt),isClosed(r)&&r.closedAt?Math.max(0,daysBetween(r.dateReceived,dkey(r.closedAt))):ageDays(r),(r.stage3||{}).qcNote]; });
-  xlTable(wb4,5,1,[{h:'Received',fmt:'d mmm yyyy',w:13},{h:'BMS ID',w:23},{h:'Platform',w:11},{h:'Visit #',align:'right',w:8},{h:'Status',w:22},{h:'Issues reported',wrap:true,w:36},{h:'Stage 1',w:14},{h:'Stage 2',w:14},{h:'Stage 3',w:14},{h:'SOP',w:12},{h:'Parts',w:14},{h:'CAPA',align:'right',w:7},{h:'IR (MΩ)',align:'right',fmt:'0',w:9},{h:'Pack V',align:'right',fmt:'0.00',w:9},{h:'Closed',fmt:'d mmm yyyy',w:13},{h:'Days',align:'right',w:7},{h:'QC notes',wrap:true,w:30}],vRows.length?vRows:[[null,'No visits in this range']],{filter:true});
+  xlTitle(wb4,`O&M visits · ${rangeLong}`,'Every visit received or closed in the trend range, newest first.',20);
+  const vRows=d.visits.map(r=>{ const st=omStatus(r); const t=(r.stage3||{}).tests||{}; return [toDate(r.dateReceived),r.bmsId,r.model,r.visitNumber||1,{v:st[0],tone:st[1]||'neutral'},issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', '),(r.stage1||{}).technician,(r.stage2||{}).technician,(r.stage3||{}).technician,((r.stage2||{}).sopRef||'').split(':')[0],(r.stage2||{}).partsReplaced,r.capaCycles||0,t.irMeasured?+t.irMeasured:null,t.packVoltage?+t.packVoltage:null,toDate(r.closedAt),isClosed(r)&&r.closedAt?Math.max(0,daysBetween(r.dateReceived,dkey(r.closedAt))):ageDays(r),(r.stage3||{}).qcNote,r.cycles==null||r.cycles===''?null:+r.cycles,otherIssueText(r.stage1),(r.capaLog||[]).map(c=>`#${c.cycle} ${capaText(c)}`).join('\n'),onHold(r)?{v:`Waiting · ${r.hold.part||'part'} since ${fmtShort(dkey(r.hold.since))}`,tone:'serious'}:((r.holdLog||[]).length?`${r.holdLog.length} wait(s), resolved`:'')]; });
+  xlTable(wb4,5,1,[{h:'Received',fmt:'d mmm yyyy',w:13},{h:'BMS ID',w:23},{h:'Platform',w:11},{h:'Visit #',align:'right',w:8},{h:'Status',w:22},{h:'Issues reported',wrap:true,w:36},{h:'Stage 1',w:14},{h:'Stage 2',w:14},{h:'Stage 3',w:14},{h:'SOP',w:12},{h:'Parts',w:14},{h:'CAPA',align:'right',w:7},{h:'IR (MΩ)',align:'right',fmt:'0',w:9},{h:'Pack V',align:'right',fmt:'0.00',w:9},{h:'Closed',fmt:'d mmm yyyy',w:13},{h:'Days',align:'right',w:7},{h:'QC notes',wrap:true,w:30},{h:'Charge cycles',align:'right',w:10},{h:'Other issue (category: explanation)',wrap:true,w:30},{h:'CAPA reason / part',wrap:true,w:38},{h:'Supplier material',wrap:true,w:26}],vRows.length?vRows:[[null,'No visits in this range']],{filter:true});
   wb4.views=[{showGridLines:false,state:'frozen',ySplit:5,xSplit:2}];
+
+  /* 4b · SIM card replacement register (only when the recall has records) */
+  const sx=simRecallStats();
+  if(sx.total){
+    const wbS=sheet('SIM register','0B8A8F');
+    xlTitle(wbS,'SIM card replacement register',`Every visit marked “SIM card replacement”, all time. Old SIM recorded at intake, new SIM at Stage 2, functional test at Stage 3. ${sx.total} batteries · ${sx.replaced} SIMs replaced · ${sx.passed} passed the functional test.`,13);
+    const simRows=sx.recs.slice().sort((a,b)=>String(b.dateReceived).localeCompare(String(a.dateReceived))).map(r=>{ const o=(r.stage1||{}).sim||{}, n=(r.stage2||{}).sim||{}, tb=(r.stage3||{}).testBools||{}, st=omStatus(r);
+      const ft=tb[SIM_TEST[0]]?{v:'Passed',tone:'good'}:isClosed(r)?{v:'Not confirmed',tone:'crit'}:{v:'Pending',tone:'warn'};
+      return [toDate(r.dateReceived),r.bmsId,r.model,r.imei||'',o.oldType||'',o.oldNumber?{v:String(o.oldNumber)}:'',n.newType||'',n.newNumber?{v:String(n.newNumber)}:'',n.replacedBy||(r.stage2||{}).technician||'',toDate(n.replacedAt||(r.stage2||{}).completedAt),ft,{v:st[0],tone:st[1]||'neutral'},toDate(r.closedAt)]; });
+    xlTable(wbS,5,1,[{h:'Received',fmt:'d mmm yyyy',w:13},{h:'BMS ID',w:23},{h:'Platform',w:11},{h:'IMEI',w:18},{h:'Old SIM type',w:13},{h:'Old SIM number',w:24},{h:'New SIM type',w:14},{h:'New SIM number',w:24},{h:'Replaced by',w:14},{h:'Replaced on',fmt:'d mmm yyyy',w:13},{h:'Functional test',w:15},{h:'Visit status',w:22},{h:'Closed',fmt:'d mmm yyyy',w:13}],simRows,{filter:true});
+    wbS.views=[{showGridLines:false,state:'frozen',ySplit:5,xSplit:2}];
+  }
 
   /* 5 · BSA */
   const wb5=sheet('BSA cases','EB6834'), bsIdx=si;
@@ -2360,9 +2674,9 @@ async function exportExcel(){
 
   /* 6 · Open pipeline */
   const wb6=sheet('Open pipeline','0AA5B8');
-  xlTitle(wb6,'Open pipeline right now',`Batteries still in the O&M chain at ${fmtDT(d.at.toISOString())}, oldest first. Amber = 3+ days, red = 5+ days.`,8);
-  xlTable(wb6,5,1,[{h:'BMS ID',w:23},{h:'Platform',w:11},{h:'Stage',w:20},{h:'Claimed by',w:16},{h:'Received',fmt:'d mmm yyyy',w:13},{h:'Days in chain',align:'right',w:12},{h:'CAPA cycles',align:'right',w:11},{h:'Issues',wrap:true,w:40}],
-    d.open.length?d.open.map(r=>{ const a=ageDays(r); return [r.bmsId,r.model,`Stage ${r.stage} · ${STAGE_SHORT[r.stage]}`,(r['stage'+r.stage]||{}).technician||'Unclaimed',toDate(r.dateReceived),{v:a,tone:a>=5?'crit':a>=3?'warn':null},r.capaCycles||0,issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', ')]; }):[['Nothing open']],{filter:true});
+  xlTitle(wb6,'Open pipeline right now',`Batteries still in the O&M chain at ${fmtDT(d.at.toISOString())}, oldest first. Amber = 3+ days, red = 5+ days.`,9);
+  xlTable(wb6,5,1,[{h:'BMS ID',w:23},{h:'Platform',w:11},{h:'Stage',w:20},{h:'Claimed by',w:16},{h:'Received',fmt:'d mmm yyyy',w:13},{h:'Days in chain',align:'right',w:12},{h:'CAPA cycles',align:'right',w:11},{h:'Issues',wrap:true,w:40},{h:'Waiting for',wrap:true,w:24}],
+    d.open.length?d.open.map(r=>{ const a=ageDays(r); return [r.bmsId,r.model,`Stage ${r.stage} · ${STAGE_SHORT[r.stage]}`,(r['stage'+r.stage]||{}).technician||'Unclaimed',toDate(r.dateReceived),{v:a,tone:a>=5?'crit':a>=3?'warn':null},r.capaCycles||0,issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', '),onHold(r)?{v:`Supplier · ${r.hold.part||'part'} (${fmtHours(hoursSince(r.hold.since))})`,tone:'serious'}:((r['stage'+r.stage]||{}).technician?'':{v:'Not claimed',tone:'warn'})]; }):[['Nothing open']],{filter:true});
   wb6.views=[{showGridLines:false,state:'frozen',ySplit:5}];
 
   /* 7 · RCA */
@@ -2386,6 +2700,10 @@ async function exportExcel(){
     ['Usable · watch','Usable now, but 3 or more visits or 2 or more CAPA cycles on record.'],
     ['In O&M repair / With BSA','Has an open visit in the chain / an open BSA case.'],
     ['Scrapped','BSA scrapped the battery.'],
+    ['SIM card replacement (recall)','A planned recall, not a defect: it is left out of supplier and handling defect counts. The old SIM is recorded at intake, the new SIM at Stage 2, and Stage 3 cannot pass the battery until the functional test on the new SIM is ticked.'],
+    ['CAPA reason','Final QC picks why a battery goes back: needs part replacement (with the part), repair not effective, failed a test, assembly issue, re-inspection or other.'],
+    ['Waiting for supplier material','The visit is on hold at Stage 2 until the part arrives. Stage 2 marks the part as arrived to resume repair; every wait is kept in the history.'],
+    ['Alerts','Unclaimed 2 h (urgent 8 h); claimed but not submitted 1 day (urgent 3 days); waiting for supplier 3 days (urgent 7).'],
     ['Periods','Days are calendar days; weeks run Monday to Sunday; months are calendar months.']
   ]);
 
@@ -2662,6 +2980,430 @@ const BG = (()=>{
     refresh(){ if(!cx) return; requestAnimationFrame(()=>{ readCols(); buildTile(); setRun(); if(!running) draw(4); }); }
   };
 })();
+/* =====================================================================
+   CARD LIBRARY — hundreds of short cards for the welcome and farewell
+   screens. Hand-written lines plus generated practice puzzles.
+   Kinds: m motivation · i inspiration · d battery did-you-know ·
+   p physics did-you-know · h history · s safety · q quality habit ·
+   r riddle (with answer) · g generated puzzle (with answer)
+   ===================================================================== */
+const CARD_SRC = {
+m:[
+['Consistency beats heroics','The best repair teams aren’t the fastest on one battery. They are the most consistent on every battery.'],
+['Your signature matters','When you pass a battery at final QC, a rider trusts it with their day. That trust is built by your checks.'],
+['Root causes, not repeat visits','A repair that fixes the cause saves three future visits. Write down what you found, not only what you did.'],
+['Progress over perfection','Claim one, finish one, record it well. Then the next. The queue gets shorter faster than you think.'],
+['Start with the oldest','Clearing the oldest battery first is the simplest way to keep everyone’s waiting time fair.'],
+['Small wins add up','Ten careful repairs a day is fifty a week and over two thousand a year. That is a whole fleet kept moving.'],
+['You are the last line','Every check you do catches something the factory, the road or the rider missed.'],
+['Make it boring','The best quality day is a boring one: no surprises, no rework, just clean passes.'],
+['Fix it once','Taking ten extra minutes now beats a second visit next week.'],
+['Pride in the details','A tidy harness, a clean seal, a correct torque. Nobody may notice, but the battery will.'],
+['Ask early','A two-minute question to a colleague is cheaper than a two-hour rework.'],
+['Today counts','Every battery you return to service is someone’s commute, delivery or income restored.'],
+['Learn one thing','Pick one thing today you’ll understand better than yesterday: a fault code, a test, a tool.'],
+['Teach one thing','The fastest way to master a skill is to explain it to someone newer than you.'],
+['Calm hands, clear head','Rushed work causes most rework. Breathe, check, then act.'],
+['Own the outcome','A pass is not the goal. A battery that stays in service is.'],
+['Better every week','If each week is 1% better than the last, a year later the team is about 68% better.'],
+['Clean bench, clear mind','Tidy tools and a clear workspace mean fewer lost screws and fewer mistakes.'],
+['Notes are gifts','Clear notes are a gift to the next person who opens this battery, maybe you in three months.'],
+['Trust the data','Measure, then decide. Numbers settle arguments that opinions start.'],
+['Keep the chain moving','A battery waiting unclaimed is a battery not earning. Grab the next one when you’re free.'],
+['Quality is everyone’s job','Intake, repair, QC, BSA: each stage protects the others.'],
+['Good enough isn’t','If you wouldn’t ride on it yourself, it isn’t ready to pass.'],
+['Celebrate the catch','Finding a fault at QC is a win, not a failure. It never reached a rider.'],
+['Patterns matter','Seeing the same fault three times? That’s a root cause asking to be found. Flag it.'],
+['Steady is fast','Smooth is steady, and steady is fast. Speed comes from not redoing work.'],
+['Make the next shift easy','Leave your open tasks clearly noted so whoever picks them up can carry on.'],
+['Be curious','When a fix works, ask why. When it doesn’t, ask why louder.'],
+['Every cell counts','A pack is only as strong as its weakest cell, and a team is only as strong as its weakest habit.'],
+['Do the right thing quietly','Nobody sees the extra torque check. The rider feels it every day.'],
+['Fresh eyes','If you’re stuck, step away for two minutes. The answer is often obvious when you come back.'],
+['Finish strong','The last battery of the day deserves the same care as the first.'],
+['Precision is respect','Getting the BMS ID right respects everyone who will search for it later.'],
+['One team','Technicians, engineers and managers want the same thing: batteries that just work.'],
+['Build trust','Every honest QC note builds trust in the whole system.'],
+['Fewer, better','Ten batteries done right beat fifteen done twice.'],
+['Choose clarity','When in doubt, write it down. When really in doubt, ask.'],
+['Momentum','The hardest battery is the first one. After that, the rhythm carries you.'],
+['Make today’s you proud','Do the work that tomorrow’s you will be glad you did.'],
+['Excellence is a habit','Great results come from small, good habits repeated every day.']
+],
+i:[
+['Leave it better','Every battery should leave the bench in better shape than it arrived, with a clearer record than it came with.'],
+['Precision is kindness','Clear notes and correct IDs save your colleagues hours. Be the colleague you’d love to inherit work from.'],
+['Safety first, always','No deadline is worth a shortcut on insulation testing. A quick IR check protects people you’ll never meet.'],
+['Energy, moved by people','Behind every kilometre ridden is someone who checked a cell, torqued a bolt or caught a fault. Today that’s you.'],
+['Quiet craft','Most great work is invisible. It shows up as things that simply don’t go wrong.'],
+['Clean energy, careful hands','Electric mobility only works if the batteries are cared for. You are part of that transition.'],
+['A second life','Every repaired battery is one less pack thrown away and one less new pack to build.'],
+['The craft of care','A good technician listens to a battery: its voltages, its temperatures, its history.'],
+['Curiosity powers progress','The lithium-ion battery exists because scientists kept asking “what if?” for decades. Keep asking.'],
+['Built to last','Design, build, test, repair. Each step decides how long a battery serves.'],
+['Small parts, big impact','A two-cent fastener can decide whether a pack lasts two months or two years.'],
+['Proud work','Do work you’d be proud to show anyone, even if nobody ever asks to see it.'],
+['From many, one','A pack is dozens of cells working as one. So is a good team.'],
+['Steady improvement','Nobody gets everything right. The best simply get a little better every day.'],
+['Respect the energy','A charged pack holds a lot of energy. Treat it with respect and it will serve well.'],
+['Think like a rider','Before you pass a battery, imagine it’s the one getting you home tonight.'],
+['Every number tells a story','A cycle count, a cell delta, an IR reading: each one is the battery telling you its history.'],
+['Mastery takes time','Every expert technician was once unsure which wire went where. Keep going.'],
+['Light the way','Your careful records today are the data that solves tomorrow’s mystery fault.'],
+['Keep moving forward','Like a lithium ion through its channel: one step at a time, always forward.']
+],
+d:[
+['3.2 volts','A LiFePO₄ cell has a nominal voltage of about 3.2 V. Put 24 in series and you get a 76.8 V pack.'],
+['Charge limits','LFP cells are usually charged to about 3.65 V each and should not be discharged much below about 2.5 V.'],
+['A flat voltage curve','LFP voltage barely changes between about 20% and 80% charge, so the BMS estimates charge mostly by counting current in and out.'],
+['Olivine highways','In LiFePO₄ the lithium ions travel through one-dimensional channels in an olivine crystal. That’s the moving pattern in the background.'],
+['No cobalt, no nickel','LFP cathodes use iron and phosphate instead of cobalt or nickel, which makes them cheaper and more stable when hot.'],
+['Don’t charge it cold','Charging lithium cells below 0 °C can plate metallic lithium on the anode and permanently damage the cell. A good BMS blocks cold charging.'],
+['What “1C” means','1C is the current that would fully charge or empty a battery in one hour. For a 30 Ah pack, 1C is 30 A.'],
+['Why balancing matters','A pack is only as good as its weakest cell. Balancing bleeds a little charge from the highest cells so all of them finish together.'],
+['SIM numbers start with 89','A SIM’s ICCID usually begins with 89, the industry code for telecommunications, followed by a country code.'],
+['Graphite hotel','In the anode, lithium slips between layers of graphite. At most one lithium atom fits for every six carbon atoms (LiC₆).'],
+['The first-charge tax','On the first charges a thin film called the SEI forms on the anode. It uses up a little lithium but then protects the cell for life.'],
+['Batteries age on the shelf','Cells lose capacity slowly even unused. Heat and a high state of charge speed this “calendar ageing”.'],
+['Store it half full','Lithium batteries kept for a long time age more slowly at partial charge than at 100%.'],
+['Low self-discharge','Lithium-ion cells lose only a few percent of their charge per month when resting.'],
+['Almost every electron returns','Lithium-ion cells usually return more than 99% of the charge put into them.'],
+['Rising resistance','As a cell ages its internal resistance rises, so it heats more and its voltage sags more under load.'],
+['Voltage sag explained','Under load, terminal voltage ≈ open-circuit voltage − current × internal resistance. A weak cell sags first.'],
+['Swelling is a warning','A swollen cell has produced gas inside. Take it out of service. Never puncture or squeeze it.'],
+['Series vs parallel','Cells in series add their voltages. Cells in parallel add their capacities.'],
+['Energy = volts × amp-hours','A 72 V, 30 Ah pack stores about 72 × 30 = 2,160 Wh, or 2.16 kWh.'],
+['Theoretical capacity','LiFePO₄ can store about 170 mAh of charge per gram of cathode material in theory.'],
+['Two metals, two sides','Inside a lithium-ion cell the anode sits on copper foil and the cathode on aluminium foil.'],
+['The electrolyte','The liquid inside most lithium-ion cells is a lithium salt, often LiPF₆, dissolved in organic solvents.'],
+['A very thin wall','The separator between anode and cathode is a porous plastic film thinner than a human hair, yet it keeps the cell from shorting.'],
+['LFP is tough, not invincible','LFP resists thermal runaway much better than many other chemistries, but abused cells can still vent and burn.'],
+['Heat ages cells','A common rule of thumb: many chemical reactions roughly double in speed for every 10 °C rise. That includes battery ageing.'],
+['What a BMS watches','A battery management system tracks every cell’s voltage, the pack current and temperatures, and can cut the pack off to protect it.'],
+['Cycle life','Good LFP cells are often rated for 2,000 cycles or more before falling to 80% of their original capacity.'],
+['Depth matters','Shallow cycles are gentler than full ones. Using 50% of a battery twice wears it less than using 100% once.'],
+['Iron is everywhere','Iron is one of the most common elements in Earth’s crust, one reason LFP batteries are affordable.'],
+['Lithium floats','Lithium is the lightest metal. Its density is about 0.53 g/cm³, roughly half that of water.'],
+['Lithium means stone','Lithium was named from the Greek word “lithos”, meaning stone, because it was first found in a mineral.'],
+['Counting charge','The BMS works like a fuel meter, adding up current in and out over time. That’s called coulomb counting.'],
+['Cell delta','The difference between the highest and lowest cell voltage in a pack is the cell delta. Large deltas mean imbalance or a weak cell.'],
+['Insulation testing','An insulation test applies a high DC voltage, often 500 V, to check that no current can leak from the cells to the frame.'],
+['Megaohm','One megaohm (MΩ) is one million ohms. A healthy pack’s insulation resistance is usually hundreds of megaohms or more.'],
+['CAN bus','CAN uses two wires, CAN High and CAN Low, carrying the signal as a difference between them so noise cancels out.'],
+['120 Ω at each end','A CAN bus is normally terminated with a 120 Ω resistor at each end. Missing terminations cause communication errors.'],
+['Hot spots start small','A slightly loose busbar bolt can heat up under load and slowly cook nearby cells. Torque matters.'],
+['Thermal paste','Thermal paste or pads fill tiny air gaps so heat can flow from cells or electronics to the case.'],
+['Moisture is the enemy','Water and electronics don’t mix. Moisture can corrode contacts and create leakage paths that fail the IR test.'],
+['IoT trackers','The tracker in a battery uses a SIM to report location and status. A dead SIM can make a healthy battery look missing.'],
+['IMEI','An IMEI is a 15-digit number that identifies a mobile device, such as the tracker inside a battery.'],
+['Charge at moderate rates','Charging at lower currents is gentler on cells and makes less heat than fast charging.'],
+['End of life','A battery is often considered at end of life for vehicles at about 70–80% of original capacity, but it can still serve in stationary storage.'],
+['Recycling value','Lithium, copper and aluminium in old batteries can be recovered and reused.'],
+['Voltage isn’t charge','Two LFP packs at the same voltage can have very different charge levels because the curve is so flat. Trust the BMS state of charge.'],
+['Resting voltage','A cell’s voltage right after charging or discharging drifts for a while. Let it rest before taking a precise reading.'],
+['Matched cells','Packs work best when cells are matched in capacity and resistance. A mismatched cell drags the whole pack down.'],
+['Fuses protect wiring','A fuse protects the wires and connectors from overcurrent. It is the cheapest insurance in the pack.']
+],
+p:[
+['Watts are volts times amps','Power P = V × I. A 72 V pack delivering 20 A supplies 1,440 W.'],
+['Heat grows with the square','Resistive heat is P = I²R. Double the current through a loose connector and it makes four times the heat.'],
+['Ohm’s law','Voltage = current × resistance (V = I × R). It’s the most used equation on any electrical bench.'],
+['A kilowatt-hour','1 kWh is 3.6 million joules, enough energy to lift one tonne about 367 m into the air.'],
+['Speed costs energy','Kinetic energy grows with the square of speed. Riding twice as fast stores four times as much energy that braking must remove.'],
+['Air drag','Air resistance rises roughly with the square of speed, and the power to push through it with the cube. Slower riding means longer range.'],
+['Slow electrons','Electrons drift through a wire at less than a millimetre per second, yet the signal travels at a large fraction of the speed of light.'],
+['How many electrons?','One amp-hour of charge is 3,600 coulombs, about 22 billion trillion electrons.'],
+['Hot metal, more resistance','The resistance of copper and most metals rises as they warm up.'],
+['Copper conducts','Copper’s resistivity is about 1.7 × 10⁻⁸ Ω·m, which is why it’s used for busbars and wires.'],
+['Conventional current','By convention current flows from + to −, even though electrons actually move the other way. Blame the 1700s.'],
+['Energy is conserved','Energy isn’t used up, only converted: chemical to electrical, electrical to motion and heat.'],
+['Efficiency','Electric hub motors often turn more than 80% of battery energy into motion. Petrol engines manage far less.'],
+['Regenerative braking','Some electric vehicles turn the motor into a generator when braking, putting a little energy back into the battery.'],
+['Heat flows downhill','Heat always flows from hotter to colder objects. Cooling a pack means giving that heat somewhere colder to go.'],
+['Thicker wire, less heat','A wire with twice the cross-section has half the resistance, so it heats less at the same current.'],
+['Faraday’s constant','One mole of electrons carries about 96,485 coulombs. Chemists use this to link chemistry to electricity.'],
+['Joules and watts','One watt is one joule per second. A 100 W load for one hour uses 0.1 kWh.'],
+['Human power','A resting person gives off roughly 100 W of heat, about the same as an old incandescent bulb.'],
+['Short circuits','A short circuit has almost no resistance, so current can be enormous. That’s why insulated tools matter.'],
+['Capacitors vs batteries','Capacitors store energy in an electric field and release it very fast. Batteries store it chemically and release it steadily.'],
+['Voltage is pressure','Think of voltage as pressure pushing charge, current as the flow, and resistance as the narrowness of the pipe.'],
+['Magnetism moves us','Electric motors turn because currents create magnetic fields that push against permanent magnets.'],
+['Alternating vs direct','Batteries supply direct current (DC). The grid supplies alternating current (AC), so chargers convert AC to DC.'],
+['Speed of light','Light travels about 300,000 km every second, fast enough to circle Earth more than seven times.'],
+['Specific heat','Water needs more energy to warm up than almost any common material, which is why liquid cooling works so well.'],
+['Static shocks','A static spark can carry thousands of volts but tiny energy. Sensitive BMS chips can still be damaged by it.'],
+['Absolute zero','The coldest possible temperature is −273.15 °C. At that point thermal motion is at its minimum.'],
+['Gravity and range','Riding uphill turns battery energy into height. Riding down gives some back as speed, or as charge with regeneration.'],
+['Rolling resistance','Under-inflated tyres flex more and waste energy as heat, cutting range noticeably.']
+],
+h:[
+['The first battery','Alessandro Volta built the first true battery, the voltaic pile, in 1800 from stacks of zinc, copper and brine-soaked cloth.'],
+['Named after people','The volt honours Volta, the ampere honours André-Marie Ampère, and the ohm honours Georg Ohm.'],
+['Ohm’s big idea','Georg Ohm published his law relating voltage, current and resistance in 1827. Many scientists doubted him at first.'],
+['Discovering lithium','Lithium was discovered in 1817 by Johan August Arfwedson while analysing a mineral from a Swedish island.'],
+['Faraday’s words','Michael Faraday popularised the words electrode, anode, cathode and ion in 1834, with help from William Whewell.'],
+['Lithium-ion goes on sale','Sony sold the first commercial lithium-ion battery in 1991.'],
+['A Nobel for batteries','John Goodenough, M. Stanley Whittingham and Akira Yoshino shared the 2019 Nobel Prize in Chemistry for the lithium-ion battery.'],
+['Oldest laureate','John Goodenough was 97 when he received his Nobel Prize, the oldest laureate ever.'],
+['LFP is born','LiFePO₄ was reported as a cathode material in 1997 by Goodenough’s group in Texas.'],
+['The CAN bus','Bosch introduced the CAN bus in 1986 to cut the wiring in cars. Today it links BMS, motors and chargers.'],
+['Franklin’s choice','Benjamin Franklin chose which charge to call positive. He guessed, and electrons ended up “negative”.'],
+['Electric cars came first','Electric cars were common in the early 1900s, before cheap petrol and the electric starter gave combustion engines the lead.'],
+['Lead-acid lives on','The lead-acid battery, invented by Gaston Planté in 1859, still starts most petrol cars today.'],
+['Edison’s battery','Thomas Edison developed a nickel-iron battery around 1900. It became famous for surviving decades of hard use.'],
+['From phones to fleets','Lithium-ion batteries powered phones and laptops for decades before they were cheap enough for fleets of bikes and cars.']
+],
+s:[
+['Rings off','Remove rings, watches and metal bracelets before working on a pack. Metal jewellery can short terminals and burn badly.'],
+['Insulated tools','Use insulated tools near live terminals. One slipped spanner across a busbar can release a lot of energy instantly.'],
+['Measure before you touch','Check voltages before opening or disconnecting anything. Assume a pack is live until proven otherwise.'],
+['Eyes protected','Wear safety glasses when opening packs. Venting cells can spray electrolyte.'],
+['Swollen? Stop.','If a cell is swollen, hot or smells sweet or sharp, stop, isolate it and follow the damaged-battery procedure.'],
+['Never puncture','Never drill, pierce or crush a lithium cell. Internal shorts can cause fire.'],
+['One terminal at a time','When disconnecting, remove one terminal and cover it before touching the other.'],
+['Clear bench','Keep loose screws, washers and tools away from open terminals.'],
+['Label the damaged','Clearly tag damaged or failed batteries so nobody puts them back into service by mistake.'],
+['ESD care','Ground yourself before handling a BMS board. Static can damage chips without any visible sign.'],
+['Ventilation','Work on batteries in a well-ventilated area, away from flammable materials.'],
+['Know your exit','Know where the fire extinguisher, sand bucket and exits are before you start work.'],
+['Right torque','Over-tightening strips threads; under-tightening causes hot spots. Use the specified torque.'],
+['No wet hands','Keep hands, tools and benches dry when working on electrical systems.'],
+['Charge with supervision','Never leave a newly repaired battery charging unattended for its first charge.'],
+['Use the right charger','Only charge a pack with a charger matched to its voltage and chemistry.'],
+['Lift safely','Battery packs are heavy. Bend your knees, keep your back straight and ask for help if needed.'],
+['Cover the terminals','Fit terminal caps or tape before storing or moving a pack.'],
+['Cool before handling','Let a hot battery cool before opening it. Heat means energy is still being released.'],
+['Report near misses','A near miss today is a lesson that prevents an accident tomorrow. Report it.']
+],
+q:[
+['Five whys','Ask “why?” five times to get from the symptom to the root cause.'],
+['Fishbone thinking','Check People, Machine, Method, Material, Measurement and Environment when hunting for a root cause.'],
+['First time right','The cheapest repair is the one that doesn’t need repeating. Measure your success by first-pass yield.'],
+['Photos help','A photo of a burnt connector or a corroded contact is worth a paragraph of notes.'],
+['Calibrate','A meter that reads wrong makes every decision wrong. Check your instruments regularly.'],
+['Record what you found','Write down the condition you found, not just the action you took. That’s what reveals patterns.'],
+['FIFO','First in, first out: work the oldest batteries first so nothing gets forgotten at the back of the shelf.'],
+['Stop and flag','If you see the same fault three times in a week, raise it. Patterns are root causes in disguise.'],
+['Close the loop','A corrective action isn’t done until someone checks it actually worked.'],
+['Golden reference','Compare a suspect battery with a known-good one. Differences jump out.'],
+['Check the obvious','Before deep diagnosis, check connectors, fuses and the BMS state. The simple fault is common.'],
+['Same ID everywhere','Copy BMS IDs exactly. One wrong character splits a battery’s history in two.'],
+['Standard work','Following the SOP the same way every time makes results comparable and problems visible.'],
+['Measure twice','Take readings twice when a result is borderline. Then decide.'],
+['Clear dispositions','Pass, fail with a reason, or escalate. A clear decision helps the next person.'],
+['Mistake-proofing','The best fixes make the mistake impossible, like a connector that only fits one way.'],
+['Respect the threshold','If insulation is below the limit, it fails. A “nearly passed” battery is a failed battery.'],
+['Data beats memory','Record it now. Nobody remembers the cell delta from last Tuesday.'],
+['Quality at the source','Catching a fault at intake costs minutes. Catching it in a rider’s hands costs much more.'],
+['Supplier feedback','Tag supplier-related defects accurately. That data is what gets parts improved.']
+],
+r:[
+['Who am I?','I’m lighter than water, I live in your battery, and I travel between the electrodes every time you ride. What am I?','A lithium ion.'],
+['A charged question','What has a positive side and a negative side but never argues?','A battery.'],
+['Keep it flowing','I can be direct or alternating, but I never take sides. What am I?','Electric current.'],
+['Measured in ohms','The more of me there is, the hotter things get when current flows. What am I?','Resistance.'],
+['Bench riddle','I have two leads, a screen and a dial. I never repair anything, but no repair happens without me. What am I?','A multimeter.'],
+['Quiet guardian','I watch every cell, I count every amp and I can say “no” to the charger. What am I?','The BMS.'],
+['Hidden traveller','I’m inside the battery, I have a number starting with 89, and I tell the office where the battery is. What am I?','The SIM card in the tracker.'],
+['Stone name','My name comes from the Greek word for stone, yet I am the lightest metal. What am I?','Lithium.'],
+['Ever-present','You can’t see me, but I flow from hot to cold, and too much of me ages every cell. What am I?','Heat.'],
+['The weakest link','In a series pack, I decide when everyone stops. Who am I?','The weakest cell.'],
+['Two wires talking','We are high and low, we always speak in opposites, and together we carry messages. Who are we?','CAN High and CAN Low.'],
+['Flat but full','You can’t tell how full I am by my voltage, because my curve is so flat. What am I?','An LFP cell.'],
+['Round trip','I go out at discharge and come home at charge, thousands of times. What am I?','A lithium ion (one charge cycle).'],
+['Keep me cool','I fill tiny gaps so heat can escape, and I get messy if you use too much. What am I?','Thermal paste.'],
+['The tester’s friend','I’m measured in megaohms, and if I’m too low the battery fails. What am I?','Insulation resistance.']
+]
+};
+const KIND_LABEL = {m:'Motivation',i:'Inspiration',d:'Did you know?',p:'Physics',h:'History',s:'Safety tip',q:'Quality habit',r:'Riddle',g:'Puzzle',x:'Try it'};
+const KIND_ICON = {m:'✦',i:'✧',d:'💡',p:'⚛',h:'📜',s:'🦺',q:'🎯',r:'❓',g:'🧩',x:'🎛'};
+/* generated practice puzzles: hundreds of variants from real shop-floor maths */
+function genPuzzles(){
+  const out=[], f=(v,d=1)=>Number(v.toFixed(d)).toLocaleString('en');
+  [13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28].forEach(n=>out.push({id:'gv'+n,t:'Pack voltage',b:`A pack has ${n} LFP cells in series at 3.2 V each. What is its nominal voltage?`,a:`${f(n*3.2)} V (${n} × 3.2 V).`}));
+  [[20,5],[20,10],[25,5],[25,10],[30,5],[30,6],[30,10],[30,15],[40,8],[40,10],[40,20],[50,10],[50,25],[60,12],[60,15],[60,20]].forEach(([ah,a])=>out.push({id:`gr${ah}_${a}`,t:'Run time',b:`An ideal ${ah} Ah battery supplies a steady ${a} A. How long until it is empty?`,a:`${f(ah/a)} hours (${ah} Ah ÷ ${a} A).`}));
+  [[48,20],[48,30],[60,20],[60,30],[72,20],[72,25],[72,30],[72,40],[76.8,30],[76.8,40],[51.2,50],[64,32]].forEach(([v,ah])=>out.push({id:`ge${v}_${ah}`,t:'Stored energy',b:`How much energy does a ${v} V, ${ah} Ah pack store?`,a:`${f(v*ah/1000,2)} kWh (${v} × ${ah} = ${f(v*ah,0)} Wh).`}));
+  const deltas=[[3.31,3.28,3.35,3.30],[3.29,3.30,3.27,3.31],[3.33,3.33,3.25,3.32],[3.40,3.36,3.38,3.29],[3.30,3.30,3.31,3.30],[3.22,3.28,3.27,3.26],[3.35,3.34,3.36,3.20],[3.28,3.29,3.30,3.32],[3.26,3.31,3.30,3.29],[3.31,3.32,3.33,3.18],[3.24,3.25,3.31,3.26],[3.29,3.36,3.30,3.30]];
+  deltas.forEach((c,i)=>{ const d=Math.round((Math.max(...c)-Math.min(...c))*1000); out.push({id:'gd'+i,t:'Cell delta',b:`Cell voltages read ${c.map(x=>x.toFixed(2)).join(', ')} V. What is the cell delta, and is it above a 40 mV alarm?`,a:`${d} mV (${Math.max(...c).toFixed(2)} − ${Math.min(...c).toFixed(2)}). ${d>40?'Yes, above 40 mV: check balancing or a weak cell.':'No, within 40 mV.'}`}); });
+  [[20,5],[20,10],[30,5],[30,10],[30,15],[40,10],[40,20],[50,10],[60,15],[60,30]].forEach(([ah,a])=>out.push({id:`gc${ah}_${a}`,t:'Charging time',b:`Roughly how long does a ${a} A charger take to charge an empty ${ah} Ah pack, and what C-rate is that?`,a:`About ${f(ah/a)} hours (ignoring the slower finish), at ${f(a/ah,2)}C.`}));
+  [[500,550],[500,250],[500,1000],[1000,550],[500,100],[250,500],[1000,2000],[500,5000]].forEach(([v,r])=>out.push({id:`gl${v}_${r}`,t:'Leak check',b:`An insulation tester applies ${v} V and reads ${r} MΩ. Roughly how much current leaks, and does it pass a 550 MΩ limit?`,a:`About ${f(v/r,2)} µA (${v} V ÷ ${r} MΩ). ${r>=550?'Passes.':'Fails the 550 MΩ limit.'}`}));
+  [[20,2],[20,5],[30,5],[40,5],[40,10],[50,3],[60,5],[60,10],[80,5],[100,2],[100,5],[30,20]].forEach(([i,r])=>out.push({id:`gh${i}_${r}`,t:'Hot connector',b:`${i} A flows through a contact with ${r} mΩ of resistance. How much heat does it make?`,a:`${f(i*i*r/1000)} W (P = I²R = ${i}² × ${r/1000} Ω).`}));
+  [[20,72,25],[15,72,30],[25,60,20],[30,72,40],[18,48,30],[22,76.8,30],[20,64,32],[25,76.8,40]].forEach(([whkm,v,ah])=>out.push({id:`gk${whkm}_${v}_${ah}`,t:'Range estimate',b:`A bike uses about ${whkm} Wh per km. Roughly how far can it go on a full ${v} V, ${ah} Ah pack?`,a:`About ${f(v*ah/whkm,0)} km (${f(v*ah,0)} Wh ÷ ${whkm} Wh/km).`}));
+  [[2,3],[3,2],[4,2],[2,4],[3,3],[5,2]].forEach(([s,p])=>out.push({id:`gsp${s}_${p}`,t:'Series & parallel',b:`You connect ${s} cells in series, and ${p} of those strings in parallel. Each cell is 3.2 V and 10 Ah. What are the pack voltage and capacity?`,a:`${f(s*3.2)} V and ${p*10} Ah (series adds voltage, parallel adds capacity).`}));
+  [[72,20],[60,15],[48,25],[76.8,10],[72,35],[64,18]].forEach(([v,a])=>out.push({id:`gp${v}_${a}`,t:'Power',b:`A ${v} V pack delivers ${a} A. How much power is that?`,a:`${f(v*a,0)} W (P = V × I).`}));
+  [[76.8,0.08,20],[72,0.1,30],[76.8,0.15,40],[72,0.05,50],[60,0.12,25]].forEach(([v,r,i])=>out.push({id:`gs${v}_${r}_${i}`,t:'Voltage sag',b:`A ${v} V pack has ${r*1000} mΩ of internal resistance. What voltage do you expect at the terminals while it supplies ${i} A?`,a:`About ${f(v-i*r)} V (${v} − ${i} × ${r} = ${f(v-i*r)} V).`}));
+  [[3,3,3],[5,5,5],[2,4,2],[4,8,4],[6,6,6]].forEach(([a,b,c],k)=>out.push({id:'gw'+k,t:'Bench maths',b:`If ${a} technicians repair ${b} batteries in ${c} hours, how many batteries do ${a*2} technicians repair in ${c} hours?`,a:`${b*2} batteries. Twice the people, same time, twice the output.`}));
+  [[100,550],[600,550],[540,550],[1200,550],[480,550]].forEach(([m,l],k)=>out.push({id:'gi'+k,t:'Pass or fail?',b:`The insulation limit is ${l} MΩ. A pack reads ${m} MΩ. Pass or fail?`,a:m>=l?'Pass.':`Fail. ${m} MΩ is below ${l} MΩ, and “nearly” doesn’t count.`}));
+  return out;
+}
+const PHYS = {
+  pack:{t:'Build a pack',intro:'Cells in series add voltage; capacity sets how long it lasts.',inputs:[['s','Cells in series',4,30,1,24],['ah','Capacity (Ah)',10,60,1,30]],
+    out:v=>{ const V=v.s*3.2, kWh=V*v.ah/1000; return `<b>${V.toFixed(1)} V</b> nominal · <b>${kWh.toFixed(2)} kWh</b> stored`; }},
+  heat:{t:'Heat in a connector',intro:'A loose or burnt contact adds resistance. Heat is P = I²R.',inputs:[['i','Current (A)',5,100,1,40],['r','Contact resistance (mΩ)',1,50,1,5]],
+    out:v=>{ const P=v.i*v.i*v.r/1000; return `<b>${P.toFixed(1)} W</b> of heat in the contact${P>10?' · a dangerous hotspot: check that connector':P>3?' · noticeable warming':''}`; }},
+  charge:{t:'Charging time',intro:'Charging time ≈ capacity ÷ charger current (ignoring the slower top-up at the end).',inputs:[['ah','Capacity (Ah)',10,60,1,30],['a','Charger current (A)',2,30,1,10]],
+    out:v=>{ const h=v.ah/v.a, c=v.a/v.ah; return `<b>${h<1?Math.round(h*60)+' min':h.toFixed(1)+' h'}</b> at <b>${c.toFixed(2)}C</b>${c>1?' · fast, check the cell rating':''}`; }},
+  leak:{t:'Insulation leakage',intro:'Insulation resistance limits stray current to the frame: I = V ÷ R.',inputs:[['v','Test voltage (V)',250,1000,50,500],['r','Insulation (MΩ)',50,2000,10,550]],
+    out:v=>{ const uA=v.v/v.r; return `<b>${uA.toFixed(2)} µA</b> leakage · ${v.r>=550?'<span class="ok">passes our 550 MΩ limit</span>':'<span class="bad">below our 550 MΩ limit</span>'}`; }},
+  range:{t:'Range estimator',intro:'Range ≈ stored energy ÷ energy used per kilometre.',inputs:[['v','Pack voltage (V)',48,80,0.8,76.8],['ah','Capacity (Ah)',10,60,1,30],['w','Use (Wh per km)',10,40,1,20]],
+    out:v=>{ const wh=v.v*v.ah; return `<b>${Math.round(wh/v.w)} km</b> from ${Math.round(wh)} Wh`; }},
+  sag:{t:'Voltage sag',intro:'Under load, terminal voltage = resting voltage − current × internal resistance.',inputs:[['i','Load current (A)',0,80,1,30],['r','Internal resistance (mΩ)',20,300,5,100]],
+    out:v=>{ const V=76.8-v.i*v.r/1000; return `<b>${V.toFixed(1)} V</b> at the terminals (from 76.8 V)${V<70?' · <span class="bad">big sag: aged cells or a bad joint</span>':''}`; }},
+  delta:{t:'Cell balance check',intro:'Move the weakest and strongest cells and watch the delta against a 40 mV alarm.',inputs:[['lo','Lowest cell (mV)',3150,3350,5,3280],['hi','Highest cell (mV)',3250,3450,5,3320]],
+    out:v=>{ const d=Math.max(0,v.hi-v.lo); return `Delta <b>${d} mV</b> · ${d>40?'<span class="bad">above 40 mV: balance or replace</span>':'<span class="ok">balanced enough</span>'}`; }},
+  speed:{t:'Speed and energy',intro:'Kinetic energy = ½ m v². Speed matters far more than you think.',inputs:[['m','Bike + rider (kg)',80,250,5,150],['k','Speed (km/h)',5,80,1,40]],
+    out:v=>{ const ms=v.k/3.6, J=0.5*v.m*ms*ms; return `<b>${Math.round(J/1000)} kJ</b> of motion energy (${(J/3600).toFixed(1)} Wh). At double the speed: ${Math.round(4*J/1000)} kJ.`; }}
+};
+function buildCards(){
+  const all=[];
+  Object.entries(CARD_SRC).forEach(([k,arr])=>arr.forEach((x,i)=>all.push({id:k+(i+1),k,t:x[0],b:x[1],a:x[2]})));
+  genPuzzles().forEach(p=>all.push({...p,k:'g'}));
+  Object.entries(PHYS).forEach(([x,P])=>all.push({id:'x-'+x,k:'x',t:P.t,x}));
+  return all;
+}
+const WELCOME_CARDS = buildCards();
+/* =====================================================================
+   WELCOME & FAREWELL — a different greeting and card every sign-in:
+   motivation, did-you-knows, puzzles and small interactive physics.
+   Each person's recent cards are remembered so they rotate.
+   ===================================================================== */
+const GREETINGS = [
+  n=>`Good {tod}, ${n}. Let's keep every battery moving.`,
+  n=>`Welcome back, ${n}. The fleet is counting on today's checks.`,
+  n=>`Hey ${n}, ready when you are.`,
+  n=>`${n}, good to see you. Small careful steps make reliable batteries.`,
+  n=>`Good {tod}, ${n}. One clean repair at a time.`,
+  n=>`Karibu, ${n}. Let's make today's batteries the best ones yet.`,
+  n=>`Welcome, ${n}. Quality starts with the first check.`,
+  n=>`${n}, the bench is yours. Let's do great work.`,
+  n=>`Good {tod}, ${n}. Every pass you sign keeps a rider on the road.`,
+  n=>`Hello ${n}. Measure twice, close once.`,
+  n=>`Good {tod}, ${n}. Fresh shift, fresh chances to get it right first time.`,
+  n=>`Welcome in, ${n}. Let's turn today's queue into tomorrow's working fleet.`,
+  n=>`${n}! Great to have you on the chain today.`,
+  n=>`Good {tod}, ${n}. Calm hands, sharp eyes, clear notes.`,
+  n=>`Hi ${n}. Let's keep the lithium flowing.`,
+  n=>`Welcome back, ${n}. Your careful work keeps riders earning.`,
+  n=>`Good {tod}, ${n}. Today is a good day for zero rework.`,
+  n=>`${n}, you're on. Let's find faults before the road does.`,
+  n=>`Good {tod}, ${n}. Every cell has a story; let's read them well.`,
+  n=>`Welcome, ${n}. Steady work, strong batteries.`,
+  n=>`Habari, ${n}! Ready to power up the day?`,
+  n=>`Good {tod}, ${n}. Let's make the alerts list short today.`,
+  n=>`${n}, welcome back. The batteries missed you.`,
+  n=>`Good {tod}, ${n}. Precision today, reliability tomorrow.`,
+  n=>`Hello again, ${n}. Let's build a day you're proud of.`
+];
+const LOGIN_LINES = [
+  ['Every battery, from intake to sign-off.','Track the O&M repair chain, BSA escalations and quality yield, and open any BMS ID to see its full history.'],
+  ['Good batteries are built twice: once at the factory, once on our bench.','Follow every pack through intake, repair and final QC, with nothing lost in between.'],
+  ['Small checks. Big reliability.','Every inspection you record makes the next decision easier for someone else.'],
+  ['Know every cell’s story.','Visits, corrective actions, SIM swaps and BSA cases for each BMS ID, in one place.'],
+  ['Quality is a team sport.','Technicians, engineers and managers share one live picture of the chain.']
+];
+function rngFrom(str){ let h=2166136261; for(const c of String(str)){ h^=c.charCodeAt(0); h=Math.imul(h,16777619); } return ()=>{ h+=0x6D2B79F5; let t=h; t=Math.imul(t^t>>>15,t|1); t^=t+Math.imul(t^t>>>7,t|61); return ((t^t>>>14)>>>0)/4294967296; }; }
+const seenKey = n => 'bqc_seen_'+normId(n).replace(/[^A-Z0-9]+/g,'_');
+function pickCard(who,avoid){
+  const r=rngFrom(who+'|card|'+Date.now()+'|'+Math.random()), seen=lsRead(seenKey(who),[]);
+  const kinds=[...new Set(WELCOME_CARDS.map(c=>c.k))];
+  const lastK=lsRead(seenKey(who)+'_k',''); let k=kinds[Math.floor(r()*kinds.length)]; if(k===lastK) k=kinds[(kinds.indexOf(k)+1+Math.floor(r()*(kinds.length-1)))%kinds.length];
+  let pool=WELCOME_CARDS.filter(c=>c.k===k&&!seen.includes(c.id)&&c.id!==avoid);
+  if(!pool.length) pool=WELCOME_CARDS.filter(c=>!seen.includes(c.id)&&c.id!==avoid);
+  if(!pool.length) pool=WELCOME_CARDS.filter(c=>c.id!==avoid);
+  const card=pool[Math.floor(r()*pool.length)];
+  lsWrite(seenKey(who),[card.id,...seen.filter(x=>x!==card.id)].slice(0,Math.floor(WELCOME_CARDS.length*.8)));
+  lsWrite(seenKey(who)+'_k',card.k);
+  const vals={}; if(card.x) PHYS[card.x].inputs.forEach(([key,,mn,mx,st,def])=>{ vals[key]=def; });
+  return {card,vals,revealed:false};
+}
+function pickWelcome(s,avoid){
+  const who=s.name||ROLE_LABEL[s.role]||'there', r=rngFrom(who+'|'+Date.now()+'|'+Math.random());
+  const first=String(who).split(' ')[0];
+  const h=new Date().getHours(), tod=h<12?'morning':h<17?'afternoon':'evening';
+  const greet=GREETINGS[Math.floor(r()*GREETINGS.length)](s.role==='omtech'?first:who).replace('{tod}',tod);
+  return {greet,...pickCard(who,avoid),shown:false};
+}
+/* the card body, shared by welcome and farewell (scope = 'w' or 'f') */
+function cardBody(st,scope){
+  const c=st.card;
+  if(c.x){ const P=PHYS[c.x];
+    return `<p>${esc(P.intro)}</p><div class="phys">${P.inputs.map(([k,l,mn,mx,step])=>`<label><span>${esc(l)} <b id="${scope}pv-${k}">${st.vals[k]}</b></span><input type="range" min="${mn}" max="${mx}" step="${step}" value="${st.vals[k]}" data-phys="${k}" data-scope="${scope}" aria-label="${esc(l)}"></label>`).join('')}</div><div class="phys-out" id="${scope}phys-out">${P.out(st.vals)}</div>`; }
+  return `<p>${esc(c.b)}</p>${c.a?(st.revealed?`<div class="phys-out">💡 ${esc(c.a)}</div>`:`<button class="btn sm" data-act="${scope}-reveal">Show the answer</button>`):''}`;
+}
+function WelcomeCard(){
+  const w=S.welcome; if(!w) return '';
+  const c=w.card;
+  return `<section class="welcome ${w.shown?'':'fresh'}" aria-label="Welcome"><div class="w-greet"><b>${esc(w.greet)}</b><div class="w-acts"><button class="btn sm ghost" data-act="w-next" title="Show another">↻ Another</button><button class="btn sm icon-btn ghost" data-act="w-close" aria-label="Hide">${ICON.close}</button></div></div>
+    <div class="w-card"><span class="w-ic" aria-hidden="true">${KIND_ICON[c.k]||'✦'}</span><div class="w-body"><div class="eyebrow">${esc(KIND_LABEL[c.k]||'')}</div><h3>${esc(c.t)}</h3>${cardBody(w,'w')}</div></div></section>`;
+}
+function physInput(t){
+  const sc=t.dataset.scope||'w', w=sc==='f'?S.farewell:S.welcome; if(!w||!w.card.x) return; w.vals[t.dataset.phys]=+t.value;
+  const l=document.getElementById(sc+'pv-'+t.dataset.phys); if(l) l.textContent=t.value;
+  const o=document.getElementById(sc+'phys-out'); if(o) o.innerHTML=PHYS[w.card.x].out(w.vals);
+}
+/* ---------- sign-out: a short, varied well done ---------- */
+const FAREWELLS = [
+  (n,x)=>`Well done, ${n}! ${x} Rest well.`,
+  (n,x)=>`Great shift, ${n}. ${x} See you next time.`,
+  (n,x)=>`Thank you, ${n}. ${x} The fleet is better for it.`,
+  (n,x)=>`Nice work today, ${n}! ${x}`,
+  (n,x)=>`${n}, that’s a wrap. ${x} Proud of the care you put in.`,
+  (n,x)=>`Asante, ${n}! ${x} Go recharge, you earned it. 🔋`,
+  (n,x)=>`Solid work, ${n}. ${x}`,
+  (n,x)=>`You kept things moving, ${n}. ${x} Enjoy your break.`,
+  (n,x)=>`Brilliant effort, ${n}. ${x} Riders will feel the difference.`,
+  (n,x)=>`Shift done, ${n}! ${x} Time to recharge your own battery.`,
+  (n,x)=>`Respect, ${n}. ${x} Careful work like yours is what keeps the fleet alive.`,
+  (n,x)=>`Thanks for today, ${n}. ${x} Same energy tomorrow?`,
+  (n,x)=>`${n}, you showed up and delivered. ${x}`,
+  (n,x)=>`Great job, ${n}! ${x} Every battery you touched is in better hands.`,
+  (n,x)=>`Well played, ${n}. ${x} Go home charged up.`,
+  (n,x)=>`Kazi nzuri, ${n}! ${x} See you soon.`,
+  (n,x)=>`Mission complete, ${n}. ${x} Thank you for the care.`,
+  (n,x)=>`${n}, the chain is stronger because of today. ${x}`,
+  (n,x)=>`Top work, ${n}. ${x} Rest up, the batteries will be here tomorrow.`,
+  (n,x)=>`Proud of today, ${n}. ${x}`
+];
+function myDay(s){
+  const today=todayStr(), me=s.name, out={moved:0,intakes:0,passes:0,capa:0,holds:0,bsa:0};
+  S.data.om.forEach(r=>{
+    [1,2,3].forEach(k=>{ const st=r['stage'+k]||{}; if((st.completedBy===me||(k===1&&st.technician===me))&&st.completedAt&&dkey(st.completedAt)===today){ out.moved++; if(k===1) out.intakes++; if(k===3&&r.finalDisposition==='PASS'&&dkey(r.closedAt)===today) out.passes++; } });
+    (r.capaLog||[]).forEach(c=>{ if(c.returnedBy===me&&dkey(c.returnedAt)===today) out.capa++; });
+    [...(r.holdLog||[]),...(r.hold?[r.hold]:[])].forEach(h=>{ if((h.by===me&&dkey(h.since)===today)||(h.releasedBy===me&&dkey(h.releasedAt)===today)) out.holds++; });
+  });
+  out.bsa=S.data.bsa.filter(c=>dkey(c.updatedAt||c.createdAt)===today&&(c.updatedBy===me||c.flaggedBy===me||c.assignedEngineer===me||s.role==='bsa')).length;
+  return out;
+}
+function farewellStats(s){
+  const d=myDay(s), team=periodStats(periodOf(todayStr(),'day'));
+  if(s.role==='omtech') return [['Batteries moved forward',d.moved],[s.stage===1?'Intakes logged':s.stage===3?'Final passes':'Repairs sent to QC',s.stage===1?d.intakes:s.stage===3?d.passes:d.moved],['Corrective actions raised',d.capa],['Supplier holds handled',d.holds]];
+  if(s.role==='bsa') return [['BSA cases touched',d.bsa],['Open BSA cases',S.data.bsa.filter(bsaOpen).length],['Team closures today',team.closed],['Alerts open',computeAlerts().length]];
+  return [['Team closures today',team.closed],['Received today',team.intakes],['First-pass yield',team.fpy==null?'—':Math.round(team.fpy)+'%'],['Alerts open',computeAlerts().length]];
+}
+function farewellLine(s,st){
+  const d=myDay(s);
+  if(s.role==='omtech'&&d.moved) return `You moved ${d.moved} batter${d.moved===1?'y':'ies'} forward today${d.passes?`, including ${d.passes} final pass${d.passes===1?'':'es'}`:d.intakes?`, including ${d.intakes} intake${d.intakes===1?'':'s'}`:''}.`;
+  if(s.role==='bsa'&&d.bsa) return `${d.bsa} BSA case${d.bsa===1?'':'s'} moved on today.`;
+  if(s.role!=='omtech'&&s.role!=='bsa'){ const t=periodStats(periodOf(todayStr(),'day')); if(t.closed) return `The team closed ${t.closed} batter${t.closed===1?'y':'ies'} today.`; }
+  return '';
+}
+function makeFarewell(s){
+  const who=s.role==='omtech'?String(s.name||'').split(' ')[0]||'friend':(s.name||'friend');
+  const r=rngFrom(who+'|bye|'+Date.now()+Math.random()), last=lsRead('bqc_bye_last',-1); let i=Math.floor(r()*FAREWELLS.length); if(i===last) i=(i+1+Math.floor(r()*(FAREWELLS.length-1)))%FAREWELLS.length; lsWrite('bqc_bye_last',i);
+  const stats=farewellStats(s);
+  return {msg:FAREWELLS[i](who,farewellLine(s)).replace(/\s+/g,' ').replace(/\s+([.!])/g,'$1').trim(),stats,...pickCard(s.name||who),role:ROLE_LABEL[s.role]||''};
+}
+const FAREWELL_TITLES = ['Well done','Shift complete','Great work today','That’s a wrap','Thank you','Job well done','Nicely done','Mission accomplished'];
+function FarewellCard(){
+  const f=S.farewell; if(!f) return '';
+  const c=f.card, title=FAREWELL_TITLES[(f.msg.length+f.card.id.length)%FAREWELL_TITLES.length];
+  return `<div class="fw-scrim"><section class="fw-panel" role="dialog" aria-modal="true" aria-labelledby="fw-t">
+    <div class="fw-top"><span class="fw-badge" aria-hidden="true">🏆</span><div><div class="eyebrow">${esc(title)}</div><h2 id="fw-t">${esc(f.msg)}</h2></div><button class="btn sm icon-btn ghost" data-act="farewell-close" aria-label="Close">${ICON.close}</button></div>
+    <div class="fw-stats">${f.stats.map(([l,v])=>`<div><b>${esc(String(v))}</b><span>${esc(l)}</span></div>`).join('')}</div>
+    <div class="w-card fw-road"><span class="w-ic" aria-hidden="true">${KIND_ICON[c.k]||'✦'}</span><div class="w-body"><div class="eyebrow">For the road · ${esc(KIND_LABEL[c.k]||'')}</div><h3>${esc(c.t)}</h3>${cardBody(f,'f')}</div></div>
+    <div class="fw-foot"><button class="btn sm ghost" data-act="f-next">↻ Another card</button><button class="btn pri" data-act="farewell-close">Done</button></div>
+  </section></div>`;
+}
 
 /* =====================================================================
    LOGIN
@@ -2670,9 +3412,9 @@ function LoginView(){
   const hasData=BQC_STORES.some(s=>cacheGet(s).length);
   const demoDefault=!cloudReady()&&!hasData;
   const role=S.loginRole||'omtech';
-  return `<div class="login">
+  return FarewellCard()+`<div class="login">
     <div class="login-art"><div class="brand"><div class="brand-mark">${ICON.bolt}</div><div><b>Battery QC</b><small>O&amp;M chain · BSA · Quality</small></div></div>
-      <div><h1>Every battery, from intake to sign-off.</h1><p>Track the O&amp;M repair chain, BSA escalations and quality yield by day, week or month, and open any BMS ID to see its full history.</p></div>
+      <div>${(()=>{ if(S.loginLine==null) S.loginLine=Math.floor(Math.random()*LOGIN_LINES.length); const [h,p]=LOGIN_LINES[S.loginLine]; return `<h1>${esc(h)}</h1><p>${esc(p)}</p>`; })()}</div>
       <div class="flow"><span>Stage 1 · Intake</span>→<span>Stage 2 · Repair</span>→<span>Stage 3 · Final QC</span>→<span>Pass · CAPA · BSA</span></div></div>
     <div class="login-form"><form class="login-card" data-form="login">
       <div><div class="eyebrow">Sign in</div><h2>Who's working?</h2></div>
@@ -2701,11 +3443,12 @@ async function doLogin(){
     s={role,stage:null,name:a.name,issuedAt:Date.now()};
   }
   if(!s.demo){ Cloud.demo=false; lsWrite(SESSION_KEY,s); }
+  S.welcome=pickWelcome(s); S.farewell=null;
   await startSession(s);
 }
 async function startSession(s){
   S.session=s;
-  S.view=lsRead('bqc_view_'+s.role,s.role==='bsa'?'bsa':s.role==='omtech'&&s.stage!==1?'chain':'overview');
+  S.view=lsRead('bqc_view_'+s.role,roleTabs(s)[0][0]);
   S.f={intake:lsRead(draftKey(),null)||emptyIntake(s.name),nbsa:emptyBsa(s.name),rca:emptyRca(s.name)};
   render(); await refresh(true); scheduleAuto();
 }
@@ -2742,7 +3485,18 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&S.sessio
    EVENTS
    ===================================================================== */
 const ACT = {
-  nav:t=>{ const same=S.view===t.dataset.v; S.view=t.dataset.v; lsWrite('bqc_view_'+S.session.role,S.view); render(); window.scrollTo({top:0,behavior:same?'smooth':'auto'}); const m=$('#main'); if(m&&!same){ m.classList.remove('enter'); void m.offsetWidth; m.classList.add('enter'); } },
+  nav:t=>{ const same=S.view===t.dataset.v; if(!same) S.welcome=null; S.view=t.dataset.v; lsWrite('bqc_view_'+S.session.role,S.view); render(); window.scrollTo({top:0,behavior:same?'smooth':'auto'}); const m=$('#main'); if(m&&!same){ m.classList.remove('enter'); void m.offsetWidth; m.classList.add('enter'); } },
+  alerts:()=>{ S.formError=null; openDrawer({type:'alerts'}); },
+  'hold-open':()=>{ S.f.edit._holdOpen=true; renderDrawer(true); },
+  'hold-cancel':()=>{ S.f.edit._holdOpen=false; S.f.edit._hold=null; S.formError=null; renderDrawer(true); },
+  'set-hold':t=>setHold(t.dataset.id,false),
+  'release-hold':t=>setHold(t.dataset.id,true),
+  'w-next':()=>{ S.welcome=pickWelcome(S.session,S.welcome&&S.welcome.card.id); S.welcome.shown=true; renderMain(); },
+  'w-close':()=>{ S.welcome=null; renderMain(); },
+  'w-reveal':()=>{ if(S.welcome){ S.welcome.revealed=true; renderMain(); } },
+  'farewell-close':()=>{ S.farewell=null; render(); },
+  'f-reveal':()=>{ if(S.farewell){ S.farewell.revealed=true; render(); } },
+  'f-next':()=>{ if(S.farewell){ const keep={msg:S.farewell.msg,stats:S.farewell.stats,role:S.farewell.role}; S.farewell={...keep,...pickCard((S.lastWho||'guest'),S.farewell.card.id)}; render(); } },
   menu:t=>{ const top=t.closest('.top'), o=!top.classList.contains('menu-open'); top.classList.toggle('menu-open',o); t.setAttribute('aria-expanded',o); },
   'search-open':t=>{ const top=t.closest('.top'); top.classList.toggle('search-open'); if(top.classList.contains('search-open')) $('#g-search').focus(); },
   'set-theme':t=>{ const v=t.dataset.v; if(v==='system'){ document.documentElement.removeAttribute('data-theme'); lsDel('bqc_theme'); } else { document.documentElement.setAttribute('data-theme',v); lsWrite('bqc_theme',v); } t.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===t)); drawCharts(); BG.refresh(); },
@@ -2761,7 +3515,7 @@ const ACT = {
   qtab:t=>{ S.qtab=t.dataset.v; renderMain(); },
   refresh:()=>refresh(false),
   theme:()=>{ BG.refresh();  const cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); const n=cur==='dark'?'light':'dark'; document.documentElement.setAttribute('data-theme',n); lsWrite('bqc_theme',n); drawCharts(); },
-  signout:async()=>{ if(pendingCount()&&!Cloud.demo&&!await ask('Sign out with unsent changes?',`${pendingCount()} change(s) are saved on this device but not uploaded yet. They stay here and upload next time you're online.`,'Sign out')) return; lsDel(SESSION_KEY); S.session=null; S.drawer=null; Cloud.demo=false; S.data={om:[],bsa:[],rca:[],qi:[]}; bump(); clearInterval(autoTimer); render(); },
+  signout:async()=>{ if(pendingCount()&&!Cloud.demo&&!await ask('Sign out with unsent changes?',`${pendingCount()} change(s) are saved on this device but not uploaded yet. They stay here and upload next time you're online.`,'Sign out')) return; S.lastWho=S.session.name; S.farewell=makeFarewell(S.session); S.welcome=null; lsDel(SESSION_KEY); S.session=null; S.drawer=null; Cloud.demo=false; S.data={om:[],bsa:[],rca:[],qi:[]}; bump(); clearInterval(autoTimer); render(); },
   storage:()=>openDrawer({type:'storage'}),
   close:()=>{ if(S.drawer&&S.drawer.type==='intake') lsWrite(draftKey(),S.f.intake); S.formError=null; closeDrawer(); },
   'open-battery':t=>{ S.formError=null; openDrawer({type:'battery',id:t.dataset.id}); },
@@ -2804,6 +3558,7 @@ document.addEventListener('click',e=>{
 let filterTimer=0;
 document.addEventListener('input',e=>{
   const t=e.target;
+  if(t.dataset.phys){ physInput(t); return; }
   if(t.dataset.bind){ setPath(S.f,t.dataset.bind,t.type==='checkbox'?t.checked:t.value); if(S.drawer&&S.drawer.type==='intake') scheduleDraft(); return; }
   if(t.dataset.idsfx){ idInput(t.dataset.idsfx); if(S.drawer&&S.drawer.type==='intake') scheduleDraft(); return; }
   if(t.dataset.filter&&t.tagName==='INPUT'){ const [g,k]=t.dataset.filter.split('.'); S[g][k]=t.value; S[g].page=1; clearTimeout(filterTimer); filterTimer=setTimeout(renderMain,160); }
@@ -2829,7 +3584,7 @@ document.addEventListener('submit',e=>{
     else { S.view='batteries'; S.bat.q=q; S.bat.use='all'; S.bat.page=1; render(); toast(hits.length?`${hits.length} batteries match "${q}".`:`No battery matches "${q}".`); }
   }
 });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const mo=$('.top.menu-open,.top.search-open'); if(mo){ mo.classList.remove('menu-open','search-open'); return; } if($('#modal-root').innerHTML){ stopScan(); return; } if(S.drawer) ACT.close(); } if(e.key==='/'&&S.session&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){ e.preventDefault(); const g=$('#g-search'); if(g){ const tp=$('.top'); if(tp) tp.classList.add('search-open'); g.focus(); } } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(S.farewell&&!S.session){ S.farewell=null; render(); return; } const mo=$('.top.menu-open,.top.search-open'); if(mo){ mo.classList.remove('menu-open','search-open'); return; } if($('#modal-root').innerHTML){ stopScan(); return; } if(S.drawer) ACT.close(); } if(e.key==='/'&&S.session&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){ e.preventDefault(); const g=$('#g-search'); if(g){ const tp=$('.top'); if(tp) tp.classList.add('search-open'); g.focus(); } } });
 let draftTimer=0;
 function scheduleDraft(){ clearTimeout(draftTimer); draftTimer=setTimeout(()=>{ if(S.session&&S.f.intake) lsWrite(draftKey(),S.f.intake); },300); }
 window.addEventListener('beforeunload',e=>{ if(!Cloud.demo&&pendingCount()>0&&!Cloud.localOnly){ e.preventDefault(); e.returnValue=''; } });
@@ -2850,4 +3605,6 @@ if(!(window.matchMedia&&matchMedia('(pointer:coarse)').matches)){
   const s=currentSession();
   if(s){ startSession(s); } else render();
 })();
-</script></body></html>
+</script>
+
+</body></html>
