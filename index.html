@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Battery QC</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -355,7 +355,7 @@ h1,h2,h3,h4{letter-spacing:-.015em} h2{font-weight:800} h3,h4{font-weight:750}
 .card:hover,.lane:hover{border-color:color-mix(in srgb,var(--accent) 32%,var(--line));box-shadow:inset 0 1px 0 var(--edge),var(--shadow-up)}
 .kpis{gap:0;background:linear-gradient(180deg,var(--panel),var(--panel-2))}
 .kpi{background:transparent;border-right:1px solid var(--line);border-bottom:1px solid var(--line);position:relative}
-.kpi::before{content:"";position:absolute;inset:0 auto auto 16px;width:28px;height:3px;border-radius:0 0 3px 3px;background:linear-gradient(90deg,var(--accent),var(--accent-2));opacity:.85}
+
 button.kpi:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
 .facts{gap:0} .fact{background:transparent;border-right:1px solid var(--line)}
 .lane{background:linear-gradient(180deg,var(--panel-2),color-mix(in srgb,var(--panel-2) 60%,transparent))}
@@ -662,7 +662,46 @@ button.kpi:hover .k-val{color:var(--accent)}
 @media (max-width:620px){.fw-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.fw-top h2{font-size:18px}.fw-panel{padding:18px}}
 @media (prefers-reduced-motion:reduce){.fw-scrim,.fw-panel{animation:none}}
 @media print{#bg,.bnav,.top{display:none}}
+/* ---- sync health + daily counts ---- */
+.sync-banner{align-items:center;margin-bottom:14px}
+.sync-banner>div{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;line-height:1.45}
+.sb-ic{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--panel);color:var(--warn);box-shadow:0 0 0 1px var(--line)}
+.banner.crit .sb-ic{color:var(--crit)}
+.daily-cta{display:flex;align-items:center;gap:14px;margin-bottom:14px;padding:14px 16px;border-left:4px solid var(--accent)}
+.daily-cta.warn{border-left-color:var(--warn)} .daily-cta.crit{border-left-color:var(--crit)} .daily-cta.good{border-left-color:var(--good)}
+.dc-ic{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+.dc-t{flex:1;min-width:0;font-size:14px;line-height:1.45} .dc-t .eyebrow{margin-bottom:2px}
+.dc-a{flex:none;display:flex;gap:8px}
+@media (max-width:620px){.daily-cta{flex-wrap:wrap}.dc-a{width:100%}.dc-a .btn{flex:1}}
+.daily-status{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px}
+.d-nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.d-nums{grid-template-columns:1fr}}
+.num-in{font-family:var(--f-mono);font-size:17px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.in.ro{display:flex;align-items:center;color:var(--ink-2);background:var(--panel-2)}
+.di-add{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.di-add select{flex:1;min-width:180px}
+.di-list{display:grid;gap:10px}
+.di-row{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--panel)}
+.di-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}.di-head b{flex:1;min-width:0;font-size:14px}
+.di-nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.di-nums .f>span{font-size:11.5px}
+.di-check{font-size:12.5px;margin-top:4px}.di-check:empty{display:none}
+.di-why{margin-top:8px;display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.rate-pill{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--panel-2)}
+.rate-pill.good{color:var(--good);background:var(--good-bg)}.rate-pill.warn{color:var(--warn);background:var(--warn-bg)}.rate-pill.crit{color:var(--crit);background:var(--crit-bg)}
+.ratebar{display:inline-block;vertical-align:middle;width:70px;height:6px;border-radius:3px;background:var(--panel-2);overflow:hidden;margin-right:8px}.ratebar>div{height:100%;border-radius:3px}
+.in:disabled{opacity:.75;cursor:not-allowed;background:var(--panel-2)}
+.num-in::-webkit-outer-spin-button,.num-in::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.num-in{-moz-appearance:textfield;appearance:textfield}
+.daily-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:12px;align-items:center}
+.daily-strip .ds b{display:block;font-family:var(--f-display);font-size:22px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.daily-strip .ds small{color:var(--ink-3);font-size:12px}
+@media (max-width:760px){.daily-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.daily-strip .btn{grid-column:1/-1}}
+tr.tot td{font-weight:800;border-top:2px solid var(--line-2)}
+.ph-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.ph-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:760px){.ph-actions{align-items:stretch;width:100%}.ph-btns{justify-content:stretch}.ph-btns .btn{flex:1}}
+.hist{padding:10px 14px;display:grid;gap:8px;font-size:13px}
+@media print{.sync-banner,.welcome,.ph-btns,.d-foot,.drawer,.scrim,#drawer-root{display:none!important}body{background:#fff}.card{break-inside:avoid;box-shadow:none}}
 </style>
+</head><body>
 <canvas id="bg" aria-hidden="true"></canvas><div id="app"></div>
 <div id="drawer-root"></div>
 <div id="modal-root"></div>
@@ -849,9 +888,9 @@ function setPath(o,p,v){ const ks=p.split('.'); let c=o; ks.slice(0,-1).forEach(
    ===================================================================== */
 const DEFAULT_CLOUD = {url:'',key:''};   /* fill in to ship pre-connected */
 const BQC_TABLE = 'bqc_records';
-const BQC_STORES = ['om_chain_records','bsa_records','rca_records','quality_issue_records','accountability_audit_records'];
-const STORE_LABEL = {om_chain_records:'O&M repair chain',bsa_records:'BSA cases',rca_records:'RCA / root cause',quality_issue_records:'Quality issue tracker',accountability_audit_records:'Accountability audit'};
-const STORE_STATE = {om_chain_records:'om',bsa_records:'bsa',rca_records:'rca',quality_issue_records:'qi',accountability_audit_records:'audit'};
+const BQC_STORES = ['om_chain_records','bsa_records','rca_records','quality_issue_records','daily_log_records','accountability_audit_records'];
+const STORE_LABEL = {om_chain_records:'O&M repair chain',bsa_records:'BSA cases',rca_records:'RCA / root cause',quality_issue_records:'Quality issue tracker',daily_log_records:'Daily receiving counts',accountability_audit_records:'Accountability audit'};
+const STORE_STATE = {om_chain_records:'om',bsa_records:'bsa',rca_records:'rca',quality_issue_records:'qi',daily_log_records:'daily',accountability_audit_records:'audit'};
 const CFG_KEY='bqc_cloud_cfg', CACHE_PREFIX='bqc_cache_', OUTBOX_KEY='bqc_outbox', SESSION_KEY='bqc_session';
 
 const Cloud = {
@@ -875,47 +914,99 @@ function applyPending(store,rows){
 }
 async function cloudReq(path,options={}){
   if(!cloudReady()) throw new Error('Cloud storage is not connected');
-  const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),options.timeoutMs||9000);
+  const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),options.timeoutMs||25000);
   try{
     const res=await fetch(Cloud.cfg.url.replace(/\/+$/,'')+'/rest/v1/'+path,{method:options.method||'GET',body:options.body,signal:ctl.signal,
       headers:{apikey:Cloud.cfg.key,Authorization:'Bearer '+Cloud.cfg.key,'Content-Type':'application/json',...(options.headers||{})}});
-    if(!res.ok){ let d=''; try{ const b=await res.json(); d=b.message||b.error||b.hint||''; }catch(e){} throw new Error(d||('Cloud error '+res.status)); }
+    if(!res.ok){ let d=''; try{ const b=await res.json(); d=b.message||b.error||b.hint||''; }catch(e){} const er=new Error(d||('Cloud error '+res.status)); er.status=res.status; throw er; }
     if(res.status===204) return null; const txt=await res.text(); return txt?JSON.parse(txt):null;
   }catch(e){ if(e.name==='AbortError') throw new Error('Cloud request timed out'); throw e; }
   finally{ clearTimeout(t); }
 }
+/* Sync, built for slow mobile data.
+   Supabase returns at most 1000 rows per request, and the old full download of every record
+   (several MB once the chain grew) timed out on slow connections. When that happened the app
+   quietly fell back to this device's old copy, so batteries logged at Stage 1 never showed up
+   at Stage 2. Now each refresh downloads a small list of (id, updated_at) page by page, then
+   fetches only the records that are new or changed since this device last saw them. */
+const PULL_PAGE = 1000, FETCH_CHUNK = 120, META_PREFIX = 'bqc_meta_';
 async function cloudPull(store){
-  const rows=await cloudReq(BQC_TABLE+'?store_key=eq.'+encodeURIComponent(store)+'&deleted=is.false&select=id,payload&order=created_at.asc');
-  return (rows||[]).map(r=>({...(r.payload||{}),id:r.id}));
+  const T=BQC_TABLE+'?store_key=eq.'+encodeURIComponent(store);
+  const man=[]; let offset=0;
+  for(let guard=0; guard<1000; guard++){
+    const rows=await cloudReq(T+'&deleted=is.false&select=id,updated_at&order=id.asc&limit='+PULL_PAGE+'&offset='+offset,{timeoutMs:30000})||[];
+    rows.forEach(r=>man.push(r));
+    if(!rows.length) break;           // stop on an empty page, so a lower server row cap can't cut the list short
+    offset+=rows.length;
+  }
+  const cached=new Map(cacheGet(store).map(r=>[String(r.id),r]));
+  const meta=lsRead(META_PREFIX+store,{})||{};
+  const need=man.filter(m=>!cached.has(String(m.id))||meta[m.id]!==m.updated_at).map(m=>String(m.id));
+  const got=new Map();
+  const chunks=[]; for(let i=0;i<need.length;i+=FETCH_CHUNK) chunks.push(need.slice(i,i+FETCH_CHUNK));
+  for(let i=0;i<chunks.length;i+=3){
+    await Promise.all(chunks.slice(i,i+3).map(async ids=>{
+      const list=ids.map(id=>'%22'+encodeURIComponent(id.replace(/"/g,''))+'%22').join(',');
+      const rows=await cloudReq(T+'&select=id,payload&id=in.('+list+')',{timeoutMs:30000})||[];
+      rows.forEach(r=>got.set(String(r.id),{...(r.payload||{}),id:r.id}));
+    }));
+  }
+  const out=[], nm={};
+  man.forEach(m=>{ const id=String(m.id), r=got.get(id)||cached.get(id); if(r){ out.push(r); nm[id]=m.updated_at; } });
+  out.sort((a,b)=>String(a.createdAt||'').localeCompare(String(b.createdAt||''))||String(a.id).localeCompare(String(b.id)));
+  lsWrite(META_PREFIX+store,nm);
+  return out;
 }
+/* The audit log is no longer cached in the browser; free the space older versions used. */
+lsDel(CACHE_PREFIX+'accountability_audit_records');
+/* Uploads pending changes. O&M records go first and the audit trail last, in small batches,
+   so a slow connection or one bad row can never hold back the batteries other stages wait for. */
+const FAILED_KEY='bqc_outbox_failed';
+const failedOps = () => { const v=lsRead(FAILED_KEY,[]); return Array.isArray(v)?v:[]; };
 async function flushOutbox(){
   if(Cloud.demo||Cloud.localOnly||!cloudReady()) return false;
   const q=outbox(); if(!q.length) return true; if(Cloud.flushing) return false;
   Cloud.flushing=true; paintSync();
+  const sent=new Set(), parked=[]; let ok=true;
   try{
     const ups=new Map(), dels=new Map();
     q.forEach(op=>{ const k=op.store+'|'+op.id; if(op.type==='upsert'){ups.set(k,op);dels.delete(k);} else {dels.set(k,op);ups.delete(k);} });
     const who=(currentSession()||{}).name||'', stamp=nowIso();
-    const rows=[...ups.values()].map(op=>({id:String(op.id),store_key:op.store,payload:op.payload,deleted:false,updated_at:stamp,updated_by:op.by||who}));
-    for(let i=0;i<rows.length;i+=50) await cloudReq(BQC_TABLE,{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(rows.slice(i,i+50))});
-    for(const op of dels.values()) await cloudReq(BQC_TABLE+'?id=eq.'+encodeURIComponent(op.id)+'&store_key=eq.'+encodeURIComponent(op.store),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({deleted:true,updated_at:stamp,updated_by:op.by||who})});
-    outboxSet(outbox().slice(q.length));
-    Cloud.lastError=null; Cloud.lastSync=Date.now(); lsWrite('bqc_last_sync',Cloud.lastSync); return true;
-  }catch(e){ Cloud.lastError=e.message; return false; }
-  finally{ Cloud.flushing=false; paintSync(); }
+    const prio=op=>op.store==='accountability_audit_records'?2:op.store==='om_chain_records'?0:1;
+    const rows=[...ups.values()].sort((a,b)=>prio(a)-prio(b)).map(op=>({key:op.store+'|'+op.id,op,row:{id:String(op.id),store_key:op.store,payload:op.payload,deleted:false,updated_at:stamp,updated_by:op.by||who}}));
+    const post=list=>cloudReq(BQC_TABLE,{method:'POST',timeoutMs:30000,headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(list.map(x=>x.row))});
+    for(let i=0;i<rows.length;i+=20){
+      const b=rows.slice(i,i+20);
+      try{ await post(b); b.forEach(x=>sent.add(x.key)); }
+      catch(e){
+        if(!(e.status>=400&&e.status<500)) throw e;          // network / timeout: stop and retry later
+        for(const x of b){ try{ await post([x]); sent.add(x.key); }catch(e2){ if(e2.status>=400&&e2.status<500){ parked.push({...x.op,error:e2.message}); sent.add(x.key); } else throw e2; } }
+      }
+    }
+    for(const [k,op] of dels){ await cloudReq(BQC_TABLE+'?id=eq.'+encodeURIComponent(op.id)+'&store_key=eq.'+encodeURIComponent(op.store),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({deleted:true,updated_at:stamp,updated_by:op.by||who})}); sent.add(k); }
+    Cloud.lastError=null; Cloud.lastSync=Date.now(); lsWrite('bqc_last_sync',Cloud.lastSync);
+  }catch(e){ Cloud.lastError=e.message; ok=false; }
+  finally{
+    if(sent.size){ const cur=outbox(); outboxSet(cur.filter((op,i)=>!(i<q.length&&sent.has(op.store+'|'+op.id)))); }
+    if(parked.length){ lsWrite(FAILED_KEY,failedOps().concat(parked).slice(-200)); Cloud.lastError=`${parked.length} change(s) were refused by the cloud. Open Storage & sync.`; }
+    Cloud.flushing=false; paintSync();
+  }
+  return ok&&!parked.length;
 }
+/* Some older rows carry the stage as text ("2"); queues compare numbers, so such a battery was invisible. */
+function normRows(key,rows){ if(key==='om_chain_records') rows.forEach(r=>{ if(r&&r.stage!=null&&typeof r.stage!=='number'&&!isNaN(+r.stage)) r.stage=+r.stage; }); return rows; }
 async function loadStore(key){
   if(!BQC_STORES.includes(key)) return [];
   if(Cloud.demo){ const r=clone(DEMO[key]||[]); LAST_SERVED[key]=clone(r); return r; }
   if(!Cloud.localOnly && cloudReady() && navigator.onLine){
     try{
       await flushOutbox();
-      const rows=applyPending(key,await cloudPull(key));
+      const rows=normRows(key,applyPending(key,await cloudPull(key)));
       cacheSet(key,rows); LAST_SERVED[key]=rows; Cloud.lastError=null; Cloud.lastSync=Date.now(); lsWrite('bqc_last_sync',Cloud.lastSync);
       return clone(rows);
     }catch(e){ Cloud.lastError=e.message; }
   }
-  const cached=applyPending(key,cacheGet(key)); LAST_SERVED[key]=cached; return clone(cached);
+  const cached=normRows(key,applyPending(key,cacheGet(key))); LAST_SERVED[key]=cached; return clone(cached);
 }
 
 /* ---------- Roles & permissions ---------- */
@@ -933,7 +1024,8 @@ function roleCanWrite(role,store,stage){
   if(store==='accountability_audit_records') return false;
   if(role==='omadmin'||role==='quality') return true;
   if(role==='bsa') return ['bsa_records','om_chain_records','rca_records'].includes(store);
-  if(role==='omtech') return store==='om_chain_records'||store==='rca_records'||(store==='bsa_records'&&(stage===1||stage===3));
+  if(role==='omtech') return store==='om_chain_records'||store==='rca_records'||(store==='bsa_records'&&(stage===1||stage===3))||(store==='daily_log_records'&&(stage===1||stage===3));
+  if(role==='bsa') return false;
   return false;
 }
 const can = store => { const s=currentSession(); return !!s && roleCanWrite(s.role,store,s.stage); };
@@ -957,7 +1049,7 @@ function deepMergeChanged(base,incoming,latest){
 function stampActor(key,rec){
   const s=currentSession()||{}; const out=clone(rec);
   if(key==='om_chain_records'){ out.updatedBy=s.name; out.updatedRole=s.role; out.updatedStage=s.stage||null; out.updatedAt=nowIso(); }
-  if(key==='bsa_records'||key==='rca_records'){ out.updatedBy=s.name; out.updatedRole=s.role; out.updatedAt=nowIso(); }
+  if(key==='bsa_records'||key==='rca_records'||key==='daily_log_records'){ out.updatedBy=s.name; out.updatedRole=s.role; out.updatedAt=nowIso(); }
   return out;
 }
 async function saveStore(key,list,options={}){
@@ -972,8 +1064,8 @@ async function saveStore(key,list,options={}){
   }
   const callerBase=clone(LAST_SERVED[key]||cacheGet(key)||[]);
   let latest=callerBase;
-  if(key==='om_chain_records' && !Cloud.localOnly && cloudReady() && navigator.onLine){
-    try{ await flushOutbox(); latest=clone(applyPending(key,await cloudPull(key))); cacheSet(key,latest); LAST_SERVED[key]=latest; }catch(e){}
+  if((key==='om_chain_records'||key==='daily_log_records') && !Cloud.localOnly && cloudReady() && navigator.onLine){
+    try{ await flushOutbox(); latest=clone(normRows(key,applyPending(key,await cloudPull(key)))); cacheSet(key,latest); LAST_SERVED[key]=latest; }catch(e){ Cloud.lastError=e.message; }
   }
   const baseMap=new Map(callerBase.map(r=>[String(r.id),r])), latestMap=new Map(latest.map(r=>[String(r.id),r]));
   const ids=new Set(incoming.map(r=>r.id));
@@ -1006,9 +1098,10 @@ async function appendAudit(store,base,next,removed){
     next.forEach(r=>{ const p=bm.get(String(r.id)); if(!p||stableStr(p)!==stableStr(r)) entries.push({action:p?'UPDATE':'CREATE',store,recordId:String(r.id),bmsId:normId(r.bmsId),before:p?clone(p):null,after:clone(r)}); });
     removed.forEach(id=>{ const p=bm.get(String(id)); if(p) entries.push({action:'DELETE',store,recordId:String(id),bmsId:normId(p.bmsId),before:clone(p),after:null}); });
     if(!entries.length) return;
-    const rows=await loadStore('accountability_audit_records');
-    entries.forEach(e=>rows.push({id:uid(),timestamp:nowIso(),actor:a.name,role:a.role,stage:a.stage||null,...e}));
-    await saveStore('accountability_audit_records',rows,{internal:true});
+    /* Append-only: send just the new entries instead of downloading the whole (large) audit log on every save. */
+    const ops=entries.map(e=>({type:'upsert',store:'accountability_audit_records',id:uid(),payload:{timestamp:nowIso(),actor:a.name,role:a.role,stage:a.stage||null,...e},by:a.name,at:Date.now()}));
+    outboxSet(outbox().concat(ops));
+    if(!Cloud.localOnly&&cloudReady()&&navigator.onLine) await flushOutbox();
   }catch(e){ console.error('Audit append failed',e); }
 }
 async function deleteRecord(store,id){
@@ -1136,6 +1229,7 @@ function computeAlerts(){
   if(role==='quality'||role==='omadmin'){
     S.data.rca.filter(r=>r.status!=='VERIFIED CLOSED'&&r.dueDate&&r.dueDate<todayStr()).forEach(r=>push('warn','Overdue RCA',`RCA for ${r.bmsId||'—'} is past due (${fmtShort(r.dueDate)})`,`${r.owner||'No owner'} · ${(r.status||'').toLowerCase()}`,'open-rca',r.id,hoursSince(r.dueDate)));
   }
+  dailyAlerts(push,s);
   return out.sort((a,b)=>(a.sev==='crit'?0:1)-(b.sev==='crit'?0:1)||b.h-a.h);
 }
 function ageDays(r){ return Math.max(0,daysBetween(r.dateReceived||dkey(r.createdAt),todayStr())); }
@@ -1316,14 +1410,369 @@ function makeDemoData(){
   for(let i=0;i<6;i++){ const b=pick(pool.filter(x=>x.busy!=='9999')); addCase(null,{bmsId:b.id,model:b.plat,source:pick(BSA_SOURCES.slice(1)),dateFlagged:addDays(today,-Math.floor(rnd()*40)),flaggedBy:pick(['Customer experience','Battery engineering']),issueDescription:pick(['Range complaints from rider after swap','Pack temperature alarm in field','Repeated BMS lock-out reported by station']),escalationCategory:'Field flag',sopAttempted:'None applicable',createdAt:nowIso()}); }
   const rcaSrc=om.filter(r=>r.capaCycles>0).slice(-8);
   rcaSrc.forEach((r,i)=>rca.push({id:'demo-rca-'+i,bmsId:r.bmsId,model:r.model,linkedRecordId:r.id,owner:pick(T3),dateOpened:dkey(r.capaLog[0].returnedAt),problemStatement:r.capaLog[0].reason+' at final QC.',containment:'Battery held at Stage 2; batch checked.',immediateAction:'Re-repaired and re-tested.',why1:'IR dropped after reassembly',why2:'Moisture trapped under gasket',why3:'Pack not dried before closing',why4:'No drying step in SOP-BAT-04',why5:'SOP not updated after rainy-season returns',fishbone:{Method:'No drying step',Environment:'High humidity'},rootCause:'Missing drying step before casing closure',correctiveAction:'Dry pack 2 h at 40 °C before closing',preventiveAction:'Add drying step to SOP-BAT-04',verificationMethod:'IR ≥ 550 MΩ on next 20 packs',dueDate:addDays(today,7+i),status:RCA_STATUSES[Math.min(3,i%4)],createdAt:r.capaLog[0].returnedAt,updatedAt:r.capaLog[0].returnedAt,openedBy:pick(T3)}));
-  return {om_chain_records:om,bsa_records:bsa,rca_records:rca,quality_issue_records:QUALITY_ISSUE_SEED.map(r=>({...r})),accountability_audit_records:[]};
+  return {om_chain_records:om,bsa_records:bsa,rca_records:rca,quality_issue_records:QUALITY_ISSUE_SEED.map(r=>({...r})),daily_log_records:makeDemoDaily(rnd,pick,T1,T3,om),accountability_audit_records:[]};
+}
+
+/* =====================================================================
+   SYNC HEALTH — say plainly when other stages can't see this device's work
+   ===================================================================== */
+function SyncBanner(){
+  if(Cloud.demo||!S.session) return '';
+  const p=pendingCount(), bad=failedOps().length;
+  const btn=(l,act)=>`<button class="btn sm ${act==='sync-now'?'pri':''}" data-act="${act}">${l}</button>`;
+  if(Cloud.localOnly) return `<div class="banner crit sync-banner"><span class="sb-ic">!</span><div><b>This device saves only to itself.</b> Batteries and counts entered here are invisible to every other stage and device. ${btn('Connect to the shared cloud','storage')}</div></div>`;
+  if(!cloudReady()) return `<div class="banner crit sync-banner"><span class="sb-ic">!</span><div><b>Not connected to the shared cloud.</b> Work saved here stays on this device, so other stages can't see it. ${btn('Connect now','storage')}</div></div>`;
+  if(p) return `<div class="banner warn sync-banner"><span class="sb-ic">⇡</span><div><b>${p} change${p===1?' is':'s are'} only on this device.</b> Other stages can't see ${p===1?'it':'them'} until ${p===1?'it uploads':'they upload'}.${Cloud.lastError?` <span class="muted">Last try: ${esc(Cloud.lastError)}.</span>`:''} ${btn('Upload now','sync-now')}</div></div>`;
+  if(bad) return `<div class="banner crit sync-banner"><span class="sb-ic">!</span><div><b>${bad} change${bad===1?' was':'s were'} refused by the cloud.</b> ${btn('Review in Storage & sync','storage')}</div></div>`;
+  if(S.syncError) return `<div class="banner warn sync-banner"><span class="sb-ic">⟳</span><div><b>Couldn't reach the cloud.</b> You are looking at the copy saved on this device${Cloud.lastSync?` at ${esc(fmtDT(new Date(Cloud.lastSync).toISOString()))}`:''}, so recent work from other stages may be missing. ${btn('Try again','sync-now')}</div></div>`;
+  return '';
+}
+
+/* =====================================================================
+   DAILY RECEIVING COUNTS
+   Stage 1 (receiving) logs the end-of-day totals; Stage 3 checks and
+   verifies them; only verified days feed the weekly and monthly report.
+   ===================================================================== */
+const DAILY_REASONS = ['No spare parts in stock','Waiting for supplier material','Needs BSA / specialist','Not enough time · carried to next day','Missing tools or test equipment','Beyond repair · scrap','Other reason'];
+const DAILY_STATUS = {SUBMITTED:['Awaiting Stage 3 check','warn','◷'],RETURNED:['Sent back for correction','crit','↩'],VERIFIED:['Verified','good','✓']};
+const DAILY_NUMS = [['received','Total batteries received'],['toWarehouse','Returned to warehouse'],['inField','Worked on in the field']];
+const dailyChip = r => chip(...(DAILY_STATUS[r.status]||['Draft','','']));
+const canLogDaily = () => { const s=S.session||{}; return (s.role==='omtech'&&Number(s.stage)===1)||s.role==='omadmin'; };
+const canVerifyDaily = () => { const s=S.session||{}; return (s.role==='omtech'&&Number(s.stage)===3)||s.role==='omadmin'; };
+const canReopenDaily = () => { const s=S.session||{}; return s.role==='omadmin'||s.role==='quality'; };
+const dailyFor = date => (S.data.daily||[]).find(r=>r.date===date);
+const int = v => { const x=String(v??'').trim(); return /^\d{1,6}$/.test(x)?+x:null; };
+const dNum = v => int(v)??0;
+
+function dailyTotals(r){
+  const iss=Object.values(r.issues||{});
+  return {received:dNum(r.received),toWarehouse:dNum(r.toWarehouse),inField:dNum(r.inField),
+    found:sum(iss.map(x=>dNum(x.found))),repaired:sum(iss.map(x=>dNum(x.repaired))),notWorked:sum(iss.map(x=>dNum(x.notWorked)))};
+}
+/* Rolls verified daily logs up for a week, a month or any period */
+function dailyStats(p,includeAll){
+  const all=(S.data.daily||[]).filter(r=>inP(r.date,p));
+  const logs=all.filter(r=>includeAll||r.status==='VERIFIED');
+  const t={received:0,toWarehouse:0,inField:0,found:0,repaired:0,notWorked:0};
+  const byIssue={}, byReason={};
+  logs.forEach(r=>{
+    const x=dailyTotals(r); Object.keys(t).forEach(k=>t[k]+=x[k]);
+    Object.entries(r.issues||{}).forEach(([k,v])=>{
+      const b=byIssue[k]=byIssue[k]||{found:0,repaired:0,notWorked:0,reasons:{}};
+      b.found+=dNum(v.found); b.repaired+=dNum(v.repaired); b.notWorked+=dNum(v.notWorked);
+      if(dNum(v.notWorked)>0){ const rs=v.reason||'Not given'; b.reasons[rs]=(b.reasons[rs]||0)+dNum(v.notWorked); const R=byReason[rs]=byReason[rs]||{n:0,issues:{}}; R.n+=dNum(v.notWorked); R.issues[k]=(R.issues[k]||0)+dNum(v.notWorked); }
+    });
+  });
+  const days=p.gran==='day'?1:daysBetween(p.start,p.end)+1;
+  const pending=all.filter(r=>r.status!=='VERIFIED').length;
+  return {...t,rate:pct(t.repaired,t.found),logs,all,pending,byIssue,byReason,days,verified:logs.length};
+}
+function dailyBadge(s){
+  if(!s) return null;
+  if(s.role==='omtech'&&Number(s.stage)===3) return (S.data.daily||[]).filter(r=>r.status==='SUBMITTED').length||null;
+  if(s.role==='omtech'&&Number(s.stage)===1) return (S.data.daily||[]).filter(r=>r.status==='RETURNED').length||null;
+  return null;
+}
+function dailyAlerts(push,s){
+  const role=s.role, st=Number(s.stage);
+  const daily=S.data.daily||[];
+  if((role==='omtech'&&st===3)||role==='omadmin') daily.filter(r=>r.status==='SUBMITTED').forEach(r=>{ const h=hoursSince(r.submittedAt||r.loggedAt); push(h>=48?'crit':'warn','Daily counts',`Counts for ${fmtDay(r.date)} need your check`,`Logged by ${r.loggedBy||'—'} ${fmtHours(h)} ago. Verify or send back.`,'daily-open',r.id,h); });
+  if((role==='omtech'&&st===1)||role==='omadmin') daily.filter(r=>r.status==='RETURNED').forEach(r=>{ const h=hoursSince(r.returnedAt); push('crit','Daily counts',`Counts for ${fmtDay(r.date)} were sent back`,`${r.returnedBy||'Stage 3'}: ${r.returnNote||'please correct'}`,'daily-open',r.id,h); });
+  if(role==='omtech'&&st===1){ const y=addDays(todayStr(),-1); if(!dailyFor(y)&&S.data.om.some(r=>r.dateReceived===y)) push('warn','Daily counts',`No counts logged for yesterday (${fmtShort(y)})`,'Log the end-of-day totals so the week adds up.','daily-new','',24); }
+}
+
+/* ---------- My work card (Stage 1 and Stage 3) ---------- */
+function DailyWorkCard(n){
+  const today=todayStr(), r=dailyFor(today);
+  if(n===1){
+    const intakes=S.data.om.filter(x=>x.dateReceived===today).length;
+    let line, act;
+    if(!r){ line=`<b>Today's end-of-day count isn't logged yet.</b> ${intakes} batter${intakes===1?'y':'ies'} received in the app so far today.`; act=`<button class="btn pri" data-act="daily-new">${ICON.plus} Log today's counts</button>`; }
+    else if(r.status==='RETURNED'){ line=`<b>Stage 3 sent today's counts back.</b> ${esc(r.returnNote||'')}`; act=`<button class="btn pri" data-act="daily-open" data-id="${esc(r.id)}">Correct and resend</button>`; }
+    else if(r.status==='SUBMITTED'){ line=`<b>Today's counts are with Stage 3 for checking.</b> You can still correct them until they are verified.`; act=`<button class="btn" data-act="daily-open" data-id="${esc(r.id)}">Open</button>`; }
+    else { line=`<b>Today's counts are verified</b> by ${esc(r.verifiedBy||'Stage 3')}.`; act=`<button class="btn" data-act="daily-open" data-id="${esc(r.id)}">View</button>`; }
+    const tone=!r?'':r.status==='RETURNED'?'crit':r.status==='VERIFIED'?'good':'warn';
+    return `<div class="card daily-cta ${tone}"><div class="dc-ic">${TAB_IC.daily}</div><div class="dc-t"><div class="eyebrow">End of day · ${esc(fmtDay(today))}</div><div>${line}</div></div><div class="dc-a">${act}</div></div>`;
+  }
+  const q=(S.data.daily||[]).filter(x=>x.status==='SUBMITTED').sort((a,b)=>a.date.localeCompare(b.date));
+  if(!q.length) return `<div class="card daily-cta good"><div class="dc-ic">${TAB_IC.daily}</div><div class="dc-t"><div class="eyebrow">Daily counts</div><div><b>No daily counts waiting for your check.</b></div></div><div class="dc-a"><button class="btn" data-act="nav" data-v="daily">See reports</button></div></div>`;
+  return `<div class="card section"><div class="card-head"><div><h3>Daily counts to verify</h3><p>Check each day's numbers against what you saw, correct anything wrong, then verify</p></div><span class="chip warn">${q.length}</span></div>
+    <div class="lane-list">${q.map(r=>{ const t=dailyTotals(r); return `<button class="jcard task age-${hoursSince(r.submittedAt)>=48?'crit':'warn'}" data-act="daily-open" data-id="${esc(r.id)}"><div class="row1"><b style="font-size:13.5px">${esc(fmtDay(r.date))}</b><span class="chip">${esc(fmtHours(hoursSince(r.submittedAt)))} ago</span></div><div class="row2"><span>${t.received} received · ${t.toWarehouse} warehouse · ${t.inField} field</span><span style="margin-left:auto;font-weight:700;color:var(--accent)">Check ›</span></div><div class="row3">${t.repaired} of ${t.found} issues repaired (${fmtPct(pct(t.repaired,t.found))}) · logged by ${esc(r.loggedBy||'—')}</div></button>`; }).join('')}</div></div>`;
+}
+
+/* ---------- Drawer: log / verify / view ---------- */
+function openDaily(id){
+  const r=id?(S.data.daily||[]).find(x=>x.id===id):null;
+  if(id&&!r){ toast('That daily log was not found. Refresh and try again.'); return; }
+  if(!r&&!canLogDaily()){ toast('Only receiving (Stage 1) logs the daily counts.'); return; }
+  const today=todayStr(), existing=!r?dailyFor(today):null;
+  const base=r||existing;
+  S.f.daily=base?{...clone(base),issues:clone(base.issues||{}),_note:''}:{date:today,received:'',toWarehouse:'',inField:'',issues:{},notes:'',_note:'',_add:''};
+  ['received','toWarehouse','inField'].forEach(k=>{ if(S.f.daily[k]!=null) S.f.daily[k]=String(S.f.daily[k]); });
+  Object.values(S.f.daily.issues).forEach(v=>['found','repaired','notWorked'].forEach(k=>{ if(v[k]!=null) v[k]=String(v[k]); }));
+  S.formError=null; openDrawer({type:'daily',id:base?base.id:null});
+}
+function dailyMode(){
+  const d=S.drawer||{}, r=d.id?(S.data.daily||[]).find(x=>x.id===d.id):null;
+  if(!r) return 'log';
+  if(r.status==='VERIFIED') return 'view';
+  if(r.status==='SUBMITTED'&&canVerifyDaily()) return 'verify';
+  if(canLogDaily()) return 'log';
+  return 'view';
+}
+const numIn = (path,label,opts={}) => `<label class="f ${opts.cls||''}"><span>${label}${opts.req?' <span class="req">*</span>':''}</span><input class="in num-in" id="b-${path.replace(/\./g,'-')}" data-bind="${path}" value="${esc(getPath(S.f,path)??'')}" type="number" inputmode="numeric" min="0" step="1" placeholder="0" ${opts.dis?'disabled':''}></label>`;
+function dailyIssueRows(f,ro){
+  const keys=ISSUE_ITEMS.map(([k])=>k).filter(k=>f.issues[k]);
+  if(!keys.length) return `<div class="empty" style="padding:16px">No issues added yet. Add each issue you saw today, or start from today's logged intakes.</div>`;
+  return `<div class="di-list">${keys.map(k=>{
+    const v=f.issues[k], b=`daily.issues.${k}`, nw=dNum(v.notWorked);
+    return `<div class="di-row" data-k="${k}">
+      <div class="di-head"><b>${esc(ISSUE_LABEL[k])}</b><span class="di-rate" id="dr-${k}"></span>${ro?'':`<button class="btn sm ghost icon-btn" data-act="daily-rm-issue" data-k="${k}" aria-label="Remove ${esc(ISSUE_LABEL[k])}" title="Remove">${ICON.close}</button>`}</div>
+      <div class="di-nums">${numIn(b+'.found','Found',{dis:ro})}${numIn(b+'.repaired','Repaired',{dis:ro})}${numIn(b+'.notWorked','Not worked on',{dis:ro})}</div>
+      <div class="di-check" id="dc-${k}"></div>
+      ${nw>0||v.reason?`<div class="di-why">${ro?`<div class="muted" style="font-size:13px"><b>Why not:</b> ${esc(v.reason||'—')}${v.reasonNote?' · '+esc(v.reasonNote):''}</div>`:`${field('Why not worked on',sel(b+'.reason',[['','Choose a reason…'],...DAILY_REASONS],true),'',true)}${v.reason==='Other reason'||v.reasonNote?field('Details',inp(b+'.reasonNote',{ph:'Explain briefly'})):''}`}</div>`:''}
+    </div>`; }).join('')}</div>`;
+}
+function DailySheet(){
+  const f=S.f.daily, mode=dailyMode(), ro=mode==='view';
+  const r=S.drawer.id?(S.data.daily||[]).find(x=>x.id===S.drawer.id):null;
+  if(!f) return sheet('Daily counts','','','');
+  const intakes=S.data.om.filter(x=>x.dateReceived===f.date);
+  const head=r?`<div class="daily-status">${dailyChip(r)}<span class="muted">Logged by <b>${esc(r.loggedBy||'—')}</b> ${esc(fmtDT(r.submittedAt||r.loggedAt))}${r.verifiedBy?` · verified by <b>${esc(r.verifiedBy)}</b> ${esc(fmtDT(r.verifiedAt))}`:''}</span></div>`:'';
+  const ret=r&&r.status==='RETURNED'?`<div class="banner crit"><div><b>Sent back by ${esc(r.returnedBy||'Stage 3')}:</b> ${esc(r.returnNote||'')}</div></div>`:'';
+  const adj=r&&r.status==='VERIFIED'&&r.adjustments&&r.adjustments.length?`<div class="banner warn"><div><b>Stage 3 corrected ${r.adjustments.length} figure${r.adjustments.length===1?'':'s'} when verifying:</b> ${esc(r.adjustments.join('; '))}</div></div>`:'';
+  const verNote=r&&r.verifyNote?`<div class="banner good"><div><b>Verifier's note:</b> ${esc(r.verifyNote)}</div></div>`:'';
+  const intro=mode==='verify'?`<div class="banner"><div><b>Check these numbers.</b> Correct any figure that is wrong. Your corrections are recorded next to the original. Then verify, or send the log back to receiving with a note.</div></div>`:mode==='log'?`<div class="banner"><div>At the end of the day, enter what came in and what happened to it. <b>Warehouse + field must equal the total received</b>, and for every issue <b>repaired + not worked on must equal found</b>.</div></div>`:'';
+  const addable=ISSUE_ITEMS.filter(([k])=>!f.issues[k]);
+  const body=`${errBox()}${head}${ret}${adj}${verNote}${intro}
+    <div class="form">${field('Date',`<input class="in" id="b-daily-date" data-bind="daily.date" data-rerender type="date" max="${todayStr()}" value="${esc(f.date)}" ${ro||mode==='verify'||r?'disabled':''}>`,'',true)}
+      <div class="f"><span>Logged in the app that day</span><div class="in ro">${intakes.length} intake${intakes.length===1?'':'s'}</div></div></div>
+    <div><div class="block-title"><h4>Batteries</h4><span id="d-tot-chk"></span></div>
+      <div class="d-nums">${DAILY_NUMS.map(([k,l])=>numIn('daily.'+k,l,{req:true,dis:ro})).join('')}</div></div>
+    <div><div class="block-title"><h4>Issues found and what was done</h4><span id="d-iss-sum" class="muted" style="font-size:12.5px"></span></div>
+      ${ro?'':`<div class="di-add"><select class="in" id="b-daily-_add" data-bind="daily._add" aria-label="Issue to add"><option value="">Add an issue…</option>${addable.map(([k,l])=>`<option value="${k}">${esc(l)}</option>`).join('')}</select><button class="btn" data-act="daily-add-issue">${ICON.plus} Add</button>${intakes.length&&mode==='log'?`<button class="btn ghost" data-act="daily-prefill" title="Counts each issue on the intakes logged in the app for this date">Start from ${intakes.length} logged intake${intakes.length===1?'':'s'}</button>`:''}</div>`}
+      ${dailyIssueRows(f,ro)}</div>
+    ${ro?(f.notes?`<div><h4 style="margin-bottom:6px">Notes from receiving</h4><div class="muted">${esc(f.notes)}</div></div>`:''):field('Notes from receiving',area('daily.notes','Anything unusual today'),'full')}
+    ${mode==='verify'?field('Verifier note (required to send back)',area('daily._note','What did you check, or what needs correcting?'),'full'):''}
+    ${r&&r.history&&r.history.length?`<details class="visit"><summary>History (${r.history.length})</summary><div class="hist">${r.history.slice().reverse().map(h=>`<div><b>${esc(h.action)}</b> · ${esc(h.by||'—')} · ${esc(fmtDT(h.at))}${h.note?`<div class="muted">${esc(h.note)}</div>`:''}</div>`).join('')}</div></details>`:''}`;
+  let foot='';
+  if(mode==='log') foot=`<button class="btn pri" data-act="daily-save" ${S.saving?'disabled':''}>${savingLabel(r&&r.status==='RETURNED'?'Resend to Stage 3':r?'Save changes':'Submit to Stage 3',S.saving)}</button>`;
+  if(mode==='verify') foot=`<button class="btn esc" data-act="daily-return" ${S.saving?'disabled':''}>Send back</button><button class="btn pri" data-act="daily-verify" ${S.saving?'disabled':''}>${savingLabel('Verify & submit',S.saving)}</button>`;
+  if(mode==='view'&&r&&r.status==='VERIFIED'&&canReopenDaily()) foot=`<button class="btn" data-act="daily-reopen">Reopen for correction</button>`;
+  const title=mode==='verify'?'Verify daily counts':r?'Daily counts':'Log today\'s counts';
+  return sheet(esc(title),esc(fmtDay(f.date)),body,foot,'Receiving · end of day');
+}
+/* live checks while typing, without redrawing the form */
+function paintDailyCalc(){
+  const f=S.f.daily; if(!f) return;
+  const rec=int(f.received), wh=dNum(f.toWarehouse), fi=dNum(f.inField), el=$('#d-tot-chk');
+  if(el){ if(rec==null) el.innerHTML=''; else if(wh+fi===rec) el.innerHTML=chip('adds up','good','✓'); else el.innerHTML=chip(`${wh}+${fi} = ${wh+fi}, not ${rec}`,'crit','✕'); }
+  let F=0,R=0;
+  Object.entries(f.issues||{}).forEach(([k,v])=>{
+    const fo=dNum(v.found), re=dNum(v.repaired), nw=dNum(v.notWorked); F+=fo; R+=re;
+    const rt=$('#dr-'+k); if(rt) rt.innerHTML=fo?`<span class="rate-pill ${re/fo>=.8?'good':re/fo>=.5?'warn':'crit'}">${fmtPct(pct(re,fo))} repaired</span>`:'';
+    const row=$(`.di-row[data-k="${k}"]`); if(row&&!row.querySelector('.di-why')!==!(nw>0||v.reason)&&!row.querySelector('input:disabled')){ renderDrawer(true); return; }
+    const c=$('#dc-'+k); if(c) c.innerHTML=fo&&re+nw!==fo?`<span class="bad">Repaired ${re} + not worked on ${nw} = ${re+nw}, but found is ${fo}.</span>`:'';
+  });
+  const s=$('#d-iss-sum'); if(s) s.textContent=F?`${R} of ${F} repaired · ${fmtPct(pct(R,F))}`:'';
+}
+function dailyAddIssue(){
+  const f=S.f.daily, k=f._add; if(!k){ toast('Pick an issue first.'); return; }
+  f.issues[k]={found:'',repaired:'',notWorked:'',reason:'',reasonNote:''}; f._add='';
+  renderDrawer(true); const el=$(`#b-daily-issues-${k}-found`); if(el) el.focus();
+}
+function dailyPrefill(){
+  const f=S.f.daily, rows=S.data.om.filter(x=>x.dateReceived===f.date), cnt={};
+  rows.forEach(r=>issuesOf(r).forEach(k=>cnt[k]=(cnt[k]||0)+1));
+  if(!rows.length){ toast('No intakes logged in the app for this date.'); return; }
+  if(String(f.received||'').trim()==='') f.received=String(rows.length);
+  Object.entries(cnt).forEach(([k,n])=>{ if(!f.issues[k]) f.issues[k]={found:String(n),repaired:'',notWorked:'',reason:'',reasonNote:''}; });
+  renderDrawer(true); toast(`Filled from ${rows.length} intake${rows.length===1?'':'s'}. Check and complete the numbers.`);
+}
+/* validate + clean the form; returns [record fields, error] */
+function dailyClean(f){
+  const out={date:f.date,notes:String(f.notes||'').trim(),issues:{}};
+  if(!f.date) return [null,'Pick the date.'];
+  if(f.date>todayStr()) return [null,'The date can\'t be in the future.'];
+  for(const [k,l] of DAILY_NUMS){ const v=int(f[k]); if(v==null) return [null,`${l}: enter a whole number (0 or more).`]; out[k]=v; }
+  if(out.toWarehouse+out.inField!==out.received) return [null,`Returned to warehouse (${out.toWarehouse}) + worked on in the field (${out.inField}) = ${out.toWarehouse+out.inField}, but total received is ${out.received}. Make them match.`];
+  const keys=Object.keys(f.issues||{});
+  if(out.received>0&&!keys.length) return [null,'Add at least one issue with its counts.'];
+  for(const k of keys){
+    const v=f.issues[k], L=ISSUE_LABEL[k]||k, fo=int(v.found), re=int(v.repaired), nw=int(v.notWorked===''||v.notWorked==null?'0':v.notWorked);
+    if(fo==null||fo<1) return [null,`${L}: enter how many were found (1 or more), or remove the issue.`];
+    if(re==null) return [null,`${L}: enter how many were repaired (0 if none).`];
+    if(nw==null) return [null,`${L}: "not worked on" must be a whole number.`];
+    if(re+nw!==fo) return [null,`${L}: repaired (${re}) + not worked on (${nw}) must equal found (${fo}).`];
+    if(nw>0&&!v.reason) return [null,`${L}: say why ${nw} ${nw===1?'was':'were'} not worked on.`];
+    if(nw>0&&v.reason==='Other reason'&&String(v.reasonNote||'').trim().length<3) return [null,`${L}: explain the other reason.`];
+    out.issues[k]={found:fo,repaired:re,notWorked:nw,...(nw>0?{reason:v.reason,reasonNote:String(v.reasonNote||'').trim()}:{})};
+  }
+  return [out,null];
+}
+function dailyFail(m){ S.formError=m; S.saving=false; renderDrawer(true); const b=$('#drawer-root .d-body'); if(b) b.scrollTop=0; }
+async function dailyCommit(mutate,okMsg){
+  S.saving=true; renderDrawer(true);
+  try{
+    const fresh=await loadStore('daily_log_records'); const res=mutate(fresh);
+    if(typeof res==='string') return dailyFail(res);
+    if(!await saveStore('daily_log_records',fresh)) return dailyFail('Could not save. Your entries are still here; try again.');
+    S.data.daily=fresh; bump(); S.saving=false; S.f.daily=null; closeDrawer(); render();
+    toast(okMsg+(S.lastSave&&S.lastSave.cloudAttempted&&!S.lastSave.cloudSaved?' Saved on this device; it uploads when the connection returns.':''));
+  } finally { S.saving=false; if(S.drawer) renderDrawer(true); }
+}
+async function dailySubmit(){
+  if(S.saving) return; const s=S.session, f=S.f.daily; S.formError=null;
+  const [c,err]=dailyClean(f); if(err) return dailyFail(err);
+  const id=S.drawer.id;
+  await dailyCommit(list=>{
+    const dup=list.find(x=>x.date===c.date&&x.id!==id); if(dup) return `Counts for ${fmtDay(c.date)} were already logged by ${dup.loggedBy||'someone'}. Open that log instead.`;
+    const now=nowIso();
+    if(id){ const r=list.find(x=>x.id===id); if(!r) return 'This log no longer exists. Refresh and check.'; if(r.status==='VERIFIED') return 'Stage 3 has already verified this log. Ask the O&M manager to reopen it.';
+      const resend=r.status==='RETURNED';
+      Object.assign(r,c,{status:'SUBMITTED',submittedAt:now,loggedBy:r.loggedBy||s.name,lastEditedBy:s.name,history:[...(r.history||[]),{action:resend?'Corrected and resent':'Edited',by:s.name,at:now}]});
+    } else list.push({id:uid(),...c,status:'SUBMITTED',loggedBy:s.name,loggedAt:now,submittedAt:now,createdAt:now,history:[{action:'Submitted',by:s.name,at:now}]});
+  },`Counts for ${fmtDay(c.date)} sent to Stage 3 for checking.`);
+}
+function dailyDiff(before,after){
+  const out=[];
+  DAILY_NUMS.forEach(([k,l])=>{ if(+before[k]!==+after[k]) out.push(`${l} ${before[k]} → ${after[k]}`); });
+  const keys=new Set([...Object.keys(before.issues||{}),...Object.keys(after.issues||{})]);
+  keys.forEach(k=>{ const a=(before.issues||{})[k], b=(after.issues||{})[k], L=ISSUE_LABEL[k]||k;
+    if(!a) out.push(`${L} added (${b.found} found)`); else if(!b) out.push(`${L} removed`);
+    else ['found','repaired','notWorked'].forEach(x=>{ if(+a[x]!==+b[x]) out.push(`${L} ${x==='notWorked'?'not worked on':x} ${a[x]} → ${b[x]}`); });
+  });
+  return out;
+}
+async function dailyVerify(){
+  if(S.saving) return; const s=S.session, f=S.f.daily; S.formError=null;
+  const [c,err]=dailyClean(f); if(err) return dailyFail(err);
+  const id=S.drawer.id, note=String(f._note||'').trim();
+  await dailyCommit(list=>{
+    const r=list.find(x=>x.id===id); if(!r) return 'This log no longer exists. Refresh and check.';
+    if(r.status!=='SUBMITTED') return 'This log changed while you were checking it. Close and open it again.';
+    if(s.role==='omtech'&&String(r.loggedBy||'').trim().toLowerCase()===String(s.name).trim().toLowerCase()) return 'The person who logged the counts can\'t also verify them.';
+    const adj=dailyDiff(r,c), now=nowIso();
+    Object.assign(r,c,{status:'VERIFIED',verifiedBy:s.name,verifiedAt:now,verifyNote:note,adjustments:adj,...(adj.length&&!r.original?{original:{received:r.received,toWarehouse:r.toWarehouse,inField:r.inField,issues:clone(r.issues||{})}}:{}),history:[...(r.history||[]),{action:adj.length?`Verified with ${adj.length} correction${adj.length===1?'':'s'}`:'Verified',by:s.name,at:now,note:[note,adj.join('; ')].filter(Boolean).join(' · ')}]});
+  },`Counts for ${fmtDay(c.date)} verified. They now count in the weekly and monthly report.`);
+}
+async function dailyReturn(){
+  if(S.saving) return; const s=S.session, f=S.f.daily, note=String(f._note||'').trim(); S.formError=null;
+  if(note.length<5) return dailyFail('Write a short note saying what receiving needs to correct.');
+  const id=S.drawer.id;
+  await dailyCommit(list=>{
+    const r=list.find(x=>x.id===id); if(!r) return 'This log no longer exists.';
+    const now=nowIso(); Object.assign(r,{status:'RETURNED',returnedBy:s.name,returnedAt:now,returnNote:note,history:[...(r.history||[]),{action:'Sent back to receiving',by:s.name,at:now,note}]});
+  },'Sent back to receiving with your note.');
+}
+async function dailyReopen(){
+  if(!await ask('Reopen this day?','The counts leave the verified report until Stage 3 verifies them again.','Reopen')) return;
+  const s=S.session, id=S.drawer.id;
+  await dailyCommit(list=>{
+    const r=list.find(x=>x.id===id); if(!r) return 'This log no longer exists.';
+    const now=nowIso(); Object.assign(r,{status:'SUBMITTED',submittedAt:now,history:[...(r.history||[]),{action:'Reopened for correction',by:s.name,at:now}]});
+  },'Reopened. It is back with Stage 3.');
+}
+
+/* ---------- Report view ---------- */
+function DailyView(){
+  const s=S.session, p=periodOf(S.anchor,S.gran), prev=periodOf(shiftKey(p.start,S.gran,-1),S.gran);
+  const st=dailyStats(p), pv=dailyStats(prev);
+  const unit=S.gran==='day'?'day':S.gran, today=todayStr(), tr=dailyFor(today);
+  const r1=v=>Math.round(v*10)/10;
+  const logBtn=canLogDaily()?(tr?`<button class="btn pri" data-act="daily-open" data-id="${esc(tr.id)}">${tr.status==='VERIFIED'?'View today\'s counts':'Open today\'s counts'}</button>`:`<button class="btn pri" data-act="daily-new">${ICON.plus} Log today's counts</button>`):'';
+  const pend=(S.data.daily||[]).filter(r=>r.status==='SUBMITTED').sort((a,b)=>a.date.localeCompare(b.date));
+  const pendCard=canVerifyDaily()&&pend.length?`<div class="banner warn"><div><b>${pend.length} day${pend.length===1?' is':'s are'} waiting for your check:</b> ${pend.slice(0,6).map(r=>`<button class="btn sm" data-act="daily-open" data-id="${esc(r.id)}">${esc(fmtShort(r.date))}</button>`).join(' ')}</div></div>`:'';
+  const notCounted=st.pending?`<div class="banner"><div>${st.pending} log${st.pending===1?'':'s'} in this ${unit} ${st.pending===1?'is':'are'} not verified yet, so ${st.pending===1?'it is':'they are'} not in these totals.</div></div>`:'';
+
+  // daily trend inside the period (or last 14 days for a single day)
+  const days=[]; const p2=S.gran==='day'?{start:addDays(p.start,-13),end:p.start}:p;
+  for(let k=p2.start;k<=p2.end;k=addDays(k,1)) days.push(k);
+  const dl=days.map(k=>{ const r=dailyFor(k); return r&&r.status==='VERIFIED'?dailyTotals(r):null; });
+  const dayChart=chartSlot({type:'cols',labels:days.map(k=>periodLabel(periodOf(k,'day'))),full:days.map(k=>fmtDay(k)+(dailyFor(k)?(dailyFor(k).status==='VERIFIED'?'':' · not verified'):' · not logged')),sel:days.indexOf(S.gran==='day'?p.start:today),
+    series:[{label:'Worked on in field',color:'--s3',values:dl.map(x=>x?x.inField:0)},{label:'Returned to warehouse',color:'--s1',values:dl.map(x=>x?x.toWarehouse:0)}]});
+  const buckets=bucketsEnding(S.anchor,S.gran==='day'?'week':S.gran,S.gran==='month'?12:12);
+  const bs=buckets.map(b=>dailyStats(b));
+  const rateChart=chartSlot({type:'line',labels:buckets.map(b=>periodLabel(b)),full:buckets.map(b=>periodLabel(b,true)),values:bs.map(x=>x.rate),pctAxis:true,label:'Repair rate',sel:buckets.length-1,extra:bs.map(x=>`${x.repaired} of ${x.found} issues repaired`)});
+
+  const iss=Object.entries(st.byIssue).sort((a,b)=>b[1].found-a[1].found);
+  const issTable=iss.length?`<div class="tbl-wrap"><table><thead><tr><th>Issue</th><th class="r">Found</th><th class="r">Repaired</th><th class="r">Not worked on</th><th>Repair rate</th><th>Main reason not worked on</th></tr></thead><tbody>
+    ${iss.map(([k,v])=>{ const rt=pct(v.repaired,v.found), top=Object.entries(v.reasons).sort((a,b)=>b[1]-a[1])[0]; return `<tr><td>${esc(ISSUE_LABEL[k]||k)}</td><td class="r num">${v.found}</td><td class="r num">${v.repaired}</td><td class="r num">${v.notWorked}</td><td><div class="ratebar"><div style="width:${rt||0}%;background:var(${rt>=80?'--good':rt>=50?'--warn':'--crit'})"></div></div><span class="num" style="font-weight:700">${fmtPct(rt)}</span></td><td>${top?esc(top[0])+` <span class="muted">(${top[1]})</span>`:'<span class="muted">—</span>'}</td></tr>`; }).join('')}
+    <tr class="tot"><td>Total</td><td class="r num">${st.found}</td><td class="r num">${st.repaired}</td><td class="r num">${st.notWorked}</td><td><span class="num" style="font-weight:800">${fmtPct(st.rate)}</span></td><td></td></tr></tbody></table></div>`:empty(`No verified counts in this ${unit} yet.`);
+
+  const rs=Object.entries(st.byReason).sort((a,b)=>b[1].n-a[1].n), rmax=Math.max(1,...rs.map(x=>x[1].n));
+  const reasonHtml=rs.length?`<div class="bars">${rs.map(([k,v])=>barRow(k,[[v.n,'--s2',`<b>${esc(k)}</b><br>${Object.entries(v.issues).map(([i,n])=>`${esc(ISSUE_LABEL[i]||i)}: ${n}`).join('<br>')}`]],rmax,v.n)).join('')}</div>`:empty('Everything found was worked on.');
+
+  const logRows=st.all.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  const missing=[]; if(S.gran!=='day'){ for(let k=p.start;k<=p.end&&k<=today;k=addDays(k,1)) if(!dailyFor(k)) missing.push(k); }
+  const logTable=`<div class="tbl-wrap"><table><thead><tr><th>Date</th><th class="r">Received</th><th class="r">Warehouse</th><th class="r">Field</th><th class="r">Issues</th><th class="r">Repaired</th><th class="r">Rate</th><th>Status</th><th>Logged by</th><th>Verified by</th></tr></thead><tbody>
+    ${logRows.length?logRows.map(r=>{ const t=dailyTotals(r); return `<tr class="click" data-act="daily-open" data-id="${esc(r.id)}"><td class="num">${esc(fmtShort(r.date))}</td><td class="r num">${t.received}</td><td class="r num">${t.toWarehouse}</td><td class="r num">${t.inField}</td><td class="r num">${t.found}</td><td class="r num">${t.repaired}</td><td class="r num">${fmtPct(pct(t.repaired,t.found))}</td><td>${dailyChip(r)}${r.adjustments&&r.adjustments.length?' '+chip('corrected','warn'):''}</td><td>${esc(r.loggedBy||'—')}</td><td>${esc(r.verifiedBy||'—')}</td></tr>`; }).join(''):`<tr><td colspan="10">${empty('Nothing logged in this period.')}</td></tr>`}
+  </tbody></table></div>${missing.length?`<div class="muted" style="font-size:12.5px;margin-top:8px">Not logged: ${missing.map(fmtShort).join(', ')}</div>`:''}`;
+
+  return `<div class="page-head"><div><div class="eyebrow">Receiving · ${S.gran==='day'?'daily':S.gran==='week'?'weekly':'monthly'} report</div><h2>${esc(periodLabel(p,true))}</h2><p>End-of-day counts from receiving, checked by Stage 3. Only verified days are counted.</p></div>
+    <div class="ph-actions">${PeriodBar()}<div class="ph-btns">${logBtn}<button class="btn" data-act="daily-csv">${ICON.dl} CSV</button><button class="btn" data-act="daily-print">Print</button></div></div></div>
+  ${pendCard}${notCounted}
+  <div class="kpis six">
+    ${kpi('Batteries received',st.received,deltaHtml(st.received,pv.received,null))}
+    ${kpi('Returned to warehouse',st.toWarehouse,st.received?`${fmtPct(pct(st.toWarehouse,st.received))} of received`:'—')}
+    ${kpi('Worked on in field',st.inField,st.received?`${fmtPct(pct(st.inField,st.received))} of received`:'—')}
+    ${kpi('Issues found',st.found,`${st.notWorked} not worked on`)}
+    ${kpi('Repair rate',st.rate==null?'—':`${Math.round(st.rate)}<small>%</small>`,deltaHtml(st.rate,pv.rate,true,v=>r1(v),' pts'),'',st.rate==null?'':st.rate>=80?'good':st.rate>=60?'warn':'crit')}
+    ${kpi('Days verified',`${st.verified}<small>/ ${Math.min(st.days,S.gran==='day'?1:Math.max(0,daysBetween(p.start,p.end>today?today:p.end)+1))}</small>`,st.pending?`${st.pending} awaiting check`:'all logged days checked','',st.pending?'warn':'good')}
+  </div>
+  <div class="grid g-main">
+    <div class="card"><div class="card-head"><div><h3>Where received batteries went</h3><p>${S.gran==='day'?'Last 14 days':'Each day in this '+unit}, verified counts only</p></div></div>
+      <div class="legend"><span><i style="background:var(--s3)"></i>Worked on in field</span><span><i style="background:var(--s1)"></i>Returned to warehouse</span></div>${dayChart}</div>
+    <div class="card"><div class="card-head"><div><h3>Repair rate trend</h3><p>Issues repaired ÷ issues found, last 12 ${S.gran==='month'?'months':'weeks'}</p></div></div>${rateChart}
+      <div class="section"><h4 style="margin-bottom:8px">Why issues were not worked on</h4>${reasonHtml}</div></div>
+  </div>
+  <div class="card section"><div class="card-head"><div><h3>Issues and repair rate</h3><p>Verified counts in ${esc(periodLabel(p,true))}</p></div></div>${issTable}</div>
+  <div class="card section"><div class="card-head"><div><h3>Daily logs</h3><p>Click a day to open it</p></div></div>${logTable}</div>`;
+}
+function DailyOverviewCard(p){
+  const st=dailyStats(p), unit=p.gran==='day'?'day':p.gran;
+  if(!st.all.length) return '';
+  return `<div class="card section" style="margin-bottom:14px"><div class="card-head"><div><h3>Receiving counts</h3><p>Verified end-of-day counts this ${unit}${st.pending?` · ${st.pending} awaiting Stage 3 check`:''}</p></div></div>
+    <div class="daily-strip"><div class="ds"><b>${st.received}</b><small>received</small></div><div class="ds"><b>${st.toWarehouse}</b><small>returned to warehouse</small></div><div class="ds"><b>${st.inField}</b><small>worked on in field</small></div><div class="ds"><b>${fmtPct(st.rate)}</b><small>repair rate (${st.repaired} of ${st.found} issues)</small></div><button class="btn" data-act="nav" data-v="daily">Open report ›</button></div></div>`;
+}
+function dailyCsv(){
+  const p=periodOf(S.anchor,S.gran), st=dailyStats(p,true), q=v=>{ const x=String(v??''); return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x; };
+  const lines=[['Date','Status','Total received','Returned to warehouse','Worked on in field','Issue','Found','Repaired','Not worked on','Repair rate %','Reason not worked on','Reason details','Logged by','Verified by','Verified at','Corrections'].join(',')];
+  st.all.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{
+    const base=[r.date,r.status,r.received,r.toWarehouse,r.inField];
+    const tail=[r.loggedBy,r.verifiedBy,r.verifiedAt,(r.adjustments||[]).join('; ')];
+    const iss=Object.entries(r.issues||{});
+    if(!iss.length) lines.push([...base,'','','','','','','',...tail].map(q).join(','));
+    iss.forEach(([k,v])=>lines.push([...base,ISSUE_LABEL[k]||k,v.found,v.repaired,v.notWorked,v.found?Math.round(v.repaired/v.found*1000)/10:'',v.reason||'',v.reasonNote||'',...tail].map(q).join(',')));
+  });
+  const vs=dailyStats(p);
+  lines.push('',['Verified totals',periodLabel(p,true)].map(q).join(','),`Received,${vs.received}`,`Returned to warehouse,${vs.toWarehouse}`,`Worked on in field,${vs.inField}`,`Issues found,${vs.found}`,`Issues repaired,${vs.repaired}`,`Not worked on,${vs.notWorked}`,`Repair rate %,${vs.rate==null?'':Math.round(vs.rate*10)/10}`);
+  download(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv'}),`daily-receiving-counts_${p.start}${p.gran==='day'?'':'_'+p.gran}.csv`);
+}
+
+/* sample data for the demo sign-in */
+function makeDemoDaily(rnd,pick,T1,T3,om){
+  const out=[], today=todayStr(), keys=['noPower','lowCapacity','cellImbalance','bmsFault','chargeFail','irFail','iotFault','canFail','connectorDamage'];
+  for(let i=60;i>=0;i--){
+    const d=addDays(today,-i); if(parseKey(d).getDay()===0) continue;
+    const received=8+Math.floor(rnd()*14), inField=Math.floor(received*(.35+rnd()*.35)), toWarehouse=received-inField;
+    const issues={}; const n=2+Math.floor(rnd()*4);
+    for(let j=0;j<n;j++){ const k=pick(keys); if(issues[k]) continue; const found=1+Math.floor(rnd()*5), repaired=Math.min(found,Math.round(found*(.5+rnd()*.5))), nw=found-repaired; issues[k]={found,repaired,notWorked:nw,...(nw?{reason:pick(DAILY_REASONS.slice(0,5)),reasonNote:''}:{})}; }
+    const t1=pick(T1), t3=pick(T3), at=new Date(parseKey(d).getTime()+17.5*36e5).toISOString();
+    const status=i<=1?'SUBMITTED':i===8?'RETURNED':'VERIFIED';
+    out.push({id:'demo-daily-'+i,date:d,received,toWarehouse,inField,issues,notes:'',status,loggedBy:t1,loggedAt:at,submittedAt:at,createdAt:at,
+      ...(status==='VERIFIED'?{verifiedBy:t3,verifiedAt:new Date(parseKey(d).getTime()+18.2*36e5).toISOString(),adjustments:rnd()<.12?['Repaired 2 → 3']:[]}:{}),
+      ...(status==='RETURNED'?{returnedBy:t3,returnedAt:new Date(parseKey(d).getTime()+18*36e5).toISOString(),returnNote:'Warehouse count looks short by 2, please recount.'}:{}),
+      history:[{action:'Submitted',by:t1,at}]});
+  }
+  return out;
 }
 
 /* =====================================================================
    APP STATE
    ===================================================================== */
 const S = {
-  session:null, view:'overview', data:{om:[],bsa:[],rca:[],qi:[]}, dataVersion:0,
+  session:null, view:'overview', data:{om:[],bsa:[],rca:[],qi:[],daily:[]}, dataVersion:0,
   gran:lsRead('bqc_gran','day'), anchor:todayStr(),
   om:{q:'',status:'all',platform:'all',scope:'period',page:1},
   bat:{q:'',use:'all',platform:'all',sort:'recent',page:1},
@@ -1382,7 +1831,7 @@ function renderMain(){
 }
 function safeView(){
   const allowed=roleTabs().map(x=>x[0]); if(!allowed.includes(S.view)) S.view=allowed[0];
-  try{ return WelcomeCard()+({work:MyWorkView,overview:OverviewView,chain:ChainView,batteries:BatteriesView,bsa:BsaView,quality:QualityView}[S.view]||OverviewView)(); }
+  try{ return SyncBanner()+WelcomeCard()+({work:MyWorkView,overview:OverviewView,daily:DailyView,chain:ChainView,batteries:BatteriesView,bsa:BsaView,quality:QualityView}[S.view]||OverviewView)(); }
   catch(e){ console.error(e); return `<div class="banner crit"><div><b>This page couldn't be drawn.</b> ${esc(e.message)} <button class="btn sm" data-act="nav" data-v="overview">Back to overview</button></div></div>`; }
 }
 function renderDrawer(keepScroll){
@@ -1391,7 +1840,7 @@ function renderDrawer(keepScroll){
   let html=''; try{ html=Drawer(); }catch(e){ console.error(e); html=sheet('Something went wrong',esc(e.message),'',''); }
   root.innerHTML=html; document.body.style.overflow='hidden';
   const nb=root.querySelector('.d-body'); if(nb&&keepScroll) nb.scrollTop=sc;
-  restoreFocus(f);
+  restoreFocus(f); if(S.drawer.type==='daily') paintDailyCalc();
 }
 function openDrawer(d){ S.drawer=d; renderDrawer(false); const b=$('#drawer-root .d-body'); if(b) b.scrollTop=0; }
 function closeDrawer(){ S.drawer=null; renderDrawer(); }
@@ -1415,6 +1864,7 @@ const TAB_IC = {
   chain:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="19" cy="12" r="2.4"/><path d="M7.4 12h2.2M14.4 12h2.2"/></svg>',
   batteries:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="4.5" width="11" height="17" rx="2.2"/><path d="M10 2.5h4M9.5 15.5h5M9.5 12h5"/></svg>',
   bsa:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.2 5.2L4 17v3h3l5.5-5.5a4 4 0 0 0 5.2-5.2l-2.5 2.5-2.5-.7-.7-2.5z"/></svg>',
+  daily:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.2"/><path d="M3.5 9.5h17M8 2.5v4M16 2.5v4M7.5 13.5h3M7.5 17h6M15 13.5h1.5"/></svg>',
   quality:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6z"/><path d="m8.8 12.2 2.2 2.2 4.4-4.6"/></svg>'
 };
 const ACCENTS = [['blue','Blue'],['teal','Teal'],['violet','Violet'],['amber','Amber']];
@@ -1460,16 +1910,16 @@ function Header(){
 /* what each role sees: technicians their queue, engineers their area, managers everything */
 function roleTabs(s){
   s=s||S.session||{};
-  if(s.role==='omtech') return [['work','My work'],['chain','O&M chain'],['batteries','Batteries']];
+  if(s.role==='omtech') return Number(s.stage)===2?[['work','My work'],['chain','O&M chain'],['batteries','Batteries']]:[['work','My work'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries']];
   if(s.role==='bsa') return [['bsa','BSA'],['batteries','Batteries'],['quality','Quality']];
-  if(s.role==='quality') return [['overview','Overview'],['quality','Quality'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA']];
-  return [['overview','Overview'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA'],['quality','Quality']];
+  if(s.role==='quality') return [['overview','Overview'],['quality','Quality'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA']];
+  return [['overview','Overview'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA'],['quality','Quality']];
 }
 const canExport = () => S.session&&S.session.role!=='omtech';
 function Tabs(cls='top-tabs'){
   const openOm=S.data.om.filter(r=>!isClosed(r)).length, openBsa=S.data.bsa.filter(bsaOpen).length, s=S.session;
   const mineN=s.role==='omtech'?S.data.om.filter(r=>!isClosed(r)&&r.stage===s.stage&&!onHold(r)&&(!(r['stage'+s.stage]||{}).technician||(r['stage'+s.stage]||{}).technician===s.name)).length:0;
-  const counts={work:mineN,chain:s.role==='omtech'?null:openOm,bsa:openBsa};
+  const counts={work:mineN,chain:s.role==='omtech'?null:openOm,bsa:openBsa,daily:dailyBadge(s)};
   const t=roleTabs(s).map(([k,l])=>[k,l,counts[k]]);
   return `<nav class="tabs ${cls}" aria-label="Sections">${t.map(([k,l,n])=>`<button class="tab ${S.view===k?'on':''}" data-act="nav" data-v="${k}" ${S.view===k?'aria-current="page"':''}><span class="t-ic">${TAB_IC[k]}</span><span class="t-l">${l}</span>${n?`<span class="cnt">${n}</span>`:''}</button>`).join('')}</nav>`;
 }
@@ -1569,6 +2019,7 @@ function OverviewView(){
     ${kpi('Avg. turnaround',st.tat==null?'—':`${r1(st.tat)}<small>days</small>`,'intake to close',null)}
   </div>
   ${AttentionCard(5)}
+  ${DailyOverviewCard(p)}
   ${SimRecallCard()}
   <div class="grid g-main">
     <div class="card"><div class="card-head"><div><h3>Throughput</h3><p>Closed batteries by outcome, with intakes as a line · last ${BUCKETS[S.gran]} ${unit}s</p></div></div>
@@ -1647,7 +2098,7 @@ const STAGE_GUIDE = {
   3:'Claim a battery, run every test and decide: pass, return for corrective action with a reason, or escalate to BSA.'
 };
 function MyWorkView(){
-  const s=S.session, n=Number(s.stage), open=S.data.om.filter(r=>!isClosed(r)&&Number(r.stage)===n), tech=r=>(r['stage'+n]||{}).technician;
+  const s=S.session, n=s.stage, open=S.data.om.filter(r=>!isClosed(r)&&r.stage===n), tech=r=>(r['stage'+n]||{}).technician;
   const byAge=(a,b)=>String(enteredStageAt(a)).localeCompare(String(enteredStageAt(b)));
   const claimQ=open.filter(r=>!onHold(r)&&!tech(r)).sort(byAge), mine=open.filter(r=>!onHold(r)&&tech(r)===s.name).sort(byAge);
   const held=open.filter(onHold), others=open.filter(r=>!onHold(r)&&tech(r)&&tech(r)!==s.name);
@@ -1664,6 +2115,7 @@ function MyWorkView(){
     ${n===2?kpi('Waiting for supplier',held.length,held.length?'on hold for parts':'none on hold','',held.length?'crit':''):kpi('Corrective actions',capaIn,'returned to this stage','',capaIn?'warn':'')}
   </div>
   ${AttentionCard(4)}
+  ${n===1||n===3?DailyWorkCard(n):''}
   <div class="grid g2">
     <div class="card"><div class="card-head"><div><h3>My open tasks</h3><p>Finish these before claiming more</p></div><span class="chip">${mine.length}</span></div>${list(mine,'mine','You have nothing in progress. Claim the oldest battery from Ready to claim.')}</div>
     <div class="card"><div class="card-head"><div><h3>Ready to claim</h3><p>Oldest first. Corrective actions are marked ↺</p></div><span class="chip">${claimQ.length}</span></div>${list(claimQ,'claim',n===1?'Nothing to re-inspect. New batteries are received with the button above.':'Nothing waiting at your stage.')}</div>
@@ -1918,6 +2370,7 @@ function Drawer(){
   if(d.type==='newbsa') return NewBsaSheet();
   if(d.type==='rca') return RcaSheet();
   if(d.type==='storage') return StorageSheet();
+  if(d.type==='daily') return DailySheet();
   return '';
 }
 const canWork = r => { const s=S.session; return s.role==='omtech' && !isClosed(r) && r.stage===s.stage; };
@@ -2326,6 +2779,7 @@ function StorageSheet(){
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" data-act="cp-connect">Test &amp; connect</button><button class="btn" data-act="cp-sync">Upload now</button><button class="btn" data-act="cp-local">Use this device only</button></div>
     <div class="err" id="cp-status"></div>
     <details class="visit"><summary><b>Database setup SQL (run once)</b></summary><div style="padding:12px 14px;display:grid;gap:8px"><textarea class="in mono" id="cp-sql" readonly style="min-height:200px;font-size:11.5px">${esc(SCHEMA_SQL)}</textarea><button class="btn sm" data-act="cp-copy">Copy SQL</button></div></details>`}
+    ${failedOps().length?`<div class="banner crit"><div><b>${failedOps().length} change(s) were refused by the cloud</b> and are kept here so nothing is lost. Latest reason: ${esc(failedOps().slice(-1)[0].error||'unknown')}. <button class="btn sm" data-act="cp-retry-failed">Try them again</button></div></div>`:''}
     <div><h4 style="margin-bottom:8px">Records held ${Cloud.demo?'in this sample':'on this device'}</h4><div class="tbl-wrap"><table><tbody>${counts}</tbody></table></div></div>
     ${Cloud.demo?'':`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="backup">${ICON.dl} Export backup</button><label class="btn">Import backup<input type="file" id="import-file" accept="application/json" hidden></label></div>
     <div class="muted" style="font-size:12.5px">Records are never hard-deleted in the cloud, so a mistaken removal can be restored in Supabase. Plant stock records from the old app stay in the database untouched; this app no longer reads them.</div>`}`;
@@ -3447,6 +3901,7 @@ async function doLogin(){
   await startSession(s);
 }
 async function startSession(s){
+  if(s&&s.stage!=null) s.stage=Number(s.stage)||null;
   S.session=s;
   S.view=lsRead('bqc_view_'+s.role,roleTabs(s)[0][0]);
   S.f={intake:lsRead(draftKey(),null)||emptyIntake(s.name),nbsa:emptyBsa(s.name),rca:emptyRca(s.name)};
@@ -3515,7 +3970,7 @@ const ACT = {
   qtab:t=>{ S.qtab=t.dataset.v; renderMain(); },
   refresh:()=>refresh(false),
   theme:()=>{ BG.refresh();  const cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); const n=cur==='dark'?'light':'dark'; document.documentElement.setAttribute('data-theme',n); lsWrite('bqc_theme',n); drawCharts(); },
-  signout:async()=>{ if(pendingCount()&&!Cloud.demo&&!await ask('Sign out with unsent changes?',`${pendingCount()} change(s) are saved on this device but not uploaded yet. They stay here and upload next time you're online.`,'Sign out')) return; S.lastWho=S.session.name; S.farewell=makeFarewell(S.session); S.welcome=null; lsDel(SESSION_KEY); S.session=null; S.drawer=null; Cloud.demo=false; S.data={om:[],bsa:[],rca:[],qi:[]}; bump(); clearInterval(autoTimer); render(); },
+  signout:async()=>{ if(pendingCount()&&!Cloud.demo&&!await ask('Sign out with unsent changes?',`${pendingCount()} change(s) are saved on this device but not uploaded yet. They stay here and upload next time you're online.`,'Sign out')) return; S.lastWho=S.session.name; S.farewell=makeFarewell(S.session); S.welcome=null; lsDel(SESSION_KEY); S.session=null; S.drawer=null; Cloud.demo=false; S.data={om:[],bsa:[],rca:[],qi:[],daily:[]}; bump(); clearInterval(autoTimer); render(); },
   storage:()=>openDrawer({type:'storage'}),
   close:()=>{ if(S.drawer&&S.drawer.type==='intake') lsWrite(draftKey(),S.f.intake); S.formError=null; closeDrawer(); },
   'open-battery':t=>{ S.formError=null; openDrawer({type:'battery',id:t.dataset.id}); },
@@ -3538,8 +3993,21 @@ const ACT = {
   del:async t=>{ if(!await ask('Delete this record?','It disappears from every screen. The cloud copy is kept as a soft delete and can be restored in Supabase.','Delete',true)) return; if(await deleteRecord(t.dataset.store,t.dataset.id)){ S.data[STORE_STATE[t.dataset.store]]=await loadStore(t.dataset.store); bump(); closeDrawer(); render(); } },
   scan:t=>openScanner(t.dataset.v),
   'cp-connect':()=>cpConnect(),
+  'sync-now':async t=>{ if(t) t.disabled=true; const ok=await flushOutbox(); await refresh(true); toast(ok&&!S.syncError?'Everything is uploaded and up to date.':'Still can\'t reach the cloud: '+(Cloud.lastError||S.syncError||'offline')); render(); },
+  'daily-new':()=>openDaily(null),
+  'daily-open':t=>openDaily(t.dataset.id),
+  'daily-add-issue':()=>dailyAddIssue(),
+  'daily-rm-issue':t=>{ const f=S.f.daily; if(f&&f.issues) delete f.issues[t.dataset.k]; renderDrawer(true); },
+  'daily-prefill':()=>dailyPrefill(),
+  'daily-save':()=>dailySubmit(),
+  'daily-verify':()=>dailyVerify(),
+  'daily-return':()=>dailyReturn(),
+  'daily-reopen':()=>dailyReopen(),
+  'daily-csv':()=>dailyCsv(),
+  'daily-print':()=>window.print(),
   'cp-sync':async()=>{ const ok=await flushOutbox(); $('#cp-status').textContent=ok?'All changes uploaded.':'Upload failed: '+(Cloud.lastError||'not connected'); paintSync(); },
-  'cp-local':()=>{ Cloud.localOnly=true; lsWrite('bqc_local_only',true); closeDrawer(); paintSync(); toast('Saving to this device only.'); },
+  'cp-retry-failed':async()=>{ const f=failedOps().map(({error,...op})=>op); lsDel(FAILED_KEY); outboxSet(outbox().concat(f)); await flushOutbox(); renderDrawer(true); render(); },
+  'cp-local':async()=>{ if(!await ask('Save to this device only?','Nothing you enter will reach other stages or devices. Only use this for testing.','Use this device only',true)) return; Cloud.localOnly=true; lsWrite('bqc_local_only',true); closeDrawer(); paintSync(); toast('Saving to this device only.'); },
   'cp-copy':()=>{ const ta=$('#cp-sql'); navigator.clipboard.writeText(SCHEMA_SQL).then(()=>toast('SQL copied.'),()=>{ ta.select(); toast('Press Ctrl+C to copy the selected SQL.'); }); },
   backup:()=>exportBackup(),
   export:()=>openExportDialog(),
@@ -3559,13 +4027,13 @@ let filterTimer=0;
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.dataset.phys){ physInput(t); return; }
-  if(t.dataset.bind){ setPath(S.f,t.dataset.bind,t.type==='checkbox'?t.checked:t.value); if(S.drawer&&S.drawer.type==='intake') scheduleDraft(); return; }
+  if(t.dataset.bind){ setPath(S.f,t.dataset.bind,t.type==='checkbox'?t.checked:t.value); if(S.drawer&&S.drawer.type==='intake') scheduleDraft(); if(S.drawer&&S.drawer.type==='daily') paintDailyCalc(); return; }
   if(t.dataset.idsfx){ idInput(t.dataset.idsfx); if(S.drawer&&S.drawer.type==='intake') scheduleDraft(); return; }
   if(t.dataset.filter&&t.tagName==='INPUT'){ const [g,k]=t.dataset.filter.split('.'); S[g][k]=t.value; S[g].page=1; clearTimeout(filterTimer); filterTimer=setTimeout(renderMain,160); }
 });
 document.addEventListener('change',e=>{
   const t=e.target;
-  if(t.dataset.bind){ setPath(S.f,t.dataset.bind,t.type==='checkbox'?t.checked:t.value); if(t.hasAttribute('data-rerender')) renderDrawer(true); return; }
+  if(t.dataset.bind){ setPath(S.f,t.dataset.bind,t.type==='checkbox'?t.checked:t.value); if(t.hasAttribute('data-rerender')) renderDrawer(true); else if(S.drawer&&S.drawer.type==='daily') paintDailyCalc(); return; }
   if(t.dataset.idplat){ idInput(t.dataset.idplat); return; }
   if(t.dataset.idsfx&&t.dataset.idsfx==='intake'){ renderDrawer(true); return; }
   if(t.dataset.filter&&t.tagName==='SELECT'){ const [g,k]=t.dataset.filter.split('.'); S[g][k]=t.value; S[g].page=1; renderMain(); return; }
@@ -3605,6 +4073,4 @@ if(!(window.matchMedia&&matchMedia('(pointer:coarse)').matches)){
   const s=currentSession();
   if(s){ startSession(s); } else render();
 })();
-</script>
-
-</body></html>
+</script></body></html>
