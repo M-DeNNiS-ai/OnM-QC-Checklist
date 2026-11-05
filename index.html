@@ -1647,7 +1647,7 @@ const STAGE_GUIDE = {
   3:'Claim a battery, run every test and decide: pass, return for corrective action with a reason, or escalate to BSA.'
 };
 function MyWorkView(){
-  const s=S.session, n=s.stage, open=S.data.om.filter(r=>!isClosed(r)&&r.stage===n), tech=r=>(r['stage'+n]||{}).technician;
+  const s=S.session, n=Number(s.stage), open=S.data.om.filter(r=>!isClosed(r)&&Number(r.stage)===n), tech=r=>(r['stage'+n]||{}).technician;
   const byAge=(a,b)=>String(enteredStageAt(a)).localeCompare(String(enteredStageAt(b)));
   const claimQ=open.filter(r=>!onHold(r)&&!tech(r)).sort(byAge), mine=open.filter(r=>!onHold(r)&&tech(r)===s.name).sort(byAge);
   const held=open.filter(onHold), others=open.filter(r=>!onHold(r)&&tech(r)&&tech(r)!==s.name);
