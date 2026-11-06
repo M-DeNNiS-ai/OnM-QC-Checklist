@@ -694,6 +694,13 @@ button.kpi:hover .k-val{color:var(--accent)}
 .fu-u{border-left:3px solid var(--line-2);padding-left:10px;display:grid;gap:3px}
 .linkbtn{background:none;border:0;padding:0;cursor:pointer;font:inherit;font-family:var(--f-mono);font-weight:600}
 td .dot{width:8px;height:8px;border-radius:50%;vertical-align:middle}td .dot.crit{background:var(--crit)}td .dot.warn{background:var(--warn)}
+div.jcard{cursor:pointer} div.jcard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.r1-end{display:inline-flex;align-items:center;gap:6px;margin-left:auto}
+.card-del{width:28px;height:28px;display:inline-grid;place-items:center;border-radius:8px;border:1px solid color-mix(in srgb,var(--crit) 35%,transparent);background:color-mix(in srgb,var(--crit) 7%,var(--panel));color:var(--crit);cursor:pointer;padding:0}
+.card-del:hover{background:var(--crit-bg)}
+.del-ic{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.visit-act{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px;margin:0 0 4px;border-bottom:1px dashed var(--line);font-size:12.5px}
+@media (max-width:640px){td .del-ic span{display:none}}
 .danger-t{color:var(--crit)!important;margin-right:auto}
 .reason-list{display:grid;gap:6px}.reason-list label{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:13.5px}
 .reason-list label:has(input:checked){border-color:var(--crit);background:var(--crit-bg)}.reason-list small{display:block;color:var(--ink-3);font-size:12px}
@@ -1567,7 +1574,7 @@ function DailySheet(){
   let foot='';
   if(mode==='log') foot=`<button class="btn pri" data-act="daily-save" ${S.saving?'disabled':''}>${savingLabel(r&&r.status==='RETURNED'?'Resend to Stage 3':r?'Save changes':'Submit to Stage 3',S.saving)}</button>`;
   if(mode==='verify') foot=`<button class="btn esc" data-act="daily-return" ${S.saving?'disabled':''}>Send back</button><button class="btn pri" data-act="daily-verify" ${S.saving?'disabled':''}>${savingLabel('Verify & submit',S.saving)}</button>`;
-  if(r&&canDeleteDaily(r)) foot=`<button class="btn ghost danger-t" data-act="del-daily" data-id="${esc(r.id)}">Delete log</button>`+foot;
+  if(r&&canDeleteDaily(r)) foot=`<button class="btn danger del-ic danger-t" data-act="del-daily" data-id="${esc(r.id)}">${ICON.trash}<span>Delete log</span></button>`+foot;
   if(mode==='view'&&r&&r.status==='VERIFIED'&&canReopenDaily()) foot+=`<button class="btn" data-act="daily-reopen">Reopen for correction</button>`;
   const title=mode==='verify'?'Verify daily counts':r?'Daily counts':'Log today\'s counts';
   return sheet(esc(title),esc(fmtDay(f.date)),body,foot,'Receiving · end of day');
@@ -1715,8 +1722,8 @@ function DailyView(){
 
   const logRows=st.all.slice().sort((a,b)=>b.date.localeCompare(a.date));
   const missing=[]; if(S.gran!=='day'){ for(let k=p.start;k<=p.end&&k<=today;k=addDays(k,1)) if(!dailyFor(k)) missing.push(k); }
-  const logTable=`<div class="tbl-wrap"><table><thead><tr><th>Date</th><th class="r">Received</th><th class="r">Warehouse</th><th class="r">Field</th><th class="r">Issues</th><th class="r">Repaired</th><th class="r">Rate</th><th>Status</th><th>Logged by</th><th>Verified by</th></tr></thead><tbody>
-    ${logRows.length?logRows.map(r=>{ const t=dailyTotals(r); return `<tr class="click" data-act="daily-open" data-id="${esc(r.id)}"><td class="num">${esc(fmtShort(r.date))}</td><td class="r num">${t.received}</td><td class="r num">${t.toWarehouse}</td><td class="r num">${t.inField}</td><td class="r num">${t.found}</td><td class="r num">${t.repaired}</td><td class="r num">${fmtPct(pct(t.repaired,t.found))}</td><td>${dailyChip(r)}${r.adjustments&&r.adjustments.length?' '+chip('corrected','warn'):''}</td><td>${esc(r.loggedBy||'—')}</td><td>${esc(r.verifiedBy||'—')}</td></tr>`; }).join(''):`<tr><td colspan="10">${empty('Nothing logged in this period.')}</td></tr>`}
+  const logTable=`<div class="tbl-wrap"><table><thead><tr><th>Date</th><th class="r">Received</th><th class="r">Warehouse</th><th class="r">Field</th><th class="r">Issues</th><th class="r">Repaired</th><th class="r">Rate</th><th>Status</th><th>Logged by</th><th>Verified by</th><th class="r" aria-label="Actions"></th></tr></thead><tbody>
+    ${logRows.length?logRows.map(r=>{ const t=dailyTotals(r); return `<tr class="click" data-act="daily-open" data-id="${esc(r.id)}"><td class="num">${esc(fmtShort(r.date))}</td><td class="r num">${t.received}</td><td class="r num">${t.toWarehouse}</td><td class="r num">${t.inField}</td><td class="r num">${t.found}</td><td class="r num">${t.repaired}</td><td class="r num">${fmtPct(pct(t.repaired,t.found))}</td><td>${dailyChip(r)}${r.adjustments&&r.adjustments.length?' '+chip('corrected','warn'):''}</td><td>${esc(r.loggedBy||'—')}</td><td>${esc(r.verifiedBy||'—')}</td><td class="r">${canDeleteDaily(r)?`<button class="btn sm danger del-ic" data-act="del-daily" data-id="${esc(r.id)}" title="Delete this daily log" aria-label="Delete log for ${esc(fmtShort(r.date))}">${ICON.trash}<span>Delete</span></button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="11">${empty('Nothing logged in this period.')}</td></tr>`}
   </tbody></table></div>${missing.length?`<div class="muted" style="font-size:12.5px;margin-top:8px">Not logged: ${missing.map(fmtShort).join(', ')}</div>`:''}`;
 
   return `<div class="page-head"><div><div class="eyebrow">Receiving · ${S.gran==='day'?'daily':S.gran==='week'?'weekly':'monthly'} report</div><h2>${esc(periodLabel(p,true))}</h2><p>End-of-day counts from receiving, checked by Stage 3. Only verified days are counted.</p></div>
@@ -1791,6 +1798,7 @@ function canDeleteVisit(r){
   if(s.role!=='omtech') return false;
   const st=Number(s.stage);
   if(!isClosed(r)) return st===1||Number(r.stage)===st;
+  if(sameName(r.createdBy,s.name)&&hoursSince(r.createdAt)<48&&!S.data.bsa.some(c=>c.omRecordId===r.id&&c.bsaReceivedAt)) return true;
   /* an intake sent straight to BSA by mistake: receiving may remove it for 48 h, while BSA hasn't received it */
   return st===1&&r.status==='CLOSED_TRANSFERRED_BSA'&&!(r.stage2||{}).completedAt&&hoursSince(r.createdAt)<48&&!S.data.bsa.some(c=>c.omRecordId===r.id&&c.bsaReceivedAt);
 }
@@ -2112,6 +2120,7 @@ const ICON = {
   scan:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/></svg>',
   bell:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2.2 2.2 0 0 0 4 0"/></svg>',
   sim:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><rect x="8.5" y="11" width="7" height="6.5" rx="1"/><path d="M12 11v6.5M8.5 14.2h7"/></svg>',
+  trash:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>',
   plus:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
 };
 const TAB_IC = {
@@ -2336,9 +2345,9 @@ function ChainView(){
     <input class="finput grow" id="om-q" data-filter="om.q" value="${esc(F.q)}" placeholder="Search ID, site, technician…">
     ${canExport()?`<button class="btn sm" data-act="export">${ICON.dl} Download</button>`:''}
   </div>
-  <div class="tbl-wrap"><table><thead><tr><th>Received</th><th>BMS ID</th><th>Platform</th><th class="r">Visit</th><th>Status</th><th>Issues reported</th><th>Technicians</th><th class="r">Days</th></tr></thead><tbody>
+  <div class="tbl-wrap"><table><thead><tr><th>Received</th><th>BMS ID</th><th>Platform</th><th class="r">Visit</th><th>Status</th><th>Issues reported</th><th>Technicians</th><th class="r">Days</th><th class="r" aria-label="Actions"></th></tr></thead><tbody>
   ${pageRows.length?pageRows.map(r=>{ const st=omStatus(r); const iss=issuesOf(r); const days=isClosed(r)&&r.closedAt?Math.max(0,daysBetween(r.dateReceived,dkey(r.closedAt))):ageDays(r);
-    return `<tr class="click" data-act="open-om" data-id="${esc(r.id)}"><td class="num">${esc(fmtShort(r.dateReceived))}</td><td><span class="idlink">${esc(r.bmsId)}</span></td><td>${esc(r.model||'—')}</td><td class="r num">#${r.visitNumber||1}</td><td>${chip(...st)}</td><td style="max-width:260px;white-space:normal">${iss.length?esc(iss.slice(0,2).map(k=>ISSUE_LABEL[k]).join(', '))+(iss.length>2?` +${iss.length-2}`:''):'<span class="muted">—</span>'}</td><td style="white-space:nowrap">${esc([1,2,3].map(n=>(r['stage'+n]||{}).technician).filter(Boolean).join(' → ')||'—')}</td><td class="r num">${days}</td></tr>`; }).join(''):`<tr><td colspan="8">${empty('No visits match these filters.')}</td></tr>`}
+    return `<tr class="click" data-act="open-om" data-id="${esc(r.id)}"><td class="num">${esc(fmtShort(r.dateReceived))}</td><td><span class="idlink">${esc(r.bmsId)}</span></td><td>${esc(r.model||'—')}</td><td class="r num">#${r.visitNumber||1}</td><td>${chip(...st)}</td><td style="max-width:260px;white-space:normal">${iss.length?esc(iss.slice(0,2).map(k=>ISSUE_LABEL[k]).join(', '))+(iss.length>2?` +${iss.length-2}`:''):'<span class="muted">—</span>'}</td><td style="white-space:nowrap">${esc([1,2,3].map(n=>(r['stage'+n]||{}).technician).filter(Boolean).join(' → ')||'—')}</td><td class="r num">${days}</td><td class="r">${canDeleteVisit(r)?`<button class="btn sm danger del-ic" data-act="del-visit" data-id="${esc(r.id)}" title="Delete this entry (duplicate or typing error)" aria-label="Delete ${esc(r.bmsId)} entry">${ICON.trash}<span>Delete</span></button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="9">${empty('No visits match these filters.')}</td></tr>`}
   </tbody></table></div>${pager(rows.length,F,25,'om')}`;
 }
 function taskCard(r,n,mode){
@@ -2346,9 +2355,9 @@ function taskCard(r,n,mode){
   const lim=mode==='hold'?[ALERT_H.holdWarn,ALERT_H.holdCrit]:mode==='mine'?[ALERT_H.unfinishedWarn,ALERT_H.unfinishedCrit]:[ALERT_H.unclaimedWarn,ALERT_H.unclaimedCrit];
   const tone=h>=lim[1]?'crit':h>=lim[0]?'warn':'';
   const what=r.capaCycles>0?`↺ CAPA ${r.capaCycles}: ${capaText((r.capaLog||[]).slice(-1)[0])}`:issuesOf(r).map(k=>k==='other'&&otherIssueText(r.stage1)?'Other ('+otherIssueText(r.stage1)+')':ISSUE_LABEL[k]).join(', ');
-  return `<button class="jcard task ${tone?'age-'+tone:'age-ok'}" data-act="open-om" data-id="${esc(r.id)}"><div class="row1"><span class="mono" style="font-weight:700;font-size:12.5px">${esc(r.bmsId)}</span><span class="chip ${tone}">${mode==='hold'?'waiting ':mode==='mine'?'started ':'waiting '}${fmtHours(h)}</span></div>
+  return `<div role="button" tabindex="0" class="jcard task ${tone?'age-'+tone:'age-ok'}" data-act="open-om" data-id="${esc(r.id)}"><div class="row1"><span class="mono" style="font-weight:700;font-size:12.5px">${esc(r.bmsId)}</span><span class="r1-end">${cardDel(r)}<span class="chip ${tone}">${mode==='hold'?'waiting ':mode==='mine'?'started ':'waiting '}${fmtHours(h)}</span></span></div>
     <div class="row2"><span>${esc(r.model||'—')}</span><span>·</span><span>visit #${r.visitNumber||1}</span>${needsSim(r)?chip('SIM swap','info'):''}${mode==='hold'?chip(r.hold.part||'part','serious','⏸'):''}<span style="margin-left:auto;font-weight:700;color:var(--accent)">${mode==='claim'?'Open · claim':mode==='hold'?'Open':'Continue'} ›</span></div>
-    ${what?`<div class="row3">${esc(what)}</div>`:''}</button>`;
+    ${what?`<div class="row3">${esc(what)}</div>`:''}</div>`;
 }
 const STAGE_GUIDE = {
   1:'Receive the battery, run the pre-opening inspection and tick every defect you see. Batteries sent back for re-inspection also land here.',
@@ -2382,10 +2391,11 @@ function MyWorkView(){
   ${n===2?`<div class="card section"><div class="card-head"><div><h3>Waiting for supplier material</h3><p>On hold until the part arrives. Open one and mark the part as arrived to resume.</p></div><span class="chip">${held.length}</span></div>${list(held,'hold','Nothing is on hold.')}</div>`:''}
   ${others.length?`<div class="card section"><div class="card-head"><div><h3>Claimed by colleagues</h3><p>For your awareness</p></div><span class="chip">${others.length}</span></div><div class="lane-list">${others.map(r=>jobCard(r,n)).join('')}</div></div>`:''}`;
 }
+const cardDel = r => canDeleteVisit(r)?`<button class="card-del" data-act="del-visit" data-id="${esc(r.id)}" title="Delete this entry (duplicate or typing error)" aria-label="Delete ${esc(r.bmsId)} entry">${ICON.trash}</button>`:'';
 function jobCard(r,n){
   const a=ageDays(r), cls=a>=5?'age-crit':a>=3?'age-warn':'age-ok', tech=(r['stage'+n]||{}).technician;
-  return `<button class="jcard ${cls}" data-act="open-om" data-id="${esc(r.id)}"><div class="row1"><span class="mono" style="font-weight:600;font-size:12px">${esc(r.bmsId)}</span><span class="chip ${a>=5?'crit':a>=3?'warn':''}">${a}d</span></div>
-    <div class="row2"><span>${esc(r.model||'—')}</span><span>·</span><span>visit #${r.visitNumber||1}</span>${r.capaCycles>0?chip('CAPA '+r.capaCycles,'warn','↺'):''}${onHold(r)?chip('Waiting · '+(r.hold.part||'part'),'serious','⏸'):''}<span style="margin-left:auto">${tech?esc(tech):'<em>unclaimed</em>'}</span></div>${r.capaCycles>0&&!onHold(r)?`<div class="row3">${esc(capaText((r.capaLog||[]).slice(-1)[0]))}</div>`:''}</button>`;
+  return `<div role="button" tabindex="0" class="jcard ${cls}" data-act="open-om" data-id="${esc(r.id)}"><div class="row1"><span class="mono" style="font-weight:600;font-size:12px">${esc(r.bmsId)}</span><span class="r1-end"><span class="chip ${a>=5?'crit':a>=3?'warn':''}">${a}d</span>${cardDel(r)}</span></div>
+    <div class="row2"><span>${esc(r.model||'—')}</span><span>·</span><span>visit #${r.visitNumber||1}</span>${r.capaCycles>0?chip('CAPA '+r.capaCycles,'warn','↺'):''}${onHold(r)?chip('Waiting · '+(r.hold.part||'part'),'serious','⏸'):''}<span style="margin-left:auto">${tech?esc(tech):'<em>unclaimed</em>'}</span></div>${r.capaCycles>0&&!onHold(r)?`<div class="row3">${esc(capaText((r.capaLog||[]).slice(-1)[0]))}</div>`:''}</div>`;
 }
 function paginate(rows,F,per){ const pages=Math.max(1,Math.ceil(rows.length/per)); F.page=Math.min(Math.max(1,F.page||1),pages); return rows.slice((F.page-1)*per,F.page*per); }
 function pager(n,F,per,g){ const pages=Math.max(1,Math.ceil(n/per)); return `<div class="pager"><span>${n} record${n===1?'':'s'}</span>${pages>1?`<span style="display:flex;gap:6px;align-items:center"><button class="btn sm" data-act="page" data-g="${g}" data-v="-1" ${F.page<=1?'disabled':''}>‹ Prev</button>Page ${F.page} of ${pages}<button class="btn sm" data-act="page" data-g="${g}" data-v="1" ${F.page>=pages?'disabled':''}>Next ›</button></span>`:''}</div>`; }
@@ -2807,7 +2817,7 @@ function WorkSheet(rec){
       ${field('QC notes'+(disp&&disp!=='PASS'?' (reason)':''),area('edit.stage3.qcNote'))}`;
     foot=`<button class="btn ${disp&&disp!=='PASS'?'esc':'pri'}" data-act="submit-work" ${S.saving||!disp?'disabled':''}>${savingLabel(!disp?'Pick a disposition':disp==='PASS'?'Pass & close':disp==='FAIL'?'Return for corrective action':'Escalate to BSA',S.saving)}</button>`;
   }
-  const delBtn=canDeleteVisit(rec)?`<button class="btn ghost danger-t" data-act="del-visit" data-id="${esc(rec.id)}" title="Remove a duplicate or mistyped entry">Delete entry</button>`:'';
+  const delBtn=canDeleteVisit(rec)?`<button class="btn danger del-ic danger-t" data-act="del-visit" data-id="${esc(rec.id)}" title="Remove a duplicate or mistyped entry">${ICON.trash}<span>Delete entry</span></button>`:'';
   return sheet(esc(rec.bmsId),`${esc(STAGE_LABEL[n])}`,errBox()+fuWorkBanner(rec)+dupBanner(rec)+claim+capa+info+body,delBtn+`<button class="btn" data-act="open-battery" data-id="${esc(rec.bmsId)}">Battery history</button>`+foot,'Your work');
 }
 async function setHold(id,release){
@@ -2935,13 +2945,14 @@ function BatterySheet(id,focus){
     const postFail=POST_ITEMS.filter(([k])=>((r.stage2||{}).post||{})[k]==='FAIL').map(([,l])=>l);
     const kv=(k,v)=>`<div><span>${k}</span><b>${esc(v==null||v===''?'—':v)}</b></div>`;
     return `<details class="visit" ${focus===r.id||(!focus&&r===b.visits[b.visits.length-1])?'open':''}><summary><span><b>Visit #${r.visitNumber||1}</b> <span class="muted">· ${esc(fmtDay(r.dateReceived))}</span></span>${chip(...st)}</summary>
+      ${canDeleteVisit(r)?`<div class="visit-act"><span class="muted">Duplicate or typing error?</span><button class="btn sm danger del-ic" data-act="del-visit" data-id="${esc(r.id)}">${ICON.trash}<span>Delete this entry</span></button></div>`:''}
       <div class="kv">${kv('Reason',issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', '))}${otherIssueText(r.stage1)?kv('Other issue',otherIssueText(r.stage1)):''}${onHold(r)?kv('On hold',`Waiting for supplier: ${r.hold.part||'part'} since ${fmtShort(dkey(r.hold.since))}`):''}${kv('Swap station',r.site)}${kv('IMEI',r.imei)}${kv('Charge cycles',r.cycles==null?'':String(r.cycles))}${needsSim(r)?kv('SIM swap',simSummary(r)):''}
       ${kv('Stage 1',(r.stage1||{}).technician)}${kv('Stage 2',(r.stage2||{}).technician)}${kv('Stage 3',(r.stage3||{}).technician)}
       ${kv('Procedure',(r.stage2||{}).sopRef)}${kv('Parts replaced',(r.stage2||{}).partsReplaced)}${kv('Repair notes',(r.stage2||{}).repairAction)}
       ${kv('Pack voltage',t.packVoltage?t.packVoltage+' V':'')}${kv('Cell min / max',t.minCell?`${t.minCell} / ${t.maxCell} V`:'')}${kv('Insulation',t.irMeasured?`${t.irMeasured} MΩ (min ${t.irThreshold})`:'')}
       ${kv('Tests',TEST_BOOLS.filter(([k])=>tb[k]).length+' of '+TEST_BOOLS.length+' confirmed')}${needsSim(r)?kv('SIM functional test',tb[SIM_TEST[0]]?'Passed':(r.stage3||{}).completedAt?'Not confirmed':'Pending'):''}${kv('QC notes',(r.stage3||{}).qcNote)}${kv('CAPA cycles',r.capaCycles||0)}${(r.capaLog||[]).map(c=>kv('CAPA '+c.cycle,capaText(c))).join('')}${(r.holdLog||[]).map(h=>kv('Supplier wait',`${h.part||'part'} · ${fmtShort(dkey(h.since))} → ${fmtShort(dkey(h.releasedAt))}`)).join('')}
       ${preFail.length?kv('Pre-check fails',preFail.join(', ')):''}${postFail.length?kv('Post-check fails',postFail.join(', ')):''}</div>
-      ${canDeleteVisit(r)?`<div style="padding:0 14px 12px"><button class="btn sm danger" data-act="del-visit" data-id="${esc(r.id)}">Delete this entry</button></div>`:''}</details>`;
+</details>`;
   }).join('');
   const bsaList=b.bsa.length?b.bsa.slice().reverse().map(c=>{ const t=bsaTechStatus(c), tone=BSA_TONE[t]||['','']; return `<button class="jcard" data-act="open-bsa" data-id="${esc(c.id)}"><div class="row1"><b>${esc(c.escalationCategory||'BSA case')}</b>${chip(t,tone[0],tone[1])}</div><div class="row2">Flagged ${esc(fmtShort(c.dateFlagged))} · ${esc(c.assignedEngineer||'unassigned')}</div></button>`; }).join(''):'';
   const body=`<div class="facts"><div class="fact"><span>Visits</span><b>${b.visits.length}</b></div><div class="fact"><span>First pass</span><b>${b.closedCount?`${b.fp}/${b.closedCount}`:'—'}</b></div><div class="fact"><span>CAPA cycles</span><b>${b.capa}</b></div><div class="fact"><span>Days in repair</span><b>${Math.round(b.repairDays*10)/10}</b></div></div>
@@ -4319,7 +4330,7 @@ document.addEventListener('submit',e=>{
     else { S.view='batteries'; S.bat.q=q; S.bat.use='all'; S.bat.page=1; render(); toast(hits.length?`${hits.length} batteries match "${q}".`:`No battery matches "${q}".`); }
   }
 });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(S.farewell&&!S.session){ S.farewell=null; render(); return; } const mo=$('.top.menu-open,.top.search-open'); if(mo){ mo.classList.remove('menu-open','search-open'); return; } if($('#modal-root').innerHTML){ stopScan(); return; } if(S.drawer) ACT.close(); } if(e.key==='/'&&S.session&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){ e.preventDefault(); const g=$('#g-search'); if(g){ const tp=$('.top'); if(tp) tp.classList.add('search-open'); g.focus(); } } });
+document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); return; } if(e.key==='Escape'){ if(S.farewell&&!S.session){ S.farewell=null; render(); return; } const mo=$('.top.menu-open,.top.search-open'); if(mo){ mo.classList.remove('menu-open','search-open'); return; } if($('#modal-root').innerHTML){ stopScan(); return; } if(S.drawer) ACT.close(); } if(e.key==='/'&&S.session&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){ e.preventDefault(); const g=$('#g-search'); if(g){ const tp=$('.top'); if(tp) tp.classList.add('search-open'); g.focus(); } } });
 let draftTimer=0;
 function scheduleDraft(){ clearTimeout(draftTimer); draftTimer=setTimeout(()=>{ if(S.session&&S.f.intake) lsWrite(draftKey(),S.f.intake); },300); }
 window.addEventListener('beforeunload',e=>{ if(!Cloud.demo&&pendingCount()>0&&!Cloud.localOnly){ e.preventDefault(); e.returnValue=''; } });
