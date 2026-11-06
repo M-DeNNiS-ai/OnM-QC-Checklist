@@ -698,6 +698,23 @@ div.jcard{cursor:pointer} div.jcard:focus-visible{outline:2px solid var(--accent
 .r1-end{display:inline-flex;align-items:center;gap:6px;margin-left:auto}
 .card-del{width:28px;height:28px;display:inline-grid;place-items:center;border-radius:8px;border:1px solid color-mix(in srgb,var(--crit) 35%,transparent);background:color-mix(in srgb,var(--crit) 7%,var(--panel));color:var(--crit);cursor:pointer;padding:0}
 .card-del:hover{background:var(--crit-bg)}
+#modal-root .modal{max-height:calc(100dvh - 32px);overflow:auto}
+#modal-root .del-modal{display:flex;flex-direction:column;padding:0;overflow:hidden;gap:0}
+.dm-head{padding:18px 20px 10px}.dm-head h3{margin:0}
+.dm-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 20px 14px;display:grid;gap:12px}
+.dm-foot{padding:12px 20px calc(14px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--panel);display:grid;gap:6px}
+.dm-foot .err:empty{display:none}
+.dm-btns{display:flex;gap:8px;justify-content:flex-end}
+.btn.del-go{background:var(--crit);border-color:var(--crit);color:#fff;font-weight:700;display:inline-flex;align-items:center;gap:6px}
+.btn.del-go:hover{filter:brightness(1.06)}
+@media (max-width:560px){#modal-root .scrim{padding:10px;align-items:end}.dm-btns .btn{flex:1;height:46px;justify-content:center}.reason-list label{padding:8px 10px}.reason-list small{display:none}.del-modal #del-note{min-height:56px}}
+.dup-tools{display:flex;gap:8px;flex-wrap:wrap}
+.dup-g{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+.dup-h{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;background:var(--panel-2);font-size:13px}
+.dup-r{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-top:1px solid var(--line);cursor:pointer;font-size:13.5px}
+.dup-r input{margin-top:3px;width:18px;height:18px;accent-color:var(--crit);flex:none}
+.dup-r.on{background:var(--crit-bg)} .dup-r.locked{opacity:.65;cursor:default}
+.dup-t{display:grid;gap:4px;min-width:0}.dup-l1{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}.dup-t small{color:var(--ink-3);font-size:12px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .del-ic{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .visit-act{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px;margin:0 0 4px;border-bottom:1px dashed var(--line);font-size:12.5px}
 @media (max-width:640px){td .del-ic span{display:none}}
@@ -1808,29 +1825,92 @@ function dupBanner(r){
   const tw=visitTwins(r); if(!tw.length) return '';
   return `<div class="banner warn"><div><b>Possible duplicate.</b> ${esc(r.bmsId)} has ${tw.length} other ${tw.length===1?'entry':'entries'} (${tw.map(x=>`visit #${x.visitNumber||1}, ${fmtShort(x.dateReceived)}, ${omStatus(x)[0]}`).map(esc).join('; ')}). If this one is the extra, delete it.</div></div>`;
 }
-function dupChainBanner(){
-  const seen=new Map();
-  S.data.om.forEach(r=>{ const k=normId(r.bmsId); if(!isClosed(r)||r.dateReceived===todayStr()) (seen.get(k)||seen.set(k,[]).get(k)).push(r); });
-  const dups=[...seen.entries()].filter(([,l])=>l.length>1&&l.some(x=>!isClosed(x))&&(l.filter(x=>!isClosed(x)).length>1||new Set(l.map(x=>x.dateReceived)).size<l.length));
-  if(!dups.length) return '';
-  return `<div class="banner warn"><div><b>${dups.length} batter${dups.length===1?'y looks':'ies look'} logged twice:</b> ${dups.slice(0,8).map(([k])=>`<button class="btn sm" data-act="open-battery" data-id="${esc(k)}">${esc(k)}</button>`).join(' ')} Open one and delete the extra entry.</div></div>`;
+/* ---------- Bulk clean-up of duplicate entries ---------- */
+/* Groups visits of the same battery that look like double entries: two or more open at once,
+   or logged on the same received date. The entry with most progress is kept by default. */
+function dupGroups(){
+  const by=new Map();
+  S.data.om.forEach(r=>{ const k=normId(r.bmsId); if(!k) return; (by.get(k)||by.set(k,[]).get(k)).push(r); });
+  const out=[];
+  by.forEach((list,k)=>{
+    if(list.length<2) return;
+    const set=new Set();
+    const open=list.filter(x=>!isClosed(x)); if(open.length>1) open.forEach(x=>set.add(x));
+    const byDate={}; list.forEach(x=>{ (byDate[x.dateReceived]=byDate[x.dateReceived]||[]).push(x); });
+    Object.values(byDate).forEach(l=>{ if(l.length>1) l.forEach(x=>set.add(x)); });
+    if(set.size<2) return;
+    const items=[...set];
+    const score=x=>(isClosed(x)?100:Number(x.stage)*10)+((x['stage'+x.stage]||{}).technician?5:0)+(x.capaCycles?1:0);
+    items.sort((a,b)=>score(b)-score(a)||String(a.createdAt).localeCompare(String(b.createdAt)));
+    out.push({id:k,keep:items[0].id,items});
+  });
+  return out.sort((a,b)=>a.id.localeCompare(b.id));
 }
+function dupChainBanner(){
+  const g=dupGroups(); if(!g.length) return '';
+  const extra=sum(g.map(x=>x.items.length-1));
+  return `<div class="banner warn"><div><b>${g.length} batter${g.length===1?'y looks':'ies look'} logged more than once</b> (${extra} extra entr${extra===1?'y':'ies'}). <button class="btn sm pri" data-act="dups-open">${ICON.trash} Review &amp; delete duplicates</button></div></div>`;
+}
+function openDups(){
+  const g=dupGroups(), sel={};
+  g.forEach(x=>x.items.forEach(r=>{ if(r.id!==x.keep&&canDeleteVisit(r)) sel[r.id]=true; }));
+  S.f.dups={sel}; S.formError=null; openDrawer({type:'dups'});
+}
+function DupsSheet(){
+  const g=dupGroups(), sel=(S.f.dups||{}).sel||{};
+  const n=Object.keys(sel).filter(k=>sel[k]&&S.data.om.some(r=>r.id===k)).length;
+  const body=g.length?`${errBox()}<div class="banner"><div>Each group is one battery logged more than once. The entry with the most progress is marked <b>Keep</b>, and the extras are ticked for deletion. Change the ticks if needed, then delete them all at once.</div></div>
+    <div class="dup-tools"><button class="btn sm" data-act="dups-all">Tick all suggested</button><button class="btn sm" data-act="dups-none">Untick all</button></div>
+    ${g.map(x=>`<div class="dup-g"><div class="dup-h"><button class="linkbtn idlink" data-act="open-battery" data-id="${esc(x.id)}">${esc(x.id)}</button><span class="muted">${x.items.length} entries</span></div>
+      ${x.items.map(r=>{ const can=canDeleteVisit(r), keep=r.id===x.keep, st=omStatus(r), tech=[1,2,3].map(k=>(r['stage'+k]||{}).technician).filter(Boolean).join(' → ');
+        return `<label class="dup-r ${sel[r.id]?'on':''} ${can?'':'locked'}"><input type="checkbox" data-dup="${esc(r.id)}" ${sel[r.id]?'checked':''} ${can?'':'disabled'}>
+        <span class="dup-t"><span class="dup-l1"><b>Visit #${r.visitNumber||1}</b><span>received ${esc(fmtShort(r.dateReceived))}${r.timeReceived?' '+esc(r.timeReceived):''}</span>${keep?chip('Keep','good','★'):''}</span><small>${chip(...st)} ${esc(tech||'nobody yet')}${issuesOf(r).length?' · '+esc(issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', ')):''}${can?'':' · you can\'t delete this one'}</small></span></label>`; }).join('')}</div>`).join('')}`
+    :empty('No duplicates found. Every battery has at most one open entry and one entry per day.');
+  const foot=g.length?`<button class="btn" data-act="close">Cancel</button><button class="btn del-go" data-act="dups-delete" ${!n||S.saving?'disabled':''}>${S.saving?savingLabel('',true):`${ICON.trash}<span>Delete ${n} selected</span>`}</button>`:'';
+  return sheet('Clean up duplicates',`${g.length} batter${g.length===1?'y':'ies'} with duplicate entries`,body,foot,'O&M chain');
+}
+async function dupsDelete(){
+  const sel=(S.f.dups||{}).sel||{}, ids=Object.keys(sel).filter(k=>sel[k]);
+  const rows=S.data.om.filter(r=>ids.includes(r.id)&&canDeleteVisit(r));
+  if(!rows.length) return;
+  const groups=dupGroups();
+  const wipe=groups.find(x=>x.items.every(r=>ids.includes(r.id)));
+  if(wipe&&!await ask('Delete every entry of a battery?',`All entries of ${wipe.id} are ticked, so nothing of it would be left. Delete anyway?`,'Delete all',true)) return;
+  if(!await ask(`Delete ${rows.length} duplicate entr${rows.length===1?'y':'ies'}?`,'They disappear from every screen. A copy of each is kept in the cloud with your name and the reason "Duplicate entry".','Delete',true)) return;
+  S.saving=true; renderDrawer(true);
+  try{
+    const s=S.session, fresh=await loadStore('om_chain_records'), now=nowIso(), idSet=new Set(rows.map(r=>r.id));
+    const hit=fresh.filter(r=>idSet.has(r.id));
+    hit.forEach(r=>{ r.deletion={reason:'duplicate',reasonLabel:'Duplicate entry',note:'Bulk duplicate clean-up',by:s.name,role:s.role,stage:s.stage||null,at:now}; });
+    if(!await saveStore('om_chain_records',fresh)){ S.saving=false; renderDrawer(true); return; }
+    const next=fresh.filter(r=>!idSet.has(r.id));
+    if(!await saveStore('om_chain_records',next,{allowDeletes:true})){ S.saving=false; renderDrawer(true); return; }
+    S.data.om=next;
+    if(can('bsa_records')&&hit.some(r=>r.status==='CLOSED_TRANSFERRED_BSA')){
+      const bsa=await loadStore('bsa_records'), drop=new Set(bsa.filter(c=>idSet.has(c.omRecordId)&&!c.bsaReceivedAt).map(c=>c.id));
+      if(drop.size&&await saveStore('bsa_records',bsa.filter(c=>!drop.has(c.id)),{allowDeletes:true})) S.data.bsa=bsa.filter(c=>!drop.has(c.id));
+    }
+    bump(); S.saving=false; S.f.dups=null; closeDrawer(); render();
+    toast(`${hit.length} duplicate entr${hit.length===1?'y':'ies'} deleted.`);
+  } finally { S.saving=false; if(S.drawer) renderDrawer(true); }
+}
+
 function askDelete(title,summary,extra){
   return new Promise(res=>{
     const root=$('#modal-root');
-    root.innerHTML=`<div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="del-t"><h3 id="del-t">${esc(title)}</h3>
-      <div class="del-sum">${summary}</div>${extra||''}
+    root.innerHTML=`<div class="scrim"><div class="modal del-modal" role="dialog" aria-modal="true" aria-labelledby="del-t"><div class="dm-head"><h3 id="del-t">${esc(title)}</h3></div>
+      <div class="dm-body"><div class="del-sum">${summary}</div>${extra||''}
       <div><div style="font-weight:700;font-size:13px;margin-bottom:6px">Why are you deleting it?</div><div class="reason-list">${DELETE_REASONS.map(([k,l,h],i)=>`<label><input type="radio" name="del-r" value="${k}" ${i===0?'checked':''}><span><b>${esc(l)}</b><small>${esc(h)}</small></span></label>`).join('')}</div></div>
       <label class="f"><span>Note (required for “Other reason”)</span><textarea class="in" id="del-note" placeholder="e.g. typed 4 instead of 9 in the ID"></textarea></label>
-      <div class="err" id="del-err" role="alert"></div>
-      <div class="muted" style="font-size:12px">It disappears from every screen. A copy is kept in the cloud with your name and reason, so it can be restored if needed.</div>
-      <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" id="del-no">Cancel</button><button class="btn danger" id="del-yes">Delete</button></div></div></div>`;
+      <div class="muted" style="font-size:12px">It disappears from every screen. A copy is kept in the cloud with your name and reason, so it can be restored if needed.</div></div>
+      <div class="dm-foot"><div class="err" id="del-err" role="alert"></div><div class="dm-btns"><button class="btn" id="del-no">Cancel</button><button class="btn del-go" id="del-yes">${ICON.trash}<span>Delete entry</span></button></div></div></div></div>`;
     const done=v=>{ root.innerHTML=''; res(v); };
     $('#del-no').onclick=()=>done(null);
     $('#del-yes').onclick=()=>{ const k=(root.querySelector('input[name=del-r]:checked')||{}).value, note=$('#del-note').value.trim();
-      if(k==='other'&&note.length<4){ $('#del-err').textContent='Explain the reason in a few words.'; return; }
+      if(k==='other'&&note.length<4){ $('#del-err').textContent='Explain the reason in the note.'; $('#del-note').focus(); return; }
       done({reason:k,reasonLabel:(DELETE_REASONS.find(x=>x[0]===k)||[])[1],note}); };
-    $('#del-no').focus();
+    root.querySelectorAll('input[name=del-r]').forEach(x=>x.onchange=()=>{ $('#del-err').textContent=''; if(x.value==='other') $('#del-note').focus(); });
+    root.querySelector('.scrim').onclick=e=>{ if(e.target.classList.contains('scrim')) done(null); };
   });
 }
 async function deleteVisit(id){
@@ -2334,7 +2414,7 @@ function ChainView(){
   const pageRows=paginate(rows,F,25);
   const statusChips=[['all','All'],['open','Open'],['pass','Passed first time'],['capa','Had CAPA'],['hold','Waiting for supplier'],['bsa','Sent to BSA']].map(([k,l])=>`<button class="fchip ${F.status===k?'on':''}" data-act="f" data-g="om" data-k="status" data-v="${k}">${l} <span class="n">${counts[k]}</span></button>`).join('');
   return `<div class="page-head"><div><div class="eyebrow">O&amp;M repair chain</div><h2>Pipeline &amp; visits</h2><p>Each battery moves Intake → Repair → Final QC. Cards turn amber after 3 days and red after 5.</p></div>
-    <div class="period">${s.role==='omtech'&&s.stage===1||s.role==='omadmin'&&false?'':''}${can('om_chain_records')&&(s.role!=='omtech'||s.stage===1)?`<button class="btn pri" data-act="new-intake">${ICON.plus} Receive battery</button>`:''}</div></div>
+    <div class="period">${s.role==='omtech'&&s.stage===1||s.role==='omadmin'&&false?'':''}${dupGroups().length?`<button class="btn danger del-ic" data-act="dups-open">${ICON.trash}<span>Duplicates (${dupGroups().length})</span></button>`:''}${can('om_chain_records')&&(s.role!=='omtech'||s.stage===1)?`<button class="btn pri" data-act="new-intake">${ICON.plus} Receive battery</button>`:''}</div></div>
   ${dupChainBanner()}
   <div class="board">${laneHtml}</div>
   <div class="page-head section" style="margin-top:22px"><div><h3>Visit log</h3><p>${F.scope==='period'?`Received or closed in ${esc(periodLabel(p,true))}`:'All visits on record'}${F.issue?` · issue: ${esc(ISSUE_LABEL[F.issue])} <button class="btn sm ghost" data-act="f" data-g="om" data-k="issue" data-v="">Clear</button>`:''}</p></div>${F.scope==='period'?PeriodBar():''}</div>
@@ -2641,6 +2721,7 @@ function Drawer(){
   if(d.type==='storage') return StorageSheet();
   if(d.type==='daily') return DailySheet();
   if(d.type==='fu') return FuSheet();
+  if(d.type==='dups') return DupsSheet();
   return '';
 }
 const canWork = r => { const s=S.session; return s.role==='omtech' && !isClosed(r) && r.stage===s.stage; };
@@ -4263,6 +4344,10 @@ const ACT = {
   'rca-save':()=>rcaSave(),
   qi:async t=>{ const rows=clone(S.data.qi), i=rows.findIndex(r=>r.id===t.dataset.id); if(i<0) return; const n=(parseInt(rows[i].count)||0)+(+t.dataset.v); if(n<0) return toast('A count can\'t go below zero.'); rows[i]={...rows[i],count:n,updatedAt:nowIso(),updatedBy:S.session.name}; if(await saveStore('quality_issue_records',rows)){ S.data.qi=rows; renderMain(); } },
   'del-visit':t=>deleteVisit(t.dataset.id),
+  'dups-open':()=>openDups(),
+  'dups-delete':()=>dupsDelete(),
+  'dups-all':()=>{ const sel={}; dupGroups().forEach(x=>x.items.forEach(r=>{ if(r.id!==x.keep&&canDeleteVisit(r)) sel[r.id]=true; })); S.f.dups={sel}; renderDrawer(true); },
+  'dups-none':()=>{ S.f.dups={sel:{}}; renderDrawer(true); },
   'fu-open':t=>openFu(t.dataset.id),
   'fu-assign':()=>fuAssign(),
   'fu-update':()=>fuUpdate(),
@@ -4311,6 +4396,7 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('change',e=>{
   const t=e.target;
+  if(t.dataset.dup){ const f=S.f.dups=S.f.dups||{sel:{}}; f.sel[t.dataset.dup]=t.checked; renderDrawer(true); return; }
   if(t.dataset.bind){ setPath(S.f,t.dataset.bind,t.type==='checkbox'?t.checked:t.value); if(t.hasAttribute('data-rerender')) renderDrawer(true); else if(S.drawer&&S.drawer.type==='daily') paintDailyCalc(); return; }
   if(t.dataset.idplat){ idInput(t.dataset.idplat); return; }
   if(t.dataset.idsfx&&t.dataset.idsfx==='intake'){ renderDrawer(true); return; }
