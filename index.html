@@ -689,6 +689,15 @@ button.kpi:hover .k-val{color:var(--accent)}
 .rate-pill{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--panel-2)}
 .rate-pill.good{color:var(--good);background:var(--good-bg)}.rate-pill.warn{color:var(--warn);background:var(--warn-bg)}.rate-pill.crit{color:var(--crit);background:var(--crit-bg)}
 .ratebar{display:inline-block;vertical-align:middle;width:70px;height:6px;border-radius:3px;background:var(--panel-2);overflow:hidden;margin-right:8px}.ratebar>div{height:100%;border-radius:3px}
+.fu-card .row2,.fu-card .row3{font-size:12.5px}.fu-upd{background:var(--panel-2);border-radius:8px;padding:6px 8px;color:var(--ink)}
+.fu-hist{display:grid;gap:10px}.fu-h{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px;font-size:13px}
+.fu-u{border-left:3px solid var(--line-2);padding-left:10px;display:grid;gap:3px}
+.linkbtn{background:none;border:0;padding:0;cursor:pointer;font:inherit;font-family:var(--f-mono);font-weight:600}
+td .dot{width:8px;height:8px;border-radius:50%;vertical-align:middle}td .dot.crit{background:var(--crit)}td .dot.warn{background:var(--warn)}
+.danger-t{color:var(--crit)!important;margin-right:auto}
+.reason-list{display:grid;gap:6px}.reason-list label{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:13.5px}
+.reason-list label:has(input:checked){border-color:var(--crit);background:var(--crit-bg)}.reason-list small{display:block;color:var(--ink-3);font-size:12px}
+.del-sum{font-size:13px;padding:10px 12px;border-radius:10px;background:var(--panel-2)}
 .in:disabled{opacity:.75;cursor:not-allowed;background:var(--panel-2)}
 .num-in::-webkit-outer-spin-button,.num-in::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.num-in{-moz-appearance:textfield;appearance:textfield}
 .daily-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:12px;align-items:center}
@@ -1105,7 +1114,7 @@ async function appendAudit(store,base,next,removed){
   }catch(e){ console.error('Audit append failed',e); }
 }
 async function deleteRecord(store,id){
-  if(!canDelete()){ toast('Only the Quality Engineer can delete records.'); return false; }
+  if(!canDelete()&&!(store==='om_chain_records'&&canDeleteVisit(S.data.om.find(r=>String(r.id)===String(id))))){ toast('Only the Quality Engineer can delete records.'); return false; }
   const fresh=await loadStore(store), next=fresh.filter(r=>String(r.id)!==String(id));
   if(next.length===fresh.length){ toast('Record not found.'); return false; }
   const ok=await saveStore(store,next,{allowDeletes:true});
@@ -1229,7 +1238,7 @@ function computeAlerts(){
   if(role==='quality'||role==='omadmin'){
     S.data.rca.filter(r=>r.status!=='VERIFIED CLOSED'&&r.dueDate&&r.dueDate<todayStr()).forEach(r=>push('warn','Overdue RCA',`RCA for ${r.bmsId||'—'} is past due (${fmtShort(r.dueDate)})`,`${r.owner||'No owner'} · ${(r.status||'').toLowerCase()}`,'open-rca',r.id,hoursSince(r.dueDate)));
   }
-  dailyAlerts(push,s);
+  dailyAlerts(push,s); fuAlerts(push,s);
   return out.sort((a,b)=>(a.sev==='crit'?0:1)-(b.sev==='crit'?0:1)||b.h-a.h);
 }
 function ageDays(r){ return Math.max(0,daysBetween(r.dateReceived||dkey(r.createdAt),todayStr())); }
@@ -1558,7 +1567,8 @@ function DailySheet(){
   let foot='';
   if(mode==='log') foot=`<button class="btn pri" data-act="daily-save" ${S.saving?'disabled':''}>${savingLabel(r&&r.status==='RETURNED'?'Resend to Stage 3':r?'Save changes':'Submit to Stage 3',S.saving)}</button>`;
   if(mode==='verify') foot=`<button class="btn esc" data-act="daily-return" ${S.saving?'disabled':''}>Send back</button><button class="btn pri" data-act="daily-verify" ${S.saving?'disabled':''}>${savingLabel('Verify & submit',S.saving)}</button>`;
-  if(mode==='view'&&r&&r.status==='VERIFIED'&&canReopenDaily()) foot=`<button class="btn" data-act="daily-reopen">Reopen for correction</button>`;
+  if(r&&canDeleteDaily(r)) foot=`<button class="btn ghost danger-t" data-act="del-daily" data-id="${esc(r.id)}">Delete log</button>`+foot;
+  if(mode==='view'&&r&&r.status==='VERIFIED'&&canReopenDaily()) foot+=`<button class="btn" data-act="daily-reopen">Reopen for correction</button>`;
   const title=mode==='verify'?'Verify daily counts':r?'Daily counts':'Log today\'s counts';
   return sheet(esc(title),esc(fmtDay(f.date)),body,foot,'Receiving · end of day');
 }
@@ -1768,6 +1778,252 @@ function makeDemoDaily(rnd,pick,T1,T3,om){
   return out;
 }
 
+
+/* =====================================================================
+   DELETING DUPLICATE OR MISTYPED ENTRIES
+   O&M staff can remove a wrong entry themselves; the reason is recorded and
+   the cloud keeps a soft-deleted copy, so nothing is lost for audit.
+   ===================================================================== */
+const DELETE_REASONS = [['duplicate','Duplicate entry','The same battery was logged twice'],['typo','Wrong battery ID / typing error','Re-log it with the correct details after deleting'],['mistake','Logged by mistake','This battery should not be in the system'],['other','Other reason','Explain below']];
+function canDeleteVisit(r){
+  const s=S.session||{}; if(!r) return false;
+  if(s.role==='quality'||s.role==='omadmin') return true;
+  if(s.role!=='omtech') return false;
+  const st=Number(s.stage);
+  if(!isClosed(r)) return st===1||Number(r.stage)===st;
+  /* an intake sent straight to BSA by mistake: receiving may remove it for 48 h, while BSA hasn't received it */
+  return st===1&&r.status==='CLOSED_TRANSFERRED_BSA'&&!(r.stage2||{}).completedAt&&hoursSince(r.createdAt)<48&&!S.data.bsa.some(c=>c.omRecordId===r.id&&c.bsaReceivedAt);
+}
+const canDeleteDaily = r => { const s=S.session||{}; if(!r) return false; if(s.role==='omadmin'||s.role==='quality') return true; return s.role==='omtech'&&Number(s.stage)===1&&r.status!=='VERIFIED'; };
+const visitTwins = r => S.data.om.filter(x=>x.id!==r.id&&normId(x.bmsId)===normId(r.bmsId)&&(!isClosed(x)&&!isClosed(r)||x.dateReceived===r.dateReceived));
+function dupBanner(r){
+  const tw=visitTwins(r); if(!tw.length) return '';
+  return `<div class="banner warn"><div><b>Possible duplicate.</b> ${esc(r.bmsId)} has ${tw.length} other ${tw.length===1?'entry':'entries'} (${tw.map(x=>`visit #${x.visitNumber||1}, ${fmtShort(x.dateReceived)}, ${omStatus(x)[0]}`).map(esc).join('; ')}). If this one is the extra, delete it.</div></div>`;
+}
+function dupChainBanner(){
+  const seen=new Map();
+  S.data.om.forEach(r=>{ const k=normId(r.bmsId); if(!isClosed(r)||r.dateReceived===todayStr()) (seen.get(k)||seen.set(k,[]).get(k)).push(r); });
+  const dups=[...seen.entries()].filter(([,l])=>l.length>1&&l.some(x=>!isClosed(x))&&(l.filter(x=>!isClosed(x)).length>1||new Set(l.map(x=>x.dateReceived)).size<l.length));
+  if(!dups.length) return '';
+  return `<div class="banner warn"><div><b>${dups.length} batter${dups.length===1?'y looks':'ies look'} logged twice:</b> ${dups.slice(0,8).map(([k])=>`<button class="btn sm" data-act="open-battery" data-id="${esc(k)}">${esc(k)}</button>`).join(' ')} Open one and delete the extra entry.</div></div>`;
+}
+function askDelete(title,summary,extra){
+  return new Promise(res=>{
+    const root=$('#modal-root');
+    root.innerHTML=`<div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="del-t"><h3 id="del-t">${esc(title)}</h3>
+      <div class="del-sum">${summary}</div>${extra||''}
+      <div><div style="font-weight:700;font-size:13px;margin-bottom:6px">Why are you deleting it?</div><div class="reason-list">${DELETE_REASONS.map(([k,l,h],i)=>`<label><input type="radio" name="del-r" value="${k}" ${i===0?'checked':''}><span><b>${esc(l)}</b><small>${esc(h)}</small></span></label>`).join('')}</div></div>
+      <label class="f"><span>Note (required for “Other reason”)</span><textarea class="in" id="del-note" placeholder="e.g. typed 4 instead of 9 in the ID"></textarea></label>
+      <div class="err" id="del-err" role="alert"></div>
+      <div class="muted" style="font-size:12px">It disappears from every screen. A copy is kept in the cloud with your name and reason, so it can be restored if needed.</div>
+      <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" id="del-no">Cancel</button><button class="btn danger" id="del-yes">Delete</button></div></div></div>`;
+    const done=v=>{ root.innerHTML=''; res(v); };
+    $('#del-no').onclick=()=>done(null);
+    $('#del-yes').onclick=()=>{ const k=(root.querySelector('input[name=del-r]:checked')||{}).value, note=$('#del-note').value.trim();
+      if(k==='other'&&note.length<4){ $('#del-err').textContent='Explain the reason in a few words.'; return; }
+      done({reason:k,reasonLabel:(DELETE_REASONS.find(x=>x[0]===k)||[])[1],note}); };
+    $('#del-no').focus();
+  });
+}
+async function deleteVisit(id){
+  const r0=S.data.om.find(x=>x.id===id);
+  if(!canDeleteVisit(r0)){ toast('You can\'t delete this entry. Ask the O&M manager.'); return; }
+  const tw=visitTwins(r0);
+  const ans=await askDelete('Delete this entry?',`<b class="mono">${esc(r0.bmsId)}</b> · visit #${r0.visitNumber||1} · received ${esc(fmtDay(r0.dateReceived))}<br><span class="muted">${esc(omStatus(r0)[0])}${issuesOf(r0).length?' · '+esc(issuesOf(r0).map(k=>ISSUE_LABEL[k]).join(', ')):''}</span>`,
+    tw.length?`<div class="banner warn" style="margin:0"><div>This battery has ${tw.length} other ${tw.length===1?'entry':'entries'}, so this looks like a duplicate.</div></div>`:'');
+  if(!ans) return;
+  const s=S.session, fresh=await loadStore('om_chain_records'), r=fresh.find(x=>x.id===id);
+  if(!r){ S.data.om=fresh; bump(); closeDrawer(); render(); toast('Already deleted by someone else.'); return; }
+  r.deletion={...ans,by:s.name,role:s.role,stage:s.stage||null,at:nowIso()};
+  if(!await saveStore('om_chain_records',fresh)) return;
+  const next=fresh.filter(x=>x.id!==id);
+  if(!await saveStore('om_chain_records',next,{allowDeletes:true})) return;
+  S.data.om=next;
+  if(r.status==='CLOSED_TRANSFERRED_BSA'&&can('bsa_records')){
+    const bsa=await loadStore('bsa_records'), c=bsa.find(x=>x.omRecordId===id&&!x.bsaReceivedAt);
+    if(c&&await saveStore('bsa_records',bsa.filter(x=>x.id!==c.id),{allowDeletes:true})) S.data.bsa=bsa.filter(x=>x.id!==c.id);
+  }
+  bump(); S.f.edit=null; closeDrawer(); render();
+  toast(`${r.bmsId} entry deleted (${ans.reasonLabel.toLowerCase()}).`+(ans.reason==='typo'?' Log it again with the correct ID.':''));
+}
+async function deleteDaily(id){
+  const r0=(S.data.daily||[]).find(x=>x.id===id);
+  if(!canDeleteDaily(r0)){ toast('Verified counts can only be deleted by the O&M manager or Quality.'); return; }
+  const t=dailyTotals(r0);
+  const ans=await askDelete('Delete this daily log?',`<b>${esc(fmtDay(r0.date))}</b> · ${t.received} received · ${t.found} issues<br><span class="muted">${esc((DAILY_STATUS[r0.status]||[''])[0])} · logged by ${esc(r0.loggedBy||'—')}</span>`);
+  if(!ans) return;
+  const s=S.session, fresh=await loadStore('daily_log_records'), r=fresh.find(x=>x.id===id);
+  if(!r){ S.data.daily=fresh; bump(); closeDrawer(); render(); return; }
+  r.deletion={...ans,by:s.name,role:s.role,at:nowIso()};
+  if(!await saveStore('daily_log_records',fresh)) return;
+  const next=fresh.filter(x=>x.id!==id);
+  if(!await saveStore('daily_log_records',next,{allowDeletes:true})) return;
+  S.data.daily=next; bump(); S.f.daily=null; closeDrawer(); render();
+  toast(`Daily log for ${fmtDay(r.date)} deleted.`+(canLogDaily()?' You can log that day again.':''));
+}
+
+
+/* =====================================================================
+   FOLLOW-UPS ON STUCK BATTERIES
+   The engineer (O&M manager or Quality) assigns a stage technician to check
+   a battery that is unclaimed, or claimed with no progress; the technician
+   answers with the latest update. Stored on the visit as followUps[].
+   ===================================================================== */
+const FU_UPDATES = ['Working on it now','Waiting for parts','Waiting for test equipment','Needs help / escalate','Finished · moved to next stage','Could not find the battery','Other'];
+const FU_DUE = [['4','Within 4 hours'],['eod','By end of today'],['24','Within 24 hours'],['48','Within 2 days']];
+const canAssignFu = () => { const r=(S.session||{}).role; return r==='omadmin'||r==='quality'; };
+const fuCur = r => { const f=(r&&r.followUps||[]).slice(-1)[0]; return f&&f.status!=='CLOSED'?f:null; };
+const sameName = (a,b) => String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase();
+function fuIsMine(f,s){ s=s||S.session||{}; if(!f||s.role!=='omtech') return false; return f.to?sameName(f.to,s.name):Number(f.stage)===Number(s.stage); }
+function fuLast(f){ return (f&&f.updates||[]).slice(-1)[0]||null; }
+function fuDueAt(f){ return f&&f.dueAt?new Date(f.dueAt).getTime():null; }
+const fuLate = f => !!f && !fuLast(f) && fuDueAt(f)!=null && Date.now()>fuDueAt(f);
+/* why a battery is stuck right now (null when it's moving) */
+function stuckInfo(r){
+  if(!r||isClosed(r)||onHold(r)) return null;
+  const n=Number(r.stage), st=r['stage'+n]||{}, tech=st.technician;
+  if(!tech){ const h=hoursSince(enteredStageAt(r)); return h>=ALERT_H.unclaimedWarn?{kind:'unclaimed',h,text:`Unclaimed at Stage ${n} for ${fmtHours(h)}`,sev:h>=ALERT_H.unclaimedCrit?'crit':'warn'}:null; }
+  const h=hoursSince(st.startedAt||enteredStageAt(r));
+  return h>=ALERT_H.unfinishedWarn?{kind:'stalled',h,text:`Claimed by ${tech} ${fmtHours(h)} ago, no progress`,sev:h>=ALERT_H.unfinishedCrit?'crit':'warn',tech}:null;
+}
+function stageTechs(n){
+  const set=new Set();
+  S.data.om.forEach(r=>{ const st=r['stage'+n]||{}; [st.technician,st.completedBy].forEach(x=>{ if(x&&String(x).trim()) set.add(String(x).trim()); }); });
+  return [...set].sort((a,b)=>a.localeCompare(b));
+}
+function fuDueIso(k){
+  const d=new Date(); if(k==='eod'){ d.setHours(18,0,0,0); if(d<new Date()) d.setDate(d.getDate()+1); return d.toISOString(); }
+  return new Date(Date.now()+(+k||4)*36e5).toISOString();
+}
+function fuUpdateChip(u){
+  if(!u) return chip('no update yet','warn');
+  const tone=/Finished/.test(u.status)?'good':/help|not find/i.test(u.status)?'crit':/Waiting/.test(u.status)?'serious':'info';
+  return chip(u.status,tone);
+}
+
+/* ---------- Engineer view ---------- */
+function FollowUpView(){
+  const open=S.data.om.filter(r=>!isClosed(r));
+  const stuck=open.map(r=>({r,i:stuckInfo(r),f:fuCur(r)})).filter(x=>x.i).sort((a,b)=>(a.i.sev==='crit'?0:1)-(b.i.sev==='crit'?0:1)||b.i.h-a.i.h);
+  const unassigned=stuck.filter(x=>!x.f);
+  const assigned=S.data.om.map(r=>({r,f:fuCur(r)})).filter(x=>x.f).sort((a,b)=>String(b.f.at).localeCompare(String(a.f.at)));
+  const waiting=assigned.filter(x=>!fuLast(x.f)), late=assigned.filter(x=>fuLate(x.f));
+  const today=todayStr(), updToday=assigned.filter(x=>{ const u=fuLast(x.f); return u&&dkey(u.at)===today; }).length;
+  const closedRecent=S.data.om.flatMap(r=>(r.followUps||[]).filter(f=>f.status==='CLOSED'&&hoursSince(f.closedAt)<72).map(f=>({r,f}))).sort((a,b)=>String(b.f.closedAt).localeCompare(String(a.f.closedAt))).slice(0,8);
+  const can=canAssignFu();
+  const stuckRows=stuck.length?`<div class="tbl-wrap"><table><thead><tr><th>BMS ID</th><th>Stage</th><th>Problem</th><th>Follow-up</th><th class="r"></th></tr></thead><tbody>${stuck.map(({r,i,f})=>`<tr><td><button class="idlink linkbtn" data-act="open-battery" data-id="${esc(r.bmsId)}">${esc(r.bmsId)}</button><div class="muted" style="font-size:12px">${esc(r.model||'—')} · visit #${r.visitNumber||1}</div></td><td>${chip('Stage '+r.stage+' · '+STAGE_SHORT[r.stage],'info')}</td><td><span class="dot ${i.sev}" style="display:inline-block;margin-right:6px"></span>${esc(i.text)}</td><td>${f?`${esc(f.to||'Anyone at Stage '+f.stage)} · ${fuUpdateChip(fuLast(f))}`:'<span class="muted">Not assigned</span>'}</td><td class="r">${can?`<button class="btn sm ${f?'':'pri'}" data-act="fu-open" data-id="${esc(r.id)}">${f?'View':'Assign'}</button>`:`<button class="btn sm" data-act="fu-open" data-id="${esc(r.id)}">View</button>`}</td></tr>`).join('')}</tbody></table></div>`:empty('Nothing is stuck. Every open battery has been claimed and is moving.');
+  const fuCard=({r,f})=>{ const u=fuLast(f), moved=Number(r.stage)!==Number(f.stage)||isClosed(r);
+    return `<button class="jcard fu-card ${fuLate(f)?'age-crit':u?'age-ok':'age-warn'}" data-act="fu-open" data-id="${esc(r.id)}">
+      <div class="row1"><span class="mono" style="font-weight:700;font-size:12.5px">${esc(r.bmsId)}</span>${moved?chip(isClosed(r)?'closed':'now at Stage '+r.stage,'good','✓'):''}${fuUpdateChip(u)}</div>
+      <div class="row2"><span>Stage ${f.stage} · ${esc(f.reasonText||'')}</span></div>
+      <div class="row2"><span>To <b>${esc(f.to||'anyone at Stage '+f.stage)}</b> by ${esc(f.by)} · ${esc(fmtHours(hoursSince(f.at)))} ago${f.dueAt?` · due ${esc(fmtDT(f.dueAt))}`:''}</span></div>
+      ${f.note?`<div class="row3"><b>Ask:</b> ${esc(f.note)}</div>`:''}
+      ${u?`<div class="row3 fu-upd"><b>${esc(u.by)}, ${esc(fmtHours(hoursSince(u.at)))} ago:</b> ${esc(u.text)}</div>`:`<div class="row3 ${fuLate(f)?'bad':'muted'}">${fuLate(f)?'Overdue: no update yet':'Waiting for the technician\'s update'}</div>`}</button>`; };
+  return `<div class="page-head"><div><div class="eyebrow">O&amp;M follow-ups</div><h2>Stuck batteries</h2><p>Batteries unclaimed for ${ALERT_H.unclaimedWarn} h or more, or claimed with no progress for ${ALERT_H.unfinishedWarn/24} day or more. Assign a technician to check and report back.</p></div></div>
+  <div class="kpis four">
+    ${kpi('Stuck now',stuck.length,`${stuck.filter(x=>x.i.kind==='unclaimed').length} unclaimed · ${stuck.filter(x=>x.i.kind==='stalled').length} no progress`,'',stuck.some(x=>x.i.sev==='crit')?'crit':stuck.length?'warn':'good')}
+    ${kpi('Not yet assigned',unassigned.length,unassigned.length?'need a technician':'all covered','',unassigned.length?'warn':'good')}
+    ${kpi('Waiting for update',waiting.length,late.length?`${late.length} overdue`:'none overdue','',late.length?'crit':waiting.length?'warn':'')}
+    ${kpi('Updates today',updToday,'from technicians')}
+  </div>
+  <div class="card"><div class="card-head"><div><h3>Needs a follow-up</h3><p>Most urgent first</p></div><span class="chip">${stuck.length}</span></div>${stuckRows}</div>
+  <div class="grid g2 section">
+    <div class="card"><div class="card-head"><div><h3>Assigned follow-ups</h3><p>Latest update from each technician</p></div><span class="chip">${assigned.length}</span></div>${assigned.length?`<div class="lane-list" style="max-height:640px">${assigned.map(fuCard).join('')}</div>`:empty('No open follow-ups.')}</div>
+    <div class="card"><div class="card-head"><div><h3>Closed in the last 3 days</h3><p>Follow-ups the engineer signed off</p></div></div>${closedRecent.length?`<div class="lane-list">${closedRecent.map(({r,f})=>`<button class="jcard" data-act="fu-open" data-id="${esc(r.id)}"><div class="row1"><span class="mono" style="font-size:12.5px;font-weight:700">${esc(r.bmsId)}</span>${chip('closed','good','✓')}</div><div class="row2">${esc(f.to||'Stage '+f.stage)} · ${esc((fuLast(f)||{}).status||'no update')} · closed by ${esc(f.closedBy||'—')}</div>${f.closeNote?`<div class="row3">${esc(f.closeNote)}</div>`:''}</button>`).join('')}</div>`:empty('Nothing closed recently.')}</div>
+  </div>`;
+}
+
+/* ---------- Technician card on My work ---------- */
+function FollowUpWorkCard(){
+  const s=S.session, mine=S.data.om.map(r=>({r,f:fuCur(r)})).filter(x=>x.f&&fuIsMine(x.f,s));
+  if(!mine.length) return '';
+  return `<div class="card section fu-mine"><div class="card-head"><div><h3>Follow-ups for you</h3><p>The engineer asked you to check these batteries. Give the latest update on each.</p></div><span class="chip ${mine.some(x=>!fuLast(x.f))?'crit':''}">${mine.length}</span></div>
+    <div class="lane-list">${mine.map(({r,f})=>{ const u=fuLast(f); return `<button class="jcard task ${!u?(fuLate(f)?'age-crit':'age-warn'):'age-ok'}" data-act="fu-open" data-id="${esc(r.id)}"><div class="row1"><span class="mono" style="font-weight:700;font-size:12.5px">${esc(r.bmsId)}</span>${fuUpdateChip(u)}</div><div class="row2"><span>${esc(f.reasonText||'')}</span><span style="margin-left:auto;font-weight:700;color:var(--accent)">${u?'Update again':'Give update'} ›</span></div>${f.note?`<div class="row3"><b>${esc(f.by)}:</b> ${esc(f.note)}${f.dueAt?` · due ${esc(fmtDT(f.dueAt))}`:''}</div>`:''}</button>`; }).join('')}</div></div>`;
+}
+function fuWorkBanner(rec){
+  const f=fuCur(rec); if(!f||!fuIsMine(f)) return '';
+  const u=fuLast(f);
+  return `<div class="banner ${u?'':'warn'}"><div><b>Follow-up from ${esc(f.by)}:</b> ${esc(f.note||'Check this battery and give an update.')} ${u?`<span class="muted">Your last update: ${esc(u.status)}, ${esc(fmtHours(hoursSince(u.at)))} ago.</span>`:''} <button class="btn sm ${u?'':'pri'}" data-act="fu-open" data-id="${esc(rec.id)}">${u?'Update again':'Give update'}</button></div></div>`;
+}
+
+/* ---------- Drawer: assign / update / history ---------- */
+function openFu(id){
+  const r=S.data.om.find(x=>x.id===id); if(!r){ toast('Battery visit not found. Refresh and try again.'); return; }
+  const f=fuCur(r), info=stuckInfo(r), n=Number(r.stage);
+  const def=f?f.to:(info&&info.kind==='stalled'?info.tech:'');
+  S.f.fu={to:def||'',toOther:'',note:f?f.note:(info&&info.kind==='unclaimed'?'Please claim this battery or tell me why it is waiting.':'Please check progress on this battery and give me the latest update.'),due:'4',upStatus:'',upText:'',closeNote:''};
+  S.formError=null; openDrawer({type:'fu',id});
+}
+function FuSheet(){
+  const r=S.data.om.find(x=>x.id===S.drawer.id); if(!r) return sheet('Not found','This visit may have been removed.','','');
+  const f=fuCur(r), info=stuckInfo(r), n=Number(r.stage), F=S.f.fu||{}, s=S.session;
+  const mine=f&&fuIsMine(f,s), eng=canAssignFu();
+  const facts=`<div class="facts"><div class="fact"><span>Stage</span><b>${n} · ${esc(STAGE_SHORT[n]||'')}</b></div><div class="fact"><span>Platform</span><b>${esc(r.model||'—')}</b></div><div class="fact"><span>Claimed by</span><b>${esc((r['stage'+n]||{}).technician||'nobody')}</b></div><div class="fact"><span>In chain</span><b>${ageDays(r)}d</b></div></div>
+    ${info?`<div class="banner ${info.sev}"><div><b>${esc(info.text)}.</b>${issuesOf(r).length?' Reported: '+esc(issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', '))+'.':''}</div></div>`:isClosed(r)?`<div class="banner good"><div>This visit is closed (${esc(omStatus(r)[0])}).</div></div>`:`<div class="banner good"><div>This battery is moving: ${esc(omStatus(r)[0])}.</div></div>`}`;
+  const all=(r.followUps||[]);
+  const hist=all.length?`<div><h4 style="margin-bottom:8px">Follow-up history</h4><div class="fu-hist">${all.slice().reverse().map(x=>`<div class="fu-h"><div><b>${esc(x.to||'Anyone at Stage '+x.stage)}</b> asked by ${esc(x.by)} · ${esc(fmtDT(x.at))} ${x.status==='CLOSED'?chip('closed','good','✓'):chip('open','info')}</div>${x.note?`<div class="muted">“${esc(x.note)}”</div>`:''}${(x.updates||[]).map(u=>`<div class="fu-u">${fuUpdateChip(u)} <b>${esc(u.by)}</b> · ${esc(fmtDT(u.at))}<div>${esc(u.text)}</div></div>`).join('')}${x.status==='CLOSED'?`<div class="muted" style="font-size:12px">Closed by ${esc(x.closedBy||'—')} · ${esc(fmtDT(x.closedAt))}${x.closeNote?' · '+esc(x.closeNote):''}</div>`:''}</div>`).join('')}</div></div>`:'';
+  let form='', foot='';
+  if(mine){
+    form=`<div class="sim-box"><div class="sim-head"><span class="sim-ic">✎</span><div><b>Your latest update</b><small>${esc(f.by)} asked: ${esc(f.note||'check this battery')}</small></div></div>
+      <div class="form">${field('Where it stands',sel('fu.upStatus',[['','Choose…'],...FU_UPDATES]),'full',true)}${field('What did you find or do?',area('fu.upText','e.g. Claimed it, BMS needs replacing, part requested from store'),'full',true)}</div></div>`;
+    foot=`${!isClosed(r)&&Number(s.stage)===n&&!(r['stage'+n]||{}).technician?`<button class="btn" data-act="claim" data-id="${esc(r.id)}">Claim it</button>`:''}<button class="btn" data-act="open-om" data-id="${esc(r.id)}">Open battery</button><button class="btn pri" data-act="fu-update" ${S.saving?'disabled':''}>${savingLabel('Send update',S.saving)}</button>`;
+  } else if(eng){
+    const techs=stageTechs(n), opts=[['','Anyone at Stage '+n],...techs.map(t=>[t,t]),['__other','Someone else (type the name)']];
+    form=`<div class="sim-box"><div class="sim-head"><span class="sim-ic">→</span><div><b>${f?'Reassign or change the request':'Assign a technician to check it'}</b><small>They see it on their My work page and must reply with the latest update.</small></div></div>
+      <div class="form">${field('Assign to',sel('fu.to',opts,true),'',true)}${F.to==='__other'?field('Technician name',inp('fu.toOther',{ph:'As they sign in'}),'',true):''}${field('Update needed',sel('fu.due',FU_DUE))}${field('What should they check?',area('fu.note','e.g. Find out why nobody has claimed it'),'full')}</div></div>
+      ${f?`<div class="sim-box"><div class="sim-head"><span class="sim-ic">✓</span><div><b>Close this follow-up</b><small>When you are satisfied with the update or the battery has moved on.</small></div></div>${field('Closing note',inp('fu.closeNote',{ph:'Optional'}),'full')}</div>`:''}`;
+    foot=`${f?`<button class="btn" data-act="fu-close" ${S.saving?'disabled':''}>Close follow-up</button>`:''}<button class="btn pri" data-act="fu-assign" ${S.saving?'disabled':''}>${savingLabel(f?'Save & notify':'Assign',S.saving)}</button>`;
+  } else if(f){
+    form=`<div class="banner"><div>This follow-up is assigned to <b>${esc(f.to||'anyone at Stage '+f.stage)}</b>.</div></div>`;
+  }
+  return sheet(esc(r.bmsId),'Follow-up',errBox()+facts+form+hist,foot,'O&M follow-up');
+}
+async function fuCommit(mutate,msg){
+  if(S.saving) return; S.saving=true; S.formError=null; renderDrawer(true);
+  const fail=m=>{ S.formError=m; S.saving=false; renderDrawer(true); const b=$('#drawer-root .d-body'); if(b) b.scrollTop=0; };
+  try{
+    const id=S.drawer.id, fresh=await loadStore('om_chain_records'), r=fresh.find(x=>x.id===id);
+    if(!r) return fail('This visit no longer exists. Refresh and check.');
+    const res=mutate(r); if(typeof res==='string') return fail(res);
+    if(!await saveStore('om_chain_records',fresh)) return fail('Could not save. Try again.');
+    S.data.om=fresh; bump(); S.saving=false; closeDrawer(); render();
+    toast(msg+(S.lastSave&&S.lastSave.cloudAttempted&&!S.lastSave.cloudSaved?' Saved on this device; it uploads when the connection returns.':''));
+  } finally { S.saving=false; if(S.drawer) renderDrawer(true); }
+}
+async function fuAssign(){
+  const F=S.f.fu, s=S.session, to=F.to==='__other'?String(F.toOther||'').trim():F.to;
+  if(F.to==='__other'&&to.length<2) { S.formError='Type the technician\'s name.'; renderDrawer(true); return; }
+  await fuCommit(r=>{
+    const n=Number(r.stage), info=stuckInfo(r), cur=fuCur(r), now=nowIso();
+    const reasonText=info?info.text:cur?cur.reasonText:`At Stage ${n}`;
+    const rec={id:uid(),stage:n,to,note:String(F.note||'').trim(),by:s.name,role:s.role,at:now,dueAt:fuDueIso(F.due),reason:info?info.kind:(cur&&cur.reason)||'check',reasonText,status:'OPEN',updates:[]};
+    const list=(r.followUps||[]).slice();
+    if(cur){ const c=list[list.length-1]; if(sameName(c.to,to)&&Number(c.stage)===n){ Object.assign(c,{note:rec.note,dueAt:rec.dueAt,editedAt:now,editedBy:s.name}); r.followUps=list; return; }
+      Object.assign(c,{status:'CLOSED',closedAt:now,closedBy:s.name,closeNote:'Reassigned to '+(to||'Stage '+n)}); }
+    list.push(rec); r.followUps=list;
+  },`Follow-up sent to ${to||'everyone at Stage '+S.data.om.find(x=>x.id===S.drawer.id).stage}`.replace(/\.?$/,'.'));
+}
+async function fuUpdate(){
+  const F=S.f.fu, s=S.session;
+  if(!F.upStatus){ S.formError='Choose where the battery stands.'; renderDrawer(true); return; }
+  if(String(F.upText||'').trim().length<5){ S.formError='Write a short update (what you found or did).'; renderDrawer(true); return; }
+  await fuCommit(r=>{
+    const c=fuCur(r); if(!c) return 'This follow-up was closed by the engineer.';
+    c.updates=[...(c.updates||[]),{by:s.name,stage:s.stage,at:nowIso(),status:F.upStatus,text:String(F.upText).trim()}];
+  },'Update sent to the engineer.');
+}
+async function fuClose(){
+  const F=S.f.fu, s=S.session;
+  await fuCommit(r=>{ const c=fuCur(r); if(!c) return 'Already closed.'; Object.assign(c,{status:'CLOSED',closedAt:nowIso(),closedBy:s.name,closeNote:String(F.closeNote||'').trim()}); },'Follow-up closed.');
+}
+function fuAlerts(push,s){
+  const role=s.role;
+  S.data.om.forEach(r=>{ const f=fuCur(r); if(!f) return; const u=fuLast(f), h=hoursSince(f.at);
+    if(role==='omtech'&&fuIsMine(f,s)&&!u) push(fuLate(f)?'crit':'warn','Follow-up for you',`${f.by} asked you to check ${r.bmsId}`,f.note||'Give the latest update.','fu-open',r.id,h+100);
+    if((role==='omadmin'||role==='quality')&&fuLate(f)) push('warn','Follow-ups',`No update yet on ${r.bmsId}`,`Assigned to ${f.to||'Stage '+f.stage} ${fmtHours(h)} ago, was due ${fmtDT(f.dueAt)}.`,'fu-open',r.id,h);
+  });
+}
+
 /* =====================================================================
    APP STATE
    ===================================================================== */
@@ -1831,7 +2087,7 @@ function renderMain(){
 }
 function safeView(){
   const allowed=roleTabs().map(x=>x[0]); if(!allowed.includes(S.view)) S.view=allowed[0];
-  try{ return SyncBanner()+WelcomeCard()+({work:MyWorkView,overview:OverviewView,daily:DailyView,chain:ChainView,batteries:BatteriesView,bsa:BsaView,quality:QualityView}[S.view]||OverviewView)(); }
+  try{ return SyncBanner()+WelcomeCard()+({work:MyWorkView,overview:OverviewView,daily:DailyView,followups:FollowUpView,chain:ChainView,batteries:BatteriesView,bsa:BsaView,quality:QualityView}[S.view]||OverviewView)(); }
   catch(e){ console.error(e); return `<div class="banner crit"><div><b>This page couldn't be drawn.</b> ${esc(e.message)} <button class="btn sm" data-act="nav" data-v="overview">Back to overview</button></div></div>`; }
 }
 function renderDrawer(keepScroll){
@@ -1864,6 +2120,7 @@ const TAB_IC = {
   chain:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="19" cy="12" r="2.4"/><path d="M7.4 12h2.2M14.4 12h2.2"/></svg>',
   batteries:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="4.5" width="11" height="17" rx="2.2"/><path d="M10 2.5h4M9.5 15.5h5M9.5 12h5"/></svg>',
   bsa:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.2 5.2L4 17v3h3l5.5-5.5a4 4 0 0 0 5.2-5.2l-2.5 2.5-2.5-.7-.7-2.5z"/></svg>',
+  followups:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><path d="M16 4.5h4.5V9M20.5 4.5 15 10"/></svg>',
   daily:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.2"/><path d="M3.5 9.5h17M8 2.5v4M16 2.5v4M7.5 13.5h3M7.5 17h6M15 13.5h1.5"/></svg>',
   quality:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6z"/><path d="m8.8 12.2 2.2 2.2 4.4-4.6"/></svg>'
 };
@@ -1912,14 +2169,14 @@ function roleTabs(s){
   s=s||S.session||{};
   if(s.role==='omtech') return Number(s.stage)===2?[['work','My work'],['chain','O&M chain'],['batteries','Batteries']]:[['work','My work'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries']];
   if(s.role==='bsa') return [['bsa','BSA'],['batteries','Batteries'],['quality','Quality']];
-  if(s.role==='quality') return [['overview','Overview'],['quality','Quality'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA']];
-  return [['overview','Overview'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA'],['quality','Quality']];
+  if(s.role==='quality') return [['overview','Overview'],['quality','Quality'],['followups','Follow-ups'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA']];
+  return [['overview','Overview'],['followups','Follow-ups'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA'],['quality','Quality']];
 }
 const canExport = () => S.session&&S.session.role!=='omtech';
 function Tabs(cls='top-tabs'){
   const openOm=S.data.om.filter(r=>!isClosed(r)).length, openBsa=S.data.bsa.filter(bsaOpen).length, s=S.session;
   const mineN=s.role==='omtech'?S.data.om.filter(r=>!isClosed(r)&&r.stage===s.stage&&!onHold(r)&&(!(r['stage'+s.stage]||{}).technician||(r['stage'+s.stage]||{}).technician===s.name)).length:0;
-  const counts={work:mineN,chain:s.role==='omtech'?null:openOm,bsa:openBsa,daily:dailyBadge(s)};
+  const counts={work:mineN,chain:s.role==='omtech'?null:openOm,bsa:openBsa,daily:dailyBadge(s),followups:canAssignFu()?(S.data.om.filter(r=>stuckInfo(r)&&!fuCur(r)).length||null):null};
   const t=roleTabs(s).map(([k,l])=>[k,l,counts[k]]);
   return `<nav class="tabs ${cls}" aria-label="Sections">${t.map(([k,l,n])=>`<button class="tab ${S.view===k?'on':''}" data-act="nav" data-v="${k}" ${S.view===k?'aria-current="page"':''}><span class="t-ic">${TAB_IC[k]}</span><span class="t-l">${l}</span>${n?`<span class="cnt">${n}</span>`:''}</button>`).join('')}</nav>`;
 }
@@ -2069,6 +2326,7 @@ function ChainView(){
   const statusChips=[['all','All'],['open','Open'],['pass','Passed first time'],['capa','Had CAPA'],['hold','Waiting for supplier'],['bsa','Sent to BSA']].map(([k,l])=>`<button class="fchip ${F.status===k?'on':''}" data-act="f" data-g="om" data-k="status" data-v="${k}">${l} <span class="n">${counts[k]}</span></button>`).join('');
   return `<div class="page-head"><div><div class="eyebrow">O&amp;M repair chain</div><h2>Pipeline &amp; visits</h2><p>Each battery moves Intake → Repair → Final QC. Cards turn amber after 3 days and red after 5.</p></div>
     <div class="period">${s.role==='omtech'&&s.stage===1||s.role==='omadmin'&&false?'':''}${can('om_chain_records')&&(s.role!=='omtech'||s.stage===1)?`<button class="btn pri" data-act="new-intake">${ICON.plus} Receive battery</button>`:''}</div></div>
+  ${dupChainBanner()}
   <div class="board">${laneHtml}</div>
   <div class="page-head section" style="margin-top:22px"><div><h3>Visit log</h3><p>${F.scope==='period'?`Received or closed in ${esc(periodLabel(p,true))}`:'All visits on record'}${F.issue?` · issue: ${esc(ISSUE_LABEL[F.issue])} <button class="btn sm ghost" data-act="f" data-g="om" data-k="issue" data-v="">Clear</button>`:''}</p></div>${F.scope==='period'?PeriodBar():''}</div>
   <div class="filters">
@@ -2114,6 +2372,7 @@ function MyWorkView(){
     ${kpi('Done by me today',done,'submitted at this stage')}
     ${n===2?kpi('Waiting for supplier',held.length,held.length?'on hold for parts':'none on hold','',held.length?'crit':''):kpi('Corrective actions',capaIn,'returned to this stage','',capaIn?'warn':'')}
   </div>
+  ${FollowUpWorkCard()}
   ${AttentionCard(4)}
   ${n===1||n===3?DailyWorkCard(n):''}
   <div class="grid g2">
@@ -2371,6 +2630,7 @@ function Drawer(){
   if(d.type==='rca') return RcaSheet();
   if(d.type==='storage') return StorageSheet();
   if(d.type==='daily') return DailySheet();
+  if(d.type==='fu') return FuSheet();
   return '';
 }
 const canWork = r => { const s=S.session; return s.role==='omtech' && !isClosed(r) && r.stage===s.stage; };
@@ -2547,7 +2807,8 @@ function WorkSheet(rec){
       ${field('QC notes'+(disp&&disp!=='PASS'?' (reason)':''),area('edit.stage3.qcNote'))}`;
     foot=`<button class="btn ${disp&&disp!=='PASS'?'esc':'pri'}" data-act="submit-work" ${S.saving||!disp?'disabled':''}>${savingLabel(!disp?'Pick a disposition':disp==='PASS'?'Pass & close':disp==='FAIL'?'Return for corrective action':'Escalate to BSA',S.saving)}</button>`;
   }
-  return sheet(esc(rec.bmsId),`${esc(STAGE_LABEL[n])}`,errBox()+claim+capa+info+body,`<button class="btn" data-act="open-battery" data-id="${esc(rec.bmsId)}">Battery history</button>`+foot,'Your work');
+  const delBtn=canDeleteVisit(rec)?`<button class="btn ghost danger-t" data-act="del-visit" data-id="${esc(rec.id)}" title="Remove a duplicate or mistyped entry">Delete entry</button>`:'';
+  return sheet(esc(rec.bmsId),`${esc(STAGE_LABEL[n])}`,errBox()+fuWorkBanner(rec)+dupBanner(rec)+claim+capa+info+body,delBtn+`<button class="btn" data-act="open-battery" data-id="${esc(rec.bmsId)}">Battery history</button>`+foot,'Your work');
 }
 async function setHold(id,release){
   const s=S.session, fresh=await loadStore('om_chain_records'), r=fresh.find(x=>x.id===id);
@@ -2680,7 +2941,7 @@ function BatterySheet(id,focus){
       ${kv('Pack voltage',t.packVoltage?t.packVoltage+' V':'')}${kv('Cell min / max',t.minCell?`${t.minCell} / ${t.maxCell} V`:'')}${kv('Insulation',t.irMeasured?`${t.irMeasured} MΩ (min ${t.irThreshold})`:'')}
       ${kv('Tests',TEST_BOOLS.filter(([k])=>tb[k]).length+' of '+TEST_BOOLS.length+' confirmed')}${needsSim(r)?kv('SIM functional test',tb[SIM_TEST[0]]?'Passed':(r.stage3||{}).completedAt?'Not confirmed':'Pending'):''}${kv('QC notes',(r.stage3||{}).qcNote)}${kv('CAPA cycles',r.capaCycles||0)}${(r.capaLog||[]).map(c=>kv('CAPA '+c.cycle,capaText(c))).join('')}${(r.holdLog||[]).map(h=>kv('Supplier wait',`${h.part||'part'} · ${fmtShort(dkey(h.since))} → ${fmtShort(dkey(h.releasedAt))}`)).join('')}
       ${preFail.length?kv('Pre-check fails',preFail.join(', ')):''}${postFail.length?kv('Post-check fails',postFail.join(', ')):''}</div>
-      ${canDelete()?`<div style="padding:0 14px 12px"><button class="btn sm danger" data-act="del" data-store="om_chain_records" data-id="${esc(r.id)}">Delete this visit</button></div>`:''}</details>`;
+      ${canDeleteVisit(r)?`<div style="padding:0 14px 12px"><button class="btn sm danger" data-act="del-visit" data-id="${esc(r.id)}">Delete this entry</button></div>`:''}</details>`;
   }).join('');
   const bsaList=b.bsa.length?b.bsa.slice().reverse().map(c=>{ const t=bsaTechStatus(c), tone=BSA_TONE[t]||['','']; return `<button class="jcard" data-act="open-bsa" data-id="${esc(c.id)}"><div class="row1"><b>${esc(c.escalationCategory||'BSA case')}</b>${chip(t,tone[0],tone[1])}</div><div class="row2">Flagged ${esc(fmtShort(c.dateFlagged))} · ${esc(c.assignedEngineer||'unassigned')}</div></button>`; }).join(''):'';
   const body=`<div class="facts"><div class="fact"><span>Visits</span><b>${b.visits.length}</b></div><div class="fact"><span>First pass</span><b>${b.closedCount?`${b.fp}/${b.closedCount}`:'—'}</b></div><div class="fact"><span>CAPA cycles</span><b>${b.capa}</b></div><div class="fact"><span>Days in repair</span><b>${Math.round(b.repairDays*10)/10}</b></div></div>
@@ -3990,6 +4251,12 @@ const ACT = {
   'bsa-create':()=>bsaCreate(),
   'rca-save':()=>rcaSave(),
   qi:async t=>{ const rows=clone(S.data.qi), i=rows.findIndex(r=>r.id===t.dataset.id); if(i<0) return; const n=(parseInt(rows[i].count)||0)+(+t.dataset.v); if(n<0) return toast('A count can\'t go below zero.'); rows[i]={...rows[i],count:n,updatedAt:nowIso(),updatedBy:S.session.name}; if(await saveStore('quality_issue_records',rows)){ S.data.qi=rows; renderMain(); } },
+  'del-visit':t=>deleteVisit(t.dataset.id),
+  'fu-open':t=>openFu(t.dataset.id),
+  'fu-assign':()=>fuAssign(),
+  'fu-update':()=>fuUpdate(),
+  'fu-close':()=>fuClose(),
+  'del-daily':t=>deleteDaily(t.dataset.id),
   del:async t=>{ if(!await ask('Delete this record?','It disappears from every screen. The cloud copy is kept as a soft delete and can be restored in Supabase.','Delete',true)) return; if(await deleteRecord(t.dataset.store,t.dataset.id)){ S.data[STORE_STATE[t.dataset.store]]=await loadStore(t.dataset.store); bump(); closeDrawer(); render(); } },
   scan:t=>openScanner(t.dataset.v),
   'cp-connect':()=>cpConnect(),
