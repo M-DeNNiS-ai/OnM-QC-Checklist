@@ -708,6 +708,28 @@ div.jcard{cursor:pointer} div.jcard:focus-visible{outline:2px solid var(--accent
 .btn.del-go{background:var(--crit);border-color:var(--crit);color:#fff;font-weight:700;display:inline-flex;align-items:center;gap:6px}
 .btn.del-go:hover{filter:brightness(1.06)}
 @media (max-width:560px){#modal-root .scrim{padding:10px;align-items:end}.dm-btns .btn{flex:1;height:46px;justify-content:center}.reason-list label{padding:8px 10px}.reason-list small{display:none}.del-modal #del-note{min-height:56px}}
+@media (max-width:760px){.bnav{overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity}.bnav::-webkit-scrollbar{display:none}.bnav .tab{flex:1 0 66px;scroll-snap-align:start}}
+.tc-grid{align-items:start}.tc-pick{display:none}
+@media (max-width:760px){.tc-pick{display:flex;margin-bottom:10px}.tc-pick button{flex:1}.tc-grid .tc-col{display:none}.tc-grid[data-show=day] .tc-day,.tc-grid[data-show=week] .tc-week,.tc-grid[data-show=month] .tc-month{display:block}}
+@media print{.tc-pick{display:none!important}.tc-grid .tc-col{display:block!important}}
+.tc-src{flex-wrap:wrap}
+.tc-lead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding:10px 12px;border-radius:12px;background:var(--crit-bg);margin-bottom:10px}
+.tc-lead span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--crit)}
+.tc-lead b{font-size:15px}.tc-lead em{font-style:normal;margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}
+.tc-list{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.tc-list li{display:flex;gap:10px;align-items:flex-start;padding:7px 6px;border-radius:10px}
+.tc-list li.click{cursor:pointer}.tc-list li.click:hover{background:var(--panel-2)}
+.tc-rank{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;background:var(--panel-2);color:var(--ink-2)}
+.tc-rank.top{background:var(--accent);color:var(--accent-ink)}
+.tc-main{flex:1;min-width:0;display:grid;gap:4px}
+.tc-l{display:flex;justify-content:space-between;gap:8px;font-size:13.5px}.tc-l>b{font-weight:600;min-width:0}
+.tc-v{display:inline-flex;gap:6px;align-items:baseline;flex:none}.tc-v .num{font-size:15px}
+.tc-bar{height:6px;border-radius:3px;background:var(--panel-2);overflow:hidden}.tc-bar i{display:block;height:100%;border-radius:3px}
+.tc-main small{font-size:11.5px;color:var(--ink-3)}
+.tc-d{font-size:11.5px;font-weight:700}.tc-d.up{color:var(--crit)}.tc-d.down{color:var(--good)}.tc-d.flat{color:var(--ink-3)}
+.tc-new{font-size:10.5px;font-weight:800;text-transform:uppercase;color:var(--info);background:var(--info-bg);padding:1px 6px;border-radius:999px}
+.tc-hot{font-weight:800;color:var(--crit)}
+.tc-date{border:0;background:transparent;font:inherit;color:inherit;font-weight:600;text-align:center;width:100%;min-width:0}
 .dup-tools{display:flex;gap:8px;flex-wrap:wrap}
 .dup-g{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
 .dup-h{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;background:var(--panel-2);font-size:13px}
@@ -2112,6 +2134,83 @@ function fuAlerts(push,s){
   });
 }
 
+
+/* =====================================================================
+   TOP CASES — the most common battery cases per day, week and month
+   ===================================================================== */
+const TC_SOURCES = [
+  ['intake','Intake defects','Issues reported on batteries received into the O&M chain'],
+  ['daily','Receiving counts','Issues found in the verified end-of-day counts'],
+  ['capa','Final QC returns','Why batteries failed final QC and went back for corrective action'],
+  ['bsa','BSA escalations','Why batteries were escalated to the BSA team']
+];
+const TC_COLORS = ['--s1','--s2','--s3','--s4','--info'];
+function tcLabelOther(st){ const c=(st||{}).otherCat; return c?`Other: ${c}`:ISSUE_LABEL.other; }
+/* counts per case for one period; key → {label,n,issue} */
+function tcCount(src,p){
+  const m={}; const add=(key,label,n,issue)=>{ const x=m[key]=m[key]||{key,label,n:0,issue,plat:{}}; x.n+=n; return x; };
+  if(src==='intake') S.data.om.forEach(r=>{ if(!inP(r.dateReceived,p)) return; const pl=r.model||platformForId(r.bmsId)||'Unknown';
+    issuesOf(r).forEach(k=>{ const x=k==='other'?add('other:'+((r.stage1||{}).otherCat||''),tcLabelOther(r.stage1),1,'other'):add(k,ISSUE_LABEL[k],1,k); x.plat[pl]=(x.plat[pl]||0)+1; }); });
+  if(src==='daily') (S.data.daily||[]).forEach(r=>{ if(r.status!=='VERIFIED'||!inP(r.date,p)) return; Object.entries(r.issues||{}).forEach(([k,v])=>{ const x=add(k,ISSUE_LABEL[k]||k,dNum(v.found),null); x.rep=(x.rep||0)+dNum(v.repaired); }); });
+  if(src==='capa') S.data.om.forEach(r=>(r.capaLog||[]).forEach(c=>{ if(!inP(dkey(c.returnedAt),p)) return; const l=CAPA_REASON_LABEL[c.reasonCat]||c.reasonCat||'Not given'; add(c.reasonCat||'none',l,1,null); }));
+  if(src==='bsa') S.data.bsa.forEach(c=>{ if(!inP(dkey(c.dateFlagged||c.createdAt),p)) return; const l=c.escalationCategory||'Other escalation'; add(l,l,1,null); });
+  return m;
+}
+const tcUnit = src => src==='intake'?'batteries':src==='daily'?'found':src==='capa'?'returns':'cases';
+function tcRank(src,p){
+  const cur=tcCount(src,p), prevP=periodOf(shiftKey(p.start,p.gran,-1),p.gran), prev=tcCount(src,prevP);
+  const list=Object.values(cur).sort((a,b)=>b.n-a.n||a.label.localeCompare(b.label));
+  const total=sum(list.map(x=>x.n)), pt=sum(Object.values(prev).map(x=>x.n));
+  list.forEach(x=>{ x.prev=(prev[x.key]||{}).n||0; x.share=pct(x.n,total); });
+  return {list,total,prevTotal:pt,p,prevP};
+}
+function tcColumn(src,gran,title){
+  const p=periodOf(S.anchor,gran), R=tcRank(src,p), top=R.list.slice(0,10), max=Math.max(1,...top.map(x=>x.n));
+  const delta=x=>{ if(!x.prev) return `<span class="tc-new">new</span>`; const d=x.n-x.prev; return d===0?'<span class="tc-d flat">±0</span>':`<span class="tc-d ${d>0?'up':'down'}">${d>0?'▲':'▼'}${Math.abs(d)}</span>`; };
+  const rows=top.length?`<ol class="tc-list">${top.map((x,i)=>{ const click=src==='intake'&&x.issue?`data-act="tc-chain" data-v="${esc(x.issue)}" data-g="${gran}"`:''; return `<li class="${click?'click':''}" ${click} ${x.plat&&Object.keys(x.plat).length?`data-tip="${esc(`<b>${esc(x.label)}</b>`+Object.entries(x.plat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="tr"><span>${esc(k)}</span><b>${v}</b></div>`).join(''))}"`:''}>
+      <span class="tc-rank ${i<3?'top':''}">${i+1}</span>
+      <span class="tc-main"><span class="tc-l"><b>${esc(x.label)}</b><span class="tc-v"><b class="num">${x.n}</b>${delta(x)}</span></span>
+      <span class="tc-bar"><i style="width:${x.n/max*100}%;background:var(${i===0?'--crit':i<3?'--s2':'--s1'})"></i></span>
+      <small>${fmtPct(x.share)} of ${R.total} ${tcUnit(src)}${src==='daily'&&x.n?` · ${fmtPct(pct(x.rep||0,x.n))} repaired`:''}</small></span></li>`; }).join('')}</ol>${R.list.length>10?`<div class="muted" style="font-size:12px;margin-top:6px">+ ${R.list.length-10} more case types</div>`:''}`:empty(`No ${tcUnit(src)} recorded in this ${gran}.`);
+  const d=R.total-R.prevTotal;
+  return `<div class="card tc-col tc-${gran}"><div class="card-head"><div><div class="eyebrow">${title}</div><h3>${esc(periodLabel(p,true))}</h3><p>${R.total} ${tcUnit(src)} · ${R.list.length} case type${R.list.length===1?'':'s'} <span class="tc-d ${d>0?'up':d<0?'down':'flat'}">${d===0?'± 0':(d>0?'▲ ':'▼ ')+Math.abs(d)} vs previous ${gran}</span></p></div></div>
+    ${top[0]?`<div class="tc-lead"><span>Top case</span><b>${esc(top[0].label)}</b><em>${top[0].n} · ${fmtPct(top[0].share)}</em></div>`:''}${rows}</div>`;
+}
+function TopCasesView(){
+  const T=S.tc=S.tc||{src:'intake',tg:'week'}, src=T.src, today=todayStr();
+  const srcMeta=TC_SOURCES.find(x=>x[0]===src)||TC_SOURCES[0];
+  // trend of the month's top 5 across the last 12 buckets
+  const tg=T.tg, buckets=bucketsEnding(S.anchor,tg,tg==='day'?14:12);
+  const top5=tcRank(src,periodOf(S.anchor,'month')).list.slice(0,5);
+  const counts=buckets.map(b=>tcCount(src,b));
+  const series=top5.map((x,i)=>({label:x.label,color:TC_COLORS[i],values:counts.map(c=>(c[x.key]||{}).n||0)}));
+  const otherVals=counts.map(c=>sum(Object.values(c).filter(v=>!top5.some(t=>t.key===v.key)).map(v=>v.n)));
+  if(otherVals.some(v=>v>0)) series.push({label:'All other cases',color:'--line-2',values:otherVals});
+  const trend=top5.length?chartSlot({type:'cols',labels:buckets.map(b=>periodLabel(b)),full:buckets.map(b=>periodLabel(b,true)),sel:buckets.length-1,series,act:'pick-period',buckets:buckets.map(b=>b.start)}):empty('No cases this month to trend.');
+  // platform mix for the month (intake only)
+  let platHtml='';
+  if(src==='intake'){
+    const mr=tcRank(src,periodOf(S.anchor,'month')).list.slice(0,8), plats=PLATFORMS.filter(pl=>mr.some(x=>x.plat[pl]));
+    platHtml=mr.length?`<div class="card section"><div class="card-head"><div><h3>Top cases by platform</h3><p>${esc(periodLabel(periodOf(S.anchor,'month'),true))} · batteries with each issue</p></div></div><div class="tbl-wrap"><table><thead><tr><th>Case</th>${plats.map(pl=>`<th class="r">${esc(pl)}</th>`).join('')}<th class="r">Total</th></tr></thead><tbody>${mr.map(x=>{ const mx=Math.max(...plats.map(pl=>x.plat[pl]||0)); return `<tr><td>${esc(x.label)}</td>${plats.map(pl=>{ const v=x.plat[pl]||0; return `<td class="r num"><span class="${v&&v===mx?'tc-hot':''}">${v||'<span class="muted">·</span>'}</span></td>`; }).join('')}<td class="r num"><b>${x.n}</b></td></tr>`; }).join('')}</tbody></table></div></div>`:'';
+  }
+  const isToday=S.anchor===today;
+  return `<div class="page-head"><div><div class="eyebrow">Top cases</div><h2>What is failing most</h2><p>${esc(srcMeta[2])}. Ranked for the day, the week and the month around the date you pick.</p></div>
+    <div class="ph-actions"><div class="period"><div class="period-nav"><button data-act="tc-shift" data-v="-1" aria-label="Previous day">‹</button><span><input type="date" class="tc-date" id="tc-date" value="${esc(S.anchor)}" max="${today}" aria-label="Date"></span><button data-act="tc-shift" data-v="1" aria-label="Next day" ${isToday?'disabled style="opacity:.3"':''}>›</button></div>${isToday?'':'<button class="btn sm" data-act="ptoday">Today</button>'}</div>
+    <div class="ph-btns"><button class="btn" data-act="tc-csv">${ICON.dl} CSV</button><button class="btn" data-act="daily-print">Print</button></div></div></div>
+  <div class="filters"><div class="seg tc-src" role="group" aria-label="Source">${TC_SOURCES.map(([k,l])=>`<button class="${src===k?'on':''}" data-act="tc-src" data-v="${k}">${l}</button>`).join('')}</div></div>
+  <div class="seg tc-pick" role="group" aria-label="Show">${[['day','Day'],['week','Week'],['month','Month']].map(([k,l])=>`<button class="${(T.show||'week')===k?'on':''}" data-act="tc-show" data-v="${k}">${l}</button>`).join('')}</div>
+  <div class="grid g3 tc-grid" data-show="${T.show||'week'}">${tcColumn(src,'day','Day')}${tcColumn(src,'week','Week')}${tcColumn(src,'month','Month')}</div>
+  <div class="card section"><div class="card-head"><div><h3>How the top cases move</h3><p>This month's top 5, last ${tg==='day'?'14 days':tg==='week'?'12 weeks':'12 months'}. Click a bar to jump to that ${tg}.</p></div><div class="seg">${[['day','Daily'],['week','Weekly'],['month','Monthly']].map(([k,l])=>`<button class="${tg===k?'on':''}" data-act="tc-tg" data-v="${k}">${l}</button>`).join('')}</div></div>
+    ${top5.length?`<div class="legend">${series.map(s=>`<span><i style="background:var(${s.color})"></i>${esc(s.label)}</span>`).join('')}</div>`:''}${trend}</div>
+  ${platHtml}`;
+}
+function tcCsv(){
+  const T=S.tc||{src:'intake'}, q=v=>{ const x=String(v??''); return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x; };
+  const lines=[['Source','Period','From','To','Rank','Case','Count','Share %','Previous period','Change'].join(',')];
+  ['day','week','month'].forEach(g=>{ const R=tcRank(T.src,periodOf(S.anchor,g)); R.list.forEach((x,i)=>lines.push([(TC_SOURCES.find(s=>s[0]===T.src)||[])[1],g,R.p.start,R.p.end,i+1,x.label,x.n,x.share==null?'':Math.round(x.share*10)/10,x.prev,x.n-x.prev].map(q).join(','))); });
+  download(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv'}),`top-cases_${T.src}_${S.anchor}.csv`);
+}
+
 /* =====================================================================
    APP STATE
    ===================================================================== */
@@ -2121,6 +2220,7 @@ const S = {
   om:{q:'',status:'all',platform:'all',scope:'period',page:1},
   bat:{q:'',use:'all',platform:'all',sort:'recent',page:1},
   bsaF:{q:'',status:'open',page:1},
+  tc:{src:lsRead('bqc_tc_src','intake'),tg:'week'},
   qtab:'performance', drawer:null, f:{}, saving:false,
   refreshing:false, lastRefresh:null, auto:lsRead('bqc_auto',60), syncError:null, lastSave:null
 };
@@ -2175,7 +2275,7 @@ function renderMain(){
 }
 function safeView(){
   const allowed=roleTabs().map(x=>x[0]); if(!allowed.includes(S.view)) S.view=allowed[0];
-  try{ return SyncBanner()+WelcomeCard()+({work:MyWorkView,overview:OverviewView,daily:DailyView,followups:FollowUpView,chain:ChainView,batteries:BatteriesView,bsa:BsaView,quality:QualityView}[S.view]||OverviewView)(); }
+  try{ return SyncBanner()+WelcomeCard()+({work:MyWorkView,overview:OverviewView,daily:DailyView,followups:FollowUpView,topcases:TopCasesView,chain:ChainView,batteries:BatteriesView,bsa:BsaView,quality:QualityView}[S.view]||OverviewView)(); }
   catch(e){ console.error(e); return `<div class="banner crit"><div><b>This page couldn't be drawn.</b> ${esc(e.message)} <button class="btn sm" data-act="nav" data-v="overview">Back to overview</button></div></div>`; }
 }
 function renderDrawer(keepScroll){
@@ -2209,6 +2309,7 @@ const TAB_IC = {
   chain:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="19" cy="12" r="2.4"/><path d="M7.4 12h2.2M14.4 12h2.2"/></svg>',
   batteries:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="4.5" width="11" height="17" rx="2.2"/><path d="M10 2.5h4M9.5 15.5h5M9.5 12h5"/></svg>',
   bsa:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.2 5.2L4 17v3h3l5.5-5.5a4 4 0 0 0 5.2-5.2l-2.5 2.5-2.5-.7-.7-2.5z"/></svg>',
+  topcases:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg>',
   followups:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><path d="M16 4.5h4.5V9M20.5 4.5 15 10"/></svg>',
   daily:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.2"/><path d="M3.5 9.5h17M8 2.5v4M16 2.5v4M7.5 13.5h3M7.5 17h6M15 13.5h1.5"/></svg>',
   quality:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6z"/><path d="m8.8 12.2 2.2 2.2 4.4-4.6"/></svg>'
@@ -2256,10 +2357,10 @@ function Header(){
 /* what each role sees: technicians their queue, engineers their area, managers everything */
 function roleTabs(s){
   s=s||S.session||{};
-  if(s.role==='omtech') return Number(s.stage)===2?[['work','My work'],['chain','O&M chain'],['batteries','Batteries']]:[['work','My work'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries']];
-  if(s.role==='bsa') return [['bsa','BSA'],['batteries','Batteries'],['quality','Quality']];
-  if(s.role==='quality') return [['overview','Overview'],['quality','Quality'],['followups','Follow-ups'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA']];
-  return [['overview','Overview'],['followups','Follow-ups'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA'],['quality','Quality']];
+  if(s.role==='omtech') return Number(s.stage)===2?[['work','My work'],['chain','O&M chain'],['topcases','Top cases'],['batteries','Batteries']]:[['work','My work'],['daily','Daily counts'],['chain','O&M chain'],['topcases','Top cases'],['batteries','Batteries']];
+  if(s.role==='bsa') return [['bsa','BSA'],['topcases','Top cases'],['batteries','Batteries'],['quality','Quality']];
+  if(s.role==='quality') return [['overview','Overview'],['topcases','Top cases'],['quality','Quality'],['followups','Follow-ups'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA']];
+  return [['overview','Overview'],['topcases','Top cases'],['followups','Follow-ups'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA'],['quality','Quality']];
 }
 const canExport = () => S.session&&S.session.role!=='omtech';
 function Tabs(cls='top-tabs'){
@@ -4345,6 +4446,12 @@ const ACT = {
   qi:async t=>{ const rows=clone(S.data.qi), i=rows.findIndex(r=>r.id===t.dataset.id); if(i<0) return; const n=(parseInt(rows[i].count)||0)+(+t.dataset.v); if(n<0) return toast('A count can\'t go below zero.'); rows[i]={...rows[i],count:n,updatedAt:nowIso(),updatedBy:S.session.name}; if(await saveStore('quality_issue_records',rows)){ S.data.qi=rows; renderMain(); } },
   'del-visit':t=>deleteVisit(t.dataset.id),
   'dups-open':()=>openDups(),
+  'tc-src':t=>{ S.tc.src=t.dataset.v; lsWrite('bqc_tc_src',S.tc.src); renderMain(); },
+  'tc-show':t=>{ S.tc.show=t.dataset.v; renderMain(); },
+  'tc-tg':t=>{ S.tc.tg=t.dataset.v; renderMain(); },
+  'tc-shift':t=>{ const n=addDays(S.anchor,+t.dataset.v); S.anchor=n>todayStr()?todayStr():n; renderMain(); },
+  'tc-csv':()=>tcCsv(),
+  'tc-chain':t=>{ S.gran=t.dataset.g; lsWrite('bqc_gran',S.gran); S.view='chain'; S.om.scope='period'; S.om.status='all'; S.om.issue=t.dataset.v; S.om.page=1; render(); window.scrollTo(0,0); },
   'dups-delete':()=>dupsDelete(),
   'dups-all':()=>{ const sel={}; dupGroups().forEach(x=>x.items.forEach(r=>{ if(r.id!==x.keep&&canDeleteVisit(r)) sel[r.id]=true; })); S.f.dups={sel}; renderDrawer(true); },
   'dups-none':()=>{ S.f.dups={sel:{}}; renderDrawer(true); },
@@ -4402,6 +4509,7 @@ document.addEventListener('change',e=>{
   if(t.dataset.idsfx&&t.dataset.idsfx==='intake'){ renderDrawer(true); return; }
   if(t.dataset.filter&&t.tagName==='SELECT'){ const [g,k]=t.dataset.filter.split('.'); S[g][k]=t.value; S[g].page=1; renderMain(); return; }
   if(t.id==='auto-refresh'){ S.auto=+t.value; lsWrite('bqc_auto',S.auto); scheduleAuto(); toast(S.auto?`Auto refresh every ${S.auto>=60?S.auto/60+' min':S.auto+' s'}.`:'Auto refresh off.'); return; }
+  if(t.id==='tc-date'&&t.value){ S.anchor=t.value>todayStr()?todayStr():t.value; renderMain(); return; }
   if(t.id==='l-role'){ S.loginRole=t.value; render(); return; }
   if(t.id==='import-file'){ importBackup(t); }
 });
