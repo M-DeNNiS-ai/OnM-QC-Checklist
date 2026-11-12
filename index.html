@@ -747,6 +747,30 @@ div.jcard{cursor:pointer} div.jcard:focus-visible{outline:2px solid var(--accent
 .ppl-row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:13px}
 .ppl-row select.in{max-width:220px;padding:5px 8px}
 .di-method{margin-top:6px}
+.rm-open{text-align:left;font:inherit;color:inherit;cursor:pointer;border:1px solid var(--line)}.rm-open:hover{border-color:var(--accent)}
+.rm-filters{display:flex;gap:8px;flex-wrap:wrap}.rm-filters .seg{flex-wrap:wrap}
+.rm-kv{border-radius:12px;background:var(--panel-2)}
+.rm-sec{display:grid;gap:8px;padding:12px;border:1px solid var(--line);border-radius:14px}
+.rm-sec-h{display:flex;gap:10px;align-items:flex-start}.rm-sec-h h4{margin:0}.rm-sec-h small{color:var(--ink-3);font-size:12px}
+.rm-sn{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:12px;background:var(--accent);color:var(--accent-ink)}
+.rm-ed{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.rm-ed li{display:flex;gap:8px;align-items:flex-start}.rm-ed .rm-n{margin-top:9px}
+.rm-ed-f{flex:1;min-width:0;display:grid;gap:4px}.rm-ed-b{display:flex;gap:2px}
+.rm-info{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px}
+.rm-info div,.rm-acc{display:grid;gap:2px;padding:8px 10px;border-radius:10px;background:var(--panel-2);font-size:13px}
+.rm-info span,.rm-acc span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3)}
+.rm-acc{background:var(--good-bg,var(--panel-2))}
+.rm-list li{display:grid;gap:4px}.rm-ck{display:block;color:var(--ink-3);font-size:12px;margin-top:2px}
+.rm-res{margin-left:40px;max-width:360px}
+.cov-tbl td,.cov-tbl th{text-align:center}.cov-tbl td:first-child,.cov-tbl th:first-child{text-align:left}
+.cov-tbl .cov-h td{font-weight:800;background:var(--panel-2);text-align:left}.cov-tbl .cov-sub{padding-left:22px;font-size:13px}
+.cov.ok{background:color-mix(in srgb,var(--good) 12%,transparent)}.cov.trial{background:color-mix(in srgb,var(--warn) 14%,transparent)}.cov.gap{background:color-mix(in srgb,var(--crit) 8%,transparent)}
+.cov-m,.cov-add{border:0;background:transparent;font:inherit;font-size:12px;font-weight:700;cursor:pointer;color:var(--ink);padding:2px 4px;border-radius:6px}
+.cov-m:hover,.cov-add:hover{background:var(--panel)}.cov-add{color:var(--crit);font-weight:600}
+.par-list .click-l{cursor:pointer;border-radius:6px}.par-list .click-l:hover b{color:var(--accent)}
+.par-subs{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
+.psub{border:1px solid var(--line);background:var(--panel-2);color:var(--ink-2);border-radius:999px;padding:2px 9px;font:inherit;font-size:12px;cursor:pointer}
+.psub b{color:var(--ink);margin-left:2px}.psub:hover{border-color:var(--accent)}.psub.unspec{border-style:dashed;color:var(--ink-3)}
 .sub-pick{display:grid;gap:8px;margin-top:10px;padding:12px;border-radius:12px;background:var(--panel-2)}
 .rm-isg-list{display:grid;gap:6px}
 .rm-isg{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
@@ -851,7 +875,7 @@ const POST_ITEMS = [
 const ISSUE_ITEMS = [
   ['noPower','No power / offline'],['lowCapacity','Low capacity / range'],['cellImbalance','Cell imbalance'],['bmsFault','BMS fault / mismatch'],
   ['canFail','CAN fail'],['chargeFail','Charge failure'],['dischargeFail','Discharge failure'],['swelling','Swelling / damage'],
-  ['irFail','Insulation failure'],['iotFault','IoT / IMEI mismatch'],['tampered','Vandalism / tampering / water ingress'],
+  ['irFail','Insulation failure'],['iotFault','IoT / IMEI mismatch'],['tampered','Vandalism / tampering'],
   ['physicalDefect','Physical defect / external damage'],['wetThermalPaste','Wet thermal paste / moisture'],['connectorDamage','Connector damage'],
   ['cellFailureSingle','Single cell failure'],['cellFailureMultiple','Multiple cell failure'],['missingComponent','Missing component'],['simReplace','SIM card replacement (recall)'],['other','Other issue']
 ];
@@ -1132,7 +1156,8 @@ function currentSession(){
 /* Every signed-in role can read the O&M, BSA, RCA and quality stores so the dashboards are complete. */
 function roleCanWrite(role,store,stage){
   if(store==='accountability_audit_records') return false;
-  if(['repair_method_records','people_records','config_records'].includes(store)) return role==='omadmin'||role==='quality';
+  if(store==='repair_method_records') return role==='omadmin'||role==='quality'||role==='omtech';
+  if(['people_records','config_records'].includes(store)) return role==='omadmin'||role==='quality';
   if(role==='omadmin'||role==='quality') return true;
   if(role==='bsa') return ['bsa_records','om_chain_records','rca_records'].includes(store);
   if(role==='omtech') return store==='om_chain_records'||store==='rca_records'||(store==='bsa_records'&&(stage===1||stage===3))||(store==='daily_log_records'&&(stage===1||stage===3));
@@ -1356,8 +1381,10 @@ function otherCase0(st){
 }
 /* every case on a visit, one entry per case (an "other" note that maps to a ticked issue isn't counted twice) */
 function caseKeysOf(r){
-  const out=[], seen=new Set();
-  issuesOf(r).forEach(k=>{ const c=k==='other'?otherCase(r.stage1):stdCase(r,k); if(!seen.has(c.key)){ seen.add(c.key); out.push(c); } });
+  const ks=issuesOf(r), list=ks.filter(k=>k!=='other').map(k=>stdCase(r,k)), out=[], seen=new Set();
+  if(ks.includes('other')){ const oc=otherCase(r.stage1), i=list.findIndex(c=>c.issue===oc.issue&&oc.issue!=='other');
+    if(i>=0){ if(list[i].key===list[i].issue&&oc.key!==oc.issue) list[i]=oc; } else list.push(oc); }
+  list.forEach(c=>{ if(!seen.has(c.key)){ seen.add(c.key); out.push(c); } });
   return out;
 }
 const caseKey = (r,k) => k==='other'?otherCase(r.stage1).key:stdCase(r,k).key;
@@ -1391,7 +1418,7 @@ function computeAlerts(){
   if(role==='quality'||role==='omadmin'){
     S.data.rca.filter(r=>r.status!=='VERIFIED CLOSED'&&r.dueDate&&r.dueDate<todayStr()).forEach(r=>push('warn','Overdue RCA',`RCA for ${r.bmsId||'—'} is past due (${fmtShort(r.dueDate)})`,`${r.owner||'No owner'} · ${(r.status||'').toLowerCase()}`,'open-rca',r.id,hoursSince(r.dueDate)));
   }
-  dailyAlerts(push,s); fuAlerts(push,s);
+  dailyAlerts(push,s); fuAlerts(push,s); rmAlerts(push,s); dailyReqAlerts(push,s);
   return out.sort((a,b)=>(a.sev==='crit'?0:1)-(b.sev==='crit'?0:1)||b.h-a.h);
 }
 function ageDays(r){ return Math.max(0,daysBetween(r.dateReceived||dkey(r.createdAt),todayStr())); }
@@ -1605,6 +1632,33 @@ const dailyChip = r => chip(...(DAILY_STATUS[r.status]||['Draft','','']));
 const canLogDaily = () => { const s=S.session||{}; return (s.role==='omtech'&&Number(s.stage)===1)||s.role==='omadmin'; };
 const canVerifyDaily = () => { const s=S.session||{}; return (s.role==='omtech'&&Number(s.stage)===3)||s.role==='omadmin'; };
 const canReopenDaily = () => { const s=S.session||{}; return s.role==='omadmin'||s.role==='quality'; };
+const canRequestDaily = () => { const s=S.session||{}; return s.role==='omtech'&&(Number(s.stage)===1||Number(s.stage)===3); };
+const dailyReqOpen = r => r&&r.editRequest&&r.editRequest.status==='OPEN'?r.editRequest:null;
+function dailyReqBlock(r,mode){
+  if(!r) return ''; const q=r.editRequest;
+  if(q&&q.status==='OPEN') return `<div class="banner warn"><div><b>Correction requested</b> by ${esc(q.by)} (${esc(fmtDT(q.at))}): “${esc(q.note)}”. ${canReopenDaily()?'Approve to reopen the day so they can correct it, or decline with a reason.':'Waiting for the Quality engineer.'}</div></div>${canReopenDaily()?field('Reply (needed to decline)',area('daily._req','Optional when approving'),'full'):''}`;
+  const last=q&&q.status!=='OPEN'?`<div class="banner ${q.status==='APPROVED'?'good':'crit'}"><div>Last correction request ${q.status==='APPROVED'?'approved':'declined'} by ${esc(q.doneBy||'—')}${q.reply?`: “${esc(q.reply)}”`:''}.</div></div>`:'';
+  if(mode==='view'&&r.status==='VERIFIED'&&canRequestDaily()) return last+`<div class="sim-box"><div class="sim-head"><span class="sim-ic">✎</span><div><b>Made a mistake on this day?</b><small>Ask the Quality engineer to reopen it. Say what is wrong and the right figure.</small></div></div>${field('What needs correcting',area('daily._req','e.g. Charge failure found should be 4, not 3; 1 more went to the warehouse'),'full',true)}</div>`;
+  return last;
+}
+async function dailyReq(kind){
+  if(S.saving) return; const s=S.session, f=S.f.daily, id=S.drawer.id, note=String((f||{})._req||'').trim(); S.formError=null;
+  if(kind==='ask'&&note.length<8) return dailyFail('Say what is wrong and what the right figures are.');
+  if(kind==='no'&&note.length<3) return dailyFail('Give a short reason for declining.');
+  const now=nowIso();
+  await dailyCommit(list=>{
+    const r=list.find(x=>x.id===id); if(!r) return 'This log no longer exists.';
+    if(kind==='ask'){ if(dailyReqOpen(r)) return 'A correction request is already waiting for the Quality engineer.'; r.editRequest={status:'OPEN',by:s.name,stage:s.stage,at:now,note}; r.history=[...(r.history||[]),{action:'Correction requested',by:s.name,at:now,note}]; return; }
+    const q=dailyReqOpen(r); if(!q) return 'There is no open correction request on this day.';
+    Object.assign(q,{status:kind==='ok'?'APPROVED':'DECLINED',doneBy:s.name,doneAt:now,reply:note});
+    if(kind==='ok') Object.assign(r,{status:'SUBMITTED',submittedAt:now});
+    r.history=[...(r.history||[]),{action:kind==='ok'?'Correction approved · reopened':'Correction declined',by:s.name,at:now,note}];
+  },kind==='ask'?'Request sent to the Quality engineer.':kind==='ok'?'Approved. The day is reopened for correction.':'Request declined.');
+}
+function dailyReqAlerts(push,s){
+  (S.data.daily||[]).forEach(r=>{ const q=dailyReqOpen(r); if(!q) return; const h=hoursSince(q.at);
+    if(s.role==='quality'||s.role==='omadmin') push(h>=24?'crit':'warn','Daily counts',`Correction requested for ${fmtDay(r.date)}`,`${q.by}: ${q.note}`,'daily-open',r.id,h); });
+}
 const dailyFor = date => (S.data.daily||[]).find(r=>r.date===date);
 const int = v => { const x=String(v??'').trim(); return /^\d{1,6}$/.test(x)?+x:null; };
 const dNum = v => int(v)??0;
@@ -1697,7 +1751,7 @@ function dailyIssueRows(f,ro){
       <div class="di-nums">${numIn(b+'.found','Found',{dis:ro})}${numIn(b+'.repaired','Reworked',{dis:ro})}${numIn(b+'.notWorked','Not reworked',{dis:ro})}</div>
       <div class="di-method">${ro?(v.method?`<div class="muted" style="font-size:13px"><b>Rework method:</b> ${esc(methodLabel(methodById(v.method))||v.method)}</div>`:''):field('Rework method used (needed when any were reworked)',methodSelect(b+'.method',[k],false,'Choose the method used…'),'full')}</div>
       <div class="di-check" id="dc-${k}"></div>
-      ${nw>0||v.reason?`<div class="di-why">${ro?`<div class="muted" style="font-size:13px"><b>Why not reworked:</b> ${esc(v.reason||'—')}${v.reasonNote?' · '+esc(v.reasonNote):''}</div>`:`${field('Why not reworked (or why rework failed)',sel(b+'.reason',[['','Choose a reason…'],...DAILY_REASONS],true),'',true)}${v.reason==='Other reason'||v.reasonNote?field('Details',inp(b+'.reasonNote',{ph:'Explain briefly'})):''}`}</div>`:''}
+      ${nw>0||v.reason?`<div class="di-why">${ro?`<div class="muted" style="font-size:13px"><b>Why not reworked:</b> ${esc(v.reason||'—')}${v.reasonNote?' · '+esc(v.reasonNote):''}</div>`:`${field('Why not reworked (or why rework failed)',sel(b+'.reason',[['','Choose a reason…'],...DAILY_REASONS],true),'',true)}${v.reason==='Other reason'||/supplier|spare/i.test(v.reason||'')||v.reasonNote?(/supplier|spare/i.test(v.reason||'')?field('Which material / part',inp(b+'.reasonNote',{ph:'e.g. Charging port, BMS board'}),'',true):field('Details',inp(b+'.reasonNote',{ph:'Explain briefly'}))):''}`}</div>`:''}
     </div>`; }).join('')}</div>`;
 }
 function DailySheet(){
@@ -1711,7 +1765,7 @@ function DailySheet(){
   const verNote=r&&r.verifyNote?`<div class="banner good"><div><b>Verifier's note:</b> ${esc(r.verifyNote)}</div></div>`:'';
   const intro=mode==='verify'?`<div class="banner"><div><b>Check these numbers.</b> Correct any figure that is wrong. Your corrections are recorded next to the original. Then verify, or send the log back to receiving with a note.</div></div>`:mode==='log'?`<div class="banner"><div>At the end of the day, enter what came in and what happened to it. <b>Warehouse + field must equal the total received</b>, and for every issue <b>repaired + not worked on must equal found</b>.</div></div>`:'';
   const addable=ISSUE_ITEMS.filter(([k])=>!f.issues[k]);
-  const body=`${errBox()}${head}${ret}${adj}${verNote}${intro}
+  const body=`${errBox()}${head}${dailyReqBlock(r,mode)}${ret}${adj}${verNote}${intro}
     <div class="form">${field('Date',`<input class="in" id="b-daily-date" data-bind="daily.date" data-rerender type="date" max="${todayStr()}" value="${esc(f.date)}" ${ro||mode==='verify'||r?'disabled':''}>`,'',true)}
       <div class="f"><span>Logged in the app that day</span><div class="in ro">${intakes.length} intake${intakes.length===1?'':'s'}</div></div></div>
     <div><div class="block-title"><h4>Batteries</h4><span id="d-tot-chk"></span></div>
@@ -1726,7 +1780,9 @@ function DailySheet(){
   if(mode==='log') foot=`<button class="btn pri" data-act="daily-save" ${S.saving?'disabled':''}>${savingLabel(r&&r.status==='RETURNED'?'Resend to Stage 3':r?'Save changes':'Submit to Stage 3',S.saving)}</button>`;
   if(mode==='verify') foot=`<button class="btn esc" data-act="daily-return" ${S.saving?'disabled':''}>Send back</button><button class="btn pri" data-act="daily-verify" ${S.saving?'disabled':''}>${savingLabel('Verify & submit',S.saving)}</button>`;
   if(r&&canDeleteDaily(r)) foot=`<button class="btn danger del-ic danger-t" data-act="del-daily" data-id="${esc(r.id)}">${ICON.trash}<span>Delete log</span></button>`+foot;
-  if(mode==='view'&&r&&r.status==='VERIFIED'&&canReopenDaily()) foot+=`<button class="btn" data-act="daily-reopen">Reopen for correction</button>`;
+  if(mode==='view'&&r&&r.status==='VERIFIED'&&canReopenDaily()&&!dailyReqOpen(r)) foot+=`<button class="btn" data-act="daily-reopen">Reopen for correction</button>`;
+  if(r&&dailyReqOpen(r)&&canReopenDaily()) foot+=`<button class="btn danger" data-act="daily-req" data-v="no" ${S.saving?'disabled':''}>Decline</button><button class="btn pri" data-act="daily-req" data-v="ok" ${S.saving?'disabled':''}>Approve &amp; reopen</button>`;
+  if(r&&mode==='view'&&r.status==='VERIFIED'&&canRequestDaily()&&!dailyReqOpen(r)) foot+=`<button class="btn pri" data-act="daily-req" data-v="ask" ${S.saving?'disabled':''}>${savingLabel('Ask Quality to correct',S.saving)}</button>`;
   const title=mode==='verify'?'Verify daily counts':r?'Daily counts':'Log today\'s counts';
   return sheet(esc(title),esc(fmtDay(f.date)),body,foot,'Receiving · end of day');
 }
@@ -1775,6 +1831,7 @@ function dailyClean(f){
     if(re>0&&!v.method) return [null,`${L}: pick the rework method used.`];
     if(nw>0&&!v.reason) return [null,`${L}: say why ${nw} ${nw===1?'was':'were'} not reworked, or why the rework failed.`];
     if(nw>0&&v.reason==='Other reason'&&String(v.reasonNote||'').trim().length<3) return [null,`${L}: explain the other reason.`];
+    if(nw>0&&/supplier|spare/i.test(v.reason||'')&&String(v.reasonNote||'').trim().length<2) return [null,`${L}: name the material or part you are waiting for.`];
     out.issues[k]={found:fo,repaired:re,notWorked:nw,...(re>0&&v.method?{method:v.method}:{}),...(nw>0?{reason:v.reason,reasonNote:String(v.reasonNote||'').trim()}:{})};
   }
   return [out,null];
@@ -1879,7 +1936,7 @@ function DailyView(){
   const logRows=st.all.slice().sort((a,b)=>b.date.localeCompare(a.date));
   const missing=[]; if(!['day','ytd','all'].includes(S.gran)){ for(let k=p.start;k<=p.end&&k<=today;k=addDays(k,1)) if(!dailyFor(k)) missing.push(k); }
   const logTable=`<div class="tbl-wrap"><table><thead><tr><th>Date</th><th class="r">Received</th><th class="r">Warehouse</th><th class="r">Field</th><th class="r">Issues</th><th class="r">Reworked</th><th class="r">Rate</th><th>Status</th><th>Logged by</th><th>Verified by</th><th class="r" aria-label="Actions"></th></tr></thead><tbody>
-    ${logRows.length?logRows.map(r=>{ const t=dailyTotals(r); return `<tr class="click" data-act="daily-open" data-id="${esc(r.id)}"><td class="num">${esc(fmtShort(r.date))}</td><td class="r num">${t.received}</td><td class="r num">${t.toWarehouse}</td><td class="r num">${t.inField}</td><td class="r num">${t.found}</td><td class="r num">${t.repaired}</td><td class="r num">${fmtPct(pct(t.repaired,t.found))}</td><td>${dailyChip(r)}${r.adjustments&&r.adjustments.length?' '+chip('corrected','warn'):''}</td><td>${esc(r.loggedBy||'—')}</td><td>${esc(r.verifiedBy||'—')}</td><td class="r">${canDeleteDaily(r)?`<button class="btn sm danger del-ic" data-act="del-daily" data-id="${esc(r.id)}" title="Delete this daily log" aria-label="Delete log for ${esc(fmtShort(r.date))}">${ICON.trash}<span>Delete</span></button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="11">${empty('Nothing logged in this period.')}</td></tr>`}
+    ${logRows.length?logRows.map(r=>{ const t=dailyTotals(r); return `<tr class="click" data-act="daily-open" data-id="${esc(r.id)}"><td class="num">${esc(fmtShort(r.date))}</td><td class="r num">${t.received}</td><td class="r num">${t.toWarehouse}</td><td class="r num">${t.inField}</td><td class="r num">${t.found}</td><td class="r num">${t.repaired}</td><td class="r num">${fmtPct(pct(t.repaired,t.found))}</td><td>${dailyChip(r)}${r.adjustments&&r.adjustments.length?' '+chip('corrected','warn'):''}${dailyReqOpen(r)?' '+chip('correction requested','serious'):''}</td><td>${esc(r.loggedBy||'—')}</td><td>${esc(r.verifiedBy||'—')}</td><td class="r">${canDeleteDaily(r)?`<button class="btn sm danger del-ic" data-act="del-daily" data-id="${esc(r.id)}" title="Delete this daily log" aria-label="Delete log for ${esc(fmtShort(r.date))}">${ICON.trash}<span>Delete</span></button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="11">${empty('Nothing logged in this period.')}</td></tr>`}
   </tbody></table></div>${missing.length?`<div class="muted" style="font-size:12.5px;margin-top:8px">Not logged: ${missing.map(fmtShort).join(', ')}</div>`:''}`;
 
   return `<div class="page-head"><div><div class="eyebrow">Receiving · ${S.gran==='day'?'daily':S.gran==='week'?'weekly':'monthly'} report</div><h2>${esc(periodLabel(p,true))}</h2><p>End-of-day counts from receiving, checked by Stage 3. Only verified days are counted.</p></div>
@@ -2270,7 +2327,7 @@ function tcLabelOther(st){ const c=(st||{}).otherCat; return c?`Other: ${c}`:ISS
 function tcCount(src,p){
   const m={}; const add=(key,label,n,issue,item)=>{ const x=m[key]=m[key]||{key,label,n:0,issue,plat:{},items:[]}; x.n+=n; if(item) x.items.push(item); return x; };
   if(src==='intake') S.data.om.forEach(r=>{ if(!inP(r.dateReceived,p)) return; const pl=platName(r);
-    caseKeysOf(r).forEach(c=>{ const x=add(c.key,c.label,1,c.issue,{type:'visit',r,date:r.dateReceived}); x.plat[pl]=(x.plat[pl]||0)+1; }); });
+    const main=(S.tc||{}).grain!=='exact', seen=new Set(); caseKeysOf(r).forEach(c=>{ const k=main?caseParent(c):c.key; if(seen.has(k)) return; seen.add(k); const x=add(k,main?caseParentLabel(c):c.label,1,c.issue,{type:'visit',r,date:r.dateReceived}); x.plat[pl]=(x.plat[pl]||0)+1; }); });
   if(src==='daily') (S.data.daily||[]).forEach(r=>{ if(r.status!=='VERIFIED'||!inP(r.date,p)) return; Object.entries(r.issues||{}).forEach(([k,v])=>{ const x=add(k,issueLbl(k),dNum(v.found),null,{type:'day',r,v,date:r.date}); x.rep=(x.rep||0)+dNum(v.repaired); }); });
   if(src==='capa') S.data.om.forEach(r=>(r.capaLog||[]).forEach(c=>{ if(!inP(dkey(c.returnedAt),p)) return; const l=CAPA_REASON_LABEL[c.reasonCat]||c.reasonCat||'Not given'; add(c.reasonCat||'none',l,1,null,{type:'capa',r,c,date:dkey(c.returnedAt)}); }));
   if(src==='bsa') S.data.bsa.forEach(c=>{ if(!inP(dkey(c.dateFlagged||c.createdAt),p)) return; const l=bsaIssue(c); add(l,l,1,null,{type:'bsa',c,date:dkey(c.dateFlagged||c.createdAt)}); });
@@ -2318,7 +2375,7 @@ function TopCasesInner(){
   return `<div class="page-head"><div><div class="eyebrow">Top cases</div><h2>What is failing most</h2><p>${esc(srcMeta[2])}. Ranked for the day, the week and the month around the date you pick.</p></div>
     <div class="ph-actions"><div class="period"><div class="period-nav"><button data-act="tc-shift" data-v="-1" aria-label="Previous day">‹</button><span><input type="date" class="tc-date" id="tc-date" value="${esc(S.anchor)}" max="${today}" aria-label="Date"></span><button data-act="tc-shift" data-v="1" aria-label="Next day" ${isToday?'disabled style="opacity:.3"':''}>›</button></div>${isToday?'':'<button class="btn sm" data-act="ptoday">Today</button>'}</div>
     <div class="ph-btns"><button class="btn" data-act="tc-csv">${ICON.dl} CSV</button><button class="btn" data-act="daily-print">Print</button></div></div></div>
-  <div class="filters"><div class="seg tc-src" role="group" aria-label="Source">${TC_SOURCES.map(([k,l])=>`<button class="${src===k?'on':''}" data-act="tc-src" data-v="${k}">${l}</button>`).join('')}</div></div>
+  <div class="filters"><div class="seg tc-src" role="group" aria-label="Source">${TC_SOURCES.map(([k,l])=>`<button class="${src===k?'on':''}" data-act="tc-src" data-v="${k}">${l}</button>`).join('')}</div>${src==='intake'?`<div class="seg" role="group" aria-label="Group by">${[['main','Similar issues together'],['exact','Exact faults']].map(([k,l])=>`<button class="${((T.grain||'main')===k)?'on':''}" data-act="tc-grain" data-v="${k}">${l}</button>`).join('')}</div>`:''}</div>
   <div class="seg tc-pick" role="group" aria-label="Show">${[['day','Day'],['week','Week'],['month','Month']].map(([k,l])=>`<button class="${(T.show||'week')===k?'on':''}" data-act="tc-show" data-v="${k}">${l}</button>`).join('')}</div>
   <div class="grid g3 tc-grid" data-show="${T.show||'week'}">${tcColumn(src,'day','Day')}${tcColumn(src,'week','Week')}${tcColumn(src,'month','Month')}</div>
   <div class="card section"><div class="card-head"><div><h3>How the top cases move</h3><p>This month's top 5, last ${tg==='day'?'14 days':tg==='week'?'12 weeks':'12 months'}. Click a bar to jump to that ${tg}. Tap any case above to see its batteries.</p></div><div class="seg">${[['day','Daily'],['week','Weekly'],['month','Monthly']].map(([k,l])=>`<button class="${tg===k?'on':''}" data-act="tc-tg" data-v="${k}">${l}</button>`).join('')}</div></div>
@@ -2389,7 +2446,11 @@ const DEFAULT_SUBS = {
   connectorDamage:['Burnt connector','Broken latch / housing','Loose / bent pins'],
   physicalDefect:['Cracked casing','Dented casing','Broken handle / strap','Damaged cover'],
   swelling:['Cell swelling','Casing deformation'],
-  missingComponent:['Missing bolt / screw','Missing cover','Missing label / QR']
+  tampered:['Missing IoT module','Foreign object inside','Forced opening / broken seal','Cut or pulled wires','Water ingress','Stolen cells / parts','Damaged casing'],
+  wetThermalPaste:['Wet thermal paste','Dried / degraded paste','Moisture on BMS'],
+  cellFailureSingle:['Dead cell (0 V)','Low-voltage cell','Leaking cell','Swollen cell'],
+  cellFailureMultiple:['Dead cells (0 V)','Low-voltage cells','Leaking cells','Swollen cells'],
+  missingComponent:['Bolt / screw','Cover / lid','Label / QR code','BMS board','Connector','Charging port','IoT module','SIM card','Handle / strap','Fuse','LED strip','Cable / harness','Thermal pad','Seal / gasket']
 };
 const SUB_OTHER = 'Other / not listed';
 const subSlug = t => String(t||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -2399,13 +2460,50 @@ const parentIssue = key => splitKey(key)[0];
 function issueSubs(k){ const c=issueMapCfg().subs||{}; return Array.isArray(c[k])?c[k]:(DEFAULT_SUBS[k]||[]); }
 function issueLbl(key){ if(ISSUE_LABEL[key]) return ISSUE_LABEL[key]; const [k,sl]=splitKey(key); if(!ISSUE_LABEL[k]) return String(key); const sub=sl==='other'?'other cause':(issueSubs(k).find(s=>subSlug(s)===sl)||sl.replace(/-/g,' ')); return `${ISSUE_LABEL[k]} · ${sub}`; }
 const subCase = (k,sub) => sub===SUB_OTHER?{key:k+'__other',label:`${ISSUE_LABEL[k]} · other cause`,issue:k}:{key:subKey(k,sub),label:`${ISSUE_LABEL[k]} · ${sub}`,issue:k};
-function subOf(r,k){ return (((r||{}).stage2||{}).confirmed||{})[k]||(((r||{}).stage1||{}).sub||{})[k]||''; }
-function stdCase(r,k){ const sub=subOf(r,k); if(sub) return subCase(k,sub); return issueSubs(k).length?{key:k,label:`${ISSUE_LABEL[k]} · not specified`,issue:k}:{key:k,label:ISSUE_LABEL[k],issue:k}; }
+const SUB_RX = {
+  'MOSFET failure':/mosfet|\bfets?\b/, 'Faulty charging port':/charg\w*\s*(port|socket|inlet|point)|\bport\b|\bsocket\b|\binlet\b/, 'Blown fuse':/\bfuse/,
+  'BMS charge protection':/protect|\bovp\b|over\s*-?\s*volt/, 'Charger / station side':/charger|station|dock/, 'Loose busbar / weld':/busbar|bus\s*bar|\bweld/,
+  'BMS discharge protection':/protect|\bocp\b|over\s*-?\s*current|short\s*circuit/, 'Deep discharge / sleep mode':/deep\s*discharg|sleep|\b0\s*v\b|zero\s*volt|flat/,
+  'BMS dead':/bms\s*(dead|fail|burn|blown|damag)/, 'Broken internal wiring':/wir(e|es|ing)|cable|harness/, 'BMS hardware failure':/bms\s*(board|hardware|burn|damag|dead|replac)/,
+  'Firmware / parameter mismatch':/firmware|param|config|flash|software/, 'Wrong BMS for battery type':/wrong\s*bms|bms\s*mismatch/,
+  'CAN wiring / connector':/wir|connector|cable|harness/, 'BMS communication fault':/comm|no\s*response|bms/, 'Termination resistor':/terminat|resistor/,
+  'Aged cells':/aged|old\s*cells?|degrad|\bsoh\b|end\s*of\s*life/, 'Cell imbalance':/imbalanc|unbalanc|cell\s*delta/, 'Calibration / SOC error':/calibrat|\bsoc\b|gauge/,
+  'Weak cell group':/weak|low\s*cell|cell\s*group|bad\s*cell/, 'Balancing circuit fault':/balanc\w*\s*(circuit|board|resistor)/,
+  'Moisture ingress':/moist|water|\bwet\b|humid|rain/, 'Damaged insulation':/insulat\w*\s*(damag|torn|broken)|(damag|torn|broken)\w*\s*insulat|tape|sleev|kapton/, 'Contamination / dust':/dust|dirt|contamin|debris/,
+  'IoT module failure':/module|iot\s*(dead|fail|burn)|tracker\s*(dead|fail)/, 'SIM / network':/\bsim\b|network|signal|\bgsm\b/, 'Antenna / wiring':/antenna|wir/, 'IMEI mismatch':/imei/,
+  'Burnt connector':/burn|melt|scorch|char(red)?\b/, 'Broken latch / housing':/latch|clip|housing/, 'Loose / bent pins':/\bpins?\b/,
+  'Cracked casing':/crack/, 'Dented casing':/dent/, 'Broken handle / strap':/handle|strap/, 'Damaged cover':/cover|\blid\b/,
+  'Cell swelling':/swell|bulg|puff/, 'Casing deformation':/deform|bent\s*casing|casing\s*bent/,
+  'Missing IoT module':/(iot|tracker|gps)\s*(module|unit|box)?\s*(missing|removed|stolen|taken)|(missing|removed|stolen|no)\s*(iot|tracker|gps)/,
+  'Foreign object inside':/foreign|object\s*inside|debris|stone|sand|nail|rubbish|inserted/, 'Forced opening / broken seal':/forc|pried|prised|broken\s*seal|seal\s*broken|opened|tamper\w*\s*seal/,
+  'Cut or pulled wires':/\bcut\b|pulled|torn\s*wire|wires?\s*(cut|torn)/, 'Water ingress':/water|moist|\bwet\b|flood|submerg/, 'Stolen cells / parts':/stolen|cells?\s*removed|parts?\s*removed|theft/,
+  'Damaged casing':/casing|crack|dent|broken\s*(cover|case)|smash/,
+  'Wet thermal paste':/paste\s*wet|wet\s*(thermal|paste)|\bwet\b/, 'Dried / degraded paste':/dry|dried|degrad|crumbl/, 'Moisture on BMS':/bms|board|pcb/,
+  'Dead cell (0 V)':/dead\s*cell|\b0\s*v\b|zero\s*volt/, 'Low-voltage cell':/low\s*(volt|cell)|weak\s*cell/, 'Leaking cell':/leak|electrolyte/, 'Swollen cell':/swell|bulg|puff/,
+  'Dead cells (0 V)':/dead\s*cells?|\b0\s*v\b|zero\s*volt/, 'Low-voltage cells':/low\s*(volt|cells?)|weak\s*cells?/, 'Leaking cells':/leak|electrolyte/, 'Swollen cells':/swell|bulg|puff/,
+  'Bolt / screw':/bolt|screw|\bnuts?\b|fasten|washer/, 'Cover / lid':/cover|\blid\b|\bcap\b/, 'Label / QR code':/label|\bqr\b|sticker|barcode|serial/, 'BMS board':/\bbms\b|board|pcb/,
+  'Connector':/connector|terminal|\bplug\b|\bpins?\b/, 'Charging port':/charg\w*\s*(port|socket|inlet)|\bport\b/, 'IoT module':/\biot\b|tracker|\bgps\b|module/, 'SIM card':/\bsim\b/,
+  'Handle / strap':/handle|strap|grip/, 'Fuse':/\bfuse/, 'LED strip':/\bled\b|light|indicator/, 'Cable / harness':/cable|harness|wir(e|ing)|lead/, 'Thermal pad':/thermal|\bpad\b|paste/, 'Seal / gasket':/seal|gasket|o-?ring/
+};
+const SUB_GENERIC = new Set(['failure','faulty','fault','broken','damaged','damage','missing','issue','problem','error','other']);
+function subRx(sub){ if(SUB_RX[sub]) return SUB_RX[sub]; const w=String(sub).toLowerCase().split(/[^a-z]+/).filter(x=>x.length>=3&&!SUB_GENERIC.has(x)); if(!w.length) return null; return {test:t=>w.every(x=>t.includes(x.slice(0,Math.min(5,x.length))))}; }
+function recordText(r){ r=r||{}; const s1=r.stage1||{}, s2=r.stage2||{}, s3=r.stage3||{}; return [s1.otherNote,s1.missingComponentNote,s2.repairAction,s2.partsReplaced,s3.qcNote,...(r.capaLog||[]).map(c=>[c.reason,c.part,c.partNote].join(' ')),(r.hold||{}).part,...(r.holdLog||[]).map(h=>h.part),...(r.followUps||[]).flatMap(f=>(f.updates||[]).map(u=>u.text))].filter(Boolean).join(' . ').toLowerCase(); }
+function componentName(t){ const x=String(t||'').toLowerCase().trim(); if(!x) return ''; for(const sb of issueSubs('missingComponent')){ const rx=subRx(sb); if(rx&&rx.test(x)) return sb; } const c=String(t).replace(/\s+/g,' ').trim().replace(/^(the|a|an|missing)\s+/i,'').replace(/[.;:,]+$/,''); return c?(c[0].toUpperCase()+c.slice(1)).slice(0,40):''; }
+function inferSub(r,k){ if(k==='missingComponent'){ const n=componentName(((r||{}).stage1||{}).missingComponentNote); if(n) return n; } const subs=issueSubs(k); if(!subs.length) return ''; const t=recordText(r); if(!t) return ''; for(const sb of subs){ const rx=subRx(sb); if(rx&&rx.test(t)) return sb; } return ''; }
+function subOf(r,k){ return (((r||{}).stage2||{}).confirmed||{})[k]||(((r||{}).stage1||{}).sub||{})[k]||inferSub(r,k); }
+function stdCase(r,k){ const sub=subOf(r,k); if(k==='missingComponent'&&sub&&sub!==SUB_OTHER) return {key:subKey(k,sub),label:`Missing component · ${sub}`,issue:k}; if(sub) return subCase(k,sub); return issueSubs(k).length?{key:k,label:`${ISSUE_LABEL[k]} · not specified`,issue:k}:{key:k,label:ISSUE_LABEL[k],issue:k}; }
 function otherCase(st){
   const t=normCase((st||{}).otherNote);
   if(t&&/mosfet|\bfets?\b/.test(t)) return subCase(/discharg/.test(t)?'dischargeFail':'chargeFail','MOSFET failure');
   const c=otherCase0(st);
   if(c.key==='kw:Charging port') return subCase('chargeFail','Faulty charging port');
+  if(t&&/foreign\s*object|object\s*inside|debris\s*inside/.test(t)) return subCase('tampered','Foreign object inside');
+  if(t&&/(iot|tracker|gps)\s*(module\s*)?(missing|removed|stolen)|(missing|removed|stolen)\s*(iot|tracker|gps)/.test(t)) return subCase('tampered','Missing IoT module');
+  if(t&&/\b(missing|stolen|lost)\b/.test(t)&&c.issue!=='tampered'){ const known=issueSubs('missingComponent').find(x=>{ const rx=subRx(x); return rx&&rx.test(t); }); if(known) return {key:subKey('missingComponent',known),label:`Missing component · ${known}`,issue:'missingComponent'}; }
+  if(c.issue&&c.issue!=='other'&&c.key===c.issue&&t){ const sb=c.issue==='missingComponent'?componentName(t.replace(/\b(missing|stolen|removed|lost)\b/g,' ')):(issueSubs(c.issue).find(x=>{ const rx=subRx(x); return rx&&rx.test(t); })||''); if(sb) return c.issue==='missingComponent'?{key:subKey(c.issue,sb),label:`Missing component · ${sb}`,issue:c.issue}:subCase(c.issue,sb); }
+  if(c.issue&&c.issue!=='other'&&c.key===c.issue&&issueSubs(c.issue).length) return {key:c.key,label:`${ISSUE_LABEL[c.issue]} · not specified`,issue:c.issue};
+  /* free-text notes: "pending rework", "Pending reworks", "rework pending." are one case */
+  if(c.key.startsWith('other:')){ const L=normLabel(st.otherNote); return {key:'other:'+labelKey(L),label:L,issue:'other'}; }
   return c;
 }
 const issueOrder = key => { const i=ISSUE_ITEMS.findIndex(x=>x[0]===parentIssue(key)); return i<0?99:i; };
@@ -2432,7 +2530,6 @@ const DEFAULT_METHODS = [
 ];
 const LEGACY_SOP = {'SOP-BAT-01':'rm-01','SOP-BAT-02':'rm-02','SOP-BAT-03':'rm-03','SOP-BAT-04':'rm-04','SOP-BAT-05':'rm-05','SOP-BAT-06':'rm-06'};
 function methodsAll(){ const m=((S.data||{}).methods||[]).filter(x=>x&&x.name&&x.id); return (m.length?m:DEFAULT_METHODS).slice().sort((a,b)=>String(a.code).localeCompare(String(b.code),undefined,{numeric:true})); }
-const methodsActive = () => methodsAll().filter(m=>m.active!==false);
 const methodById = id => id?(methodsAll().find(m=>m.id===id)||DEFAULT_METHODS.find(m=>m.id===id)||null):null;
 const methodLabel = m => m?`${m.code} · ${m.name}`:'';
 function methodOfStage(st){
@@ -2447,18 +2544,6 @@ const methodFits = (m,plat) => !plat||!(m.platforms||[]).length||m.platforms.inc
 const methodTypes = m => (m.platforms||[]).length?m.platforms.join(', '):'All battery types';
 function methodScore(m,keys){ const par=keys.map(parentIssue); return sum((m.issues||[]).map(mi=>keys.includes(mi)?3:!mi.includes('__')&&par.includes(mi)?1:mi.includes('__')&&keys.includes(parentIssue(mi))?1:0)); }
 function methodsFor(keys,plat){ keys=keys||[]; return methodsActive().filter(m=>methodFits(m,plat)).map(m=>({m,s:methodScore(m,keys)})).sort((a,b)=>b.s-a.s||String(a.m.code).localeCompare(String(b.m.code),undefined,{numeric:true})); }
-function methodSelect(path,keys,rr,first,plat){
-  const v=getPath(S.f,path)||'', l=methodsFor(keys,plat), rec=l.filter(x=>x.s>0), rest=l.filter(x=>!x.s);
-  const o=x=>`<option value="${esc(x.m.id)}" ${x.m.id===v?'selected':''}>${esc(methodLabel(x.m))}</option>`;
-  const gone=v&&!l.some(x=>x.m.id===v)?`<option value="${esc(v)}" selected>${esc(methodLabel(methodById(v))||v)} (retired)</option>`:'';
-  return `<select class="in" id="b-${path.replace(/\./g,'-')}" data-bind="${path}" ${rr?'data-rerender':''}><option value="">${esc(first||'Choose a repair method…')}</option>${gone}${rec.length&&rest.length?`<optgroup label="Suggested for these faults${plat?' · '+esc(plat):''}">${rec.map(o).join('')}</optgroup><optgroup label="Other methods">${rest.map(o).join('')}</optgroup>`:l.map(o).join('')}</select>`;
-}
-function methodStepsBlock(path,m){
-  if(!m) return `<div class="banner"><div>Pick the repair method you are using. Its steps appear here to tick off as you go.</div></div>`;
-  const done=getPath(S.f,path)||{}, steps=m.steps||[], k=steps.filter((_,i)=>done[i]).length;
-  return `<div class="rm-steps"><div class="block-title"><h4>${esc(m.code)} steps</h4>${chip(`${k} of ${steps.length} done`,k===steps.length?'good':'warn')}</div>
-    <ol class="rm-list">${steps.map((s,i)=>`<li><label class="issue ${done[i]?'on':''}"><input type="checkbox" id="b-${path.replace(/\./g,'-')}-${i}" data-bind="${path}.${i}" data-rerender ${done[i]?'checked':''}><span class="rm-n">${i+1}</span><span>${esc(s)}</span></label></li>`).join('')}</ol></div>`;
-}
 
 /* ---------- Issue categories ---------- */
 const ISSUE_GROUPS = [
@@ -2506,11 +2591,12 @@ const LABEL_SYNONYMS = [
   [/field\s*flag/i,'Field flag']
 ];
 const LABEL_SEEN = new Map();
+const labelKey = t => String(t||'').toLowerCase().replace(/[0-9]+/g,' ').replace(/[^a-z]+/g,' ').split(' ').filter(Boolean).map(w=>w.length>3?w.replace(/(es|s)$/,''):w).join(' ');
 function normLabel(t,fallback){
   const s=String(t||'').replace(/\s+/g,' ').trim(); if(!s) return fallback||'Not given';
   for(const [re,l] of LABEL_SYNONYMS) if(re.test(s)) return l;
   const c=s.replace(/[.;:,!]+$/,'').replace(/\s*[#(]?\d+\)?$/,'').trim()||s;
-  const k=c.toLowerCase().replace(/[^a-z0-9]+/g,' ').replace(/s\b/g,'').trim();
+  const k=labelKey(c);
   if(!LABEL_SEEN.has(k)) LABEL_SEEN.set(k,c.charAt(0).toUpperCase()+c.slice(1));
   return LABEL_SEEN.get(k);
 }
@@ -2608,14 +2694,17 @@ const AN_TABS = [['cases','Top cases'],['defects','Defects'],['flow','Received &
 const AN_SRC = {esc:'Escalated to BSA',rework:'Reworked at Stage 2'};
 const capaCat = c => c.waitSupplier?'Waiting for supplier material':c.reasonCat==='part'?'Part replaced from stock':(CAPA_REASON_LABEL[c.reasonCat]||'Reason not given');
 const bsaOutcome = c => { const t=bsaTechStatus(c); return t==='Worked On'||t==='Returned to O&M for Deployment'?'Reworked':t==='Scrapped'?'Scrapped':t==='Warranty'?'Warranty':t==='Awaiting BSA receipt'?'Not received yet':'In progress'; };
-const bsaIssue = c => normLabel(c.escalationCategory||c.issueDescription,'Not given');
+const BSA_CAT_ISSUE = {'Vandalism / tampering':'tampered','Swelling / damage':'swelling','Cell failure':'cellFailureSingle','Connector damage':'connectorDamage','Physical defect / damage':'physicalDefect','Wet thermal paste / moisture':'wetThermalPaste'};
+function bsaIssue(c){ const l=normLabel(c.escalationCategory||c.issueDescription,'Not given'); const ik=BSA_CAT_ISSUE[l]; if(ik){ const t=String(c.issueDescription||'').toLowerCase(); const sb=issueSubs(ik).find(x=>{ const rx=subRx(x); return rx&&rx.test(t); }); if(sb) return `${l} · ${sb}`; } if(l==='Missing component'){ const m=String(c.issueDescription||'').match(/missing:\s*([^)]+)/i); const n=m&&componentName(m[1]); if(n) return 'Missing component · '+n; } return l; }
 const bsaDoneKey = c => dkey(c.dateClosed)||(['Reworked','Scrapped','Warranty'].includes(bsaOutcome(c))?dkey(c.updatedAt):'');
 const escFrom = r => (r.stage2||{}).completedAt?'Final QC':'Intake';
+const caseParent = c => c.issue&&c.issue!=='other'?c.issue:c.key;
+const caseParentLabel = c => c.issue&&c.issue!=='other'?ISSUE_LABEL[c.issue]:c.label;
 function defectItems(p){ const out=[]; S.data.om.forEach(r=>{ if(!inP(r.dateReceived,p)) return; caseKeysOf(r).forEach(c=>out.push({r,c,grp:caseGroup(c),sup:caseSupplier(c),plat:platName(r)})); }); return out; }
 function dimCase(p,src,dim,val){
   const pack=(label,items)=>items.length?{key:val,label,n:items.length,items}:null;
   if(src==='intake'){ const seen=new Set(), items=[]; let label=val;
-    defectItems(p).forEach(i=>{ const v=dim==='key'?i.c.key:i[dim]; if(v!==val||seen.has(i.r.id)) return; if(dim==='key') label=i.c.label; seen.add(i.r.id); items.push({type:'visit',r:i.r,date:i.r.dateReceived}); });
+    defectItems(p).forEach(i=>{ const v=dim==='key'?i.c.key:dim==='par'?caseParent(i.c):i[dim]; if(dim==='par'&&v===val) label=caseParentLabel(i.c); if(v!==val||seen.has(i.r.id)) return; if(dim==='key') label=i.c.label; seen.add(i.r.id); items.push({type:'visit',r:i.r,date:i.r.dateReceived}); });
     return pack(label,items); }
   if(src==='esc'){ let label=val==='*'?'All escalated batteries':val; const items=[];
     S.data.om.forEach(r=>{ if(!isToBsa(r)||!inP(closedKey(r),p)) return; if(val!=='*'){ const c=caseKeysOf(r).find(c=>c.key===val); if(!c) return; label=c.label; } items.push({type:'visit',r,date:closedKey(r)}); });
@@ -2632,6 +2721,13 @@ function rankList(rows,unit,attrFn,max){
   return `<ol class="tc-list">${top.map((x,i)=>`<li class="${attrFn?'click':''}" ${attrFn?attrFn(x):''}><span class="tc-rank ${i<3?'top':''}">${i+1}</span><span class="tc-main"><span class="tc-l"><b>${esc(x.label)}</b><span class="tc-v"><b class="num">${x.n}</b></span></span><span class="tc-bar"><i style="width:${x.n/mx*100}%;background:var(${i===0?'--crit':i<3?'--s2':'--s1'})"></i></span><small>${fmtPct(pct(x.n,tot))} of ${tot} ${unit}${x.sub?' · '+esc(x.sub):''}</small></span></li>`).join('')}</ol>${rows.length>top.length?`<div class="muted" style="font-size:12px;margin-top:6px">+ ${rows.length-top.length} more</div>`:''}`;
 }
 const countBy = (items,fn) => { const m={}; items.forEach(i=>{ const k=fn(i); if(k==null) return; m[k]=(m[k]||0)+1; }); return Object.entries(m).map(([label,n])=>({label,n})).sort((a,b)=>b.n-a.n||a.label.localeCompare(b.label)); };
+function parentList(items){
+  const P={}; items.forEach(i=>{ const k=caseParent(i.c), x=P[k]=P[k]||{key:k,label:caseParentLabel(i.c),n:0,subs:{}}; x.n++; const sk=i.c.key, s=x.subs[sk]=x.subs[sk]||{key:sk,label:i.c.key===k?(i.c.issue==='other'?i.c.label:'not specified'):i.c.label.replace(/^.*? · /,''),n:0}; s.n++; });
+  const rows=Object.values(P).sort((a,b)=>b.n-a.n||a.label.localeCompare(b.label)); if(!rows.length) return empty('No defects in this period.');
+  const mx=Math.max(1,...rows.map(x=>x.n)), tot=items.length;
+  return `<ol class="tc-list par-list">${rows.slice(0,14).map((x,i)=>{ const subs=Object.values(x.subs).sort((a,b)=>(a.label==='not specified')-(b.label==='not specified')||b.n-a.n); return `<li><span class="tc-rank ${i<3?'top':''}">${i+1}</span><span class="tc-main"><span class="tc-l click-l" ${anAttr('intake','par',x.key)} role="button" tabindex="0"><b>${esc(x.label)}</b><span class="tc-v"><b class="num">${x.n}</b></span></span><span class="tc-bar"><i style="width:${x.n/mx*100}%;background:var(${i===0?'--crit':i<3?'--s2':'--s1'})"></i></span><small>${fmtPct(pct(x.n,tot))} of ${tot} defects</small>
+    ${subs.length>1||(subs[0]&&subs[0].key!==x.key)?`<span class="par-subs">${subs.map(sb=>`<button class="psub ${sb.label==='not specified'?'unspec':''}" ${anAttr('intake','key',sb.key)}>${esc(sb.label)} <b>${sb.n}</b></button>`).join('')}</span>`:''}</span></li>`; }).join('')}</ol>${rows.length>14?`<div class="muted" style="font-size:12px;margin-top:6px">+ ${rows.length-14} more</div>`:''}`;
+}
 const SUP_TONE = {'Supplier':'--crit','Non-supplier':'--s1','Recall':'--info'};
 
 function AnDefects(p){
@@ -2655,7 +2751,7 @@ function AnDefects(p){
   const unc=cases.filter(c=>c.grp==='Unclassified');
   return `<div class="kpis four">${kpi('Batteries received',visits.length,`${new Set(visits.map(r=>normId(r.bmsId))).size} unique batteries`)}${kpi('With a defect',withD,visits.length?`${fmtPct(pct(withD,visits.length))} of received`:'—')}${kpi('Defects logged',items.length,`${cases.length} case type${cases.length===1?'':'s'} · ${grp.length} categor${grp.length===1?'y':'ies'}`)}${kpi('Supplier-related',supN,items.length?`${fmtPct(pct(supN,items.length))} of defects`:'—','',supN?'crit':'')}</div>
   ${unc.length&&canSetup()?`<div class="banner warn"><div><b>${unc.length} case type${unc.length===1?' has':'s have'} no category yet:</b> ${esc(unc.slice(0,4).map(c=>c.label).join(', '))}${unc.length>4?'…':''} <button class="btn sm" data-act="setup-open" data-v="cats">Set categories</button></div></div>`:''}
-  <div class="grid g2"><div class="card"><div class="card-head"><div><h3>Defects by issue</h3><p>Each battery counts once per issue. Tap to see the batteries.</p></div></div>${rankList(cases.map(c=>({...c,sub:c.grp})),'defects',x=>anAttr('intake','key',x.key))}</div>
+  <div class="grid g2"><div class="card"><div class="card-head"><div><h3>Defects by issue</h3><p>Similar faults together under their main issue. Tap an issue or an exact fault to see the batteries.</p></div></div>${parentList(items)}</div>
     <div class="card"><div class="card-head"><div><h3>Defects by category</h3><p>Issues grouped into categories (set in Setup)</p></div></div>${grpHtml}</div></div>
   <div class="grid g2 section"><div class="card"><div class="card-head"><div><h3>Supplier vs non-supplier</h3><p>Whose problem the defect is</p></div></div>${supHtml}</div>
     <div class="card"><div class="card-head"><div><h3>Defects by battery type</h3><p>AMPACE, UNIQUE, GREENWAY and CBAK</p></div></div>${platHtml}</div></div>
@@ -2690,6 +2786,22 @@ function AnFlow(p){
       <div><h4 style="margin-bottom:8px">BSA rework methods</h4>${rankList(bMeth,'reworked',null,8)}</div></div></div>`;
 }
 
+const matName = t => componentName(t)||'Not named';
+function supplierWaits(p){
+  const M={}, get=k=>M[k]=M[k]||{label:k,now:0,started:0,released:0,days:0,daily:0,ids:new Set()};
+  S.data.om.forEach(r=>{
+    if(r.hold&&!isClosed(r)){ const x=get(matName(r.hold.part)); x.now++; x.ids.add(r.bmsId); if(inP(dkey(r.hold.since),p)) x.started++; }
+    (r.holdLog||[]).forEach(h=>{ if(!inP(dkey(h.since),p)) return; const x=get(matName(h.part)); x.started++; if(h.releasedAt){ x.released++; x.days+=Math.max(0,(new Date(h.releasedAt)-new Date(h.since))/864e5); } });
+  });
+  (S.data.daily||[]).forEach(r=>{ if(r.status!=='VERIFIED'||!inP(r.date,p)) return; Object.values(r.issues||{}).forEach(v=>{ if(dNum(v.notWorked)>0&&/supplier|spare/i.test(v.reason||'')) get(matName(v.reasonNote)).daily+=dNum(v.notWorked); }); });
+  return Object.values(M).sort((a,b)=>b.now-a.now||b.started-a.started||b.daily-a.daily);
+}
+function SupplierWaitCard(p){
+  const L=supplierWaits(p), T=k=>sum(L.map(x=>x[k]));
+  return `<div class="card section"><div class="card-head"><div><h3>Waiting for supplier material</h3><p>Which material each battery is waiting for, and how many</p></div>${chip(`${T('now')} batter${T('now')===1?'y':'ies'} waiting now`,T('now')?'crit':'good')}</div>
+    ${L.length?`<div class="tbl-wrap"><table><thead><tr><th>Material / part</th><th class="r">Batteries waiting now</th><th class="r">Waits started this period</th><th class="r">Avg days to arrive</th><th class="r">From daily counts</th></tr></thead><tbody>${L.map(x=>`<tr><td><b>${esc(x.label)}</b>${x.ids.size?`<div class="muted mono" style="font-size:11px;white-space:normal">${esc([...x.ids].slice(0,4).join(', '))}${x.ids.size>4?' …':''}</div>`:''}</td><td class="r num"><b class="${x.now?'tc-hot':''}">${x.now||'·'}</b></td><td class="r num">${x.started||'·'}</td><td class="r num">${x.released?(Math.round(x.days/x.released*10)/10):'·'}</td><td class="r num">${x.daily||'·'}</td></tr>`).join('')}
+    <tr class="tot"><td>Total</td><td class="r num">${T('now')}</td><td class="r num">${T('started')}</td><td></td><td class="r num">${T('daily')}</td></tr></tbody></table></div>`:empty('Nothing is waiting for supplier material.')}</div>`;
+}
 function AnCapa(p){
   const log=[]; S.data.om.forEach(r=>(r.capaLog||[]).forEach(c=>{ if(inP(dkey(c.returnedAt),p)) log.push({r,c}); }));
   const cats=countBy(log,x=>capaCat(x.c)), wait=log.filter(x=>x.c.waitSupplier).length;
@@ -2698,7 +2810,8 @@ function AnCapa(p){
   const cmax=Math.max(1,...cats.map(x=>x.n));
   const catHtml=cats.length?`<div class="bars">${cats.map(x=>barRow(x.label,[[x.n,x.label==='Waiting for supplier material'?'--crit':'--s2',`<b>${esc(x.label)}</b><br>${fmtPct(pct(x.n,log.length))} of returns`]],cmax,x.n,anAttr('capa','cat',x.label))).join('')}</div>`:empty('No corrective-action returns in this period.');
   return `<div class="kpis four">${kpi('CAPA returns',log.length,`${new Set(log.map(x=>x.r.id)).size} batteries`)}${kpi('Waiting for supplier material',wait,log.length?`${fmtPct(pct(wait,log.length))} of returns`:'—','',wait?'crit':'')}${kpi('Other CAPA reasons',log.length-wait,'repair, test, assembly, re-check')}${kpi('On hold right now',holdNow.length,'waiting for a part','',holdNow.length?'warn':'')}</div>
-  <div class="grid g2"><div class="card"><div class="card-head"><div><h3>CAPA by category</h3><p>Waiting for supplier material, or the reason it came back</p></div></div>${catHtml}</div>
+  ${SupplierWaitCard(p)}
+  <div class="grid g2 section"><div class="card"><div class="card-head"><div><h3>CAPA by category</h3><p>Waiting for supplier material, or the reason it came back</p></div></div>${catHtml}</div>
     <div class="card"><div class="card-head"><div><h3>Parts needed</h3><p>Parts named on CAPA returns</p></div></div>${rankList(parts,'parts',null,10)}</div></div>
   <div class="grid g2 section"><div class="card"><div class="card-head"><div><h3>By repair method</h3><p>The Stage 2 method used before the return</p></div></div>${rankList(byM,'returns',null,8)}</div>
     <div class="card"><div class="card-head"><div><h3>By repair technician</h3><p>Who did the Stage 2 repair</p></div></div>${rankList(byT,'returns',null,8)}</div></div>
@@ -2741,27 +2854,9 @@ function anCsv(mode){
 /* =====================================================================
    SETUP WINDOW
    ===================================================================== */
-const SETUP_TABS = [['methods','Repair methods'],['cats','Issue categories'],['people','Technicians'],['types','Battery types']];
-function openSetup(tab){ S.f.setup={tab:tab||(S.f.setup&&S.f.setup.tab)||'methods',grp:{},sup:{},subs:{},pname:{},move:{},newGroup:'',ptype:(S.f.setup&&S.f.setup.ptype)||''}; S.f.rm=null; S.formError=null; openDrawer({type:'setup'}); }
+function openSetup(tab){ S.f.setup={tab:tab||(S.f.setup&&S.f.setup.tab)||'methods',grp:{},sup:{},subs:{},pname:{},move:{},newGroup:'',ptype:(S.f.setup&&S.f.setup.ptype)||'',st:''}; S.f.rm=null; S.f.rmView=null; S.formError=null; openDrawer({type:'setup'}); }
 function setupSeenCases(){
   const m={}; S.data.om.forEach(r=>caseKeysOf(r).forEach(c=>{ const x=m[c.key]=m[c.key]||{...c,n:0}; x.n++; })); return Object.values(m).sort((a,b)=>(caseGroup(a)==='Unclassified'?0:1)-(caseGroup(b)==='Unclassified'?0:1)||b.n-a.n);
-}
-function SetupMethods(edit){
-  const F=S.f.rm;
-  if(F){
-    const iss=ISSUE_ITEMS.filter(([k])=>k!=='other'), ck=(k,l,cls)=>`<label class="issue ${cls||''} ${(F.issues||{})[k]?'on':''}"><input type="checkbox" data-bind="rm.issues.${k}" data-rerender ${(F.issues||{})[k]?'checked':''}>${esc(l)}</label>`;
-    return `<div class="form">${field('Code',inp('rm.code',{ph:'RM-10',max:12}),'',true)}${field('Name',inp('rm.name',{ph:'e.g. Fuse replacement'}),'',true)}</div>
-      <div><div class="block-title"><h4>Battery types</h4><span class="muted" style="font-size:12px">Stage 2 only sees this method for these types. Tick none for all types.</span></div><div class="issues">${PLATFORMS.slice().sort().map(pl=>`<label class="issue ${(F.plats||{})[pl]?'on':''}"><input type="checkbox" data-bind="rm.plats.${pl}" data-rerender ${(F.plats||{})[pl]?'checked':''}>${pl}</label>`).join('')}</div></div>
-      <div><div class="block-title"><h4>Faults it fixes</h4><span class="muted" style="font-size:12px">Tick the exact faults; it is suggested first when a battery has them</span></div><div class="rm-isg-list">${iss.map(([k,l])=>`<div class="rm-isg">${ck(k,l+(issueSubs(k).length?' (any)':''),'par')}${issueSubs(k).map(sb=>ck(subKey(k,sb),sb,'sub')).join('')}</div>`).join('')}</div></div>
-      ${field('Steps, in order (one per line)',`<textarea class="in rm-steps-in" id="b-rm-stepsText" data-bind="rm.stepsText" rows="8" placeholder="Isolate the pack&#10;Open the housing&#10;…">${esc(F.stepsText||'')}</textarea>`,'full',true)}
-      <label class="issue ${F.active!==false?'on':''}" style="max-width:340px"><input type="checkbox" data-bind="rm.active" data-rerender ${F.active!==false?'checked':''}>In use (untick to retire it; old records keep it)</label>`;
-  }
-  const ft=S.f.setup.ptype||'', list=methodsAll().filter(m=>!ft||methodFits(m,ft)), used={}; S.data.om.forEach(r=>{ const id=(r.stage2||{}).methodId||LEGACY_SOP[String((r.stage2||{}).sopRef||'').split(':')[0].trim()]; if(id&&(r.stage2||{}).completedAt) used[id]=(used[id]||0)+1; });
-  return `<div class="seg" role="group" aria-label="Battery type">${[['','All types'],...PLATFORMS.slice().sort().map(x=>[x,x])].map(([k,l])=>`<button class="${ft===k?'on':''}" data-act="rm-ptype" data-v="${k}">${l}</button>`).join('')}</div>
-    ${!(S.data.methods||[]).length?`<div class="banner"><div>These are the starting methods.${edit?' Edit any of them and they are saved for everyone.':''}</div></div>`:''}
-    <div class="rm-cards">${list.map(m=>`<div class="card rm-card ${m.active===false?'off':''}"><div class="rm-h"><span class="rm-code">${esc(m.code)}</span><b>${esc(m.name)}</b>${m.active===false?chip('retired',''):''}${edit?`<button class="btn sm" data-act="rm-copy" data-id="${esc(m.id)}" title="Make a version of this method for another battery type">Copy</button><button class="btn sm" data-act="rm-edit" data-id="${esc(m.id)}">Edit</button>`:''}</div>
-      <div class="rm-iss"><span class="chip ${(m.platforms||[]).length?'info':''}">${esc(methodTypes(m))}</span>${(m.issues||[]).map(k=>`<span class="chip">${esc(issueLbl(k))}</span>`).join('')||'<span class="muted">Any issue</span>'}</div>
-      <ol class="rm-ol">${(m.steps||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ol><div class="muted" style="font-size:12px">Version ${m.version||1} · used on ${used[m.id]||0} repair${used[m.id]===1?'':'s'}${m.updatedBy?` · last changed by ${esc(m.updatedBy)}`:''}</div></div>`).join('')}</div>`;
 }
 function SetupCats(edit){
   const cases=setupSeenCases(), F=S.f.setup, G=groupNames();
@@ -2791,45 +2886,176 @@ function SetupTypes(){
     <div class="kpis four">${by.map(x=>kpi(esc(x.label),x.n,x.label==='Unverified'?'need checking':'records','',x.label==='Unverified'?'warn':'')).join('')}</div>
     ${bad.length?`<div class="card section"><div class="card-head"><div><h3>Records with an unknown type</h3><p>The ID prefix isn't recognised and the type text can't be matched. Open the battery to check.</p></div></div><div class="case-list">${bad.slice(0,60).map(({r,k})=>`<button class="case-row" data-act="open-battery" data-id="${esc(r.bmsId)}"><span class="cr-1"><b class="mono">${esc(r.bmsId||'—')}</b>${chip(k,'')}</span><span class="cr-2">Typed as “${esc(r.model||'blank')}”</span></button>`).join('')}</div></div>`:''}`;
 }
-function SetupSheet(){
-  const F=S.f.setup||(S.f.setup={tab:'methods',grp:{},sup:{},subs:{},pname:{},move:{},ptype:''}), edit=canSetup(), t=F.tab;
-  const tabs=`<div class="seg setup-tabs" role="tablist">${SETUP_TABS.map(([k,l])=>`<button role="tab" class="${t===k?'on':''}" data-act="setup-tab" data-v="${k}">${l}</button>`).join('')}</div>`;
-  const ro=edit?'':`<div class="banner"><div>You can view these. Only the O&amp;M manager or the Quality engineer can change them.</div></div>`;
-  const body=t==='methods'?SetupMethods(edit):t==='cats'?SetupCats(edit):t==='people'?SetupPeople(edit):SetupTypes();
-  let foot='';
-  if(edit&&t==='methods') foot=S.f.rm?`<button class="btn" data-act="rm-cancel">Cancel</button><button class="btn pri" data-act="rm-save" ${S.saving?'disabled':''}>${savingLabel('Save method',S.saving)}</button>`:`<button class="btn pri" data-act="rm-new">${ICON.plus} New repair method</button>`;
-  if(edit&&t==='cats') foot=`<button class="btn pri" data-act="cat-save" ${S.saving?'disabled':''}>${savingLabel('Save categories',S.saving)}</button>`;
-  if(edit&&t==='people') foot=`<button class="btn pri" data-act="ppl-save" ${S.saving?'disabled':''}>${savingLabel('Save names',S.saving)}</button>`;
-  const title=S.f.rm?(S.f.rm.id?'Edit repair method':'New repair method'):'Setup';
-  return sheet(title,edit?'Repair methods, issue categories, technicians and battery types':'Read only',errBox()+(S.f.rm?'':tabs)+ro+body,foot,'Setup');
-}
-function rmEdit(id,copy){
-  const m=id?methodById(id):null;
-  if(!canSetup()){ toast('Only the O&M manager or the Quality engineer can change repair methods.'); return; }
-  const n=methodsAll().length+1;
-  const nx='RM-'+String(n).padStart(2,'0');
-  S.f.rm=m?{id:copy?'':m.id,code:copy?nx:m.code,name:copy?m.name+' ('+(S.f.setup.ptype||'type')+')':m.name,issues:Object.fromEntries((m.issues||[]).map(k=>[k,true])),plats:copy?(S.f.setup.ptype?{[S.f.setup.ptype]:true}:{}):Object.fromEntries((m.platforms||[]).map(k=>[k,true])),stepsText:(m.steps||[]).join('\n'),active:m.active!==false}:{id:'',code:nx,name:'',issues:{},plats:S.f.setup.ptype?{[S.f.setup.ptype]:true}:{},stepsText:'',active:true};
-  S.formError=null; renderDrawer(true);
-}
 async function setupSave(store,list,stateKey,msg){
   S.saving=true; renderDrawer(true);
   try{ if(!await saveStore(store,list)){ S.formError='Could not save. Try again.'; return false; } S.data[stateKey]=list; bump(); PIDX=null; S.formError=null; toast(msg); return true; }
   finally{ S.saving=false; renderDrawer(true); }
 }
-async function rmSave(){
-  const F=S.f.rm; if(!F||S.saving) return; S.formError=null;
-  const code=String(F.code||'').trim().toUpperCase(), name=String(F.name||'').trim(), steps=String(F.stepsText||'').split('\n').map(s=>s.replace(/^\s*\d+[.)]\s*/,'').trim()).filter(Boolean);
-  if(!code) return (S.formError='Give the method a code, e.g. RM-08.',renderDrawer(true));
-  if(name.length<3) return (S.formError='Give the method a clear name.',renderDrawer(true));
-  if(!steps.length) return (S.formError='Add at least one step, one per line.',renderDrawer(true));
-  const base=clone(await loadStore('repair_method_records')); const list=base.length?base:clone(DEFAULT_METHODS).map(m=>({...m,createdAt:nowIso()}));
-  if(list.some(m=>m.code.toUpperCase()===code&&m.id!==F.id)) return (S.formError=`${code} is already used by another method.`,renderDrawer(true));
-  const issues=Object.keys(F.issues||{}).filter(k=>F.issues[k]), platforms=PLATFORMS.filter(pl=>(F.plats||{})[pl]);
-  const i=F.id?list.findIndex(m=>m.id===F.id):-1;
-  if(i>=0){ const o=list[i], changed=stableStr(o.steps)!==stableStr(steps); list[i]={...o,code,name,issues,platforms,steps,active:F.active!==false,version:(o.version||1)+(changed?1:0),updatedAt:nowIso(),updatedBy:S.session.name}; }
-  else list.push({id:'rm-'+uid(),code,name,issues,platforms,steps,active:F.active!==false,version:1,createdAt:nowIso(),updatedBy:S.session.name});
-  if(await setupSave('repair_method_records',list,'methods',`${code} saved. Stage 2 sees it straight away.`)){ S.f.rm=null; renderDrawer(true); }
+/* ---------- Rework method approval: proposed (Stage 1/2) → accepted (Stage 3) → standard (engineer) ---------- */
+const RM_STATUS = {PROPOSED:['Proposed · awaiting Stage 3','warn'],ACCEPTED:['Accepted · awaiting engineer','info'],STANDARD:['Standard','good'],REJECTED:['Rejected','crit'],RETIRED:['Retired','']};
+const rmStatus = m => (m&&m.status)||'STANDARD';
+const stepText = st => typeof st==='string'?st:(st&&st.text)||'';
+const stepCheck = st => typeof st==='string'?'':(st&&st.check)||'';
+const rmRole = () => { const s=S.session||{}; return s.role==='omtech'?'s'+s.stage:s.role; };
+const canProposeMethod = () => ['s1','s2','omadmin','quality'].includes(rmRole());
+const canAcceptMethod = () => ['s3','omadmin','quality'].includes(rmRole());
+const canStandardize = () => canSetup();
+const canEditMethod = m => canSetup()||(rmStatus(m)==='PROPOSED'&&canProposeMethod()&&samePerson(m.proposedBy,(S.session||{}).name));
+const methodsActive = () => methodsAll().filter(m=>m.active!==false&&!['REJECTED','RETIRED'].includes(rmStatus(m)));
+const DEFAULT_ACCEPT = {'rm-01':'Housing closed, every fastener torqued, nothing loose inside','rm-02':'Cell delta within 20 mV after rest; capacity test passed','rm-03':'CAN online and no BMS faults after a power cycle','rm-04':'Insulation resistance at least 550 MΩ','rm-05':'Tracker online and reporting with the right IMEI','rm-06':'Battery charges normally at the station','rm-07':'Continuity and polarity correct, connector locks firmly','rm-08':'Charge and discharge work under load, MOSFETs stay cool','rm-09':'Voltage drop across joints within limits under load'};
+DEFAULT_METHODS.forEach(m=>{ m.status='STANDARD'; m.acceptance=DEFAULT_ACCEPT[m.id]||''; });
+function rmEvidence(m){
+  const v=S.data.om.filter(r=>(r.stage2||{}).methodId===m.id&&(r.stage2||{}).completedAt), closed=v.filter(isClosed);
+  const pass=closed.filter(r=>r.finalDisposition==='PASS'), fp=closed.filter(isFirstPass), capa=v.filter(r=>r.capaCycles>0), bsa=closed.filter(isToBsa);
+  return {n:v.length,closed:closed.length,pass:pass.length,fp:fp.length,capa:capa.length,bsa:bsa.length,rate:pct(fp.length,closed.length),list:v};
 }
+function methodStepsBlock(path,m){
+  if(!m) return `<div class="banner"><div>Pick the repair method you are using. Its steps appear here to follow and tick off one by one.</div></div>`;
+  const done=getPath(S.f,path)||{}, resPath=path.replace(/steps$/,'stepRes'), res=getPath(S.f,resPath)||{}, steps=m.steps||[], k=steps.filter((_,i)=>done[i]).length;
+  const trial=rmStatus(m)!=='STANDARD'?`<div class="banner warn"><div><b>Trial method (${esc(RM_STATUS[rmStatus(m)][0])}).</b> Follow it exactly. Stage 3's result on this battery counts as evidence for whether it fixes the defect.</div></div>`:'';
+  const info=[['Safety',m.safety],['Tools & equipment',m.tools],['Parts & materials',m.parts]].filter(x=>x[1]);
+  return `<div class="rm-steps">${trial}${info.length?`<div class="rm-info">${info.map(([l,v])=>`<div><span>${l}</span><b>${esc(v)}</b></div>`).join('')}</div>`:''}
+    <div class="block-title"><h4>${esc(m.code)} · step by step</h4>${chip(`${k} of ${steps.length} done`,k===steps.length?'good':'warn')}</div>
+    <ol class="rm-list">${steps.map((st,i)=>{ const ck=stepCheck(st); return `<li class="${done[i]?'done':''}"><label class="issue ${done[i]?'on':''}"><input type="checkbox" id="b-${path.replace(/\./g,'-')}-${i}" data-bind="${path}.${i}" data-rerender ${done[i]?'checked':''}><span class="rm-n">${i+1}</span><span>${esc(stepText(st))}${ck?`<small class="rm-ck">Check: ${esc(ck)}</small>`:''}</span></label>${ck?`<input class="in sm rm-res" id="b-${resPath.replace(/\./g,'-')}-${i}" data-bind="${resPath}.${i}" value="${esc(res[i]||'')}" placeholder="Result / reading for step ${i+1}">`:''}</li>`; }).join('')}</ol>
+    ${m.acceptance?`<div class="rm-acc"><span>Done when</span><b>${esc(m.acceptance)}</b></div>`:''}</div>`;
+}
+function methodSelect(path,keys,rr,first,plat){
+  const v=getPath(S.f,path)||'', l=methodsFor(keys,plat), rank=x=>({STANDARD:0,ACCEPTED:1,PROPOSED:2})[rmStatus(x.m)]??3;
+  l.sort((a,b)=>rank(a)-rank(b)||b.s-a.s||String(a.m.code).localeCompare(String(b.m.code),undefined,{numeric:true}));
+  const std=l.filter(x=>rmStatus(x.m)==='STANDARD'), rec=std.filter(x=>x.s>0), rest=std.filter(x=>!x.s), trial=l.filter(x=>rmStatus(x.m)!=='STANDARD');
+  const o=x=>`<option value="${esc(x.m.id)}" ${x.m.id===v?'selected':''}>${esc(methodLabel(x.m))}${rmStatus(x.m)!=='STANDARD'?' (trial)':''}</option>`;
+  const gone=v&&!l.some(x=>x.m.id===v)?`<option value="${esc(v)}" selected>${esc(methodLabel(methodById(v))||v)} (not in use)</option>`:'';
+  const grp=(lab,a)=>a.length?`<optgroup label="${esc(lab)}">${a.map(o).join('')}</optgroup>`:'';
+  return `<select class="in" id="b-${path.replace(/\./g,'-')}" data-bind="${path}" ${rr?'data-rerender':''}><option value="">${esc(first||'Choose a repair method…')}</option>${gone}${grp(`Standard · for these faults${plat?' · '+plat:''}`,rec)}${grp(rec.length?'Other standard methods':'Standard methods',rest)}${grp('Trial methods (not yet standard)',trial)}</select>`;
+}
+const SETUP_TABS = [['methods','Rework methods'],['cover','Defect coverage'],['cats','Issue categories'],['people','Technicians'],['types','Battery types']];
+function rmCard(m){
+  const ev=rmEvidence(m), st=RM_STATUS[rmStatus(m)]||['',''];
+  return `<button class="card rm-card rm-open ${['REJECTED','RETIRED'].includes(rmStatus(m))?'off':''}" data-act="rm-view" data-id="${esc(m.id)}"><div class="rm-h"><span class="rm-code">${esc(m.code)}</span><b>${esc(m.name)}</b>${chip(st[0],st[1])}</div>
+    <div class="rm-iss"><span class="chip ${(m.platforms||[]).length?'info':''}">${esc(methodTypes(m))}</span>${(m.issues||[]).slice(0,5).map(k=>`<span class="chip">${esc(issueLbl(k))}</span>`).join('')}${(m.issues||[]).length>5?`<span class="chip">+${m.issues.length-5}</span>`:''}</div>
+    <div class="muted" style="font-size:12px">${(m.steps||[]).length} steps · v${m.version||1} · used on ${ev.n} batter${ev.n===1?'y':'ies'}${ev.closed?` · ${fmtPct(ev.rate)} passed first time`:''}${m.proposedBy?` · proposed by ${esc(canonPerson(m.proposedBy))}`:''}</div></button>`;
+}
+function SetupMethods(edit){
+  if(S.f.rm) return rmForm();
+  if(S.f.rmView) return rmDetail(methodById(S.f.rmView));
+  const ft=S.f.setup.ptype||'', sf=S.f.setup.st||'', all=methodsAll(), list=all.filter(m=>(!ft||methodFits(m,ft))&&(!sf||rmStatus(m)===sf));
+  const cnt=k=>all.filter(m=>rmStatus(m)===k).length;
+  const queue=rmRole()==='s3'&&cnt('PROPOSED')?`<div class="banner warn"><div><b>${cnt('PROPOSED')} proposed method${cnt('PROPOSED')===1?'':'s'} need your check.</b> Open each, look at the steps and the results on batteries repaired with it, then accept or reject.</div></div>`:canStandardize()&&cnt('ACCEPTED')?`<div class="banner warn"><div><b>${cnt('ACCEPTED')} method${cnt('ACCEPTED')===1?'':'s'} accepted by Stage 3</b> and waiting for you to make standard.</div></div>`:'';
+  return `<div class="banner"><div><b>How a rework method becomes standard:</b> Stage 1 or Stage 2 writes it step by step → Stage 3 accepts that it fixes the defect → the engineer sets it as the standard. Technicians can use trial methods meanwhile; their results are the evidence.</div></div>${queue}
+    <div class="rm-filters"><div class="seg" role="group" aria-label="Status">${[['','All'],['STANDARD','Standard'],['PROPOSED','Awaiting Stage 3'],['ACCEPTED','Awaiting engineer'],['REJECTED','Rejected']].map(([k,l])=>`<button class="${sf===k?'on':''}" data-act="rm-st" data-v="${k}">${l}${k&&cnt(k)?` <b>${cnt(k)}</b>`:''}</button>`).join('')}</div>
+    <div class="seg" role="group" aria-label="Battery type">${[['','All types'],...PLATFORMS.slice().sort().map(x=>[x,x])].map(([k,l])=>`<button class="${ft===k?'on':''}" data-act="rm-ptype" data-v="${k}">${l}</button>`).join('')}</div></div>
+    <div class="rm-cards">${list.map(rmCard).join('')||empty('No methods match.')}</div>`;
+}
+function rmDetail(m){
+  if(!m) return empty('Method not found.');
+  const ev=rmEvidence(m), st=RM_STATUS[rmStatus(m)]||['',''];
+  const info=[['Fixes',(m.issues||[]).map(issueLbl).join(', ')||'—'],['Battery types',methodTypes(m)],['Safety',m.safety],['Tools & equipment',m.tools],['Parts & materials',m.parts],['Done when',m.acceptance],['Time',m.minutes?m.minutes+' min':'']].filter(x=>x[1]);
+  return `<div class="rm-h"><span class="rm-code">${esc(m.code)}</span><b style="font-size:17px">${esc(m.name)}</b>${chip(st[0],st[1])}</div>
+    <div class="kv rm-kv">${info.map(([l,v])=>`<div><span>${l}</span><b>${esc(v)}</b></div>`).join('')}</div>
+    <div><h4 style="margin-bottom:6px">Steps</h4><ol class="rm-ol">${(m.steps||[]).map(s=>`<li>${esc(stepText(s))}${stepCheck(s)?` <span class="muted">· check: ${esc(stepCheck(s))}</span>`:''}</li>`).join('')}</ol></div>
+    <div><h4 style="margin-bottom:6px">Evidence from the repair chain</h4><div class="facts"><div class="fact"><span>Repaired with it</span><b>${ev.n}</b></div><div class="fact"><span>Passed final QC</span><b>${ev.pass}</b></div><div class="fact"><span>First time</span><b>${ev.closed?fmtPct(ev.rate):'—'}</b></div><div class="fact"><span>Came back (CAPA)</span><b>${ev.capa}</b></div></div>
+      ${ev.list.length?`<div class="case-list" style="margin-top:8px">${ev.list.slice(-6).reverse().map(r=>`<button class="case-row" data-act="open-battery" data-id="${esc(r.bmsId)}"><span class="cr-1"><b class="mono">${esc(r.bmsId)}</b>${chip(...omStatus(r))}</span><span class="cr-2">${esc(platName(r))} · ${esc(issueNames(r).join(', '))} · by ${esc(canonPerson(r.stage2.technician)||'—')}</span></button>`).join('')}</div>`:'<div class="muted" style="font-size:13px">Not used on any battery yet.</div>'}</div>
+    ${(canAcceptMethod()&&['PROPOSED','ACCEPTED'].includes(rmStatus(m)))||(canStandardize())?field('Note for this decision',area('rmNote','What you checked, or why you reject it'),'full'):''}
+    ${(m.history||[]).length?`<details class="visit"><summary>History (${m.history.length})</summary><div class="hist">${m.history.slice().reverse().map(h=>`<div><b>${esc(h.action)}</b> · ${esc(h.by||'—')} · ${esc(fmtDT(h.at))}${h.note?`<div class="muted">${esc(h.note)}</div>`:''}</div>`).join('')}</div></details>`:''}`;
+}
+function rmDetailFoot(m){
+  if(!m) return ''; const s=rmStatus(m), b=[];
+  b.push(`<button class="btn" data-act="rm-back">‹ All methods</button>`);
+  if(canProposeMethod()) b.push(`<button class="btn" data-act="rm-copy" data-id="${esc(m.id)}" title="Start a new method for another battery type from this one">Copy for another type</button>`);
+  if(canEditMethod(m)) b.push(`<button class="btn" data-act="rm-edit" data-id="${esc(m.id)}">Edit</button>`);
+  if(canAcceptMethod()&&s==='PROPOSED') b.push(`<button class="btn danger" data-act="rm-do" data-v="reject">Reject</button>`,`<button class="btn pri" data-act="rm-do" data-v="accept">Accept · it fixes the defect</button>`);
+  if(canStandardize()&&s==='ACCEPTED') b.push(`<button class="btn danger" data-act="rm-do" data-v="reject">Reject</button>`,`<button class="btn pri" data-act="rm-do" data-v="standard">Set as standard</button>`);
+  if(canStandardize()&&s==='STANDARD') b.push(`<button class="btn danger" data-act="rm-do" data-v="retire">Retire</button>`);
+  if(canStandardize()&&['REJECTED','RETIRED'].includes(s)) b.push(`<button class="btn" data-act="rm-do" data-v="reopen">Reopen as proposed</button>`);
+  return b.join('');
+}
+function rmForm(){
+  const F=S.f.rm, iss=ISSUE_ITEMS.filter(([k])=>k!=='other'), ck=(k,l,cls)=>`<label class="issue ${cls||''} ${(F.issues||{})[k]?'on':''}"><input type="checkbox" data-bind="rm.issues.${k}" data-rerender ${(F.issues||{})[k]?'checked':''}>${esc(l)}</label>`;
+  const sec=(n,t,sub,body)=>`<section class="rm-sec"><div class="rm-sec-h"><span class="rm-sn">${n}</span><div><h4>${t}</h4>${sub?`<small>${sub}</small>`:''}</div></div>${body}</section>`;
+  return `<div class="banner"><div>${F.id?'Editing':'Writing'} a rework method. ${canSetup()?'':'It is saved as <b>proposed</b>; Stage 3 accepts it and the engineer makes it standard.'}</div></div>
+   ${sec(1,'Name it','',`<div class="form">${field('Code',inp('rm.code',{ph:'RM-10',max:12}),'',true)}${field('Method name',inp('rm.name',{ph:'e.g. Charging port replacement'}),'',true)}${field('Time it takes (minutes)',inp('rm.minutes',{type:'number',ph:'e.g. 40'}))}</div>`)}
+   ${sec(2,'Which defect it fixes','Tick the exact faults. Every defect should have a method.',`<div class="rm-isg-list">${iss.map(([k,l])=>`<div class="rm-isg">${ck(k,l+(issueSubs(k).length?' (any)':''),'par')}${issueSubs(k).map(sb=>ck(subKey(k,sb),sb,'sub')).join('')}</div>`).join('')}</div>`)}
+   ${sec(3,'Battery types','Tick none if it works the same on every type.',`<div class="issues">${PLATFORMS.slice().sort().map(pl=>`<label class="issue ${(F.plats||{})[pl]?'on':''}"><input type="checkbox" data-bind="rm.plats.${pl}" data-rerender ${(F.plats||{})[pl]?'checked':''}>${pl}</label>`).join('')}</div>`)}
+   ${sec(4,'Before you start','',`<div class="form">${field('Safety precautions',area('rm.safety','e.g. Isolate the pack, insulated gloves, no rings or watches'),'full')}${field('Tools & equipment',inp('rm.tools',{ph:'e.g. Multimeter, torque driver 2 Nm, soldering station'}),'full')}${field('Parts & materials',inp('rm.parts',{ph:'e.g. Charging port (CBAK type), thermal pad'}),'full')}</div>`)}
+   ${sec(5,'Steps, in order','One action per step. Add a check where something must be measured or confirmed.',`<ol class="rm-ed">${(F.steps||[]).map((st,i)=>`<li><span class="rm-n">${i+1}</span><div class="rm-ed-f"><input class="in" id="b-rm-steps-${i}-text" data-bind="rm.steps.${i}.text" value="${esc(st.text||'')}" placeholder="What to do"><input class="in sm" id="b-rm-steps-${i}-check" data-bind="rm.steps.${i}.check" value="${esc(st.check||'')}" placeholder="Check / expected result (optional), e.g. ≥ 550 MΩ"></div><div class="rm-ed-b"><button class="btn sm ghost" data-act="rm-step" data-v="up" data-i="${i}" ${i?'':'disabled'} aria-label="Move up">↑</button><button class="btn sm ghost" data-act="rm-step" data-v="rm" data-i="${i}" aria-label="Remove step">${ICON.close}</button></div></li>`).join('')}</ol><button class="btn" data-act="rm-step" data-v="add">${ICON.plus} Add step</button>`)}
+   ${sec(6,'How you know it is fixed','The test that proves the defect is gone.',field('Acceptance test',inp('rm.acceptance',{ph:'e.g. Charges to 100% at the station without cut-out'}),'full',true))}`;
+}
+function rmCoverage(){
+  const ms=methodsActive(), types=PLATFORMS.slice().sort();
+  const cover=(key,pl)=>ms.filter(m=>methodFits(m,pl)&&(m.issues||[]).includes(key));
+  const rows=[]; ISSUE_ITEMS.filter(([k])=>k!=='other').forEach(([k,l])=>{ const subs=issueSubs(k); if(!subs.length) rows.push({key:k,label:l,par:true}); else { rows.push({key:k,label:l,par:true,head:true}); subs.forEach(sb=>rows.push({key:subKey(k,sb),label:sb})); } });
+  let gaps=0; const body=rows.map(r=>{ if(r.head){ const any=ms.filter(m=>(m.issues||[]).includes(r.key)); return `<tr class="cov-h"><td colspan="${types.length+1}">${esc(r.label)}${any.length?` <span class="muted" style="font-weight:500;font-size:12px">· general methods: ${any.map(m=>esc(m.code)).join(', ')}</span>`:''}</td></tr>`; }
+    return `<tr><td class="${r.par?'':'cov-sub'}">${esc(r.label)}</td>${types.map(pl=>{ const c=cover(r.key,pl), std=c.filter(m=>rmStatus(m)==='STANDARD'); if(!std.length) gaps++;
+      return `<td class="cov ${std.length?'ok':c.length?'trial':'gap'}">${std.length?std.map(m=>`<button class="cov-m" data-act="rm-view" data-id="${esc(m.id)}">${esc(m.code)}</button>`).join(' '):c.length?c.map(m=>`<button class="cov-m trial" data-act="rm-view" data-id="${esc(m.id)}">${esc(m.code)}?</button>`).join(' '):(canProposeMethod()?`<button class="cov-add" data-act="rm-new-for" data-k="${esc(r.key)}" data-pl="${pl}" title="Write a method for this">+ add</button>`:'—')}</td>`; }).join('')}</tr>`; }).join('');
+  return `<div class="banner ${gaps?'warn':'good'}"><div>${gaps?`<b>${gaps} defect × battery-type combinations have no standard rework method yet.</b> Tap <b>+ add</b> to write one.`:'<b>Every defect has a standard rework method for every battery type.</b>'} Green = standard · amber = trial only · red = missing.</div></div>
+    <div class="tbl-wrap"><table class="cov-tbl"><thead><tr><th>Defect / exact fault</th>${types.map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+function SetupSheet(){
+  const F=S.f.setup||(S.f.setup={tab:'methods',grp:{},sup:{},subs:{},pname:{},move:{},ptype:'',st:''}), edit=canSetup(), t=F.tab;
+  const tabs=`<div class="seg setup-tabs" role="tablist">${SETUP_TABS.map(([k,l])=>`<button role="tab" class="${t===k?'on':''}" data-act="setup-tab" data-v="${k}">${l}</button>`).join('')}</div>`;
+  const ro=edit||t==='methods'||t==='cover'?'':`<div class="banner"><div>You can view these. Only the O&amp;M manager or the Quality engineer can change them.</div></div>`;
+  const body=t==='methods'?SetupMethods(edit):t==='cover'?rmCoverage():t==='cats'?SetupCats(edit):t==='people'?SetupPeople(edit):SetupTypes();
+  let foot='';
+  if(t==='methods'){ if(S.f.rm) foot=`<button class="btn" data-act="rm-cancel">Cancel</button>${canSetup()&&(!S.f.rm.id||rmStatus(methodById(S.f.rm.id))!=='STANDARD')?`<button class="btn" data-act="rm-save" data-v="standard" ${S.saving?'disabled':''}>Save as standard</button>`:''}<button class="btn pri" data-act="rm-save" ${S.saving?'disabled':''}>${savingLabel(S.f.rm.id?'Save changes':canSetup()?'Save as proposed':'Propose method',S.saving)}</button>`;
+    else if(S.f.rmView) foot=rmDetailFoot(methodById(S.f.rmView));
+    else if(canProposeMethod()) foot=`<button class="btn pri" data-act="rm-new">${ICON.plus} Write a rework method</button>`; }
+  if(edit&&t==='cats') foot=`<button class="btn pri" data-act="cat-save" ${S.saving?'disabled':''}>${savingLabel('Save categories',S.saving)}</button>`;
+  if(edit&&t==='people') foot=`<button class="btn pri" data-act="ppl-save" ${S.saving?'disabled':''}>${savingLabel('Save names',S.saving)}</button>`;
+  const title=S.f.rm?(S.f.rm.id?'Edit rework method':'New rework method'):S.f.rmView?'Rework method':'Rework methods & setup';
+  return sheet(title,'Rework methods, defect coverage, issue categories, technicians and battery types',errBox()+(S.f.rm||S.f.rmView?'':tabs)+ro+body,foot,'Setup');
+}
+function rmEdit(id,copy,preset){
+  const m=id?methodById(id):null;
+  if(m&&!copy&&!canEditMethod(m)){ toast('Only the engineer, or the person who proposed it, can change this method.'); return; }
+  if(!m&&!canProposeMethod()){ toast('Stage 1 and Stage 2 technicians or the engineer write rework methods.'); return; }
+  const n=methodsAll().length+1, nx='RM-'+String(n).padStart(2,'0'), pt=(preset&&preset.pl)||S.f.setup.ptype;
+  const steps=m?(m.steps||[]).map(s=>({text:stepText(s),check:stepCheck(s)})):[{text:'',check:''},{text:'',check:''},{text:'',check:''}];
+  S.f.rm=m?{id:copy?'':m.id,code:copy?nx:m.code,name:copy?m.name+(pt?' · '+pt:''):m.name,issues:Object.fromEntries((m.issues||[]).map(k=>[k,true])),plats:copy?(pt?{[pt]:true}:{}):Object.fromEntries((m.platforms||[]).map(k=>[k,true])),steps,safety:m.safety||'',tools:m.tools||'',parts:m.parts||'',acceptance:m.acceptance||'',minutes:m.minutes||''}
+    :{id:'',code:nx,name:'',issues:preset&&preset.k?{[preset.k]:true}:{},plats:pt?{[pt]:true}:{},steps,safety:'',tools:'',parts:'',acceptance:'',minutes:''};
+  S.f.rmView=null; S.formError=null; renderDrawer(true); const b=$('#drawer-root .d-body'); if(b) b.scrollTop=0;
+}
+function rmStep(t){
+  const F=S.f.rm, i=+t.dataset.i, v=t.dataset.v; F.steps=F.steps||[];
+  if(v==='add') F.steps.push({text:'',check:''}); else if(v==='rm') F.steps.splice(i,1); else if(v==='up'&&i>0){ const x=F.steps[i]; F.steps[i]=F.steps[i-1]; F.steps[i-1]=x; }
+  renderDrawer(true); if(v==='add'){ const el=$(`#b-rm-steps-${F.steps.length-1}-text`); if(el) el.focus(); }
+}
+async function rmSave(asStd){
+  const F=S.f.rm; if(!F||S.saving) return; S.formError=null; const s=S.session, err=m=>{ S.formError=m; renderDrawer(true); const b=$('#drawer-root .d-body'); if(b) b.scrollTop=0; };
+  const code=String(F.code||'').trim().toUpperCase(), name=String(F.name||'').trim();
+  const steps=(F.steps||[]).map(x=>({text:String(x.text||'').trim(),check:String(x.check||'').trim()})).filter(x=>x.text);
+  const issues=Object.keys(F.issues||{}).filter(k=>F.issues[k]), platforms=PLATFORMS.filter(pl=>(F.plats||{})[pl]);
+  if(!code) return err('Give the method a code, e.g. RM-10.');
+  if(name.length<3) return err('Give the method a clear name.');
+  if(!issues.length) return err('Tick the defect (or exact fault) this method fixes.');
+  if(steps.length<2) return err('Write at least two steps, one action per step.');
+  if(String(F.acceptance||'').trim().length<5) return err('Say how you know it is fixed (the acceptance test).');
+  const base=clone(await loadStore('repair_method_records')); const list=base.length?base:clone(DEFAULT_METHODS).map(m=>({...m,createdAt:nowIso()}));
+  if(list.some(m=>String(m.code).toUpperCase()===code&&m.id!==F.id)) return err(`${code} is already used by another method.`);
+  const now=nowIso(), who=s.name+(s.role==='omtech'?` (Stage ${s.stage})`:''), body={code,name,issues,platforms,steps,safety:String(F.safety||'').trim(),tools:String(F.tools||'').trim(),parts:String(F.parts||'').trim(),acceptance:String(F.acceptance||'').trim(),minutes:int(F.minutes)};
+  const i=F.id?list.findIndex(m=>m.id===F.id):-1; let msg;
+  if(i>=0){ const o=list[i], changed=stableStr((o.steps||[]).map(x=>({text:stepText(x),check:stepCheck(x)})))!==stableStr(steps); list[i]={...o,...body,active:true,version:(o.version||1)+(changed?1:0),updatedAt:now,updatedBy:s.name,...(asStd&&canSetup()?{status:'STANDARD',standardBy:s.name,standardAt:now}:{}),history:[...(o.history||[]),{action:asStd&&canSetup()?'Edited and set as standard':changed?`Edited (version ${(o.version||1)+1})`:'Edited',by:who,at:now}]}; msg=`${code} saved.`; }
+  else { const std=asStd&&canSetup(); list.push({id:'rm-'+uid(),...body,active:true,version:1,status:std?'STANDARD':'PROPOSED',proposedBy:s.name,proposedRole:rmRole(),createdAt:now,updatedBy:s.name,...(std?{standardBy:s.name,standardAt:now}:{}),history:[{action:std?'Created as standard':'Proposed',by:who,at:now}]}); msg=std?`${code} is now a standard method.`:`${code} proposed. Stage 3 will check it.`; }
+  if(await setupSave('repair_method_records',list,'methods',msg)){ const id=i>=0?F.id:list[list.length-1].id; S.f.rm=null; S.f.rmView=id; renderDrawer(true); }
+}
+async function rmDo(kind){
+  const id=S.f.rmView, note=String(S.f.rmNote||'').trim(), s=S.session; if(S.saving||!id) return;
+  if(kind==='reject'&&note.length<5){ S.formError='Write why you reject it, so the author can improve it.'; renderDrawer(true); return; }
+  if(kind==='retire'&&!await ask('Retire this method?','Technicians will no longer see it. Old repairs keep it on record.','Retire',true)) return;
+  const base=clone(await loadStore('repair_method_records')); const list=base.length?base:clone(DEFAULT_METHODS).map(m=>({...m,createdAt:nowIso()}));
+  const m=list.find(x=>x.id===id); if(!m){ S.formError='This method no longer exists. Refresh.'; renderDrawer(true); return; }
+  const now=nowIso(), who=s.name+(s.role==='omtech'?` (Stage ${s.stage})`:''), ev=rmEvidence(m);
+  const map={accept:['ACCEPTED','Accepted by Stage 3','acceptedBy','acceptedAt'],standard:['STANDARD','Set as standard','standardBy','standardAt'],reject:['REJECTED','Rejected','rejectedBy','rejectedAt'],retire:['RETIRED','Retired','retiredBy','retiredAt'],reopen:['PROPOSED','Reopened','reopenedBy','reopenedAt']}[kind];
+  Object.assign(m,{status:map[0],[map[2]]:s.name,[map[3]]:now,updatedAt:now,updatedBy:s.name,history:[...(m.history||[]),{action:map[1],by:who,at:now,note:(note?note+' · ':'')+`evidence: ${ev.n} repaired, ${ev.pass} passed`}]});
+  if(await setupSave('repair_method_records',list,'methods',`${m.code}: ${map[1].toLowerCase()}.`)){ S.f.rmNote=''; renderDrawer(true); }
+}
+function rmAlerts(push,s){
+  const ms=methodsAll(), r=s.role==='omtech'?'s'+s.stage:s.role;
+  const p=ms.filter(m=>rmStatus(m)==='PROPOSED'), a=ms.filter(m=>rmStatus(m)==='ACCEPTED');
+  if(r==='s3'&&p.length) push('warn','Rework methods',`${p.length} proposed rework method${p.length===1?'':'s'} to check`,'Accept the ones that fix the defect, reject the rest.','rm-queue','PROPOSED',1);
+  if((r==='omadmin'||r==='quality')&&a.length) push('warn','Rework methods',`${a.length} method${a.length===1?'':'s'} accepted by Stage 3`,'Set them as standard or reject them.','rm-queue','ACCEPTED',1);
+}
+function rmTrialBanner(e){ const m=methodById(((e||{}).stage2||{}).methodId); if(!m||rmStatus(m)==='STANDARD') return ''; return `<div class="banner warn"><div><b>Repaired with a trial method: ${esc(methodLabel(m))}.</b> Your test result is the evidence for whether it fixes the defect.${canAcceptMethod()?` <button class="btn sm" data-act="rm-view" data-id="${esc(m.id)}">Review the method</button>`:''}</div></div>`; }
+
 async function catSave(){
   if(S.saving) return; const F=S.f.setup, cur=clone(issueMapCfg());
   const doc={id:'cfg-issue-map',kind:'issueMap',subs:cur.subs||{},group:{...(cur.group||{})},supplier:{...(cur.supplier||{})},groups:[...(cur.groups||[])],updatedAt:nowIso()};
@@ -2866,7 +3092,7 @@ const S = {
   om:{q:'',status:'all',platform:'all',scope:'period',page:1},
   bat:{q:'',use:'all',platform:'all',sort:'recent',page:1},
   bsaF:{q:'',status:'open',page:1},
-  tc:{src:lsRead('bqc_tc_src','intake'),tg:'week',mode:lsRead('bqc_an_mode','cases')},
+  tc:{src:lsRead('bqc_tc_src','intake'),tg:'week',mode:lsRead('bqc_an_mode','cases'),grain:lsRead('bqc_tc_grain','main')},
   qtab:'performance', drawer:null, f:{}, saving:false,
   refreshing:false, lastRefresh:null, auto:lsRead('bqc_auto',60), syncError:null, lastSave:null
 };
@@ -2993,7 +3219,7 @@ function Header(){
             <div class="m-row"><span>Accent</span><div class="swatches">${ACCENTS.map(([k,l])=>`<button class="sw sw-${k} ${acc===k?'on':''}" data-act="set-accent" data-v="${k}" aria-label="${l} accent" title="${l}"></button>`).join('')}</div></div>
             <label class="m-row"><span>Animated background</span><button class="switch ${motion?'on':''}" data-act="toggle-motion" role="switch" aria-checked="${motion}" aria-label="Animated background"><i></i></button></label>
             <div class="m-sep"></div>
-            <button class="m-item" data-act="setup-open">${GEAR_SVG}<span>Repair methods &amp; setup</span><span class="m-sub">${canSetup()?'edit':'view'}</span></button>
+            <button class="m-item" data-act="setup-open">${GEAR_SVG}<span>Rework methods &amp; setup</span><span class="m-sub">${canSetup()?'edit':'view'}</span></button>
             <button class="m-item" data-act="storage">${ICON.refresh}<span>Storage &amp; sync</span><span class="m-sub" id="sync-menu"></span></button>
             <button class="m-item danger" data-act="signout"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg><span>Sign out</span></button>
           </div>
@@ -3545,7 +3771,7 @@ function issuesBlock(base){
   return `<div><div class="block-title"><h4>Defects observed</h4><span class="muted" style="font-size:12px">Items marked BSA skip the repair chain</span></div>
   <div class="issues">${ISSUE_ITEMS.map(([k,l])=>`<label class="issue ${is[k]?'on':''} ${BSA_TRIGGER_ISSUES.includes(k)?'bsa':''}"><input type="checkbox" id="b-${base}-iss-${k}" data-bind="${base}.issues.${k}" data-rerender ${is[k]?'checked':''}>${esc(l)}<small>${BSA_TRIGGER_ISSUES.includes(k)?'BSA':issueCategory(k)==='Recall'?'recall':issueCategory(k)==='Supplier'?'supplier':'handling'}</small></label>`).join('')}</div>
   ${subPickers(base+'.sub',ISSUE_ITEMS.map(([k])=>k).filter(k=>is[k]),'Exact fault (if known)',false)}
-  ${is.missingComponent?`<div style="margin-top:10px">${field('Which component is missing',inp(base+'.missingComponentNote',{ph:'e.g. BMS board, connector'}),'',true)}</div>`:''}
+  ${is.missingComponent?`<div style="margin-top:10px">${field('Which component is missing',inp(base+'.missingComponentNote',{ph:'e.g. 2 bolts on the top cover'}),'',true)}${getPath(S.f,base+'.missingComponentNote')&&!(d.sub||{}).missingComponent?`<div class="idf-hint">Read as: <b>${esc(componentName(getPath(S.f,base+'.missingComponentNote')))}</b></div>`:''}</div>`:''}
   ${is.simReplace?simOldBlock(base,d):''}
   ${is.other?`<div class="sim-box"><div class="sim-head"><span class="sim-ic">?</span><div><b>Other issue</b><small>Pick the closest category and explain what you found, so the next person can follow up.</small></div></div><div class="form">${field('Category',sel(base+'.otherCat',[['','Choose…'],...OTHER_ISSUE_CATS]),'',true)}${field('Explanation',area(base+'.otherNote','What is wrong, where, and how it shows'),'full',true)}</div></div>`:''}
   ${isBsaTriggerIssue(d)?`<div class="banner warn" style="margin:10px 0 0"><div><b>Goes straight to BSA.</b> ${esc(bsaTriggerLabels(d).join(', '))} ${bsaTriggerLabels(d).length===1?'is':'are'} routed to the BSA team instead of Stage 2.</div></div>`:''}</div>`;
@@ -3633,16 +3859,16 @@ function WorkSheet(rec){
     foot=`<button class="btn ${t?'esc':'pri'}" data-act="submit-work" ${S.saving?'disabled':''}>${savingLabel(t?'Send straight to BSA':'Resend to Stage 2',S.saving)}</button>`;
   } else if(n===2){
     if(!e.stage2.methodId&&!e.stage2._picked&&needsSim(e)) e.stage2.methodId='rm-05';
-    if((e.stage2._stepsFor||'')!==(e.stage2.methodId||'')){ e.stage2.steps={}; e.stage2._stepsFor=e.stage2.methodId||''; }
-    if(!e.stage2.confirmed){ e.stage2.confirmed={}; issuesOf(rec).forEach(k=>{ const s1=((rec.stage1||{}).sub||{})[k]; if(s1) e.stage2.confirmed[k]=s1; }); }
+    if((e.stage2._stepsFor||'')!==(e.stage2.methodId||'')){ e.stage2.steps={}; e.stage2.stepRes={}; e.stage2._stepsFor=e.stage2.methodId||''; }
+    if(!e.stage2.confirmed){ e.stage2.confirmed={}; issuesOf(rec).forEach(k=>{ const s1=subOf(rec,k); if(s1) e.stage2.confirmed[k]=s1; }); }
     const fk=issuesOf(rec).map(k=>{ const c=e.stage2.confirmed[k]; return c===SUB_OTHER?k+'__other':subKey(k,c||''); }), pl=platOf(rec), rm=methodById(e.stage2.methodId), nm=methodsFor(fk,pl).length;
-    body=`${subPickers('edit.stage2.confirmed',issuesOf(rec),'Confirm the exact fault',true)}${nm?'':`<div class="banner crit"><div>No repair method is set up for <b>${esc(pl||'this battery type')}</b> yet. Ask the O&amp;M manager to add one in Setup.</div></div>`}<div class="form">${field(`Repair method${pl?' · '+esc(pl):''}`,methodSelect('edit.stage2.methodId',fk,true,'',pl),'full',true)}</div>${methodStepsBlock('edit.stage2.steps',rm)}<div class="form">${field('Parts replaced',inp('edit.stage2.partsReplaced',{ph:'e.g. BMS, harness'}),'full')}${cyclesField('edit.cycles',!!String(e.stage2.partsReplaced||'').trim()||!!e._holdOpen)}${field('Repair notes',area('edit.stage2.repairAction','What you did and what you found'),'full')}</div>${needsSim(e)?simNewBlock(e):''}${checks('edit.stage2.post',POST_ITEMS)}${holdBlock(rec,e)}`;
+    body=`${subPickers('edit.stage2.confirmed',issuesOf(rec),'Confirm the exact fault',true)}${nm?'':`<div class="banner crit"><div>No repair method is set up for <b>${esc(pl||'this battery type')}</b> yet. Ask the O&amp;M manager to add one in Setup.</div></div>`}<div class="form">${field(`Repair method${pl?' · '+esc(pl):''}`,methodSelect('edit.stage2.methodId',fk,true,'',pl),'full',true)}</div>${methodStepsBlock('edit.stage2.steps',rm)}${canProposeMethod()?`<div class="muted" style="font-size:12.5px">No method fits this fault? <button class="btn sm ghost" data-act="rm-new-for" data-k="${esc(fk[0]||'')}" data-pl="${esc(pl||'')}">Write a rework method</button></div>`:''}<div class="form">${field('Parts replaced',inp('edit.stage2.partsReplaced',{ph:'e.g. BMS, harness'}),'full')}${cyclesField('edit.cycles',!!String(e.stage2.partsReplaced||'').trim()||!!e._holdOpen)}${field('Repair notes',area('edit.stage2.repairAction','What you did and what you found'),'full')}</div>${needsSim(e)?simNewBlock(e):''}${checks('edit.stage2.post',POST_ITEMS)}${holdBlock(rec,e)}`;
     foot=`<button class="btn pri" data-act="submit-work" ${S.saving||onHold(rec)?'disabled':''}>${savingLabel(onHold(rec)?'On hold · release first':'Send to Stage 3',S.saving)}</button>`;
   } else {
     const t=e.stage3, sim=needsSim(e), res=testsResult(t,sim), ir=parseFloat(t.tests.irMeasured), thr=parseFloat(t.tests.irThreshold);
     const irNote=isNaN(ir)?'Enter the measured insulation resistance.':isNaN(thr)?'Set the threshold.':ir>=thr?`<span class="ok">✓ ${ir} MΩ passes (≥ ${thr})</span>`:`<span class="bad">✕ ${ir} MΩ is below ${thr} MΩ</span>`;
     const disp=t.qcPassed;
-    body=`<div><div class="block-title"><h4>Verification tests</h4>${chip(res.toLowerCase(),res==='PASS'?'good':res==='FAIL'?'crit':'')}</div>
+    body=`${rmTrialBanner(e)}<div><div class="block-title"><h4>Verification tests</h4>${chip(res.toLowerCase(),res==='PASS'?'good':res==='FAIL'?'crit':'')}</div>
       <div class="form" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">${field('Pack voltage (V)',inp('edit.stage3.tests.packVoltage',{type:'number',step:'0.01',mono:true}))}${field('Min cell (V)',inp('edit.stage3.tests.minCell',{type:'number',step:'0.001',mono:true}))}${field('Max cell (V)',inp('edit.stage3.tests.maxCell',{type:'number',step:'0.001',mono:true}))}${field('IR measured (MΩ)',inp('edit.stage3.tests.irMeasured',{type:'number',step:'1',mono:true,rr:true}))}${field('IR threshold (MΩ)',inp('edit.stage3.tests.irThreshold',{type:'number',step:'1',mono:true,rr:true}))}</div>
       <div class="idf-hint">${irNote}</div>
       ${sim?`<div class="sim-box" style="margin-top:10px"><div class="sim-head"><span class="sim-ic">${ICON.sim}</span><div><b>SIM functional test</b><small>New SIM: <span class="mono">${esc(((e.stage2||{}).sim||{}).newType||'—')} · ${esc(((e.stage2||{}).sim||{}).newNumber||'—')}</span></small></div></div><label class="issue ${t.testBools[SIM_TEST[0]]?'on':''}"><input type="checkbox" id="b-tb-${SIM_TEST[0]}" data-bind="edit.stage3.testBools.${SIM_TEST[0]}" data-rerender ${t.testBools[SIM_TEST[0]]?'checked':''}>${esc(SIM_TEST[1])}</label></div>`:''}
@@ -3712,8 +3938,10 @@ async function submitWork(){
     const rm=methodById(e.stage2.methodId); if(!rm) return fail('Pick the repair method you used.');
     if(!methodFits(rm,platOf(latest))) return fail(`${rm.code} is not set up for ${platOf(latest)} batteries. Pick a method for this battery type.`);
     const steps=rm.steps||[], miss=steps.findIndex((_,i)=>!(e.stage2.steps||{})[i]);
-    if(miss>=0) return fail(`Tick each ${rm.code} step as you finish it. Step ${miss+1} is not ticked: “${steps[miss]}”.`);
-    Object.assign(e.stage2,{methodCode:rm.code,methodName:rm.name,methodVersion:rm.version||1,stepsDone:steps.slice(),sopRef:methodLabel(rm)}); delete e.stage2.steps; delete e.stage2._stepsFor; delete e.stage2._picked;
+    if(miss>=0) return fail(`Follow ${rm.code} step by step and tick each one. Step ${miss+1} is not ticked: “${stepText(steps[miss])}”.`);
+    const rs=e.stage2.stepRes||{}, noRes=steps.findIndex((st,i)=>stepCheck(st)&&!String(rs[i]||'').trim());
+    if(noRes>=0) return fail(`Step ${noRes+1} needs its check result (${stepCheck(steps[noRes])}).`);
+    Object.assign(e.stage2,{methodCode:rm.code,methodName:rm.name,methodVersion:rm.version||1,methodStatus:rmStatus(rm),stepsDone:steps.map((st,i)=>({text:stepText(st),check:stepCheck(st),result:String(rs[i]||'').trim()})),sopRef:methodLabel(rm)}); delete e.stage2.steps; delete e.stage2.stepRes; delete e.stage2._stepsFor; delete e.stage2._picked;
     if(String(e.stage2.partsReplaced||'').trim()){ const ce=cyclesError(e.cycles); if(ce) return fail('Parts were replaced, so the cycle count is required. '+ce); }
     if(String(e.cycles??'').trim()!==''){ const ce=cyclesError(e.cycles); if(ce) return fail(ce); latest.cycles=+e.cycles; }
     if(needsSim(latest)){ const sm=e.stage2.sim||{}, old=simDigits(((latest.stage1||{}).sim||{}).oldNumber);
@@ -5116,17 +5344,25 @@ const ACT = {
   'tc-csv':()=>tcCsv(),
   'tc-case':t=>openDrawer({type:'tccase',src:t.dataset.src,gran:t.dataset.g||'week',key:t.dataset.v}),
   'tc-case-csv':()=>caseCsv(),
+  'tc-grain':t=>{ S.tc.grain=t.dataset.v; lsWrite('bqc_tc_grain',S.tc.grain); renderMain(); },
   'an-mode':t=>{ S.tc.mode=t.dataset.v; lsWrite('bqc_an_mode',S.tc.mode); renderMain(); },
   'an-case':t=>openDrawer({type:'tccase',src:t.dataset.src,gran:S.gran,dim:t.dataset.dim,val:t.dataset.v}),
   'an-csv':t=>anCsv(t.dataset.v),
   'setup-open':t=>{ const m=$('.top.menu-open'); if(m) m.classList.remove('menu-open'); openSetup(t.dataset.v); },
-  'setup-tab':t=>{ S.f.setup.tab=t.dataset.v; S.f.rm=null; S.formError=null; renderDrawer(true); const b=$('#drawer-root .d-body'); if(b) b.scrollTop=0; },
+  'setup-tab':t=>{ S.f.setup.tab=t.dataset.v; S.f.rm=null; S.f.rmView=null; S.formError=null; renderDrawer(true); const b=$('#drawer-root .d-body'); if(b) b.scrollTop=0; },
   'rm-edit':t=>rmEdit(t.dataset.id),
   'rm-new':()=>rmEdit(''),
   'rm-copy':t=>rmEdit(t.dataset.id,true),
   'rm-ptype':t=>{ S.f.setup.ptype=t.dataset.v; renderDrawer(true); },
   'rm-cancel':()=>{ S.f.rm=null; S.formError=null; renderDrawer(true); },
-  'rm-save':()=>rmSave(),
+  'rm-save':t=>rmSave(t.dataset.v==='standard'),
+  'rm-view':t=>{ if(!S.drawer||S.drawer.type!=='setup') openSetup('methods'); S.f.setup.tab='methods'; S.f.rm=null; S.f.rmView=t.dataset.id; S.f.rmNote=''; S.formError=null; renderDrawer(true); const b=$('#drawer-root .d-body'); if(b) b.scrollTop=0; },
+  'rm-back':()=>{ S.f.rmView=null; S.formError=null; renderDrawer(true); },
+  'rm-do':t=>rmDo(t.dataset.v),
+  'rm-st':t=>{ S.f.setup.st=t.dataset.v; renderDrawer(true); },
+  'rm-step':t=>rmStep(t),
+  'rm-new-for':t=>{ if(!S.drawer||S.drawer.type!=='setup') openSetup('methods'); S.f.setup.tab='methods'; rmEdit('',false,{k:t.dataset.k,pl:t.dataset.pl}); },
+  'rm-queue':t=>{ openSetup('methods'); S.f.setup.st=t.dataset.id||''; renderDrawer(true); },
   'cat-save':()=>catSave(),
   'cat-add':()=>catAdd(),
   'ppl-save':()=>pplSave(),
@@ -5152,6 +5388,7 @@ const ACT = {
   'daily-verify':()=>dailyVerify(),
   'daily-return':()=>dailyReturn(),
   'daily-reopen':()=>dailyReopen(),
+  'daily-req':t=>dailyReq(t.dataset.v),
   'daily-csv':()=>dailyCsv(),
   'daily-print':()=>window.print(),
   'cp-sync':async()=>{ const ok=await flushOutbox(); $('#cp-status').textContent=ok?'All changes uploaded.':'Upload failed: '+(Cloud.lastError||'not connected'); paintSync(); },
