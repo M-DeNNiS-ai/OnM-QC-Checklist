@@ -715,7 +715,43 @@ div.jcard{cursor:pointer} div.jcard:focus-visible{outline:2px solid var(--accent
 .cr-1{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.cr-1 b{font-size:13px}
 .cr-2{font-size:12.5px;color:var(--ink-2)}.cr-3{font-size:12.5px;color:var(--ink-3)}
 .bar-row[data-act]{cursor:pointer}
-.tc-grid{align-items:start}.tc-pick{display:none}
+.tc-grid{align-items:start}
+.an-tabs{margin-bottom:14px;flex-wrap:wrap}
+.gran-seg{flex-wrap:wrap}
+.flow-strip{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap}
+.flow-strip .fs{flex:1 1 120px;min-width:110px;display:grid;gap:2px;padding:12px;border-radius:12px;background:var(--panel-2);text-align:left;border:0;font:inherit;color:inherit}
+.flow-strip button.fs{cursor:pointer}.flow-strip button.fs:hover{outline:2px solid var(--accent)}
+.flow-strip .fs b{font-size:26px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.flow-strip .fs small{font-size:12px;color:var(--ink-3)}
+.flow-strip .fs.good b{color:var(--good)}.flow-strip .fs.crit b{color:var(--crit)}.flow-strip .fs.warn b{color:var(--warn)}
+.fs-arr{align-self:center;color:var(--ink-3);font-weight:800}
+@media (max-width:700px){.fs-arr{display:none}.flow-strip .fs{flex-basis:45%}}
+.rm-steps{display:grid;gap:8px}
+.rm-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.rm-list .issue{display:flex;align-items:flex-start;gap:10px;width:100%}
+.rm-n{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;background:var(--panel-2)}
+.rm-list .issue.on .rm-n{background:var(--good);color:#fff}
+.rm-cards{display:grid;gap:10px}
+.rm-card{padding:14px;display:grid;gap:8px}.rm-card.off{opacity:.6}
+.rm-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.rm-h b{flex:1;min-width:0}
+.rm-code{font-weight:800;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--accent);color:var(--accent-ink)}
+.rm-iss{display:flex;gap:4px;flex-wrap:wrap}
+.rm-ol{margin:0;padding-left:20px;display:grid;gap:3px;font-size:13px}
+.setup-tabs{flex-wrap:wrap}
+.cat-tbl select.in{min-width:150px;padding:6px 8px}
+.cat-tbl tr.unc td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+.ppl-list{display:grid;gap:8px}
+.ppl{padding:12px;display:grid;gap:8px}.ppl.merged{box-shadow:inset 3px 0 0 var(--info)}
+.ppl-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ppl-h .in{flex:1;min-width:160px}
+.ppl-v{display:grid;gap:4px}
+.ppl-row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:13px}
+.ppl-row select.in{max-width:220px;padding:5px 8px}
+.di-method{margin-top:6px}
+.sub-pick{display:grid;gap:8px;margin-top:10px;padding:12px;border-radius:12px;background:var(--panel-2)}
+.rm-isg-list{display:grid;gap:6px}
+.rm-isg{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.rm-isg .issue{width:auto}.rm-isg .issue.par{font-weight:700}.rm-isg .issue.sub{font-size:12.5px}
+.sub-ed{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:12px}.tc-pick{display:none}
 @media (max-width:760px){.tc-pick{display:flex;margin-bottom:10px}.tc-pick button{flex:1}.tc-grid .tc-col{display:none}.tc-grid[data-show=day] .tc-day,.tc-grid[data-show=week] .tc-week,.tc-grid[data-show=month] .tc-month{display:block}}
 @media print{.tc-pick{display:none!important}.tc-grid .tc-col{display:block!important}}
 .tc-src{flex-wrap:wrap}
@@ -836,7 +872,8 @@ const QUALITY_ISSUE_SEED = [
 
 const isBsaTriggerIssue = d => BSA_TRIGGER_ISSUES.some(k=>d && d.issues && d.issues[k]);
 const CAMPAIGN_ISSUES = ['simReplace'];
-const issueCategory = k => CAMPAIGN_ISSUES.includes(k) ? 'Recall' : SUPPLIER_RELATED_ISSUES.includes(k) ? 'Supplier' : 'Non-supplier';
+const issueCategoryBase = k => CAMPAIGN_ISSUES.includes(k) ? 'Recall' : SUPPLIER_RELATED_ISSUES.includes(k) ? 'Supplier' : 'Non-supplier';
+const issueCategory = k => (issueMapCfg().supplier||{})[k] || issueCategoryBase(k);
 /* SIM card replacement recall */
 const OLD_SIM_DEFAULT = 'AERIS';
 const SIM_TEST = ['simOnline','Functional test on new SIM: tracker online and reporting'];
@@ -873,6 +910,8 @@ function batteryIdError(id,model){
   const c=String(id||'').trim().toUpperCase().replace(/\s+/g,'');
   if(!c) return null;
   const m=platformForId(c)||String(model||'').trim().toUpperCase();
+  if(!m) return 'Pick the battery type: AMPACE, UNIQUE, GREENWAY or CBAK.';
+  if(!PLATFORMS.includes(m)) return `“${m}” is not a battery type. Pick AMPACE, UNIQUE, GREENWAY or CBAK.`;
   if(c.length!==BATTERY_ID_LENGTH) return `Battery IDs are exactly ${BATTERY_ID_LENGTH} characters including the prefix (this one is ${c.length}).`;
   if(m && !prefixForPlatform(m)) return 'Pick a valid platform or enter a recognised full battery ID.';
   const allowed=prefixesForPlatform(m);
@@ -908,6 +947,9 @@ function fmtDay(k){ if(!k) return '—'; const d=parseKey(k); return `${d.getDat
 function fmtShort(k){ if(!k) return '—'; const d=parseKey(k); return `${d.getDate()} ${MON[d.getMonth()]}`; }
 function fmtDT(iso){ if(!iso) return '—'; const d=new Date(iso); if(isNaN(d)) return String(iso); return `${d.getDate()} ${MON[d.getMonth()]} ${pad(d.getHours())}:${pad(d.getMinutes())}`; }
 function periodOf(k,gran){
+  if(gran==='mtd'){ const d=parseKey(k); return {start:localKey(new Date(d.getFullYear(),d.getMonth(),1)),end:k,gran}; }
+  if(gran==='ytd') return {start:k.slice(0,4)+'-01-01',end:k,gran};
+  if(gran==='all') return {start:'2000-01-01',end:k,gran};
   if(gran==='week'){ const d=parseKey(k); const dow=(d.getDay()+6)%7; const start=addDays(k,-dow); return {start,end:addDays(start,6),gran}; }
   if(gran==='month'){ const d=parseKey(k); const start=localKey(new Date(d.getFullYear(),d.getMonth(),1)); const end=localKey(new Date(d.getFullYear(),d.getMonth()+1,0)); return {start,end,gran}; }
   return {start:k,end:k,gran:'day'};
@@ -919,12 +961,14 @@ function shiftKey(k,gran,n){
 }
 function periodLabel(p,long){
   const s=parseKey(p.start);
+  if(p.gran==='mtd'||p.gran==='ytd'){ const e=parseKey(p.end); return long?`${s.getDate()} ${MON[s.getMonth()]} – ${e.getDate()} ${MON[e.getMonth()]} ${e.getFullYear()} (${p.gran.toUpperCase()})`:p.gran.toUpperCase(); }
+  if(p.gran==='all'){ const e=parseKey(p.end); return long?`All time, to ${e.getDate()} ${MON[e.getMonth()]} ${e.getFullYear()}`:'All'; }
   if(p.gran==='month') return long?`${['January','February','March','April','May','June','July','August','September','October','November','December'][s.getMonth()]} ${s.getFullYear()}`:`${MON[s.getMonth()]} ${String(s.getFullYear()).slice(2)}`;
   if(p.gran==='week'){ const e=parseKey(p.end); return long?`${s.getDate()} ${MON[s.getMonth()]} – ${e.getDate()} ${MON[e.getMonth()]} ${e.getFullYear()}`:`${s.getDate()} ${MON[s.getMonth()]}`; }
   return long?`${DOW[s.getDay()]} ${s.getDate()} ${MON[s.getMonth()]} ${s.getFullYear()}`:`${DOW[s.getDay()].slice(0,2)} ${s.getDate()}`;
 }
 const inP = (k,p) => !!k && k>=p.start && k<=p.end;
-function bucketsEnding(anchor,gran,count){ const out=[]; for(let i=count-1;i>=0;i--) out.push(periodOf(shiftKey(periodOf(anchor,gran).start,gran,-i),gran)); return out; }
+function bucketsEnding(anchor,gran,count){ if(gran==='mtd'){ count=parseKey(anchor).getDate(); gran='day'; } else if(gran==='ytd'){ count=parseKey(anchor).getMonth()+1; gran='month'; } else if(gran==='all'){ gran='month'; count=count||12; } const out=[]; for(let i=count-1;i>=0;i--) out.push(periodOf(shiftKey(periodOf(anchor,gran).start,gran,-i),gran)); return out; }
 
 /* ---------- Small utilities ---------- */
 const $ = (s,r=document)=>r.querySelector(s);
@@ -949,9 +993,9 @@ function setPath(o,p,v){ const ks=p.split('.'); let c=o; ks.slice(0,-1).forEach(
    ===================================================================== */
 const DEFAULT_CLOUD = {url:'',key:''};   /* fill in to ship pre-connected */
 const BQC_TABLE = 'bqc_records';
-const BQC_STORES = ['om_chain_records','bsa_records','rca_records','quality_issue_records','daily_log_records','accountability_audit_records'];
-const STORE_LABEL = {om_chain_records:'O&M repair chain',bsa_records:'BSA cases',rca_records:'RCA / root cause',quality_issue_records:'Quality issue tracker',daily_log_records:'Daily receiving counts',accountability_audit_records:'Accountability audit'};
-const STORE_STATE = {om_chain_records:'om',bsa_records:'bsa',rca_records:'rca',quality_issue_records:'qi',daily_log_records:'daily',accountability_audit_records:'audit'};
+const BQC_STORES = ['om_chain_records','bsa_records','rca_records','quality_issue_records','daily_log_records','repair_method_records','people_records','config_records','accountability_audit_records'];
+const STORE_LABEL = {om_chain_records:'O&M repair chain',bsa_records:'BSA cases',rca_records:'RCA / root cause',quality_issue_records:'Quality issue tracker',daily_log_records:'Daily receiving counts',repair_method_records:'Repair methods',people_records:'Technician names',config_records:'Issue categories',accountability_audit_records:'Accountability audit'};
+const STORE_STATE = {om_chain_records:'om',bsa_records:'bsa',rca_records:'rca',quality_issue_records:'qi',daily_log_records:'daily',repair_method_records:'methods',people_records:'people',config_records:'cfg',accountability_audit_records:'audit'};
 const CFG_KEY='bqc_cloud_cfg', CACHE_PREFIX='bqc_cache_', OUTBOX_KEY='bqc_outbox', SESSION_KEY='bqc_session';
 
 const Cloud = {
@@ -1055,7 +1099,12 @@ async function flushOutbox(){
   return ok&&!parked.length;
 }
 /* Some older rows carry the stage as text ("2"); queues compare numbers, so such a battery was invisible. */
-function normRows(key,rows){ if(key==='om_chain_records') rows.forEach(r=>{ if(r&&r.stage!=null&&typeof r.stage!=='number'&&!isNaN(+r.stage)) r.stage=+r.stage; }); return rows; }
+function normRows(key,rows){
+  if(key==='om_chain_records') rows.forEach(r=>{ if(r&&r.stage!=null&&typeof r.stage!=='number'&&!isNaN(+r.stage)) r.stage=+r.stage; });
+  /* battery type: only AMPACE, UNIQUE, GREENWAY, CBAK. Misspellings are read as the right type. */
+  if(key==='om_chain_records'||key==='bsa_records') rows.forEach(r=>{ if(!r) return; const pl=platOf(r); if(pl&&r.model!==pl) r.model=pl; });
+  return rows;
+}
 async function loadStore(key){
   if(!BQC_STORES.includes(key)) return [];
   if(Cloud.demo){ const r=clone(DEMO[key]||[]); LAST_SERVED[key]=clone(r); return r; }
@@ -1083,6 +1132,7 @@ function currentSession(){
 /* Every signed-in role can read the O&M, BSA, RCA and quality stores so the dashboards are complete. */
 function roleCanWrite(role,store,stage){
   if(store==='accountability_audit_records') return false;
+  if(['repair_method_records','people_records','config_records'].includes(store)) return role==='omadmin'||role==='quality';
   if(role==='omadmin'||role==='quality') return true;
   if(role==='bsa') return ['bsa_records','om_chain_records','rca_records'].includes(store);
   if(role==='omtech') return store==='om_chain_records'||store==='rca_records'||(store==='bsa_records'&&(stage===1||stage===3))||(store==='daily_log_records'&&(stage===1||stage===3));
@@ -1183,6 +1233,10 @@ async function loadAll(){
     const seed=QUALITY_ISSUE_SEED.map(r=>({...r,createdAt:nowIso(),updatedAt:nowIso(),updatedBy:'Imported quality issue sheet'}));
     if(await saveStore('quality_issue_records',seed)) S.data.qi=seed;
   }
+  if(!Cloud.demo && !(S.data.methods||[]).length && can('repair_method_records')){
+    const seed=clone(DEFAULT_METHODS).map(m=>({...m,createdAt:nowIso(),updatedBy:'Starting repair methods'}));
+    if(await saveStore('repair_method_records',seed)) S.data.methods=seed;
+  }
   S.syncError=errs.filter(Boolean)[0]||Cloud.lastError||null;
 }
 
@@ -1217,9 +1271,9 @@ function newOmRecord(d,visitNumber,tech){
   return {
     id:uid(),createdAt:nowIso(),bmsId:d.bmsId.trim(),model:d.model,imei:d.imei,site:d.site,cycles:String(d.cycles??'').trim()===''?null:+d.cycles,dateReceived:d.dateReceived,timeReceived:d.timeReceived,
     visitNumber,stage:2,status:'STAGE2_OPEN',capaCycles:0,isCorrectiveAction:false,capaLog:[],
-    stage1:{technician:tech,receivedBy:d.receivedBy||tech,pre:d.pre,issues:d.issues,otherNote:d.otherNote,missingComponentNote:d.missingComponentNote,...(d.issues&&d.issues.simReplace?{sim:{oldType:String((d.sim||{}).oldType||OLD_SIM_DEFAULT).trim(),oldNumber:simDigits((d.sim||{}).oldNumber)}}:{}),completedAt:nowIso()},
+    stage1:{technician:tech,receivedBy:d.receivedBy||tech,pre:d.pre,issues:d.issues,sub:d.sub||{},otherNote:d.otherNote,missingComponentNote:d.missingComponentNote,...(d.issues&&d.issues.simReplace?{sim:{oldType:String((d.sim||{}).oldType||OLD_SIM_DEFAULT).trim(),oldNumber:simDigits((d.sim||{}).oldNumber)}}:{}),completedAt:nowIso()},
     createdBy:tech,
-    stage2:{technician:'',sopRef:d.issues&&d.issues.simReplace?STANDARD_SOPS[4]:STANDARD_SOPS[0],repairAction:'',partsReplaced:'',post:{},completedAt:null},
+    stage2:{technician:'',methodId:d.issues&&d.issues.simReplace?'rm-05':'',sopRef:'',repairAction:'',partsReplaced:'',post:{},completedAt:null},
     stage3:{technician:'',tests:{packVoltage:'',minCell:'',maxCell:'',irMeasured:'',irThreshold:550},testBools:{},qcPassed:'',qcNote:'',completedAt:null},
     finalDisposition:null,closedAt:null
   };
@@ -1293,7 +1347,7 @@ const CASE_KEYWORDS = [
   ['',/crack|broken|damage|dent|casing|cover|housing|scratch/,'physicalDefect']
 ];
 const CASE_CAT = {'Mechanical':'Mechanical issue','Electrical':'Electrical issue','Firmware / software':'Firmware / software','IoT / connectivity':'IoT / IMEI mismatch','Cosmetic':'Cosmetic damage','Customer complaint':'Customer complaint','Other':'Unspecified issue'};
-function otherCase(st){
+function otherCase0(st){
   st=st||{}; const t=normCase(st.otherNote);
   for(const [label,re,key] of CASE_KEYWORDS){ if(t&&re.test(t)) return key?{key,label:ISSUE_LABEL[key],issue:key}:{key:'kw:'+label,label,issue:'other'}; }
   if(st.otherCat==='IoT / connectivity') return {key:'iotFault',label:ISSUE_LABEL.iotFault,issue:'iotFault'};
@@ -1303,11 +1357,11 @@ function otherCase(st){
 /* every case on a visit, one entry per case (an "other" note that maps to a ticked issue isn't counted twice) */
 function caseKeysOf(r){
   const out=[], seen=new Set();
-  issuesOf(r).forEach(k=>{ const c=k==='other'?otherCase(r.stage1):{key:k,label:ISSUE_LABEL[k],issue:k}; if(!seen.has(c.key)){ seen.add(c.key); out.push(c); } });
+  issuesOf(r).forEach(k=>{ const c=k==='other'?otherCase(r.stage1):stdCase(r,k); if(!seen.has(c.key)){ seen.add(c.key); out.push(c); } });
   return out;
 }
-const caseKey = (r,k) => k==='other'?otherCase(r.stage1).key:k;
-const caseName = (r,k) => k==='other'?otherCase(r.stage1).label:ISSUE_LABEL[k];
+const caseKey = (r,k) => k==='other'?otherCase(r.stage1).key:stdCase(r,k).key;
+const caseName = (r,k) => k==='other'?otherCase(r.stage1).label:stdCase(r,k).label;
 const issueNames = r => caseKeysOf(r).map(c=>c.label);
 function otherIssueText(st){ st=st||{}; if(!(st.issues||{}).other) return ''; return `${st.otherCat?st.otherCat+': ':''}${st.otherNote||''}`.trim(); }
 function capaText(c){ if(!c) return ''; const bits=[c.reasonCat?CAPA_REASON_LABEL[c.reasonCat]||c.reasonCat:'']; if(c.part) bits.push(c.part==='Other part'&&c.partNote?c.partNote:c.part); if(c.cycles!=null&&c.cycles!=='') bits.push(`at ${c.cycles} cycles`); if(c.waitSupplier) bits.push('waiting for supplier material'); return bits.filter(Boolean).join(' · ')+(c.reason?` — ${c.reason}`:''); }
@@ -1324,7 +1378,7 @@ function computeAlerts(){
       return;
     }
     if(!tech){ if(h>=ALERT_H.unclaimedWarn) push(h>=ALERT_H.unclaimedCrit?'crit':'warn','Not yet claimed',`${r.bmsId} unclaimed at Stage ${n} for ${fmtHours(h)}`,`${r.model||'—'} · visit #${r.visitNumber||1}${r.capaCycles?` · CAPA ${r.capaCycles}`:''}. Someone at ${STAGE_SHORT[n]} needs to pick it up.`,'open-om',r.id,h); }
-    else { const hs=hoursSince(st.startedAt||since); if(role==='omtech'&&tech!==s.name) return;
+    else { const hs=hoursSince(st.startedAt||since); if(role==='omtech'&&!samePerson(tech,s.name)) return;
       if(hs>=ALERT_H.unfinishedWarn) push(hs>=ALERT_H.unfinishedCrit?'crit':'warn','Not yet finished',`${r.bmsId} claimed by ${tech} ${fmtHours(hs)} ago`,`Stage ${n} · ${STAGE_SHORT[n]} not submitted yet.`,'open-om',r.id,hs); }
   });
   if(role==='bsa'||role==='omadmin'||role==='quality'){
@@ -1364,7 +1418,7 @@ function periodStats(p){
 }
 function stageCompletions(p){
   const by={};
-  S.data.om.forEach(r=>[1,2,3].forEach(n=>{ const st=r['stage'+n]||{}; if(st.completedAt&&inP(dkey(st.completedAt),p)){ const t=st.completedBy||st.technician||'Unassigned'; (by[t]=by[t]||[0,0,0])[n-1]++; } }));
+  S.data.om.forEach(r=>[1,2,3].forEach(n=>{ const st=r['stage'+n]||{}; if(st.completedAt&&inP(dkey(st.completedAt),p)){ const t=canonPerson(st.completedBy||st.technician)||'Unassigned'; (by[t]=by[t]||[0,0,0])[n-1]++; } }));
   return Object.entries(by).map(([name,v])=>({name,v,t:sum(v)})).sort((a,b)=>b.t-a.t);
 }
 
@@ -1463,7 +1517,7 @@ function makeDemoData(){
       const d2=addDays(cursor,rnd()<.04?4+Math.floor(rnd()*4):rnd()<.55?0:(rnd()<.7?1:2));
       if(d2>today){ om.push(r); b.busy='9999'; continue; }
       const t2=pick(T2);
-      Object.assign(r.stage2,{technician:t2,completedBy:t2,sopRef:issues.irFail?STANDARD_SOPS[3]:issues.bmsFault?STANDARD_SOPS[2]:issues.iotFault?STANDARD_SOPS[4]:issues.cellImbalance?STANDARD_SOPS[1]:pick(STANDARD_SOPS),repairAction:pick(['Balanced cells and re-torqued busbars','Replaced BMS and synced firmware','Reseated harness and cleaned contacts','Reflashed IoT module and re-paired IMEI','Dried pack and replaced thermal pad']),partsReplaced:pick(['','BMS','Harness','IoT module','Fuse','']),post:allPass(POST_ITEMS),completedAt:iso(d2,10+Math.floor(rnd()*6),0)});
+      Object.assign(r.stage2,{technician:t2,completedBy:t2,methodId:issues.irFail?'rm-04':issues.bmsFault||issues.canFail?'rm-03':issues.iotFault?'rm-05':issues.cellImbalance||issues.lowCapacity?'rm-02':issues.chargeFail||issues.dischargeFail?'rm-06':pick(['rm-01','rm-03','rm-07']),repairAction:pick(['Balanced cells and re-torqued busbars','Replaced BMS and synced firmware','Reseated harness and cleaned contacts','Reflashed IoT module and re-paired IMEI','Dried pack and replaced thermal pad']),partsReplaced:pick(['','BMS','Harness','IoT module','Fuse','']),post:allPass(POST_ITEMS),completedAt:iso(d2,10+Math.floor(rnd()*6),0)});
       r.stage=3; r.status='STAGE3_OPEN'; cursor=d2;
       const d3=addDays(cursor,rnd()<.6?0:1);
       if(d3>today){ om.push(r); b.busy='9999'; continue; }
@@ -1479,11 +1533,11 @@ function makeDemoData(){
         r.stage2.completedAt=iso(d4,11,0); r.stage3.completedAt=iso(d4,15,30); r.stage3.tests.irMeasured=String(600+Math.floor(rnd()*300));
         if(rnd()<.85){ r.status='CLOSED_PASS'; r.finalDisposition='PASS'; r.stage3.qcPassed='PASS'; r.closedAt=r.stage3.completedAt; r.stage=3; }
         else { r.status='CLOSED_TRANSFERRED_BSA'; r.finalDisposition='ESCALATED_BSA'; r.stage3.qcPassed='ESCALATE_BSA'; r.closedAt=r.stage3.completedAt; r.stage=3;
-          addCase(b,{bmsId:b.id,model:b.plat,source:BSA_SOURCES[0],dateFlagged:d4,flaggedBy:t3,issueDescription:'Repeat IR failure after corrective action',escalationCategory:'Repeat QC failure',escalatedFromStage:3,sopAttempted:r.stage2.sopRef,assignedEngineer:'',status:BSA_STATUSES[0],omRecordId:r.id,createdAt:r.closedAt}); }
+          addCase(b,{bmsId:b.id,model:b.plat,source:BSA_SOURCES[0],dateFlagged:d4,flaggedBy:t3,issueDescription:'Repeat IR failure after corrective action',escalationCategory:'Repeat QC failure',escalatedFromStage:3,sopAttempted:methodOf(r),assignedEngineer:'',status:BSA_STATUSES[0],omRecordId:r.id,createdAt:r.closedAt}); }
         if(r.finalDisposition==='PASS') b.busy=d4; om.push(r); continue;
       }
       if(roll<.15){ r.status='CLOSED_TRANSFERRED_BSA'; r.finalDisposition='ESCALATED_BSA'; r.stage3.qcPassed='ESCALATE_BSA'; r.closedAt=r.stage3.completedAt;
-        addCase(b,{bmsId:b.id,model:b.plat,source:BSA_SOURCES[0],dateFlagged:d3,flaggedBy:t3,issueDescription:'Final QC could not be completed: discharge cut-out under load',escalationCategory:'Final QC escalation',escalatedFromStage:3,sopAttempted:r.stage2.sopRef,assignedEngineer:'',status:BSA_STATUSES[0],omRecordId:r.id,createdAt:r.closedAt});
+        addCase(b,{bmsId:b.id,model:b.plat,source:BSA_SOURCES[0],dateFlagged:d3,flaggedBy:t3,issueDescription:'Final QC could not be completed: discharge cut-out under load',escalationCategory:'Final QC escalation',escalatedFromStage:3,sopAttempted:methodOf(r),assignedEngineer:'',status:BSA_STATUSES[0],omRecordId:r.id,createdAt:r.closedAt});
         om.push(r); continue; }
       r.status='CLOSED_PASS'; r.finalDisposition='PASS'; r.stage3.qcPassed='PASS'; r.closedAt=r.stage3.completedAt; b.busy=d3; om.push(r);
     }
@@ -1498,7 +1552,7 @@ function makeDemoData(){
     const r=newOmRecord(d,visitNumber,t1); r.id='demo-sim-'+k; r.createdAt=iso(day,h,5); r.stage1.completedAt=iso(day,h,20); r.stage1.completedBy=t1;
     const stageTo=back<=1?(k%2?2:3):3, done=back>2;
     if(stageTo===2&&!done){ om.push(r); b.busy='9999'; continue; }
-    const t2=pick(T2); Object.assign(r.stage2,{technician:t2,completedBy:t2,sopRef:STANDARD_SOPS[4],repairAction:'Opened IoT bay, swapped SIM card and re-sealed',post:allPass(POST_ITEMS),completedAt:iso(day,h+1,40),sim:{newType:'Local IoT SIM',newNumber:iccid('8925601'),replacedBy:t2,replacedAt:iso(day,h+1,30)}});
+    const t2=pick(T2); Object.assign(r.stage2,{technician:t2,completedBy:t2,methodId:'rm-05',repairAction:'Opened IoT bay, swapped SIM card and re-sealed',post:allPass(POST_ITEMS),completedAt:iso(day,h+1,40),sim:{newType:'Local IoT SIM',newNumber:iccid('8925601'),replacedBy:t2,replacedAt:iso(day,h+1,30)}});
     r.stage=3; r.status='STAGE3_OPEN';
     if(!done){ om.push(r); b.busy='9999'; continue; }
     const t3=pick(T3), d3=addDays(day,1);
@@ -1518,6 +1572,9 @@ function makeDemoData(){
   for(let i=0;i<6;i++){ const b=pick(pool.filter(x=>x.busy!=='9999')); addCase(null,{bmsId:b.id,model:b.plat,source:pick(BSA_SOURCES.slice(1)),dateFlagged:addDays(today,-Math.floor(rnd()*40)),flaggedBy:pick(['Customer experience','Battery engineering']),issueDescription:pick(['Range complaints from rider after swap','Pack temperature alarm in field','Repeated BMS lock-out reported by station']),escalationCategory:'Field flag',sopAttempted:'None applicable',createdAt:nowIso()}); }
   const rcaSrc=om.filter(r=>r.capaCycles>0).slice(-8);
   rcaSrc.forEach((r,i)=>rca.push({id:'demo-rca-'+i,bmsId:r.bmsId,model:r.model,linkedRecordId:r.id,owner:pick(T3),dateOpened:dkey(r.capaLog[0].returnedAt),problemStatement:r.capaLog[0].reason+' at final QC.',containment:'Battery held at Stage 2; batch checked.',immediateAction:'Re-repaired and re-tested.',why1:'IR dropped after reassembly',why2:'Moisture trapped under gasket',why3:'Pack not dried before closing',why4:'No drying step in SOP-BAT-04',why5:'SOP not updated after rainy-season returns',fishbone:{Method:'No drying step',Environment:'High humidity'},rootCause:'Missing drying step before casing closure',correctiveAction:'Dry pack 2 h at 40 °C before closing',preventiveAction:'Add drying step to SOP-BAT-04',verificationMethod:'IR ≥ 550 MΩ on next 20 packs',dueDate:addDays(today,7+i),status:RCA_STATUSES[Math.min(3,i%4)],createdAt:r.capaLog[0].returnedAt,updatedAt:r.capaLog[0].returnedAt,openedBy:pick(T3)}));
+  om.forEach((r,i)=>{ const s1=r.stage1||{}; Object.keys(s1.issues||{}).forEach(k=>{ const subs=DEFAULT_SUBS[k]; if(!subs||!s1.issues[k]) return; const sb=subs[Math.floor(rnd()*Math.min(subs.length,3))]; if(rnd()<.5) (s1.sub=s1.sub||{})[k]=sb; if((r.stage2||{}).completedAt){ (r.stage2.confirmed=r.stage2.confirmed||{})[k]=sb; const m=methodsFor([subKey(k,sb)],platOf(r))[0]; if(m&&k!=='simReplace') r.stage2.methodId=m.m.id; } });
+    if(i%9===0&&(r.stage2||{}).technician==='Collins O.'){ r.stage2.technician=r.stage2.completedBy=pick(['Collins O. 2','collins o','Collins']); }
+    if(i%11===0&&(r.stage1||{}).technician==='Amos K.'){ r.stage1.technician=r.stage1.completedBy=pick(['Amos K 1','amos k.','Amos']); } });
   return {om_chain_records:om,bsa_records:bsa,rca_records:rca,quality_issue_records:QUALITY_ISSUE_SEED.map(r=>({...r})),daily_log_records:makeDemoDaily(rnd,pick,T1,T3,om),accountability_audit_records:[]};
 }
 
@@ -1541,7 +1598,7 @@ function SyncBanner(){
    Stage 1 (receiving) logs the end-of-day totals; Stage 3 checks and
    verifies them; only verified days feed the weekly and monthly report.
    ===================================================================== */
-const DAILY_REASONS = ['No spare parts in stock','Waiting for supplier material','Needs BSA / specialist','Not enough time · carried to next day','Missing tools or test equipment','Beyond repair · scrap','Other reason'];
+const DAILY_REASONS = ['Rework attempted but failed','No spare parts in stock','Waiting for supplier material','Needs BSA / specialist','Not enough time · carried to next day','Missing tools or test equipment','Beyond repair · scrap','Other reason'];
 const DAILY_STATUS = {SUBMITTED:['Awaiting Stage 3 check','warn','◷'],RETURNED:['Sent back for correction','crit','↩'],VERIFIED:['Verified','good','✓']};
 const DAILY_NUMS = [['received','Total batteries received'],['toWarehouse','Returned to warehouse'],['inField','Worked on in the field']];
 const dailyChip = r => chip(...(DAILY_STATUS[r.status]||['Draft','','']));
@@ -1562,8 +1619,9 @@ function dailyStats(p,includeAll){
   const all=(S.data.daily||[]).filter(r=>inP(r.date,p));
   const logs=all.filter(r=>includeAll||r.status==='VERIFIED');
   const t={received:0,toWarehouse:0,inField:0,found:0,repaired:0,notWorked:0};
-  const byIssue={}, byReason={};
+  const byIssue={}, byReason={}, byMethod={}, perDay=[];
   logs.forEach(r=>{
+    Object.entries(r.issues||{}).forEach(([k,v])=>{ perDay.push({date:r.date,k,v,r}); if(dNum(v.repaired)>0){ const ml=v.method?(methodLabel(methodById(v.method))||v.method):'Method not recorded'; const M=byMethod[ml]=byMethod[ml]||{n:0,issues:{}}; M.n+=dNum(v.repaired); M.issues[k]=(M.issues[k]||0)+dNum(v.repaired); } });
     const x=dailyTotals(r); Object.keys(t).forEach(k=>t[k]+=x[k]);
     Object.entries(r.issues||{}).forEach(([k,v])=>{
       const b=byIssue[k]=byIssue[k]||{found:0,repaired:0,notWorked:0,reasons:{}};
@@ -1573,7 +1631,7 @@ function dailyStats(p,includeAll){
   });
   const days=p.gran==='day'?1:daysBetween(p.start,p.end)+1;
   const pending=all.filter(r=>r.status!=='VERIFIED').length;
-  return {...t,rate:pct(t.repaired,t.found),logs,all,pending,byIssue,byReason,days,verified:logs.length};
+  return {...t,rate:pct(t.repaired,t.found),logs,all,pending,byIssue,byReason,byMethod,perDay,days,verified:logs.length};
 }
 function dailyBadge(s){
   if(!s) return null;
@@ -1630,15 +1688,16 @@ function dailyMode(){
 }
 const numIn = (path,label,opts={}) => `<label class="f ${opts.cls||''}"><span>${label}${opts.req?' <span class="req">*</span>':''}</span><input class="in num-in" id="b-${path.replace(/\./g,'-')}" data-bind="${path}" value="${esc(getPath(S.f,path)??'')}" type="number" inputmode="numeric" min="0" step="1" placeholder="0" ${opts.dis?'disabled':''}></label>`;
 function dailyIssueRows(f,ro){
-  const keys=ISSUE_ITEMS.map(([k])=>k).filter(k=>f.issues[k]);
+  const keys=Object.keys(f.issues||{}).sort((a,b)=>issueOrder(a)-issueOrder(b)||a.localeCompare(b));
   if(!keys.length) return `<div class="empty" style="padding:16px">No issues added yet. Add each issue you saw today, or start from today's logged intakes.</div>`;
   return `<div class="di-list">${keys.map(k=>{
     const v=f.issues[k], b=`daily.issues.${k}`, nw=dNum(v.notWorked);
     return `<div class="di-row" data-k="${k}">
-      <div class="di-head"><b>${esc(ISSUE_LABEL[k])}</b><span class="di-rate" id="dr-${k}"></span>${ro?'':`<button class="btn sm ghost icon-btn" data-act="daily-rm-issue" data-k="${k}" aria-label="Remove ${esc(ISSUE_LABEL[k])}" title="Remove">${ICON.close}</button>`}</div>
-      <div class="di-nums">${numIn(b+'.found','Found',{dis:ro})}${numIn(b+'.repaired','Repaired',{dis:ro})}${numIn(b+'.notWorked','Not worked on',{dis:ro})}</div>
+      <div class="di-head"><b>${esc(issueLbl(k))}</b><span class="di-rate" id="dr-${k}"></span>${ro?'':`<button class="btn sm ghost icon-btn" data-act="daily-rm-issue" data-k="${k}" aria-label="Remove ${esc(issueLbl(k))}" title="Remove">${ICON.close}</button>`}</div>
+      <div class="di-nums">${numIn(b+'.found','Found',{dis:ro})}${numIn(b+'.repaired','Reworked',{dis:ro})}${numIn(b+'.notWorked','Not reworked',{dis:ro})}</div>
+      <div class="di-method">${ro?(v.method?`<div class="muted" style="font-size:13px"><b>Rework method:</b> ${esc(methodLabel(methodById(v.method))||v.method)}</div>`:''):field('Rework method used (needed when any were reworked)',methodSelect(b+'.method',[k],false,'Choose the method used…'),'full')}</div>
       <div class="di-check" id="dc-${k}"></div>
-      ${nw>0||v.reason?`<div class="di-why">${ro?`<div class="muted" style="font-size:13px"><b>Why not:</b> ${esc(v.reason||'—')}${v.reasonNote?' · '+esc(v.reasonNote):''}</div>`:`${field('Why not worked on',sel(b+'.reason',[['','Choose a reason…'],...DAILY_REASONS],true),'',true)}${v.reason==='Other reason'||v.reasonNote?field('Details',inp(b+'.reasonNote',{ph:'Explain briefly'})):''}`}</div>`:''}
+      ${nw>0||v.reason?`<div class="di-why">${ro?`<div class="muted" style="font-size:13px"><b>Why not reworked:</b> ${esc(v.reason||'—')}${v.reasonNote?' · '+esc(v.reasonNote):''}</div>`:`${field('Why not reworked (or why rework failed)',sel(b+'.reason',[['','Choose a reason…'],...DAILY_REASONS],true),'',true)}${v.reason==='Other reason'||v.reasonNote?field('Details',inp(b+'.reasonNote',{ph:'Explain briefly'})):''}`}</div>`:''}
     </div>`; }).join('')}</div>`;
 }
 function DailySheet(){
@@ -1658,7 +1717,7 @@ function DailySheet(){
     <div><div class="block-title"><h4>Batteries</h4><span id="d-tot-chk"></span></div>
       <div class="d-nums">${DAILY_NUMS.map(([k,l])=>numIn('daily.'+k,l,{req:true,dis:ro})).join('')}</div></div>
     <div><div class="block-title"><h4>Issues found and what was done</h4><span id="d-iss-sum" class="muted" style="font-size:12.5px"></span></div>
-      ${ro?'':`<div class="di-add"><select class="in" id="b-daily-_add" data-bind="daily._add" aria-label="Issue to add"><option value="">Add an issue…</option>${addable.map(([k,l])=>`<option value="${k}">${esc(l)}</option>`).join('')}</select><button class="btn" data-act="daily-add-issue">${ICON.plus} Add</button>${intakes.length&&mode==='log'?`<button class="btn ghost" data-act="daily-prefill" title="Counts each issue on the intakes logged in the app for this date">Start from ${intakes.length} logged intake${intakes.length===1?'':'s'}</button>`:''}</div>`}
+      ${ro?'':`<div class="di-add"><select class="in" id="b-daily-_add" data-bind="daily._add" aria-label="Issue to add"><option value="">Add an issue…</option>${dailyAddOptions(f)}</select><button class="btn" data-act="daily-add-issue">${ICON.plus} Add</button>${intakes.length&&mode==='log'?`<button class="btn ghost" data-act="daily-prefill" title="Counts each issue on the intakes logged in the app for this date">Start from ${intakes.length} logged intake${intakes.length===1?'':'s'}</button>`:''}</div>`}
       ${dailyIssueRows(f,ro)}</div>
     ${ro?(f.notes?`<div><h4 style="margin-bottom:6px">Notes from receiving</h4><div class="muted">${esc(f.notes)}</div></div>`:''):field('Notes from receiving',area('daily.notes','Anything unusual today'),'full')}
     ${mode==='verify'?field('Verifier note (required to send back)',area('daily._note','What did you check, or what needs correcting?'),'full'):''}
@@ -1679,15 +1738,15 @@ function paintDailyCalc(){
   let F=0,R=0;
   Object.entries(f.issues||{}).forEach(([k,v])=>{
     const fo=dNum(v.found), re=dNum(v.repaired), nw=dNum(v.notWorked); F+=fo; R+=re;
-    const rt=$('#dr-'+k); if(rt) rt.innerHTML=fo?`<span class="rate-pill ${re/fo>=.8?'good':re/fo>=.5?'warn':'crit'}">${fmtPct(pct(re,fo))} repaired</span>`:'';
+    const rt=$('#dr-'+k); if(rt) rt.innerHTML=fo?`<span class="rate-pill ${re/fo>=.8?'good':re/fo>=.5?'warn':'crit'}">${fmtPct(pct(re,fo))} reworked</span>`:'';
     const row=$(`.di-row[data-k="${k}"]`); if(row&&!row.querySelector('.di-why')!==!(nw>0||v.reason)&&!row.querySelector('input:disabled')){ renderDrawer(true); return; }
-    const c=$('#dc-'+k); if(c) c.innerHTML=fo&&re+nw!==fo?`<span class="bad">Repaired ${re} + not worked on ${nw} = ${re+nw}, but found is ${fo}.</span>`:'';
+    const c=$('#dc-'+k); if(c) c.innerHTML=fo&&re+nw!==fo?`<span class="bad">Reworked ${re} + not reworked ${nw} = ${re+nw}, but found is ${fo}.</span>`:'';
   });
-  const s=$('#d-iss-sum'); if(s) s.textContent=F?`${R} of ${F} repaired · ${fmtPct(pct(R,F))}`:'';
+  const s=$('#d-iss-sum'); if(s) s.textContent=F?`${R} of ${F} reworked · ${fmtPct(pct(R,F))}`:'';
 }
 function dailyAddIssue(){
   const f=S.f.daily, k=f._add; if(!k){ toast('Pick an issue first.'); return; }
-  f.issues[k]={found:'',repaired:'',notWorked:'',reason:'',reasonNote:''}; f._add='';
+  f.issues[k]={found:'',repaired:'',notWorked:'',method:'',reason:'',reasonNote:''}; f._add='';
   renderDrawer(true); const el=$(`#b-daily-issues-${k}-found`); if(el) el.focus();
 }
 function dailyPrefill(){
@@ -1708,14 +1767,15 @@ function dailyClean(f){
   const keys=Object.keys(f.issues||{});
   if(out.received>0&&!keys.length) return [null,'Add at least one issue with its counts.'];
   for(const k of keys){
-    const v=f.issues[k], L=ISSUE_LABEL[k]||k, fo=int(v.found), re=int(v.repaired), nw=int(v.notWorked===''||v.notWorked==null?'0':v.notWorked);
+    const v=f.issues[k], L=issueLbl(k), fo=int(v.found), re=int(v.repaired), nw=int(v.notWorked===''||v.notWorked==null?'0':v.notWorked);
     if(fo==null||fo<1) return [null,`${L}: enter how many were found (1 or more), or remove the issue.`];
-    if(re==null) return [null,`${L}: enter how many were repaired (0 if none).`];
-    if(nw==null) return [null,`${L}: "not worked on" must be a whole number.`];
-    if(re+nw!==fo) return [null,`${L}: repaired (${re}) + not worked on (${nw}) must equal found (${fo}).`];
-    if(nw>0&&!v.reason) return [null,`${L}: say why ${nw} ${nw===1?'was':'were'} not worked on.`];
+    if(re==null) return [null,`${L}: enter how many were reworked (0 if none).`];
+    if(nw==null) return [null,`${L}: "not reworked" must be a whole number.`];
+    if(re+nw!==fo) return [null,`${L}: reworked (${re}) + not reworked (${nw}) must equal found (${fo}).`];
+    if(re>0&&!v.method) return [null,`${L}: pick the rework method used.`];
+    if(nw>0&&!v.reason) return [null,`${L}: say why ${nw} ${nw===1?'was':'were'} not reworked, or why the rework failed.`];
     if(nw>0&&v.reason==='Other reason'&&String(v.reasonNote||'').trim().length<3) return [null,`${L}: explain the other reason.`];
-    out.issues[k]={found:fo,repaired:re,notWorked:nw,...(nw>0?{reason:v.reason,reasonNote:String(v.reasonNote||'').trim()}:{})};
+    out.issues[k]={found:fo,repaired:re,notWorked:nw,...(re>0&&v.method?{method:v.method}:{}),...(nw>0?{reason:v.reason,reasonNote:String(v.reasonNote||'').trim()}:{})};
   }
   return [out,null];
 }
@@ -1747,7 +1807,7 @@ function dailyDiff(before,after){
   const out=[];
   DAILY_NUMS.forEach(([k,l])=>{ if(+before[k]!==+after[k]) out.push(`${l} ${before[k]} → ${after[k]}`); });
   const keys=new Set([...Object.keys(before.issues||{}),...Object.keys(after.issues||{})]);
-  keys.forEach(k=>{ const a=(before.issues||{})[k], b=(after.issues||{})[k], L=ISSUE_LABEL[k]||k;
+  keys.forEach(k=>{ const a=(before.issues||{})[k], b=(after.issues||{})[k], L=issueLbl(k);
     if(!a) out.push(`${L} added (${b.found} found)`); else if(!b) out.push(`${L} removed`);
     else ['found','repaired','notWorked'].forEach(x=>{ if(+a[x]!==+b[x]) out.push(`${L} ${x==='notWorked'?'not worked on':x} ${a[x]} → ${b[x]}`); });
   });
@@ -1785,9 +1845,9 @@ async function dailyReopen(){
 
 /* ---------- Report view ---------- */
 function DailyView(){
-  const s=S.session, p=periodOf(S.anchor,S.gran), prev=periodOf(shiftKey(p.start,S.gran,-1),S.gran);
+  const s=S.session, p=periodOf(S.anchor,S.gran), prev=prevPeriod(p);
   const st=dailyStats(p), pv=dailyStats(prev);
-  const unit=S.gran==='day'?'day':S.gran, today=todayStr(), tr=dailyFor(today);
+  const unit=granUnit(S.gran), today=todayStr(), tr=dailyFor(today);
   const r1=v=>Math.round(v*10)/10;
   const logBtn=canLogDaily()?(tr?`<button class="btn pri" data-act="daily-open" data-id="${esc(tr.id)}">${tr.status==='VERIFIED'?'View today\'s counts':'Open today\'s counts'}</button>`:`<button class="btn pri" data-act="daily-new">${ICON.plus} Log today's counts</button>`):'';
   const pend=(S.data.daily||[]).filter(r=>r.status==='SUBMITTED').sort((a,b)=>a.date.localeCompare(b.date));
@@ -1795,7 +1855,7 @@ function DailyView(){
   const notCounted=st.pending?`<div class="banner"><div>${st.pending} log${st.pending===1?'':'s'} in this ${unit} ${st.pending===1?'is':'are'} not verified yet, so ${st.pending===1?'it is':'they are'} not in these totals.</div></div>`:'';
 
   // daily trend inside the period (or last 14 days for a single day)
-  const days=[]; const p2=S.gran==='day'?{start:addDays(p.start,-13),end:p.start}:p;
+  const days=[]; const p2=S.gran==='day'?{start:addDays(p.start,-13),end:p.start}:(S.gran==='ytd'||S.gran==='all')?{start:addDays(p.end,-29),end:p.end}:p;
   for(let k=p2.start;k<=p2.end;k=addDays(k,1)) days.push(k);
   const dl=days.map(k=>{ const r=dailyFor(k); return r&&r.status==='VERIFIED'?dailyTotals(r):null; });
   const dayChart=chartSlot({type:'cols',labels:days.map(k=>periodLabel(periodOf(k,'day'))),full:days.map(k=>fmtDay(k)+(dailyFor(k)?(dailyFor(k).status==='VERIFIED'?'':' · not verified'):' · not logged')),sel:days.indexOf(S.gran==='day'?p.start:today),
@@ -1805,16 +1865,20 @@ function DailyView(){
   const rateChart=chartSlot({type:'line',labels:buckets.map(b=>periodLabel(b)),full:buckets.map(b=>periodLabel(b,true)),values:bs.map(x=>x.rate),pctAxis:true,label:'Repair rate',sel:buckets.length-1,extra:bs.map(x=>`${x.repaired} of ${x.found} issues repaired`)});
 
   const iss=Object.entries(st.byIssue).sort((a,b)=>b[1].found-a[1].found);
-  const issTable=iss.length?`<div class="tbl-wrap"><table><thead><tr><th>Issue</th><th class="r">Found</th><th class="r">Repaired</th><th class="r">Not worked on</th><th>Repair rate</th><th>Main reason not worked on</th></tr></thead><tbody>
-    ${iss.map(([k,v])=>{ const rt=pct(v.repaired,v.found), top=Object.entries(v.reasons).sort((a,b)=>b[1]-a[1])[0]; return `<tr><td>${esc(ISSUE_LABEL[k]||k)}</td><td class="r num">${v.found}</td><td class="r num">${v.repaired}</td><td class="r num">${v.notWorked}</td><td><div class="ratebar"><div style="width:${rt||0}%;background:var(${rt>=80?'--good':rt>=50?'--warn':'--crit'})"></div></div><span class="num" style="font-weight:700">${fmtPct(rt)}</span></td><td>${top?esc(top[0])+` <span class="muted">(${top[1]})</span>`:'<span class="muted">—</span>'}</td></tr>`; }).join('')}
+  const issTable=iss.length?`<div class="tbl-wrap"><table><thead><tr><th>Issue</th><th class="r">Found</th><th class="r">Reworked</th><th class="r">Not reworked</th><th>Rework rate</th><th>Main reason not reworked</th></tr></thead><tbody>
+    ${iss.map(([k,v])=>{ const rt=pct(v.repaired,v.found), top=Object.entries(v.reasons).sort((a,b)=>b[1]-a[1])[0]; return `<tr><td>${esc(issueLbl(k))}</td><td class="r num">${v.found}</td><td class="r num">${v.repaired}</td><td class="r num">${v.notWorked}</td><td><div class="ratebar"><div style="width:${rt||0}%;background:var(${rt>=80?'--good':rt>=50?'--warn':'--crit'})"></div></div><span class="num" style="font-weight:700">${fmtPct(rt)}</span></td><td>${top?esc(top[0])+` <span class="muted">(${top[1]})</span>`:'<span class="muted">—</span>'}</td></tr>`; }).join('')}
     <tr class="tot"><td>Total</td><td class="r num">${st.found}</td><td class="r num">${st.repaired}</td><td class="r num">${st.notWorked}</td><td><span class="num" style="font-weight:800">${fmtPct(st.rate)}</span></td><td></td></tr></tbody></table></div>`:empty(`No verified counts in this ${unit} yet.`);
 
   const rs=Object.entries(st.byReason).sort((a,b)=>b[1].n-a[1].n), rmax=Math.max(1,...rs.map(x=>x[1].n));
-  const reasonHtml=rs.length?`<div class="bars">${rs.map(([k,v])=>barRow(k,[[v.n,'--s2',`<b>${esc(k)}</b><br>${Object.entries(v.issues).map(([i,n])=>`${esc(ISSUE_LABEL[i]||i)}: ${n}`).join('<br>')}`]],rmax,v.n)).join('')}</div>`:empty('Everything found was worked on.');
+  const reasonHtml=rs.length?`<div class="bars">${rs.map(([k,v])=>barRow(k,[[v.n,'--s2',`<b>${esc(k)}</b><br>${Object.entries(v.issues).map(([i,n])=>`${esc(issueLbl(i))}: ${n}`).join('<br>')}`]],rmax,v.n)).join('')}</div>`:empty('Everything found was worked on.');
 
+  const ms=Object.entries(st.byMethod).sort((a,b)=>b[1].n-a[1].n), mmax=Math.max(1,...ms.map(x=>x[1].n));
+  const methHtml=ms.length?`<div class="bars">${ms.map(([k,v])=>barRow(k,[[v.n,'--s3',`<b>${esc(k)}</b><br>${Object.entries(v.issues).map(([i,n])=>`${esc(issueLbl(i))}: ${n}`).join('<br>')}`]],mmax,v.n)).join('')}</div>`:empty('No rework recorded in verified counts.');
+  const pd=st.perDay.slice().sort((a,b)=>b.date.localeCompare(a.date)||dNum(b.v.found)-dNum(a.v.found));
+  const perDayHtml=pd.length?`<div class="tbl-wrap" style="max-height:520px;overflow:auto"><table><thead><tr><th>Date</th><th>Issue</th><th class="r">Found</th><th class="r">Reworked</th><th>Rework method</th><th class="r">Not reworked</th><th>Why not / why it failed</th></tr></thead><tbody>${pd.map(({date,k,v,r})=>`<tr class="click" data-act="daily-open" data-id="${esc(r.id)}"><td class="num" style="white-space:nowrap">${esc(fmtShort(date))}</td><td>${esc(issueLbl(k))}</td><td class="r num">${dNum(v.found)}</td><td class="r num">${dNum(v.repaired)||'<span class="muted">0</span>'}</td><td>${dNum(v.repaired)?esc(v.method?(methodLabel(methodById(v.method))||v.method):'Not recorded'):'<span class="muted">—</span>'}</td><td class="r num">${dNum(v.notWorked)||'<span class="muted">0</span>'}</td><td>${dNum(v.notWorked)?esc((v.reason||'Not given')+(v.reasonNote?' · '+v.reasonNote:'')):'<span class="muted">—</span>'}</td></tr>`).join('')}</tbody></table></div>`:empty(`No verified counts in this ${unit} yet.`);
   const logRows=st.all.slice().sort((a,b)=>b.date.localeCompare(a.date));
-  const missing=[]; if(S.gran!=='day'){ for(let k=p.start;k<=p.end&&k<=today;k=addDays(k,1)) if(!dailyFor(k)) missing.push(k); }
-  const logTable=`<div class="tbl-wrap"><table><thead><tr><th>Date</th><th class="r">Received</th><th class="r">Warehouse</th><th class="r">Field</th><th class="r">Issues</th><th class="r">Repaired</th><th class="r">Rate</th><th>Status</th><th>Logged by</th><th>Verified by</th><th class="r" aria-label="Actions"></th></tr></thead><tbody>
+  const missing=[]; if(!['day','ytd','all'].includes(S.gran)){ for(let k=p.start;k<=p.end&&k<=today;k=addDays(k,1)) if(!dailyFor(k)) missing.push(k); }
+  const logTable=`<div class="tbl-wrap"><table><thead><tr><th>Date</th><th class="r">Received</th><th class="r">Warehouse</th><th class="r">Field</th><th class="r">Issues</th><th class="r">Reworked</th><th class="r">Rate</th><th>Status</th><th>Logged by</th><th>Verified by</th><th class="r" aria-label="Actions"></th></tr></thead><tbody>
     ${logRows.length?logRows.map(r=>{ const t=dailyTotals(r); return `<tr class="click" data-act="daily-open" data-id="${esc(r.id)}"><td class="num">${esc(fmtShort(r.date))}</td><td class="r num">${t.received}</td><td class="r num">${t.toWarehouse}</td><td class="r num">${t.inField}</td><td class="r num">${t.found}</td><td class="r num">${t.repaired}</td><td class="r num">${fmtPct(pct(t.repaired,t.found))}</td><td>${dailyChip(r)}${r.adjustments&&r.adjustments.length?' '+chip('corrected','warn'):''}</td><td>${esc(r.loggedBy||'—')}</td><td>${esc(r.verifiedBy||'—')}</td><td class="r">${canDeleteDaily(r)?`<button class="btn sm danger del-ic" data-act="del-daily" data-id="${esc(r.id)}" title="Delete this daily log" aria-label="Delete log for ${esc(fmtShort(r.date))}">${ICON.trash}<span>Delete</span></button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="11">${empty('Nothing logged in this period.')}</td></tr>`}
   </tbody></table></div>${missing.length?`<div class="muted" style="font-size:12.5px;margin-top:8px">Not logged: ${missing.map(fmtShort).join(', ')}</div>`:''}`;
 
@@ -1825,48 +1889,51 @@ function DailyView(){
     ${kpi('Batteries received',st.received,deltaHtml(st.received,pv.received,null))}
     ${kpi('Returned to warehouse',st.toWarehouse,st.received?`${fmtPct(pct(st.toWarehouse,st.received))} of received`:'—')}
     ${kpi('Worked on in field',st.inField,st.received?`${fmtPct(pct(st.inField,st.received))} of received`:'—')}
-    ${kpi('Issues found',st.found,`${st.notWorked} not worked on`)}
-    ${kpi('Repair rate',st.rate==null?'—':`${Math.round(st.rate)}<small>%</small>`,deltaHtml(st.rate,pv.rate,true,v=>r1(v),' pts'),'',st.rate==null?'':st.rate>=80?'good':st.rate>=60?'warn':'crit')}
-    ${kpi('Days verified',`${st.verified}<small>/ ${Math.min(st.days,S.gran==='day'?1:Math.max(0,daysBetween(p.start,p.end>today?today:p.end)+1))}</small>`,st.pending?`${st.pending} awaiting check`:'all logged days checked','',st.pending?'warn':'good')}
+    ${kpi('Issues found',st.found,`${st.repaired} reworked · ${st.notWorked} not reworked`)}
+    ${kpi('Rework rate',st.rate==null?'—':`${Math.round(st.rate)}<small>%</small>`,deltaHtml(st.rate,pv.rate,true,v=>r1(v),' pts'),'',st.rate==null?'':st.rate>=80?'good':st.rate>=60?'warn':'crit')}
+    ${kpi('Days verified',`${st.verified}<small>/ ${S.gran==='all'?st.all.length:Math.min(st.days,S.gran==='day'?1:Math.max(0,daysBetween(p.start,p.end>today?today:p.end)+1))}</small>`,st.pending?`${st.pending} awaiting check`:'all logged days checked','',st.pending?'warn':'good')}
   </div>
   <div class="grid g-main">
     <div class="card"><div class="card-head"><div><h3>Where received batteries went</h3><p>${S.gran==='day'?'Last 14 days':'Each day in this '+unit}, verified counts only</p></div></div>
       <div class="legend"><span><i style="background:var(--s3)"></i>Worked on in field</span><span><i style="background:var(--s1)"></i>Returned to warehouse</span></div>${dayChart}</div>
-    <div class="card"><div class="card-head"><div><h3>Repair rate trend</h3><p>Issues repaired ÷ issues found, last 12 ${S.gran==='month'?'months':'weeks'}</p></div></div>${rateChart}
-      <div class="section"><h4 style="margin-bottom:8px">Why issues were not worked on</h4>${reasonHtml}</div></div>
+    <div class="card"><div class="card-head"><div><h3>Repair rate trend</h3><p>Issues reworked ÷ issues found, by ${bucketGran(S.gran==='day'?'week':S.gran)}</p></div></div>${rateChart}
+      <div class="section"><h4 style="margin-bottom:8px">Why issues were not reworked</h4>${reasonHtml}</div></div>
   </div>
   <div class="card section"><div class="card-head"><div><h3>Issues and repair rate</h3><p>Verified counts in ${esc(periodLabel(p,true))}</p></div></div>${issTable}</div>
+  <div class="grid g2 section"><div class="card"><div class="card-head"><div><h3>Rework methods used</h3><p>Batteries reworked with each method, verified counts</p></div></div>${methHtml}</div>
+    <div class="card"><div class="card-head"><div><h3>Rework rate by issue</h3><p>How much of each issue got reworked</p></div></div>${Object.keys(st.byIssue).length?`<div class="bars">${Object.entries(st.byIssue).sort((a,b)=>b[1].found-a[1].found).slice(0,10).map(([k,v])=>barRow(issueLbl(k),[[v.repaired,'--good',`${v.repaired} reworked`],[v.notWorked,'--crit',`${v.notWorked} not reworked`]],Math.max(1,...Object.values(st.byIssue).map(x=>x.found)),v.found)).join('')}</div><div class="legend" style="margin-top:8px"><span><i style="background:var(--good)"></i>Reworked</span><span><i style="background:var(--crit)"></i>Not reworked / failed</span></div>`:empty('Nothing yet.')}</div></div>
+  <div class="card section"><div class="card-head"><div><h3>Issues per day</h3><p>Each day's issues, whether they were reworked, the method used, or why not</p></div></div>${perDayHtml}</div>
   <div class="card section"><div class="card-head"><div><h3>Daily logs</h3><p>Click a day to open it</p></div></div>${logTable}</div>`;
 }
 function DailyOverviewCard(p){
-  const st=dailyStats(p), unit=p.gran==='day'?'day':p.gran;
+  const st=dailyStats(p), unit=granUnit(p.gran);
   if(!st.all.length) return '';
   return `<div class="card section" style="margin-bottom:14px"><div class="card-head"><div><h3>Receiving counts</h3><p>Verified end-of-day counts this ${unit}${st.pending?` · ${st.pending} awaiting Stage 3 check`:''}</p></div></div>
     <div class="daily-strip"><div class="ds"><b>${st.received}</b><small>received</small></div><div class="ds"><b>${st.toWarehouse}</b><small>returned to warehouse</small></div><div class="ds"><b>${st.inField}</b><small>worked on in field</small></div><div class="ds"><b>${fmtPct(st.rate)}</b><small>repair rate (${st.repaired} of ${st.found} issues)</small></div><button class="btn" data-act="nav" data-v="daily">Open report ›</button></div></div>`;
 }
 function dailyCsv(){
   const p=periodOf(S.anchor,S.gran), st=dailyStats(p,true), q=v=>{ const x=String(v??''); return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x; };
-  const lines=[['Date','Status','Total received','Returned to warehouse','Worked on in field','Issue','Found','Repaired','Not worked on','Repair rate %','Reason not worked on','Reason details','Logged by','Verified by','Verified at','Corrections'].join(',')];
+  const lines=[['Date','Status','Total received','Returned to warehouse','Worked on in field','Issue','Found','Reworked','Rework method','Not reworked','Rework rate %','Reason not reworked / rework failed','Reason details','Logged by','Verified by','Verified at','Corrections'].join(',')];
   st.all.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{
     const base=[r.date,r.status,r.received,r.toWarehouse,r.inField];
     const tail=[r.loggedBy,r.verifiedBy,r.verifiedAt,(r.adjustments||[]).join('; ')];
     const iss=Object.entries(r.issues||{});
-    if(!iss.length) lines.push([...base,'','','','','','','',...tail].map(q).join(','));
-    iss.forEach(([k,v])=>lines.push([...base,ISSUE_LABEL[k]||k,v.found,v.repaired,v.notWorked,v.found?Math.round(v.repaired/v.found*1000)/10:'',v.reason||'',v.reasonNote||'',...tail].map(q).join(',')));
+    if(!iss.length) lines.push([...base,'','','','','','','','',...tail].map(q).join(','));
+    iss.forEach(([k,v])=>lines.push([...base,issueLbl(k),v.found,v.repaired,v.method?(methodLabel(methodById(v.method))||v.method):'',v.notWorked,v.found?Math.round(v.repaired/v.found*1000)/10:'',v.reason||'',v.reasonNote||'',...tail].map(q).join(',')));
   });
   const vs=dailyStats(p);
-  lines.push('',['Verified totals',periodLabel(p,true)].map(q).join(','),`Received,${vs.received}`,`Returned to warehouse,${vs.toWarehouse}`,`Worked on in field,${vs.inField}`,`Issues found,${vs.found}`,`Issues repaired,${vs.repaired}`,`Not worked on,${vs.notWorked}`,`Repair rate %,${vs.rate==null?'':Math.round(vs.rate*10)/10}`);
+  lines.push('',['Verified totals',periodLabel(p,true)].map(q).join(','),`Received,${vs.received}`,`Returned to warehouse,${vs.toWarehouse}`,`Worked on in field,${vs.inField}`,`Issues found,${vs.found}`,`Issues reworked,${vs.repaired}`,`Not reworked,${vs.notWorked}`,`Rework rate %,${vs.rate==null?'':Math.round(vs.rate*10)/10}`);
   download(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv'}),`daily-receiving-counts_${p.start}${p.gran==='day'?'':'_'+p.gran}.csv`);
 }
 
 /* sample data for the demo sign-in */
 function makeDemoDaily(rnd,pick,T1,T3,om){
-  const out=[], today=todayStr(), keys=['noPower','lowCapacity','cellImbalance','bmsFault','chargeFail','irFail','iotFault','canFail','connectorDamage'];
+  const out=[], today=todayStr(), keys=['noPower','lowCapacity','cellImbalance','bmsFault','chargeFail__mosfet-failure','chargeFail__faulty-charging-port','irFail__moisture-ingress','iotFault','canFail','connectorDamage','dischargeFail__mosfet-failure'];
   for(let i=60;i>=0;i--){
     const d=addDays(today,-i); if(parseKey(d).getDay()===0) continue;
     const received=8+Math.floor(rnd()*14), inField=Math.floor(received*(.35+rnd()*.35)), toWarehouse=received-inField;
     const issues={}; const n=2+Math.floor(rnd()*4);
-    for(let j=0;j<n;j++){ const k=pick(keys); if(issues[k]) continue; const found=1+Math.floor(rnd()*5), repaired=Math.min(found,Math.round(found*(.5+rnd()*.5))), nw=found-repaired; issues[k]={found,repaired,notWorked:nw,...(nw?{reason:pick(DAILY_REASONS.slice(0,5)),reasonNote:''}:{})}; }
+    for(let j=0;j<n;j++){ const k=pick(keys); if(issues[k]) continue; const found=1+Math.floor(rnd()*5), repaired=Math.min(found,Math.round(found*(.5+rnd()*.5))), nw=found-repaired; issues[k]={found,repaired,notWorked:nw,...(repaired?{method:(methodsFor([k])[0]||{m:{id:'rm-01'}}).m.id}:{}),...(nw?{reason:pick(DAILY_REASONS.slice(0,5)),reasonNote:''}:{})}; }
     const t1=pick(T1), t3=pick(T3), at=new Date(parseKey(d).getTime()+17.5*36e5).toISOString();
     const status=i<=1?'SUBMITTED':i===8?'RETURNED':'VERIFIED';
     out.push({id:'demo-daily-'+i,date:d,received,toWarehouse,inField,issues,notes:'',status,loggedBy:t1,loggedAt:at,submittedAt:at,createdAt:at,
@@ -2036,7 +2103,7 @@ const FU_UPDATES = ['Working on it now','Waiting for parts','Waiting for test eq
 const FU_DUE = [['4','Within 4 hours'],['eod','By end of today'],['24','Within 24 hours'],['48','Within 2 days']];
 const canAssignFu = () => { const r=(S.session||{}).role; return r==='omadmin'||r==='quality'; };
 const fuCur = r => { const f=(r&&r.followUps||[]).slice(-1)[0]; return f&&f.status!=='CLOSED'?f:null; };
-const sameName = (a,b) => String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase();
+const sameName = (a,b) => samePerson(a,b);
 function fuIsMine(f,s){ s=s||S.session||{}; if(!f||s.role!=='omtech') return false; return f.to?sameName(f.to,s.name):Number(f.stage)===Number(s.stage); }
 function fuLast(f){ return (f&&f.updates||[]).slice(-1)[0]||null; }
 function fuDueAt(f){ return f&&f.dueAt?new Date(f.dueAt).getTime():null; }
@@ -2051,7 +2118,7 @@ function stuckInfo(r){
 }
 function stageTechs(n){
   const set=new Set();
-  S.data.om.forEach(r=>{ const st=r['stage'+n]||{}; [st.technician,st.completedBy].forEach(x=>{ if(x&&String(x).trim()) set.add(String(x).trim()); }); });
+  S.data.om.forEach(r=>{ const st=r['stage'+n]||{}; [st.technician,st.completedBy].forEach(x=>{ if(x&&String(x).trim()) set.add(canonPerson(x)); }); });
   return [...set].sort((a,b)=>a.localeCompare(b));
 }
 function fuDueIso(k){
@@ -2202,16 +2269,16 @@ function tcLabelOther(st){ const c=(st||{}).otherCat; return c?`Other: ${c}`:ISS
 /* counts per case for one period; key → {label,n,issue} */
 function tcCount(src,p){
   const m={}; const add=(key,label,n,issue,item)=>{ const x=m[key]=m[key]||{key,label,n:0,issue,plat:{},items:[]}; x.n+=n; if(item) x.items.push(item); return x; };
-  if(src==='intake') S.data.om.forEach(r=>{ if(!inP(r.dateReceived,p)) return; const pl=r.model||platformForId(r.bmsId)||'Unknown';
+  if(src==='intake') S.data.om.forEach(r=>{ if(!inP(r.dateReceived,p)) return; const pl=platName(r);
     caseKeysOf(r).forEach(c=>{ const x=add(c.key,c.label,1,c.issue,{type:'visit',r,date:r.dateReceived}); x.plat[pl]=(x.plat[pl]||0)+1; }); });
-  if(src==='daily') (S.data.daily||[]).forEach(r=>{ if(r.status!=='VERIFIED'||!inP(r.date,p)) return; Object.entries(r.issues||{}).forEach(([k,v])=>{ const x=add(k,ISSUE_LABEL[k]||k,dNum(v.found),null,{type:'day',r,v,date:r.date}); x.rep=(x.rep||0)+dNum(v.repaired); }); });
+  if(src==='daily') (S.data.daily||[]).forEach(r=>{ if(r.status!=='VERIFIED'||!inP(r.date,p)) return; Object.entries(r.issues||{}).forEach(([k,v])=>{ const x=add(k,issueLbl(k),dNum(v.found),null,{type:'day',r,v,date:r.date}); x.rep=(x.rep||0)+dNum(v.repaired); }); });
   if(src==='capa') S.data.om.forEach(r=>(r.capaLog||[]).forEach(c=>{ if(!inP(dkey(c.returnedAt),p)) return; const l=CAPA_REASON_LABEL[c.reasonCat]||c.reasonCat||'Not given'; add(c.reasonCat||'none',l,1,null,{type:'capa',r,c,date:dkey(c.returnedAt)}); }));
-  if(src==='bsa') S.data.bsa.forEach(c=>{ if(!inP(dkey(c.dateFlagged||c.createdAt),p)) return; const l=c.escalationCategory||'Other escalation'; add(l,l,1,null,{type:'bsa',c,date:dkey(c.dateFlagged||c.createdAt)}); });
+  if(src==='bsa') S.data.bsa.forEach(c=>{ if(!inP(dkey(c.dateFlagged||c.createdAt),p)) return; const l=bsaIssue(c); add(l,l,1,null,{type:'bsa',c,date:dkey(c.dateFlagged||c.createdAt)}); });
   return m;
 }
-const tcUnit = src => src==='intake'?'batteries':src==='daily'?'found':src==='capa'?'returns':'cases';
+const tcUnit = src => src==='intake'||src==='esc'||src==='rework'?'batteries':src==='daily'?'found':src==='capa'?'returns':'cases';
 function tcRank(src,p){
-  const cur=tcCount(src,p), prevP=periodOf(shiftKey(p.start,p.gran,-1),p.gran), prev=tcCount(src,prevP);
+  const cur=tcCount(src,p), prevP=prevPeriod(p), prev=tcCount(src,prevP);
   const list=Object.values(cur).sort((a,b)=>b.n-a.n||a.label.localeCompare(b.label));
   const total=sum(list.map(x=>x.n)), pt=sum(Object.values(prev).map(x=>x.n));
   list.forEach(x=>{ x.prev=(prev[x.key]||{}).n||0; x.share=pct(x.n,total); });
@@ -2229,8 +2296,9 @@ function tcColumn(src,gran,title){
   return `<div class="card tc-col tc-${gran}"><div class="card-head"><div><div class="eyebrow">${title}</div><h3>${esc(periodLabel(p,true))}</h3><p>${R.total} ${tcUnit(src)} · ${R.list.length} case type${R.list.length===1?'':'s'} <span class="tc-d ${d>0?'up':d<0?'down':'flat'}">${d===0?'± 0':(d>0?'▲ ':'▼ ')+Math.abs(d)} vs previous ${gran}</span></p></div></div>
     ${top[0]?`<div class="tc-lead"><span>Top case</span><b>${esc(top[0].label)}</b><em>${top[0].n} · ${fmtPct(top[0].share)}</em></div>`:''}${rows}</div>`;
 }
-function TopCasesView(){
-  const T=S.tc=S.tc||{src:'intake',tg:'week'}, src=T.src, today=todayStr();
+function TopCasesView(){ const m=(S.tc||{}).mode||'cases'; return anTabs()+(m==='cases'?TopCasesInner():AnalysisView(m)); }
+function TopCasesInner(){
+  const T=S.tc=S.tc||{src:'intake',tg:'week',mode:'cases'}, src=T.src, today=todayStr();
   const srcMeta=TC_SOURCES.find(x=>x[0]===src)||TC_SOURCES[0];
   // trend of the month's top 5 across the last 12 buckets
   const tg=T.tg, buckets=bucketsEnding(S.anchor,tg,tg==='day'?14:12);
@@ -2267,28 +2335,28 @@ function tcCsv(){
 
 /* ---------- Batteries under one case ---------- */
 function CaseSheet(){
-  const d=S.drawer, p=periodOf(S.anchor,d.gran), x=tcCount(d.src,p)[d.key];
-  const srcL=(TC_SOURCES.find(t=>t[0]===d.src)||[])[1]||'';
+  const d=S.drawer, p=periodOf(S.anchor,d.gran), x=d.dim?dimCase(p,d.src,d.dim,d.val):tcCount(d.src,p)[d.key];
+  const srcL=(TC_SOURCES.find(t=>t[0]===d.src)||[])[1]||AN_SRC[d.src]||'';
   if(!x) return sheet('No batteries',`${esc(srcL)} · ${esc(periodLabel(p,true))}`,empty('Nothing under this case in this period any more. Refresh or pick another date.'),'','Top cases');
   const items=x.items.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
   let body='';
-  if(d.src==='intake'){
-    const pl={}; items.forEach(i=>{ const k=i.r.model||platformForId(i.r.bmsId)||'Unknown'; pl[k]=(pl[k]||0)+1; });
+  if(d.src==='intake'||d.src==='esc'||d.src==='rework'){
+    const pl={}; items.forEach(i=>{ const k=platName(i.r); pl[k]=(pl[k]||0)+1; });
     body=`<div class="facts"><div class="fact"><span>Batteries</span><b>${items.length}</b></div><div class="fact"><span>Still open</span><b>${items.filter(i=>!isClosed(i.r)).length}</b></div><div class="fact"><span>Passed</span><b>${items.filter(i=>i.r.finalDisposition==='PASS').length}</b></div><div class="fact"><span>To BSA</span><b>${items.filter(i=>isToBsa(i.r)).length}</b></div></div>
       <div class="legend">${Object.entries(pl).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<span><b>${esc(k)}</b> ${v}</span>`).join('')}</div>
-      <div class="case-list">${items.map(({r})=>{ const st=omStatus(r), other=issueNames(r).filter(n=>n!==x.label); return `<button class="case-row" data-act="open-battery" data-id="${esc(r.bmsId)}"><span class="cr-1"><b class="mono">${esc(r.bmsId)}</b>${chip(...st)}</span><span class="cr-2">${esc(r.model||'—')} · visit #${r.visitNumber||1} · received ${esc(fmtShort(r.dateReceived))}${r.site?' · '+esc(r.site):''}${(r.stage1||{}).technician?' · by '+esc(r.stage1.technician):''}</span>${(r.stage1||{}).otherNote&&(r.stage1.issues||{}).other?`<span class="cr-3">Note: “${esc(r.stage1.otherNote)}”</span>`:''}${other.length?`<span class="cr-3">Also: ${esc(other.join(', '))}</span>`:''}</button>`; }).join('')}</div>`;
+      <div class="case-list">${items.map(({r})=>{ const st=omStatus(r), other=issueNames(r).filter(n=>n!==x.label); return `<button class="case-row" data-act="open-battery" data-id="${esc(r.bmsId)}"><span class="cr-1"><b class="mono">${esc(r.bmsId)}</b>${chip(...st)}</span><span class="cr-2">${esc(platName(r))} · visit #${r.visitNumber||1} · received ${esc(fmtShort(r.dateReceived))}${r.site?' · '+esc(r.site):''}${(r.stage1||{}).technician?' · by '+esc(canonPerson(r.stage1.technician)):''}${methodOf(r)&&(r.stage2||{}).completedAt?' · '+esc(methodOf(r)):''}</span>${(r.stage1||{}).otherNote&&(r.stage1.issues||{}).other?`<span class="cr-3">Note: “${esc(r.stage1.otherNote)}”</span>`:''}${other.length?`<span class="cr-3">Also: ${esc(other.join(', '))}</span>`:''}</button>`; }).join('')}</div>`;
   } else if(d.src==='capa'){
     body=`<div class="case-list">${items.map(({r,c})=>`<button class="case-row" data-act="open-battery" data-id="${esc(r.bmsId)}"><span class="cr-1"><b class="mono">${esc(r.bmsId)}</b>${chip(...omStatus(r))}</span><span class="cr-2">${esc(r.model||'—')} · returned ${esc(fmtDT(c.returnedAt))} by ${esc(c.returnedBy||'—')}</span><span class="cr-3">${esc(capaText(c))}</span></button>`).join('')}</div>`;
   } else if(d.src==='bsa'){
     body=`<div class="case-list">${items.map(({c})=>{ const t=bsaTechStatus(c), tone=BSA_TONE[t]||['','']; return `<button class="case-row" data-act="open-bsa" data-id="${esc(c.id)}"><span class="cr-1"><b class="mono">${esc(c.bmsId)}</b>${chip(t,tone[0],tone[1])}</span><span class="cr-2">${esc(c.model||'—')} · flagged ${esc(fmtShort(dkey(c.dateFlagged||c.createdAt)))} by ${esc(c.flaggedBy||'—')}</span>${c.issueDescription?`<span class="cr-3">${esc(c.issueDescription)}</span>`:''}</button>`; }).join('')}</div>`;
   } else {
     body=`<div class="banner"><div>Receiving counts are totals, not individual batteries, so this shows each day's numbers for this case. Battery IDs are in the <b>Intake defects</b> view.</div></div>
-      <div class="case-list">${items.map(({r,v})=>`<button class="case-row" data-act="daily-open" data-id="${esc(r.id)}"><span class="cr-1"><b>${esc(fmtDay(r.date))}</b>${chip(`${dNum(v.found)} found`,'info')}</span><span class="cr-2">${dNum(v.repaired)} repaired · ${dNum(v.notWorked)} not worked on${v.reason?' ('+esc(v.reason)+')':''} · logged by ${esc(r.loggedBy||'—')}</span></button>`).join('')}</div>`;
+      <div class="case-list">${items.map(({r,v})=>`<button class="case-row" data-act="daily-open" data-id="${esc(r.id)}"><span class="cr-1"><b>${esc(fmtDay(r.date))}</b>${chip(`${dNum(v.found)} found`,'info')}</span><span class="cr-2">${dNum(v.repaired)} reworked${v.method?' with '+esc(methodLabel(methodById(v.method))||v.method):''} · ${dNum(v.notWorked)} not reworked${v.reason?' ('+esc(v.reason)+')':''} · logged by ${esc(r.loggedBy||'—')}</span></button>`).join('')}</div>`;
   }
   return sheet(esc(x.label),`${esc(srcL)} · ${esc(periodLabel(p,true))} · ${x.n} ${tcUnit(d.src)}`,body,`<button class="btn" data-act="tc-case-csv">${ICON.dl} CSV</button>`,'Top cases');
 }
 function caseCsv(){
-  const d=S.drawer, p=periodOf(S.anchor,d.gran), x=tcCount(d.src,p)[d.key]; if(!x) return;
+  const d=S.drawer, p=periodOf(S.anchor,d.gran), x=d.dim?dimCase(p,d.src,d.dim,d.val):tcCount(d.src,p)[d.key]; if(!x) return;
   const q=v=>{ const t=String(v??''); return /[",\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t; };
   const L=[['Case','Date','BMS ID','Platform','Visit','Status','Detail'].join(',')];
   x.items.forEach(i=>{ if(i.type==='visit') L.push([x.label,i.r.dateReceived,i.r.bmsId,i.r.model,i.r.visitNumber||1,omStatus(i.r)[0],issueNames(i.r).join('; ')].map(q).join(','));
@@ -2299,15 +2367,506 @@ function caseCsv(){
 }
 
 /* =====================================================================
+   SETUP — repair methods, issue categories, people and battery types.
+   Everyone can read them; only the O&M manager and the Quality engineer
+   can create or change them.
+   ===================================================================== */
+const SETUP_STORES = ['repair_method_records','people_records','config_records'];
+const canSetup = () => { const r=(S.session||{}).role; return r==='omadmin'||r==='quality'; };
+const GEAR_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>';
+
+/* ---------- Specific faults under each issue (e.g. Charge failure → MOSFET / charging port) ---------- */
+const DEFAULT_SUBS = {
+  chargeFail:['MOSFET failure','Faulty charging port','Blown fuse','BMS charge protection','Charger / station side'],
+  dischargeFail:['MOSFET failure','Blown fuse','Loose busbar / weld','BMS discharge protection'],
+  noPower:['Deep discharge / sleep mode','Blown fuse','BMS dead','Broken internal wiring'],
+  bmsFault:['BMS hardware failure','Firmware / parameter mismatch','Wrong BMS for battery type'],
+  canFail:['CAN wiring / connector','BMS communication fault','Termination resistor'],
+  lowCapacity:['Aged cells','Cell imbalance','Calibration / SOC error'],
+  cellImbalance:['Weak cell group','Balancing circuit fault'],
+  irFail:['Moisture ingress','Damaged insulation','Contamination / dust'],
+  iotFault:['IoT module failure','SIM / network','Antenna / wiring','IMEI mismatch'],
+  connectorDamage:['Burnt connector','Broken latch / housing','Loose / bent pins'],
+  physicalDefect:['Cracked casing','Dented casing','Broken handle / strap','Damaged cover'],
+  swelling:['Cell swelling','Casing deformation'],
+  missingComponent:['Missing bolt / screw','Missing cover','Missing label / QR']
+};
+const SUB_OTHER = 'Other / not listed';
+const subSlug = t => String(t||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const subKey = (k,sub) => sub?k+'__'+subSlug(sub):k;
+const splitKey = key => { const s=String(key||''), i=s.indexOf('__'); return i<0?[s,'']:[s.slice(0,i),s.slice(i+2)]; };
+const parentIssue = key => splitKey(key)[0];
+function issueSubs(k){ const c=issueMapCfg().subs||{}; return Array.isArray(c[k])?c[k]:(DEFAULT_SUBS[k]||[]); }
+function issueLbl(key){ if(ISSUE_LABEL[key]) return ISSUE_LABEL[key]; const [k,sl]=splitKey(key); if(!ISSUE_LABEL[k]) return String(key); const sub=sl==='other'?'other cause':(issueSubs(k).find(s=>subSlug(s)===sl)||sl.replace(/-/g,' ')); return `${ISSUE_LABEL[k]} · ${sub}`; }
+const subCase = (k,sub) => sub===SUB_OTHER?{key:k+'__other',label:`${ISSUE_LABEL[k]} · other cause`,issue:k}:{key:subKey(k,sub),label:`${ISSUE_LABEL[k]} · ${sub}`,issue:k};
+function subOf(r,k){ return (((r||{}).stage2||{}).confirmed||{})[k]||(((r||{}).stage1||{}).sub||{})[k]||''; }
+function stdCase(r,k){ const sub=subOf(r,k); if(sub) return subCase(k,sub); return issueSubs(k).length?{key:k,label:`${ISSUE_LABEL[k]} · not specified`,issue:k}:{key:k,label:ISSUE_LABEL[k],issue:k}; }
+function otherCase(st){
+  const t=normCase((st||{}).otherNote);
+  if(t&&/mosfet|\bfets?\b/.test(t)) return subCase(/discharg/.test(t)?'dischargeFail':'chargeFail','MOSFET failure');
+  const c=otherCase0(st);
+  if(c.key==='kw:Charging port') return subCase('chargeFail','Faulty charging port');
+  return c;
+}
+const issueOrder = key => { const i=ISSUE_ITEMS.findIndex(x=>x[0]===parentIssue(key)); return i<0?99:i; };
+/* specific-fault pickers: Stage 1 "if known", Stage 2 "confirmed" */
+function subPickers(base,keys,title,req){
+  const ks=keys.filter(k=>issueSubs(k).length); if(!ks.length) return '';
+  return `<div class="sub-pick"><div class="block-title"><h4>${esc(title)}</h4><span class="muted" style="font-size:12px">${req?'Required: say exactly what failed':'Pick it if you can already tell'}</span></div><div class="form">${ks.map(k=>field(esc(ISSUE_LABEL[k]),sel(`${base}.${k}`,[['',req?'Choose the exact fault…':'Not sure yet'],...issueSubs(k),SUB_OTHER],true),'',req)).join('')}</div></div>`;
+}
+function dailyAddOptions(f){
+  return ISSUE_ITEMS.filter(([k])=>k!=='other').map(([k,l])=>{ const subs=issueSubs(k).map(s=>[subKey(k,s),`${l} · ${s}`]).filter(([x])=>!f.issues[x]); const head=f.issues[k]?[]:[[k,`${l} (not specified)`]]; const all=[...head,...subs]; if(!all.length) return ''; return subs.length?`<optgroup label="${esc(l)}">${all.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join('')}</optgroup>`:all.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join(''); }).join('');
+}
+
+/* ---------- Repair methods (replace the old SOP-BAT-01…06 list) ---------- */
+const DEFAULT_METHODS = [
+  {id:'rm-01',code:'RM-01',name:'Housing opening & inspection',issues:['physicalDefect','missingComponent','tampered','other'],steps:['Isolate the pack and confirm the output is dead (0 V)','Remove the fasteners in sequence and open the housing','Inspect cells, BMS, wiring and seals; photograph what you find','Fix or replace the damaged or missing part','Refit the cover and torque all fasteners'],active:true,version:1,platforms:[]},
+  {id:'rm-02',code:'RM-02',name:'Cell balancing & diagnostics',issues:['cellImbalance','lowCapacity','cellFailureSingle','cellFailureMultiple'],steps:['Read every cell voltage from the BMS and record the delta','Connect the balancer and balance cells to within 20 mV','Run a capacity / discharge test','Let the pack rest and confirm the delta is still within limits'],active:true,version:1,platforms:[]},
+  {id:'rm-03',code:'RM-03',name:'BMS replacement & firmware sync',issues:['bmsFault','canFail','noPower'],steps:['Read and record the BMS fault codes','Disconnect the cell sense leads in the correct sequence','Fit the replacement BMS and reconnect the leads','Flash the firmware and sync the parameters','Confirm CAN communication and that all faults are cleared'],active:true,version:1,platforms:[]},
+  {id:'rm-04',code:'RM-04',name:'Insulation drying & IR restoration',issues:['irFail','wetThermalPaste','swelling'],steps:['Open the pack and find the moisture or contamination','Dry the pack for the set time','Replace the thermal paste or pad and the seals','Measure insulation resistance: it must be at least 550 MΩ'],active:true,version:1,platforms:[]},
+  {id:'rm-05',code:'RM-05',name:'IoT rewiring, SIM & flashing',issues:['iotFault','simReplace'],steps:['Open the IoT bay','Check or replace the IoT wiring and the SIM card','Flash the IoT firmware and pair the IMEI','Confirm the tracker is online and reporting'],active:true,version:1,platforms:[]},
+  {id:'rm-06',code:'RM-06',name:'Charging port replacement',issues:['chargeFail__faulty-charging-port','chargeFail'],steps:['Inspect the charging port and pins for burns or looseness','Remove the damaged charging port','Fit the new port and torque the terminals','Check polarity and continuity','Run a full charge check at the station'],active:true,version:1,platforms:[]},
+  {id:'rm-07',code:'RM-07',name:'Connector & harness repair',issues:['connectorDamage'],steps:['Inspect the connectors and the harness','Replace or re-crimp the damaged connectors','Check continuity and polarity','Secure the harness and seal the entry points'],active:true,version:1,platforms:[]},
+  {id:'rm-08',code:'RM-08',name:'MOSFET / power stage replacement',issues:['chargeFail__mosfet-failure','dischargeFail__mosfet-failure','dischargeFail'],steps:['Confirm the failed MOSFET with a diode / resistance check','Remove the BMS power board','Replace the failed MOSFETs (same part number)','Inspect the gate driver and the heat-sink pad','Run charge and discharge checks under load'],active:true,version:1,platforms:[]},
+  {id:'rm-09',code:'RM-09',name:'Fuse & busbar servicing',issues:['chargeFail__blown-fuse','dischargeFail__blown-fuse','dischargeFail__loose-busbar-weld','noPower__blown-fuse'],steps:['Isolate the pack','Check the fuse and the busbar joints','Replace the fuse or re-weld / re-torque the busbar','Measure the voltage drop across the joint','Run a load check'],active:true,version:1,platforms:[]}
+];
+const LEGACY_SOP = {'SOP-BAT-01':'rm-01','SOP-BAT-02':'rm-02','SOP-BAT-03':'rm-03','SOP-BAT-04':'rm-04','SOP-BAT-05':'rm-05','SOP-BAT-06':'rm-06'};
+function methodsAll(){ const m=((S.data||{}).methods||[]).filter(x=>x&&x.name&&x.id); return (m.length?m:DEFAULT_METHODS).slice().sort((a,b)=>String(a.code).localeCompare(String(b.code),undefined,{numeric:true})); }
+const methodsActive = () => methodsAll().filter(m=>m.active!==false);
+const methodById = id => id?(methodsAll().find(m=>m.id===id)||DEFAULT_METHODS.find(m=>m.id===id)||null):null;
+const methodLabel = m => m?`${m.code} · ${m.name}`:'';
+function methodOfStage(st){
+  st=st||{};
+  if(st.methodId){ const m=methodById(st.methodId); return m?methodLabel(m):[st.methodCode,st.methodName].filter(Boolean).join(' · '); }
+  const s=String(st.sopRef||'').trim(), code=s.split(':')[0].trim();
+  if(LEGACY_SOP[code]) return methodLabel(methodById(LEGACY_SOP[code]));
+  return s;
+}
+const methodOf = r => methodOfStage((r||{}).stage2);
+const methodFits = (m,plat) => !plat||!(m.platforms||[]).length||m.platforms.includes(plat);
+const methodTypes = m => (m.platforms||[]).length?m.platforms.join(', '):'All battery types';
+function methodScore(m,keys){ const par=keys.map(parentIssue); return sum((m.issues||[]).map(mi=>keys.includes(mi)?3:!mi.includes('__')&&par.includes(mi)?1:mi.includes('__')&&keys.includes(parentIssue(mi))?1:0)); }
+function methodsFor(keys,plat){ keys=keys||[]; return methodsActive().filter(m=>methodFits(m,plat)).map(m=>({m,s:methodScore(m,keys)})).sort((a,b)=>b.s-a.s||String(a.m.code).localeCompare(String(b.m.code),undefined,{numeric:true})); }
+function methodSelect(path,keys,rr,first,plat){
+  const v=getPath(S.f,path)||'', l=methodsFor(keys,plat), rec=l.filter(x=>x.s>0), rest=l.filter(x=>!x.s);
+  const o=x=>`<option value="${esc(x.m.id)}" ${x.m.id===v?'selected':''}>${esc(methodLabel(x.m))}</option>`;
+  const gone=v&&!l.some(x=>x.m.id===v)?`<option value="${esc(v)}" selected>${esc(methodLabel(methodById(v))||v)} (retired)</option>`:'';
+  return `<select class="in" id="b-${path.replace(/\./g,'-')}" data-bind="${path}" ${rr?'data-rerender':''}><option value="">${esc(first||'Choose a repair method…')}</option>${gone}${rec.length&&rest.length?`<optgroup label="Suggested for these faults${plat?' · '+esc(plat):''}">${rec.map(o).join('')}</optgroup><optgroup label="Other methods">${rest.map(o).join('')}</optgroup>`:l.map(o).join('')}</select>`;
+}
+function methodStepsBlock(path,m){
+  if(!m) return `<div class="banner"><div>Pick the repair method you are using. Its steps appear here to tick off as you go.</div></div>`;
+  const done=getPath(S.f,path)||{}, steps=m.steps||[], k=steps.filter((_,i)=>done[i]).length;
+  return `<div class="rm-steps"><div class="block-title"><h4>${esc(m.code)} steps</h4>${chip(`${k} of ${steps.length} done`,k===steps.length?'good':'warn')}</div>
+    <ol class="rm-list">${steps.map((s,i)=>`<li><label class="issue ${done[i]?'on':''}"><input type="checkbox" id="b-${path.replace(/\./g,'-')}-${i}" data-bind="${path}.${i}" data-rerender ${done[i]?'checked':''}><span class="rm-n">${i+1}</span><span>${esc(s)}</span></label></li>`).join('')}</ol></div>`;
+}
+
+/* ---------- Issue categories ---------- */
+const ISSUE_GROUPS = [
+  ['Power & charging',['noPower','chargeFail','dischargeFail']],
+  ['Cells & capacity',['lowCapacity','cellImbalance','cellFailureSingle','cellFailureMultiple','swelling']],
+  ['BMS & communication',['bmsFault','canFail']],
+  ['Insulation, moisture & heat',['irFail','wetThermalPaste']],
+  ['IoT & connectivity',['iotFault','simReplace']],
+  ['Mechanical & physical',['physicalDefect','connectorDamage','missingComponent','tampered']],
+  ['Labels, LEDs & cosmetic',[]],
+  ['Firmware & software',[]],
+  ['Customer complaint',[]]
+];
+const KW_GROUP = {'Charging port':'Power & charging','Bolts / screws / fasteners':'Mechanical & physical','Label / sticker / QR code':'Labels, LEDs & cosmetic','LED / indicator light':'Labels, LEDs & cosmetic','Overheating':'Insulation, moisture & heat','Water / moisture ingress':'Insulation, moisture & heat','Handle / strap':'Mechanical & physical','Firmware / software':'Firmware & software','Noise / rattle / loose parts':'Mechanical & physical'};
+const CATLABEL_GROUP = {'Mechanical issue':'Mechanical & physical','Electrical issue':'Power & charging','Firmware / software':'Firmware & software','IoT / IMEI mismatch':'IoT & connectivity','Cosmetic damage':'Labels, LEDs & cosmetic','Customer complaint':'Customer complaint'};
+const SUPPLIER_TYPES = ['Supplier','Non-supplier','Recall'];
+const cfgDoc = id => (((S.data||{}).cfg)||[]).find(x=>x&&x.id===id)||null;
+const issueMapCfg = () => cfgDoc('cfg-issue-map')||{group:{},supplier:{},groups:[]};
+function groupNames(){ const c=issueMapCfg(); return [...new Set([...ISSUE_GROUPS.map(g=>g[0]),...(c.groups||[])])]; }
+function defaultGroup(c){
+  if(c.issue&&c.issue!=='other'){ const g=ISSUE_GROUPS.find(g=>g[1].includes(c.issue)); if(g) return g[0]; }
+  const k=String(c.key||'');
+  if(k.startsWith('kw:')) return KW_GROUP[k.slice(3)]||'Unclassified';
+  if(k.startsWith('cat:')) return CATLABEL_GROUP[k.slice(4)]||'Unclassified';
+  return 'Unclassified';
+}
+const caseGroup = c => (issueMapCfg().group||{})[c.key]||defaultGroup(c);
+const caseSupplier = c => (issueMapCfg().supplier||{})[c.key]||issueCategoryBase(c.issue&&c.issue!=='other'?c.issue:'');
+const issueGroupOf = k => caseGroup({key:k,issue:k});
+
+/* ---------- Free-text labels that mean the same thing ---------- */
+const LABEL_SYNONYMS = [
+  [/(pending|awaiting|waiting\s*(for)?|due\s*for|needs?|requires?|to\s*be)\s*re[\s-]*work|re[\s-]*work\s*(pending|awaited|required|needed|due|outstanding|queue)|^re[\s-]*works?$/i,'Pending rework'],
+  [/\birf\b|insulation|\bir\s*(fail|low)/i,'Insulation failure (IRF)'],
+  [/not\s*charg|no\s*charg|charg\w*\s*fail/i,'Charge failure'],
+  [/repeat\s*(qc|final)/i,'Repeat QC failure'],
+  [/final\s*qc/i,'Final QC escalation'],
+  [/wet\s*thermal|moist|water/i,'Wet thermal paste / moisture'],
+  [/tamper|vandal/i,'Vandalism / tampering'],
+  [/swell|bulg/i,'Swelling / damage'],
+  [/cell\s*fail/i,'Cell failure'],
+  [/missing/i,'Missing component'],
+  [/connector/i,'Connector damage'],
+  [/physical|external\s*damage/i,'Physical defect / damage'],
+  [/field\s*flag/i,'Field flag']
+];
+const LABEL_SEEN = new Map();
+function normLabel(t,fallback){
+  const s=String(t||'').replace(/\s+/g,' ').trim(); if(!s) return fallback||'Not given';
+  for(const [re,l] of LABEL_SYNONYMS) if(re.test(s)) return l;
+  const c=s.replace(/[.;:,!]+$/,'').replace(/\s*[#(]?\d+\)?$/,'').trim()||s;
+  const k=c.toLowerCase().replace(/[^a-z0-9]+/g,' ').replace(/s\b/g,'').trim();
+  if(!LABEL_SEEN.has(k)) LABEL_SEEN.set(k,c.charAt(0).toUpperCase()+c.slice(1));
+  return LABEL_SEEN.get(k);
+}
+
+/* ---------- Battery types: only AMPACE, UNIQUE, GREENWAY and CBAK ---------- */
+function lev(a,b){ a=String(a); b=String(b); const m=a.length,n=b.length; if(!m) return n; if(!n) return m; let p=Array.from({length:n+1},(_,i)=>i); for(let i=1;i<=m;i++){ const c=[i]; for(let j=1;j<=n;j++) c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1)); p=c; } return p[n]; }
+function platFromText(t){
+  const m=String(t||'').toUpperCase().replace(/[^A-Z]/g,''); if(!m) return '';
+  if(PLATFORMS.includes(m)) return m;
+  for(const P of PLATFORMS) if(m.includes(P)) return P;
+  for(const P of PLATFORMS) if(m.length>=3&&P.startsWith(m)) return P;
+  let best='',bd=9; for(const P of PLATFORMS){ const d=Math.min(lev(m,P),m.length>P.length?lev(m.slice(0,P.length),P):9); if(d<bd){ bd=d; best=P; } }
+  return bd<=2?best:'';
+}
+const platOf = r => platformForId((r||{}).bmsId)||platFromText((r||{}).model);
+const platName = r => platOf(r)||'Unverified';
+
+/* ---------- People: one name per person ---------- */
+const nameClean = n => String(n||'').replace(/[0-9]+/g,' ').replace(/[_]+/g,' ').replace(/\s+/g,' ').trim().replace(/^[-.\s]+|[-\s]+$/g,'');
+const nameTokens = n => nameClean(n).toLowerCase().replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean);
+const titleName = n => nameClean(n).split(' ').map(w=>/^[a-z]+$/i.test(w)?(w.length===1?w.toUpperCase():w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()):/^[a-z]\.$/i.test(w)?w.toUpperCase():w).join(' ');
+function peopleNames(){
+  const m=new Map(), add=n=>{ const s=String(n||'').replace(/\s+/g,' ').trim(); if(s.length<2||/^[—-]+$/.test(s)) return; m.set(s,(m.get(s)||0)+1); };
+  (S.data.om||[]).forEach(r=>{ [1,2,3].forEach(k=>{ const st=r['stage'+k]||{}; add(st.technician); if(st.completedBy&&st.completedBy!==st.technician) add(st.completedBy); }); const s1=r.stage1||{}; if(s1.receivedBy&&s1.receivedBy!==s1.technician) add(s1.receivedBy); (r.followUps||[]).forEach(f=>add(f.to)); (r.capaLog||[]).forEach(c=>add(c.returnedBy)); });
+  (S.data.daily||[]).forEach(r=>{ add(r.loggedBy); add(r.verifiedBy); });
+  (S.data.bsa||[]).forEach(c=>{ add(c.assignedEngineer); add(c.bsaReceivedBy); });
+  return m;
+}
+function nameNode(raw,fix){ const ts=[...new Set(nameTokens(raw).map(fix||(t=>t)))]; const full=ts.filter(t=>t.length>1).sort(), ini=ts.filter(t=>t.length===1).sort(); return {full,ini,key:full.join(' ')+(ini.length?' |'+ini.join(''):'')}; }
+function nameCovers(b,a){
+  if(!a.full.length) return false;
+  if(!a.full.every(t=>b.full.includes(t))) return false;
+  const rest=b.full.filter(t=>!a.full.includes(t));
+  if(b.full.length>a.full.length) return a.ini.every(i=>rest.some(t=>t[0]===i)||b.ini.includes(i));
+  return b.full.length===a.full.length&&!a.ini.length&&b.ini.length>0;
+}
+let PIDX=null;
+function peopleIndex(){
+  const roster=((S.data||{}).people)||[], stamp=S.dataVersion+'|'+roster.length+'|'+roster.map(p=>p.name+(p.aliases||[]).length).join(',');
+  if(PIDX&&PIDX.stamp===stamp) return PIDX;
+  const names=peopleNames();
+  roster.forEach(p=>{ if(p&&p.name&&!names.has(p.name)) names.set(p.name,0); (p.aliases||[]).forEach(a=>{ if(!names.has(a)) names.set(a,0); }); });
+  const fixed=new Set([...Object.values(ROLE_LABEL),...Object.values(ROLE_ACCOUNTS).map(a=>a.name),'Sample technician','Customer experience','Battery engineering'].map(x=>x.toLowerCase()));
+  const alias=new Map(); roster.forEach(p=>{ if(!p||!p.name) return; [p.name,...(p.aliases||[])].forEach(a=>alias.set(String(a).replace(/\s+/g,' ').trim().toLowerCase(),p.name)); });
+  // tokens spelled slightly differently ("Stephan" / "Stephen") fold into the more common spelling
+  const tf=new Map(); names.forEach((n,raw)=>nameTokens(raw).forEach(t=>tf.set(t,(tf.get(t)||0)+Math.max(1,n))));
+  const toks=[...tf.keys()], tmap={};
+  toks.forEach(t=>{ if(t.length<5) return; let best=null; toks.forEach(u=>{ if(u===t||u[0]!==t[0]||Math.abs(u.length-t.length)>1) return; const fu=tf.get(u), ft=tf.get(t); if((fu>ft||(fu===ft&&u<t))&&lev(t,u)<=1&&(!best||fu>tf.get(best))) best=u; }); if(best) tmap[t]=best; });
+  const fix=t=>{ let x=t,i=0; while(tmap[x]&&i++<6) x=tmap[x]; return x; };
+  const rosterKey=new Map(); roster.forEach(p=>{ if(p&&p.name){ const nd=nameNode(p.name,fix); if(nd.full.length&&!rosterKey.has(nd.key)) rosterKey.set(nd.key,p.name); } });
+  const groups=new Map();
+  const ensure=(k,nd,label)=>{ if(!groups.has(k)) groups.set(k,{key:k,full:nd?nd.full:[],ini:nd?nd.ini:[],raws:new Map(),label}); return groups.get(k); };
+  const keyOf=raw=>{ const lk=raw.toLowerCase(); if(alias.has(lk)){ const n=alias.get(lk); return ['@'+n,nameNode(n,fix),n]; } if(fixed.has(lk)) return ['#'+lk,null,raw];
+    const nd=nameNode(raw,fix); if(!nd.full.length) return ['#'+lk,null,raw]; if(rosterKey.has(nd.key)){ const n=rosterKey.get(nd.key); return ['@'+n,nameNode(n,fix),n]; } return [nd.key,nd,null]; };
+  names.forEach((n,raw)=>{ const [k,nd,label]=keyOf(raw); ensure(k,nd,label).raws.set(raw,n); });
+  const K=[...groups.values()].filter(g=>g.key[0]!=='#').sort((a,b)=>b.full.length-a.full.length||b.ini.length-a.ini.length);
+  const parent=new Map(), root=k=>{ let x=k,i=0; while(parent.has(x)&&i++<30) x=parent.get(x); return x; };
+  K.forEach(a=>{ if(a.key[0]==='@') return; const roots=new Set(); K.forEach(b=>{ if(b!==a&&nameCovers(b,a)) roots.add(root(b.key)); }); if(roots.size===1) parent.set(a.key,[...roots][0]); });
+  const out=new Map();
+  groups.forEach(g=>{ const r=root(g.key), G=out.get(r)||{id:r,raws:new Map(),label:null}; g.raws.forEach((n,raw)=>G.raws.set(raw,(G.raws.get(raw)||0)+n)); if(g.key===r) G.label=g.label; out.set(r,G); });
+  const map=new Map(), list=[];
+  out.forEach(G=>{
+    let name=G.label;
+    if(!name){ const c=[...G.raws.entries()].map(([raw,n])=>({raw,n,t:nameTokens(raw).filter(x=>x.length>1).length})).sort((a,b)=>b.t-a.t||b.n-a.n||a.raw.localeCompare(b.raw)); name=titleName(c[0].raw)||c[0].raw; }
+    const variants=[...G.raws.entries()].filter(([,n])=>n>0).sort((a,b)=>b[1]-a[1]);
+    G.raws.forEach((n,raw)=>map.set(raw.toLowerCase(),name));
+    list.push({id:G.id,name,variants,total:sum(variants.map(v=>v[1])),roster:G.id[0]==='@'});
+  });
+  list.sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name));
+  const resolve=raw=>{ const s=String(raw||'').replace(/\s+/g,' ').trim(); if(!s) return ''; const lk=s.toLowerCase(); if(map.has(lk)) return map.get(lk); if(alias.has(lk)) return alias.get(lk);
+    const nd=nameNode(s,fix); if(!nd.full.length) return s; if(rosterKey.has(nd.key)) return rosterKey.get(nd.key); if(groups.has(nd.key)){ const G=out.get(root(nd.key)); if(G){ const any=[...G.raws.keys()][0]; if(any&&map.has(any.toLowerCase())) return map.get(any.toLowerCase()); } }
+    const roots=new Set(); K.forEach(b=>{ if(nameCovers(b,nd)) roots.add(root(b.key)); }); if(roots.size===1){ const G=out.get([...roots][0]); const any=G&&[...G.raws.keys()][0]; if(any) return map.get(any.toLowerCase()); }
+    return titleName(s)||s; };
+  PIDX={stamp,list,map,resolve}; return PIDX;
+}
+const canonPerson = n => { const s=String(n||'').trim(); return s?peopleIndex().resolve(s):''; };
+function samePerson(a,b){ const x=String(a||'').trim(), y=String(b||'').trim(); if(!x&&!y) return true; if(!x||!y) return false; return x.toLowerCase()===y.toLowerCase()||canonPerson(x).toLowerCase()===canonPerson(y).toLowerCase(); }
+const personVariants = name => (peopleIndex().list.find(p=>p.name===name)||{variants:[]}).variants;
+
+/* ---------- Period helpers: month to date, year to date, all time ---------- */
+const GRAN_ADJ = {day:'Daily',week:'Weekly',month:'Monthly',mtd:'Month-to-date',ytd:'Year-to-date',all:'All-time'};
+const granUnit = g => ({day:'day',week:'week',month:'month',mtd:'month so far',ytd:'year so far',all:'period'})[g]||g;
+const bucketGran = g => g==='mtd'?'day':g==='ytd'||g==='all'?'month':g;
+function prevPeriod(p){
+  if(p.gran==='mtd'){ const d=parseKey(p.end), s=localKey(new Date(d.getFullYear(),d.getMonth()-1,1)), last=new Date(d.getFullYear(),d.getMonth(),0).getDate(); return {start:s,end:localKey(new Date(d.getFullYear(),d.getMonth()-1,Math.min(d.getDate(),last))),gran:'mtd'}; }
+  if(p.gran==='ytd'){ const d=parseKey(p.end); return {start:(d.getFullYear()-1)+'-01-01',end:localKey(new Date(d.getFullYear()-1,d.getMonth(),d.getMonth()===1&&d.getDate()===29?28:d.getDate())),gran:'ytd'}; }
+  if(p.gran==='all') return {start:'0000-01-01',end:'0000-01-01',gran:'all'};
+  return periodOf(shiftKey(p.start,p.gran,-1),p.gran);
+}
+
+/* =====================================================================
+   ANALYSIS — defects, throughput, CAPA and people for any period
+   ===================================================================== */
+const AN_TABS = [['cases','Top cases'],['defects','Defects'],['flow','Received & reworked'],['capa','CAPA'],['people','Technicians']];
+const AN_SRC = {esc:'Escalated to BSA',rework:'Reworked at Stage 2'};
+const capaCat = c => c.waitSupplier?'Waiting for supplier material':c.reasonCat==='part'?'Part replaced from stock':(CAPA_REASON_LABEL[c.reasonCat]||'Reason not given');
+const bsaOutcome = c => { const t=bsaTechStatus(c); return t==='Worked On'||t==='Returned to O&M for Deployment'?'Reworked':t==='Scrapped'?'Scrapped':t==='Warranty'?'Warranty':t==='Awaiting BSA receipt'?'Not received yet':'In progress'; };
+const bsaIssue = c => normLabel(c.escalationCategory||c.issueDescription,'Not given');
+const bsaDoneKey = c => dkey(c.dateClosed)||(['Reworked','Scrapped','Warranty'].includes(bsaOutcome(c))?dkey(c.updatedAt):'');
+const escFrom = r => (r.stage2||{}).completedAt?'Final QC':'Intake';
+function defectItems(p){ const out=[]; S.data.om.forEach(r=>{ if(!inP(r.dateReceived,p)) return; caseKeysOf(r).forEach(c=>out.push({r,c,grp:caseGroup(c),sup:caseSupplier(c),plat:platName(r)})); }); return out; }
+function dimCase(p,src,dim,val){
+  const pack=(label,items)=>items.length?{key:val,label,n:items.length,items}:null;
+  if(src==='intake'){ const seen=new Set(), items=[]; let label=val;
+    defectItems(p).forEach(i=>{ const v=dim==='key'?i.c.key:i[dim]; if(v!==val||seen.has(i.r.id)) return; if(dim==='key') label=i.c.label; seen.add(i.r.id); items.push({type:'visit',r:i.r,date:i.r.dateReceived}); });
+    return pack(label,items); }
+  if(src==='esc'){ let label=val==='*'?'All escalated batteries':val; const items=[];
+    S.data.om.forEach(r=>{ if(!isToBsa(r)||!inP(closedKey(r),p)) return; if(val!=='*'){ const c=caseKeysOf(r).find(c=>c.key===val); if(!c) return; label=c.label; } items.push({type:'visit',r,date:closedKey(r)}); });
+    return pack(label,items); }
+  if(src==='rework'){ const items=S.data.om.filter(r=>(r.stage2||{}).completedAt&&inP(dkey(r.stage2.completedAt),p)&&(methodOf(r)||'Method not recorded')===val).map(r=>({type:'visit',r,date:dkey(r.stage2.completedAt)})); return pack(val,items); }
+  if(src==='bsa'){ const items=S.data.bsa.filter(c=>inP(dkey(c.dateFlagged||c.createdAt),p)&&(dim==='issue'?bsaIssue(c):bsaOutcome(c))===val).map(c=>({type:'bsa',c,date:dkey(c.dateFlagged||c.createdAt)})); return pack(val,items); }
+  if(src==='capa'){ const items=[]; S.data.om.forEach(r=>(r.capaLog||[]).forEach(c=>{ if(inP(dkey(c.returnedAt),p)&&capaCat(c)===val) items.push({type:'capa',r,c,date:dkey(c.returnedAt)}); })); return pack(val,items); }
+  return null;
+}
+const anAttr = (src,dim,v) => `data-act="an-case" data-src="${src}" data-dim="${dim}" data-v="${esc(v)}" title="See the batteries"`;
+function rankList(rows,unit,attrFn,max){
+  if(!rows.length) return empty('Nothing in this period.');
+  const top=rows.slice(0,max||12), mx=Math.max(1,...top.map(x=>x.n)), tot=sum(rows.map(x=>x.n));
+  return `<ol class="tc-list">${top.map((x,i)=>`<li class="${attrFn?'click':''}" ${attrFn?attrFn(x):''}><span class="tc-rank ${i<3?'top':''}">${i+1}</span><span class="tc-main"><span class="tc-l"><b>${esc(x.label)}</b><span class="tc-v"><b class="num">${x.n}</b></span></span><span class="tc-bar"><i style="width:${x.n/mx*100}%;background:var(${i===0?'--crit':i<3?'--s2':'--s1'})"></i></span><small>${fmtPct(pct(x.n,tot))} of ${tot} ${unit}${x.sub?' · '+esc(x.sub):''}</small></span></li>`).join('')}</ol>${rows.length>top.length?`<div class="muted" style="font-size:12px;margin-top:6px">+ ${rows.length-top.length} more</div>`:''}`;
+}
+const countBy = (items,fn) => { const m={}; items.forEach(i=>{ const k=fn(i); if(k==null) return; m[k]=(m[k]||0)+1; }); return Object.entries(m).map(([label,n])=>({label,n})).sort((a,b)=>b.n-a.n||a.label.localeCompare(b.label)); };
+const SUP_TONE = {'Supplier':'--crit','Non-supplier':'--s1','Recall':'--info'};
+
+function AnDefects(p){
+  const items=defectItems(p), visits=S.data.om.filter(r=>inP(r.dateReceived,p)), withD=new Set(items.map(i=>i.r.id)).size;
+  const byCase={}; items.forEach(i=>{ const x=byCase[i.c.key]=byCase[i.c.key]||{key:i.c.key,label:i.c.label,n:0,grp:i.grp,sup:i.sup}; x.n++; });
+  const cases=Object.values(byCase).sort((a,b)=>b.n-a.n||a.label.localeCompare(b.label));
+  const grp=countBy(items,i=>i.grp), sup=countBy(items,i=>i.sup);
+  const supN=(sup.find(x=>x.label==='Supplier')||{}).n||0;
+  const plats=[...PLATFORMS.filter(pl=>pl!=='CBAK'),'CBAK'].sort((a,b)=>['AMPACE','UNIQUE','GREENWAY','CBAK'].indexOf(a)-['AMPACE','UNIQUE','GREENWAY','CBAK'].indexOf(b));
+  const pcols=[...plats,...(items.some(i=>i.plat==='Unverified')||visits.some(r=>!platOf(r))?['Unverified']:[])];
+  const platRows=pcols.map(pl=>({label:pl,b:visits.filter(r=>platName(r)===pl).length,n:items.filter(i=>i.plat===pl).length,sup:items.filter(i=>i.plat===pl&&i.sup==='Supplier').length}));
+  const pmax=Math.max(1,...platRows.map(x=>x.n));
+  const gmax=Math.max(1,...grp.map(x=>x.n));
+  const grpHtml=grp.length?`<div class="bars">${grp.map(g=>{ const top=cases.filter(c=>c.grp===g.label).slice(0,3).map(c=>`${c.label} ${c.n}`).join(', '); return barRow(g.label,[[g.n,g.label==='Unclassified'?'--line-2':'--s2',`<b>${esc(g.label)}</b><br>${esc(top)}`]],gmax,g.n,anAttr('intake','grp',g.label)); }).join('')}</div>`:empty('No defects in this period.');
+  const smax=Math.max(1,...sup.map(x=>x.n));
+  const supHtml=sup.length?`<div class="bars">${sup.map(s=>barRow(s.label,[[s.n,SUP_TONE[s.label]||'--s3',`<b>${esc(s.label)}</b><br>${fmtPct(pct(s.n,items.length))} of defects`]],smax,s.n,anAttr('intake','sup',s.label))).join('')}</div>`:empty('No defects in this period.');
+  const platHtml=`<div class="bars">${platRows.map(x=>barRow(`${x.label} · ${x.b} batt.`,[[x.sup,'--crit',`<b>${esc(x.label)}</b><br>${x.sup} supplier-related defects`],[x.n-x.sup,'--s1',`<b>${esc(x.label)}</b><br>${x.n-x.sup} other defects`]],pmax,x.n,x.n?anAttr('intake','plat',x.label):'')).join('')}</div><div class="legend" style="margin-top:8px"><span><i style="background:var(--crit)"></i>Supplier-related</span><span><i style="background:var(--s1)"></i>Non-supplier / recall</span></div>`;
+  const G=groupNames().concat(grp.some(g=>g.label==='Unclassified')?['Unclassified']:[]).filter(g=>grp.some(x=>x.label===g));
+  const matrix=G.length?`<div class="tbl-wrap"><table><thead><tr><th>Category</th>${pcols.map(pl=>`<th class="r">${esc(pl)}</th>`).join('')}<th class="r">Total</th><th class="r">Supplier</th></tr></thead><tbody>${G.map(g=>{ const gi=items.filter(i=>i.grp===g); const mx=Math.max(...pcols.map(pl=>gi.filter(i=>i.plat===pl).length)); return `<tr class="click" ${anAttr('intake','grp',g)}><td>${esc(g)}</td>${pcols.map(pl=>{ const v=gi.filter(i=>i.plat===pl).length; return `<td class="r num"><span class="${v&&v===mx?'tc-hot':''}">${v||'<span class="muted">·</span>'}</span></td>`; }).join('')}<td class="r num"><b>${gi.length}</b></td><td class="r num">${gi.filter(i=>i.sup==='Supplier').length}</td></tr>`; }).join('')}
+    <tr class="tot"><td>Total</td>${pcols.map(pl=>`<td class="r num">${items.filter(i=>i.plat===pl).length}</td>`).join('')}<td class="r num">${items.length}</td><td class="r num">${supN}</td></tr></tbody></table></div>`:empty('No defects in this period.');
+  const unc=cases.filter(c=>c.grp==='Unclassified');
+  return `<div class="kpis four">${kpi('Batteries received',visits.length,`${new Set(visits.map(r=>normId(r.bmsId))).size} unique batteries`)}${kpi('With a defect',withD,visits.length?`${fmtPct(pct(withD,visits.length))} of received`:'—')}${kpi('Defects logged',items.length,`${cases.length} case type${cases.length===1?'':'s'} · ${grp.length} categor${grp.length===1?'y':'ies'}`)}${kpi('Supplier-related',supN,items.length?`${fmtPct(pct(supN,items.length))} of defects`:'—','',supN?'crit':'')}</div>
+  ${unc.length&&canSetup()?`<div class="banner warn"><div><b>${unc.length} case type${unc.length===1?' has':'s have'} no category yet:</b> ${esc(unc.slice(0,4).map(c=>c.label).join(', '))}${unc.length>4?'…':''} <button class="btn sm" data-act="setup-open" data-v="cats">Set categories</button></div></div>`:''}
+  <div class="grid g2"><div class="card"><div class="card-head"><div><h3>Defects by issue</h3><p>Each battery counts once per issue. Tap to see the batteries.</p></div></div>${rankList(cases.map(c=>({...c,sub:c.grp})),'defects',x=>anAttr('intake','key',x.key))}</div>
+    <div class="card"><div class="card-head"><div><h3>Defects by category</h3><p>Issues grouped into categories (set in Setup)</p></div></div>${grpHtml}</div></div>
+  <div class="grid g2 section"><div class="card"><div class="card-head"><div><h3>Supplier vs non-supplier</h3><p>Whose problem the defect is</p></div></div>${supHtml}</div>
+    <div class="card"><div class="card-head"><div><h3>Defects by battery type</h3><p>AMPACE, UNIQUE, GREENWAY and CBAK</p></div></div>${platHtml}</div></div>
+  <div class="card section"><div class="card-head"><div><h3>Category × battery type</h3><p>Defects in each category per battery type. The highest in each row is marked.</p></div></div>${matrix}</div>`;
+}
+
+function AnFlow(p){
+  const om=S.data.om, recv=om.filter(r=>inP(r.dateReceived,p)), rew=om.filter(r=>(r.stage2||{}).completedAt&&inP(dkey(r.stage2.completedAt),p));
+  const passed=om.filter(r=>r.finalDisposition==='PASS'&&inP(closedKey(r),p)), fp=passed.filter(isFirstPass).length;
+  const escd=om.filter(r=>isToBsa(r)&&inP(closedKey(r),p)), escI=escd.filter(r=>escFrom(r)==='Intake').length;
+  const capaN=sum(om.map(r=>(r.capaLog||[]).filter(c=>inP(dkey(c.returnedAt),p)).length)), openN=om.filter(r=>!isClosed(r)).length;
+  const escCases={}; escd.forEach(r=>caseKeysOf(r).forEach(c=>{ const x=escCases[c.key]=escCases[c.key]||{key:c.key,label:c.label,n:0,i:0,q:0}; x.n++; escFrom(r)==='Intake'?x.i++:x.q++; }));
+  const escRows=Object.values(escCases).sort((a,b)=>b.n-a.n).map(x=>({...x,sub:[x.i?`${x.i} at intake`:'',x.q?`${x.q} after final QC`:''].filter(Boolean).join(', ')}));
+  const meth=countBy(rew,r=>methodOf(r)||'Method not recorded');
+  const rewCases={}; rew.forEach(r=>caseKeysOf(r).forEach(c=>{ const x=rewCases[c.key]=rewCases[c.key]||{key:c.key,label:c.label,n:0}; x.n++; }));
+  const bsa=S.data.bsa, fl=bsa.filter(c=>inP(dkey(c.dateFlagged||c.createdAt),p)), rc=bsa.filter(c=>c.bsaReceivedAt&&inP(dkey(c.bsaReceivedAt),p));
+  const done=bsa.filter(c=>inP(bsaDoneKey(c),p)), bRew=done.filter(c=>bsaOutcome(c)==='Reworked'), bScr=done.filter(c=>bsaOutcome(c)==='Scrapped'), bWar=done.filter(c=>bsaOutcome(c)==='Warranty'), bOpen=bsa.filter(bsaOpen).length;
+  const iss={}; const bump2=(c,f)=>{ const k=bsaIssue(c), x=iss[k]=iss[k]||{label:k,f:0,r:0,w:0,s:0,o:0}; x[f]++; };
+  fl.forEach(c=>{ bump2(c,'f'); if(bsaOpen(c)) bump2(c,'o'); }); rc.forEach(c=>bump2(c,'r')); bRew.forEach(c=>bump2(c,'w')); bScr.forEach(c=>bump2(c,'s'));
+  const issRows=Object.values(iss).sort((a,b)=>b.f-a.f||b.w-a.w);
+  const bMeth=countBy(bRew,c=>c.methodId?methodLabel(methodById(c.methodId))||'Method not recorded':'Method not recorded');
+  const strip=(cells)=>`<div class="flow-strip">${cells.map(([v,l,tone,act])=>`<${act?'button':'div'} class="fs ${tone||''}" ${act||''}><b>${v}</b><small>${l}</small></${act?'button':'div'}>`).join('<span class="fs-arr" aria-hidden="true">›</span>')}</div>`;
+  return `<div class="card section" style="margin-top:0"><div class="card-head"><div><div class="eyebrow">O&amp;M repair chain</div><h3>Received, reworked and escalated</h3><p>Received = logged at intake · reworked = repair finished at Stage 2 · escalated = sent to BSA</p></div></div>
+    ${strip([[recv.length,'received'],[rew.length,'reworked at Stage 2',''],[passed.length,`passed final QC · ${fp} first time`,'good'],[escd.length,`escalated to BSA · ${escI} at intake`,'crit',anAttr('esc','key','*')]])}
+    <div class="muted" style="font-size:12.5px;margin-top:8px">${capaN} corrective-action return${capaN===1?'':'s'} in this period · ${openN} batter${openN===1?'y':'ies'} in the chain right now · rework rate ${fmtPct(pct(rew.length,recv.length))} of received</div>
+    <div class="grid g3 section"><div><h4 style="margin-bottom:8px">Issues of the escalated batteries</h4>${rankList(escRows,'escalated',x=>anAttr('esc','key',x.key),10)}</div>
+      <div><h4 style="margin-bottom:8px">Rework methods used</h4>${rankList(meth,'reworked',x=>anAttr('rework','method',x.label),10)}</div>
+      <div><h4 style="margin-bottom:8px">Issues of the reworked batteries</h4>${rankList(Object.values(rewCases).sort((a,b)=>b.n-a.n),'issues on reworked batteries',null,10)}</div></div></div>
+  <div class="card section"><div class="card-head"><div><div class="eyebrow">BSA</div><h3>Received and reworked by BSA</h3><p>Flagged = sent to BSA · received = BSA confirmed receipt · reworked = worked on or returned to O&amp;M</p></div></div>
+    ${strip([[fl.length,'flagged to BSA'],[rc.length,'received by BSA'],[bRew.length,'reworked','good',bRew.length?anAttr('bsa','out','Reworked'):''],[bScr.length,'scrapped','crit',bScr.length?anAttr('bsa','out','Scrapped'):''],[bWar.length,'warranty claim',''],[bOpen,'still open now','warn']])}
+    <div class="grid g-main section"><div>${issRows.length?`<div class="tbl-wrap"><table><thead><tr><th>Issue</th><th class="r">Flagged</th><th class="r">Received</th><th class="r">Reworked</th><th class="r">Scrapped</th><th class="r">Still open</th></tr></thead><tbody>${issRows.map(x=>`<tr class="click" ${anAttr('bsa','issue',x.label)}><td>${esc(x.label)}</td><td class="r num">${x.f}</td><td class="r num">${x.r}</td><td class="r num">${x.w}</td><td class="r num">${x.s}</td><td class="r num">${x.o}</td></tr>`).join('')}</tbody></table></div>`:empty('No BSA activity in this period.')}</div>
+      <div><h4 style="margin-bottom:8px">BSA rework methods</h4>${rankList(bMeth,'reworked',null,8)}</div></div></div>`;
+}
+
+function AnCapa(p){
+  const log=[]; S.data.om.forEach(r=>(r.capaLog||[]).forEach(c=>{ if(inP(dkey(c.returnedAt),p)) log.push({r,c}); }));
+  const cats=countBy(log,x=>capaCat(x.c)), wait=log.filter(x=>x.c.waitSupplier).length;
+  const holdNow=S.data.om.filter(r=>!isClosed(r)&&onHold(r));
+  const parts=countBy(log.filter(x=>x.c.part),x=>x.c.part), byM=countBy(log,x=>methodOf(x.r)||'Method not recorded'), byT=countBy(log,x=>canonPerson((x.r.stage2||{}).technician)||'Not recorded');
+  const cmax=Math.max(1,...cats.map(x=>x.n));
+  const catHtml=cats.length?`<div class="bars">${cats.map(x=>barRow(x.label,[[x.n,x.label==='Waiting for supplier material'?'--crit':'--s2',`<b>${esc(x.label)}</b><br>${fmtPct(pct(x.n,log.length))} of returns`]],cmax,x.n,anAttr('capa','cat',x.label))).join('')}</div>`:empty('No corrective-action returns in this period.');
+  return `<div class="kpis four">${kpi('CAPA returns',log.length,`${new Set(log.map(x=>x.r.id)).size} batteries`)}${kpi('Waiting for supplier material',wait,log.length?`${fmtPct(pct(wait,log.length))} of returns`:'—','',wait?'crit':'')}${kpi('Other CAPA reasons',log.length-wait,'repair, test, assembly, re-check')}${kpi('On hold right now',holdNow.length,'waiting for a part','',holdNow.length?'warn':'')}</div>
+  <div class="grid g2"><div class="card"><div class="card-head"><div><h3>CAPA by category</h3><p>Waiting for supplier material, or the reason it came back</p></div></div>${catHtml}</div>
+    <div class="card"><div class="card-head"><div><h3>Parts needed</h3><p>Parts named on CAPA returns</p></div></div>${rankList(parts,'parts',null,10)}</div></div>
+  <div class="grid g2 section"><div class="card"><div class="card-head"><div><h3>By repair method</h3><p>The Stage 2 method used before the return</p></div></div>${rankList(byM,'returns',null,8)}</div>
+    <div class="card"><div class="card-head"><div><h3>By repair technician</h3><p>Who did the Stage 2 repair</p></div></div>${rankList(byT,'returns',null,8)}</div></div>
+  ${holdNow.length?`<div class="card section"><div class="card-head"><div><h3>Waiting for supplier material now</h3></div></div><div class="case-list">${holdNow.map(r=>`<button class="case-row" data-act="open-battery" data-id="${esc(r.bmsId)}"><span class="cr-1"><b class="mono">${esc(r.bmsId)}</b>${chip(r.hold.part||'part','serious')}</span><span class="cr-2">${esc(platName(r))} · since ${esc(fmtDT(r.hold.since))} · ${esc(canonPerson(r.hold.by)||'—')}</span></button>`).join('')}</div></div>`:''}`;
+}
+
+function AnPeople(p){
+  const P={}, get=n=>{ const k=canonPerson(n)||'Not recorded'; return P[k]=P[k]||{name:k,s1:0,s2:0,s3:0,fp:0,closed:0,capa:0,dl:0,dv:0,bsa:0}; };
+  S.data.om.forEach(r=>{ [1,2,3].forEach(n=>{ const st=r['stage'+n]||{}; if(st.completedAt&&inP(dkey(st.completedAt),p)) get(st.completedBy||st.technician)['s'+n]++; });
+    const t2=(r.stage2||{}).technician; if(t2&&isClosed(r)&&inP(closedKey(r),p)){ const x=get(t2); x.closed++; if(isFirstPass(r)) x.fp++; }
+    (r.capaLog||[]).forEach(c=>{ if(inP(dkey(c.returnedAt),p)&&t2) get(t2).capa++; }); });
+  (S.data.daily||[]).forEach(r=>{ if(!inP(r.date,p)) return; if(r.loggedBy) get(r.loggedBy).dl++; if(r.verifiedBy) get(r.verifiedBy).dv++; });
+  S.data.bsa.forEach(c=>{ if(c.assignedEngineer&&inP(bsaDoneKey(c),p)) get(c.assignedEngineer).bsa++; });
+  const rows=Object.values(P).filter(x=>x.name!=='Not recorded'&&(x.s1+x.s2+x.s3+x.dl+x.dv+x.bsa+x.capa)>0).sort((a,b)=>(b.s1+b.s2+b.s3)-(a.s1+a.s2+a.s3)||a.name.localeCompare(b.name));
+  const merged=peopleIndex().list.filter(x=>x.variants.length>1);
+  return `<div class="banner"><div>Names are grouped so one person is counted once: <b>Pascal 1</b>, <b>Pascal 2</b> and <b>pascal</b> all count as <b>Pascal</b>; <b>Stephen</b> and <b>okello stephen</b> count as <b>Okello Stephen</b>. ${merged.length} name group${merged.length===1?'':'s'} merged.${canSetup()?' <button class="btn sm" data-act="setup-open" data-v="people">Check or fix names</button>':''}</div></div>
+  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Person</th><th class="r">Intakes</th><th class="r">Repairs</th><th class="r">Final QC</th><th class="r">First-pass yield of repairs</th><th class="r">CAPA on repairs</th><th class="r">Daily logs</th><th class="r">Daily checks</th><th class="r">BSA closed</th><th>Also written as</th></tr></thead><tbody>
+  ${rows.length?rows.map(x=>{ const v=personVariants(x.name).map(a=>a[0]).filter(a=>a!==x.name); return `<tr><td><b>${esc(x.name)}</b></td><td class="r num">${x.s1||'·'}</td><td class="r num">${x.s2||'·'}</td><td class="r num">${x.s3||'·'}</td><td class="r num">${x.closed?fmtPct(pct(x.fp,x.closed)):'·'}</td><td class="r num">${x.capa||'·'}</td><td class="r num">${x.dl||'·'}</td><td class="r num">${x.dv||'·'}</td><td class="r num">${x.bsa||'·'}</td><td class="muted" style="font-size:12px;white-space:normal;max-width:260px">${esc(v.slice(0,6).join(', '))}${v.length>6?'…':''}</td></tr>`; }).join(''):`<tr><td colspan="10">${empty('No work recorded in this period.')}</td></tr>`}</tbody></table></div></div>`;
+}
+
+function AnalysisView(mode){
+  const p=periodOf(S.anchor,S.gran), title={defects:'Defects',flow:'Received, reworked & escalated',capa:'Corrective action (CAPA)',people:'Technicians'}[mode];
+  const body=mode==='defects'?AnDefects(p):mode==='flow'?AnFlow(p):mode==='capa'?AnCapa(p):AnPeople(p);
+  return `<div class="page-head"><div><div class="eyebrow">${esc(GRAN_ADJ[S.gran]||'')} · ${esc(title)}</div><h2>${esc(periodLabel(p,true))}</h2><p>Pick Daily, Weekly, Monthly, MTD, YTD or All. Tap any bar or row to see the batteries behind it.</p></div>
+    <div class="ph-actions">${PeriodBar()}<div class="ph-btns"><button class="btn" data-act="an-csv" data-v="${mode}">${ICON.dl} CSV</button>${canSetup()?`<button class="btn" data-act="setup-open">${GEAR_SVG} Setup</button>`:''}</div></div></div>${body}`;
+}
+function anTabs(){ const m=(S.tc||{}).mode||'cases'; return `<div class="seg an-tabs" role="tablist" aria-label="Analysis">${AN_TABS.map(([k,l])=>`<button role="tab" class="${m===k?'on':''}" aria-selected="${m===k}" data-act="an-mode" data-v="${k}">${l}</button>`).join('')}</div>`; }
+function anCsv(mode){
+  const p=periodOf(S.anchor,S.gran), q=v=>{ const x=String(v??''); return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x; }, L=[];
+  const head=[`${GRAN_ADJ[S.gran]} ${mode}`,periodLabel(p,true)]; L.push(head.map(q).join(','));
+  if(mode==='defects'){ L.push(['Received','BMS ID','Battery type','Visit','Case','Category','Supplier','Status'].join(',')); defectItems(p).forEach(i=>L.push([i.r.dateReceived,i.r.bmsId,i.plat,i.r.visitNumber||1,i.c.label,i.grp,i.sup,omStatus(i.r)[0]].map(q).join(','))); }
+  else if(mode==='flow'){ L.push(['Kind','Date','BMS ID','Battery type','Detail','Issues','Method'].join(','));
+    S.data.om.forEach(r=>{ if(inP(r.dateReceived,p)) L.push(['Received',r.dateReceived,r.bmsId,platName(r),'',issueNames(r).join('; '),''].map(q).join(',')); if((r.stage2||{}).completedAt&&inP(dkey(r.stage2.completedAt),p)) L.push(['Reworked',dkey(r.stage2.completedAt),r.bmsId,platName(r),canonPerson(r.stage2.technician),issueNames(r).join('; '),methodOf(r)].map(q).join(',')); if(isToBsa(r)&&inP(closedKey(r),p)) L.push(['Escalated to BSA',closedKey(r),r.bmsId,platName(r),'From '+escFrom(r),issueNames(r).join('; '),methodOf(r)].map(q).join(',')); });
+    S.data.bsa.forEach(c=>{ const f=dkey(c.dateFlagged||c.createdAt); if(inP(f,p)) L.push(['BSA flagged',f,c.bmsId,platName(c),bsaOutcome(c),bsaIssue(c),c.methodId?methodLabel(methodById(c.methodId)):''].map(q).join(',')); if(inP(bsaDoneKey(c),p)) L.push(['BSA '+bsaOutcome(c).toLowerCase(),bsaDoneKey(c),c.bmsId,platName(c),canonPerson(c.assignedEngineer),bsaIssue(c),c.methodId?methodLabel(methodById(c.methodId)):''].map(q).join(',')); }); }
+  else if(mode==='capa'){ L.push(['Returned','BMS ID','Battery type','Category','Part','Repair method','Repair technician','Returned by','Note'].join(',')); S.data.om.forEach(r=>(r.capaLog||[]).forEach(c=>{ if(inP(dkey(c.returnedAt),p)) L.push([dkey(c.returnedAt),r.bmsId,platName(r),capaCat(c),c.part||'',methodOf(r),canonPerson((r.stage2||{}).technician),canonPerson(c.returnedBy),c.reason||''].map(q).join(',')); })); }
+  else { L.push(['Person','Also written as'].join(',')); peopleIndex().list.forEach(x=>L.push([x.name,x.variants.map(v=>v[0]).join('; ')].map(q).join(','))); }
+  download(new Blob(['﻿'+L.join('\r\n')],{type:'text/csv'}),`analysis_${mode}_${S.gran}_${p.end}.csv`);
+}
+
+/* =====================================================================
+   SETUP WINDOW
+   ===================================================================== */
+const SETUP_TABS = [['methods','Repair methods'],['cats','Issue categories'],['people','Technicians'],['types','Battery types']];
+function openSetup(tab){ S.f.setup={tab:tab||(S.f.setup&&S.f.setup.tab)||'methods',grp:{},sup:{},subs:{},pname:{},move:{},newGroup:'',ptype:(S.f.setup&&S.f.setup.ptype)||''}; S.f.rm=null; S.formError=null; openDrawer({type:'setup'}); }
+function setupSeenCases(){
+  const m={}; S.data.om.forEach(r=>caseKeysOf(r).forEach(c=>{ const x=m[c.key]=m[c.key]||{...c,n:0}; x.n++; })); return Object.values(m).sort((a,b)=>(caseGroup(a)==='Unclassified'?0:1)-(caseGroup(b)==='Unclassified'?0:1)||b.n-a.n);
+}
+function SetupMethods(edit){
+  const F=S.f.rm;
+  if(F){
+    const iss=ISSUE_ITEMS.filter(([k])=>k!=='other'), ck=(k,l,cls)=>`<label class="issue ${cls||''} ${(F.issues||{})[k]?'on':''}"><input type="checkbox" data-bind="rm.issues.${k}" data-rerender ${(F.issues||{})[k]?'checked':''}>${esc(l)}</label>`;
+    return `<div class="form">${field('Code',inp('rm.code',{ph:'RM-10',max:12}),'',true)}${field('Name',inp('rm.name',{ph:'e.g. Fuse replacement'}),'',true)}</div>
+      <div><div class="block-title"><h4>Battery types</h4><span class="muted" style="font-size:12px">Stage 2 only sees this method for these types. Tick none for all types.</span></div><div class="issues">${PLATFORMS.slice().sort().map(pl=>`<label class="issue ${(F.plats||{})[pl]?'on':''}"><input type="checkbox" data-bind="rm.plats.${pl}" data-rerender ${(F.plats||{})[pl]?'checked':''}>${pl}</label>`).join('')}</div></div>
+      <div><div class="block-title"><h4>Faults it fixes</h4><span class="muted" style="font-size:12px">Tick the exact faults; it is suggested first when a battery has them</span></div><div class="rm-isg-list">${iss.map(([k,l])=>`<div class="rm-isg">${ck(k,l+(issueSubs(k).length?' (any)':''),'par')}${issueSubs(k).map(sb=>ck(subKey(k,sb),sb,'sub')).join('')}</div>`).join('')}</div></div>
+      ${field('Steps, in order (one per line)',`<textarea class="in rm-steps-in" id="b-rm-stepsText" data-bind="rm.stepsText" rows="8" placeholder="Isolate the pack&#10;Open the housing&#10;…">${esc(F.stepsText||'')}</textarea>`,'full',true)}
+      <label class="issue ${F.active!==false?'on':''}" style="max-width:340px"><input type="checkbox" data-bind="rm.active" data-rerender ${F.active!==false?'checked':''}>In use (untick to retire it; old records keep it)</label>`;
+  }
+  const ft=S.f.setup.ptype||'', list=methodsAll().filter(m=>!ft||methodFits(m,ft)), used={}; S.data.om.forEach(r=>{ const id=(r.stage2||{}).methodId||LEGACY_SOP[String((r.stage2||{}).sopRef||'').split(':')[0].trim()]; if(id&&(r.stage2||{}).completedAt) used[id]=(used[id]||0)+1; });
+  return `<div class="seg" role="group" aria-label="Battery type">${[['','All types'],...PLATFORMS.slice().sort().map(x=>[x,x])].map(([k,l])=>`<button class="${ft===k?'on':''}" data-act="rm-ptype" data-v="${k}">${l}</button>`).join('')}</div>
+    ${!(S.data.methods||[]).length?`<div class="banner"><div>These are the starting methods.${edit?' Edit any of them and they are saved for everyone.':''}</div></div>`:''}
+    <div class="rm-cards">${list.map(m=>`<div class="card rm-card ${m.active===false?'off':''}"><div class="rm-h"><span class="rm-code">${esc(m.code)}</span><b>${esc(m.name)}</b>${m.active===false?chip('retired',''):''}${edit?`<button class="btn sm" data-act="rm-copy" data-id="${esc(m.id)}" title="Make a version of this method for another battery type">Copy</button><button class="btn sm" data-act="rm-edit" data-id="${esc(m.id)}">Edit</button>`:''}</div>
+      <div class="rm-iss"><span class="chip ${(m.platforms||[]).length?'info':''}">${esc(methodTypes(m))}</span>${(m.issues||[]).map(k=>`<span class="chip">${esc(issueLbl(k))}</span>`).join('')||'<span class="muted">Any issue</span>'}</div>
+      <ol class="rm-ol">${(m.steps||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ol><div class="muted" style="font-size:12px">Version ${m.version||1} · used on ${used[m.id]||0} repair${used[m.id]===1?'':'s'}${m.updatedBy?` · last changed by ${esc(m.updatedBy)}`:''}</div></div>`).join('')}</div>`;
+}
+function SetupCats(edit){
+  const cases=setupSeenCases(), F=S.f.setup, G=groupNames();
+  const opts=G.map(g=>[g,g]).concat([['Unclassified','Unclassified']]);
+  return `<div class="banner"><div>Every issue a technician can report, and every keyword case found in notes, sits in one category and is marked supplier, non-supplier or recall. The <b>Defects</b> analysis uses these.</div></div>
+    <details class="visit" ${edit?'open':''}><summary>Exact faults under each issue</summary><div class="muted" style="font-size:12.5px;margin:6px 0">Technicians must name one of these when they confirm a fault, so “Charge failure” is split into MOSFET, charging port, fuse and so on.${edit?' One per line.':''}</div>
+      <div class="sub-ed">${ISSUE_ITEMS.filter(([k])=>!['other','simReplace'].includes(k)).map(([k,l])=>`<label class="f"><span>${esc(l)}</span>${edit?`<textarea class="in" rows="3" data-subs="${k}">${esc(F.subs[k]??issueSubs(k).join('\n'))}</textarea>`:`<div class="muted">${esc(issueSubs(k).join(', ')||'—')}</div>`}</label>`).join('')}</div></details>
+    ${edit?`<div class="di-add"><input class="in" id="b-setup-newGroup" data-bind="setup.newGroup" placeholder="New category name"><button class="btn" data-act="cat-add">${ICON.plus} Add category</button></div>`:''}
+    <div class="tbl-wrap"><table class="cat-tbl"><thead><tr><th>Case</th><th class="r">Seen</th><th>Category</th><th>Supplier?</th></tr></thead><tbody>
+    ${[...ISSUE_ITEMS.filter(([k])=>k!=='other').map(([k,l])=>({key:k,label:l,issue:k,n:(cases.find(c=>c.key===k)||{}).n||0})),...cases.filter(c=>!ISSUE_LABEL[c.key])].map(c=>{
+      const g=F.grp[c.key]??caseGroup(c), s=F.sup[c.key]??caseSupplier(c);
+      return `<tr class="${g==='Unclassified'?'unc':''}"><td>${esc(c.label)}${c.key.startsWith('kw:')?' <span class="chip info">keyword</span>':c.key.startsWith('other:')?' <span class="chip">note</span>':''}</td><td class="r num">${c.n||'·'}</td>
+      <td>${edit?`<select class="in sm" data-cat="grp" data-k="${esc(c.key)}">${opts.map(([v,l])=>`<option ${v===g?'selected':''}>${esc(l)}</option>`).join('')}</select>`:esc(g)}</td>
+      <td>${edit?`<select class="in sm" data-cat="sup" data-k="${esc(c.key)}">${SUPPLIER_TYPES.map(v=>`<option ${v===s?'selected':''}>${v}</option>`).join('')}</select>`:esc(s)}</td></tr>`; }).join('')}</tbody></table></div>`;
+}
+function SetupPeople(edit){
+  const L=peopleIndex().list.filter(x=>x.total>0), F=S.f.setup;
+  const targets=L.map(x=>x.name);
+  return `<div class="banner"><div>Names are grouped automatically: numbers and spacing are ignored, word order doesn't matter, a first name alone joins the one full name that contains it, and one-letter typos are folded. ${edit?'Rename a person, or move a spelling to someone else, then save. Your choices win over the automatic grouping.':''}</div></div>
+    <div class="ppl-list">${L.map(x=>`<div class="card ppl ${x.variants.length>1?'merged':''}"><div class="ppl-h">${edit?`<input class="in" data-pname="${esc(x.name)}" value="${esc(F.pname[x.name]??x.name)}" aria-label="Name for ${esc(x.name)}">`:`<b>${esc(x.name)}</b>`}<span class="chip">${x.total} record${x.total===1?'':'s'}</span>${x.roster?chip('confirmed','good'):''}</div>
+      <div class="ppl-v">${x.variants.map(([v,n])=>`<div class="ppl-row"><span>“${esc(v)}” <span class="muted">· ${n}</span></span>${edit?`<select class="in sm" data-move="${esc(v)}" aria-label="Move ${esc(v)}"><option value="">Keep here</option>${targets.filter(t=>t!==x.name).map(t=>`<option ${F.move[v]===t?'selected':''}>${esc(t)}</option>`).join('')}<option value="__own" ${F.move[v]==='__own'?'selected':''}>A different person</option></select>`:''}</div>`).join('')}</div></div>`).join('')||empty('No names recorded yet.')}</div>`;
+}
+function SetupTypes(){
+  const all=[...S.data.om.map(r=>({r,k:'O&M'})),...S.data.bsa.map(r=>({r,k:'BSA'}))];
+  const by=countBy(all,x=>platName(x.r)), bad=all.filter(x=>!platOf(x.r));
+  return `<div class="banner good"><div>Battery types are locked to <b>AMPACE</b>, <b>UNIQUE</b>, <b>GREENWAY</b> and <b>CBAK</b>. New entries must pick one, and the type is read from the battery ID prefix where it is known. Old misspellings (for example “Ampace new”, “Green way”, “CBACK”) are read as the right type.</div></div>
+    <div class="kpis four">${by.map(x=>kpi(esc(x.label),x.n,x.label==='Unverified'?'need checking':'records','',x.label==='Unverified'?'warn':'')).join('')}</div>
+    ${bad.length?`<div class="card section"><div class="card-head"><div><h3>Records with an unknown type</h3><p>The ID prefix isn't recognised and the type text can't be matched. Open the battery to check.</p></div></div><div class="case-list">${bad.slice(0,60).map(({r,k})=>`<button class="case-row" data-act="open-battery" data-id="${esc(r.bmsId)}"><span class="cr-1"><b class="mono">${esc(r.bmsId||'—')}</b>${chip(k,'')}</span><span class="cr-2">Typed as “${esc(r.model||'blank')}”</span></button>`).join('')}</div></div>`:''}`;
+}
+function SetupSheet(){
+  const F=S.f.setup||(S.f.setup={tab:'methods',grp:{},sup:{},subs:{},pname:{},move:{},ptype:''}), edit=canSetup(), t=F.tab;
+  const tabs=`<div class="seg setup-tabs" role="tablist">${SETUP_TABS.map(([k,l])=>`<button role="tab" class="${t===k?'on':''}" data-act="setup-tab" data-v="${k}">${l}</button>`).join('')}</div>`;
+  const ro=edit?'':`<div class="banner"><div>You can view these. Only the O&amp;M manager or the Quality engineer can change them.</div></div>`;
+  const body=t==='methods'?SetupMethods(edit):t==='cats'?SetupCats(edit):t==='people'?SetupPeople(edit):SetupTypes();
+  let foot='';
+  if(edit&&t==='methods') foot=S.f.rm?`<button class="btn" data-act="rm-cancel">Cancel</button><button class="btn pri" data-act="rm-save" ${S.saving?'disabled':''}>${savingLabel('Save method',S.saving)}</button>`:`<button class="btn pri" data-act="rm-new">${ICON.plus} New repair method</button>`;
+  if(edit&&t==='cats') foot=`<button class="btn pri" data-act="cat-save" ${S.saving?'disabled':''}>${savingLabel('Save categories',S.saving)}</button>`;
+  if(edit&&t==='people') foot=`<button class="btn pri" data-act="ppl-save" ${S.saving?'disabled':''}>${savingLabel('Save names',S.saving)}</button>`;
+  const title=S.f.rm?(S.f.rm.id?'Edit repair method':'New repair method'):'Setup';
+  return sheet(title,edit?'Repair methods, issue categories, technicians and battery types':'Read only',errBox()+(S.f.rm?'':tabs)+ro+body,foot,'Setup');
+}
+function rmEdit(id,copy){
+  const m=id?methodById(id):null;
+  if(!canSetup()){ toast('Only the O&M manager or the Quality engineer can change repair methods.'); return; }
+  const n=methodsAll().length+1;
+  const nx='RM-'+String(n).padStart(2,'0');
+  S.f.rm=m?{id:copy?'':m.id,code:copy?nx:m.code,name:copy?m.name+' ('+(S.f.setup.ptype||'type')+')':m.name,issues:Object.fromEntries((m.issues||[]).map(k=>[k,true])),plats:copy?(S.f.setup.ptype?{[S.f.setup.ptype]:true}:{}):Object.fromEntries((m.platforms||[]).map(k=>[k,true])),stepsText:(m.steps||[]).join('\n'),active:m.active!==false}:{id:'',code:nx,name:'',issues:{},plats:S.f.setup.ptype?{[S.f.setup.ptype]:true}:{},stepsText:'',active:true};
+  S.formError=null; renderDrawer(true);
+}
+async function setupSave(store,list,stateKey,msg){
+  S.saving=true; renderDrawer(true);
+  try{ if(!await saveStore(store,list)){ S.formError='Could not save. Try again.'; return false; } S.data[stateKey]=list; bump(); PIDX=null; S.formError=null; toast(msg); return true; }
+  finally{ S.saving=false; renderDrawer(true); }
+}
+async function rmSave(){
+  const F=S.f.rm; if(!F||S.saving) return; S.formError=null;
+  const code=String(F.code||'').trim().toUpperCase(), name=String(F.name||'').trim(), steps=String(F.stepsText||'').split('\n').map(s=>s.replace(/^\s*\d+[.)]\s*/,'').trim()).filter(Boolean);
+  if(!code) return (S.formError='Give the method a code, e.g. RM-08.',renderDrawer(true));
+  if(name.length<3) return (S.formError='Give the method a clear name.',renderDrawer(true));
+  if(!steps.length) return (S.formError='Add at least one step, one per line.',renderDrawer(true));
+  const base=clone(await loadStore('repair_method_records')); const list=base.length?base:clone(DEFAULT_METHODS).map(m=>({...m,createdAt:nowIso()}));
+  if(list.some(m=>m.code.toUpperCase()===code&&m.id!==F.id)) return (S.formError=`${code} is already used by another method.`,renderDrawer(true));
+  const issues=Object.keys(F.issues||{}).filter(k=>F.issues[k]), platforms=PLATFORMS.filter(pl=>(F.plats||{})[pl]);
+  const i=F.id?list.findIndex(m=>m.id===F.id):-1;
+  if(i>=0){ const o=list[i], changed=stableStr(o.steps)!==stableStr(steps); list[i]={...o,code,name,issues,platforms,steps,active:F.active!==false,version:(o.version||1)+(changed?1:0),updatedAt:nowIso(),updatedBy:S.session.name}; }
+  else list.push({id:'rm-'+uid(),code,name,issues,platforms,steps,active:F.active!==false,version:1,createdAt:nowIso(),updatedBy:S.session.name});
+  if(await setupSave('repair_method_records',list,'methods',`${code} saved. Stage 2 sees it straight away.`)){ S.f.rm=null; renderDrawer(true); }
+}
+async function catSave(){
+  if(S.saving) return; const F=S.f.setup, cur=clone(issueMapCfg());
+  const doc={id:'cfg-issue-map',kind:'issueMap',subs:cur.subs||{},group:{...(cur.group||{})},supplier:{...(cur.supplier||{})},groups:[...(cur.groups||[])],updatedAt:nowIso()};
+  Object.entries(F.grp).forEach(([k,v])=>{ if(v===defaultGroup({key:k,issue:ISSUE_LABEL[k]?k:'other'})) delete doc.group[k]; else doc.group[k]=v; });
+  doc.subs={...(cur.subs||{})}; Object.entries(F.subs||{}).forEach(([k,v])=>{ const l=[...new Set(String(v).split('\n').map(x=>x.trim()).filter(Boolean))]; if(stableStr(l)===stableStr(DEFAULT_SUBS[k]||[])) delete doc.subs[k]; else doc.subs[k]=l; });
+  Object.entries(F.sup).forEach(([k,v])=>{ if(v===issueCategoryBase(ISSUE_LABEL[k]&&k!=='other'?k:'')) delete doc.supplier[k]; else doc.supplier[k]=v; });
+  const list=clone(await loadStore('config_records')).filter(x=>x.id!==doc.id).concat(doc);
+  if(await setupSave('config_records',list,'cfg','Categories and faults saved.')){ F.grp={}; F.sup={}; F.subs={}; renderDrawer(true); }
+}
+async function catAdd(){
+  const F=S.f.setup, n=String(F.newGroup||'').trim(); if(n.length<3){ toast('Type a category name.'); return; }
+  if(groupNames().some(g=>g.toLowerCase()===n.toLowerCase())){ toast('That category already exists.'); return; }
+  const cur=clone(issueMapCfg()); const doc={id:'cfg-issue-map',kind:'issueMap',subs:cur.subs||{},group:cur.group||{},supplier:cur.supplier||{},groups:[...(cur.groups||[]),n],updatedAt:nowIso()};
+  const list=clone(await loadStore('config_records')).filter(x=>x.id!==doc.id).concat(doc);
+  if(await setupSave('config_records',list,'cfg',`Category “${n}” added.`)){ F.newGroup=''; renderDrawer(true); }
+}
+async function pplSave(){
+  if(S.saving) return; const F=S.f.setup, L=peopleIndex().list.filter(x=>x.total>0);
+  const newName=x=>String(F.pname[x.name]??x.name).replace(/\s+/g,' ').trim()||x.name;
+  const book=new Map(); const put=(name,alias)=>{ const k=name.toLowerCase(); const e=book.get(k)||{name,aliases:new Set()}; e.aliases.add(alias); book.set(k,e); };
+  L.forEach(x=>x.variants.forEach(([v])=>{ const mv=F.move[v]; if(mv==='__own') put(titleName(v)||v,v); else if(mv){ const tx=L.find(y=>y.name===mv); put(tx?newName(tx):mv,v); } else put(newName(x),v); }));
+  const old=clone(await loadStore('people_records'));
+  const list=[...book.values()].map(e=>{ const o=old.find(p=>String(p.name).toLowerCase()===e.name.toLowerCase()); return {...(o||{}),id:(o&&o.id)||'person-'+e.name.toLowerCase().replace(/[^a-z0-9]+/g,'-'),name:e.name,aliases:[...e.aliases].sort(),updatedAt:nowIso(),updatedBy:S.session.name}; });
+  if(await setupSave('people_records',list,'people',`${list.length} people saved. Reports now use these names.`)){ F.pname={}; F.move={}; renderDrawer(true); render(); }
+}
+function loginNames(){ let n=[]; try{ n=(cacheGet('people_records')||[]).map(p=>p&&p.name).filter(Boolean); }catch(e){} return `<datalist id="l-names">${[...new Set(n)].sort().map(x=>`<option value="${esc(x)}"></option>`).join('')}</datalist>`; }
+
+/* =====================================================================
    APP STATE
    ===================================================================== */
 const S = {
-  session:null, view:'overview', data:{om:[],bsa:[],rca:[],qi:[],daily:[]}, dataVersion:0,
+  session:null, view:'overview', data:{om:[],bsa:[],rca:[],qi:[],daily:[],methods:[],people:[],cfg:[]}, dataVersion:0,
   gran:lsRead('bqc_gran','day'), anchor:todayStr(),
   om:{q:'',status:'all',platform:'all',scope:'period',page:1},
   bat:{q:'',use:'all',platform:'all',sort:'recent',page:1},
   bsaF:{q:'',status:'open',page:1},
-  tc:{src:lsRead('bqc_tc_src','intake'),tg:'week'},
+  tc:{src:lsRead('bqc_tc_src','intake'),tg:'week',mode:lsRead('bqc_an_mode','cases')},
   qtab:'performance', drawer:null, f:{}, saving:false,
   refreshing:false, lastRefresh:null, auto:lsRead('bqc_auto',60), syncError:null, lastSave:null
 };
@@ -2434,6 +2993,7 @@ function Header(){
             <div class="m-row"><span>Accent</span><div class="swatches">${ACCENTS.map(([k,l])=>`<button class="sw sw-${k} ${acc===k?'on':''}" data-act="set-accent" data-v="${k}" aria-label="${l} accent" title="${l}"></button>`).join('')}</div></div>
             <label class="m-row"><span>Animated background</span><button class="switch ${motion?'on':''}" data-act="toggle-motion" role="switch" aria-checked="${motion}" aria-label="Animated background"><i></i></button></label>
             <div class="m-sep"></div>
+            <button class="m-item" data-act="setup-open">${GEAR_SVG}<span>Repair methods &amp; setup</span><span class="m-sub">${canSetup()?'edit':'view'}</span></button>
             <button class="m-item" data-act="storage">${ICON.refresh}<span>Storage &amp; sync</span><span class="m-sub" id="sync-menu"></span></button>
             <button class="m-item danger" data-act="signout"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg><span>Sign out</span></button>
           </div>
@@ -2444,15 +3004,15 @@ function Header(){
 /* what each role sees: technicians their queue, engineers their area, managers everything */
 function roleTabs(s){
   s=s||S.session||{};
-  if(s.role==='omtech') return Number(s.stage)===2?[['work','My work'],['chain','O&M chain'],['topcases','Top cases'],['batteries','Batteries']]:[['work','My work'],['daily','Daily counts'],['chain','O&M chain'],['topcases','Top cases'],['batteries','Batteries']];
-  if(s.role==='bsa') return [['bsa','BSA'],['topcases','Top cases'],['batteries','Batteries'],['quality','Quality']];
-  if(s.role==='quality') return [['overview','Overview'],['topcases','Top cases'],['quality','Quality'],['followups','Follow-ups'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA']];
-  return [['overview','Overview'],['topcases','Top cases'],['followups','Follow-ups'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA'],['quality','Quality']];
+  if(s.role==='omtech') return Number(s.stage)===2?[['work','My work'],['chain','O&M chain'],['topcases','Analysis'],['batteries','Batteries']]:[['work','My work'],['daily','Daily counts'],['chain','O&M chain'],['topcases','Analysis'],['batteries','Batteries']];
+  if(s.role==='bsa') return [['bsa','BSA'],['topcases','Analysis'],['batteries','Batteries'],['quality','Quality']];
+  if(s.role==='quality') return [['overview','Overview'],['topcases','Analysis'],['quality','Quality'],['followups','Follow-ups'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA']];
+  return [['overview','Overview'],['topcases','Analysis'],['followups','Follow-ups'],['daily','Daily counts'],['chain','O&M chain'],['batteries','Batteries'],['bsa','BSA'],['quality','Quality']];
 }
 const canExport = () => S.session&&S.session.role!=='omtech';
 function Tabs(cls='top-tabs'){
   const openOm=S.data.om.filter(r=>!isClosed(r)).length, openBsa=S.data.bsa.filter(bsaOpen).length, s=S.session;
-  const mineN=s.role==='omtech'?S.data.om.filter(r=>!isClosed(r)&&r.stage===s.stage&&!onHold(r)&&(!(r['stage'+s.stage]||{}).technician||(r['stage'+s.stage]||{}).technician===s.name)).length:0;
+  const mineN=s.role==='omtech'?S.data.om.filter(r=>!isClosed(r)&&r.stage===s.stage&&!onHold(r)&&(!(r['stage'+s.stage]||{}).technician||samePerson((r['stage'+s.stage]||{}).technician,s.name))).length:0;
   const counts={work:mineN,chain:s.role==='omtech'?null:openOm,bsa:openBsa,daily:dailyBadge(s),followups:canAssignFu()?(S.data.om.filter(r=>stuckInfo(r)&&!fuCur(r)).length||null):null};
   const t=roleTabs(s).map(([k,l])=>[k,l,counts[k]]);
   return `<nav class="tabs ${cls}" aria-label="Sections">${t.map(([k,l,n])=>`<button class="tab ${S.view===k?'on':''}" data-act="nav" data-v="${k}" ${S.view===k?'aria-current="page"':''}><span class="t-ic">${TAB_IC[k]}</span><span class="t-l">${l}</span>${n?`<span class="cnt">${n}</span>`:''}</button>`).join('')}</nav>`;
@@ -2460,12 +3020,12 @@ function Tabs(cls='top-tabs'){
 function PeriodBar(){
   const p=periodOf(S.anchor,S.gran), cur=periodOf(todayStr(),S.gran);
   return `<div class="period">
-    <div class="seg" role="group" aria-label="Breakdown">${[['day','Daily'],['week','Weekly'],['month','Monthly']].map(([k,l])=>`<button class="${S.gran===k?'on':''}" data-act="gran" data-v="${k}">${l}</button>`).join('')}</div>
+    <div class="seg gran-seg" role="group" aria-label="Breakdown">${[['day','Daily'],['week','Weekly'],['month','Monthly'],['mtd','MTD'],['ytd','YTD'],['all','All']].map(([k,l])=>`<button class="${S.gran===k?'on':''}" data-act="gran" data-v="${k}">${l}</button>`).join('')}</div>
     <div class="period-nav"><button data-act="pshift" data-v="-1" aria-label="Previous">‹</button><span>${esc(periodLabel(p,true))}</span><button data-act="pshift" data-v="1" aria-label="Next" ${p.start>=cur.start?'disabled style="opacity:.3"':''}>›</button></div>
-    ${p.start!==cur.start?`<button class="btn sm" data-act="ptoday">${S.gran==='day'?'Today':S.gran==='week'?'This week':'This month'}</button>`:''}
+    ${p.start!==cur.start||p.end!==cur.end?`<button class="btn sm" data-act="ptoday">${S.gran==='week'?'This week':S.gran==='month'?'This month':'Today'}</button>`:''}
   </div>`;
 }
-const BUCKETS = {day:14,week:12,month:12};
+const BUCKETS = {day:14,week:12,month:12,mtd:31,ytd:12,all:12};
 
 /* =====================================================================
    OVERVIEW
@@ -2497,11 +3057,11 @@ function SimRecallCard(){
     <div class="recall-steps"><div><b>${x.total}</b><small>batteries received</small></div><div><b>${x.replaced}</b><small>SIM replaced</small></div><div><b>${x.passed}</b><small>passed functional test</small></div><div><b>${x.open}</b><small>still in the chain${x.failed?` · ${x.failed} to BSA`:''}</small></div></div></div></div>`;
 }
 function OverviewView(){
-  const p=periodOf(S.anchor,S.gran), prev=periodOf(shiftKey(p.start,S.gran,-1),S.gran);
+  const p=periodOf(S.anchor,S.gran), prev=prevPeriod(p);
   const st=periodStats(p), pv=periodStats(prev);
   const openOm=S.data.om.filter(r=>!isClosed(r)), openBsa=S.data.bsa.filter(bsaOpen);
   const r1=v=>Math.round(v*10)/10;
-  const unit=S.gran==='day'?'day':S.gran;
+  const unit=granUnit(S.gran);
   const s=S.session;
   let mine='';
   if(s.role==='omtech'){
@@ -2543,7 +3103,7 @@ function OverviewView(){
   const repeatHtml=idx.length?`<div class="tbl-wrap"><table><thead><tr><th>BMS ID</th><th>Platform</th><th class="r">Visits</th><th class="r">CAPA</th><th>Status</th></tr></thead><tbody>${idx.map(b=>`<tr class="click" data-act="open-battery" data-id="${esc(b.id)}"><td><span class="idlink">${esc(b.id)}</span></td><td>${esc(b.platform||'—')}</td><td class="r num">${b.visits.length}</td><td class="r num">${b.capa}</td><td>${chip(...USE_META[b.use].slice(0,3))}</td></tr>`).join('')}</tbody></table></div>`:empty('No battery came back more than once in this period.');
 
   return `${mine}
-  <div class="page-head"><div><div class="eyebrow">${S.gran==='day'?'Daily':S.gran==='week'?'Weekly':'Monthly'} breakdown</div><h2>${esc(periodLabel(p,true))}</h2><p>Click any bar in the trend to jump to that ${unit}. Every figure below follows the selected period.</p></div>${PeriodBar()}</div>
+  <div class="page-head"><div><div class="eyebrow">${GRAN_ADJ[S.gran]} breakdown</div><h2>${esc(periodLabel(p,true))}</h2><p>Click any bar in the trend to jump to that ${unit}. Every figure below follows the selected period.</p></div>${PeriodBar()}</div>
   <div class="kpis">
     ${kpi('Received',st.intakes,deltaHtml(st.intakes,pv.intakes,null),`data-act="nav-chain-period"`)}
     ${kpi('Closed',st.closed,`${st.firstPass} first pass · ${st.toBsa} to BSA`)}
@@ -2556,7 +3116,7 @@ function OverviewView(){
   ${DailyOverviewCard(p)}
   ${SimRecallCard()}
   <div class="grid g-main">
-    <div class="card"><div class="card-head"><div><h3>Throughput</h3><p>Closed batteries by outcome, with intakes as a line · last ${BUCKETS[S.gran]} ${unit}s</p></div></div>
+    <div class="card"><div class="card-head"><div><h3>Throughput</h3><p>Closed batteries by outcome, with intakes as a line · by ${bucketGran(S.gran)} · last ${buckets.length}</p></div></div>
       <div class="legend"><span><i style="background:var(--s1)"></i>Passed first time</span><span><i style="background:var(--s2)"></i>Passed after CAPA</span><span><i style="background:var(--s3)"></i>Sent to BSA</span><span><i class="line" style="background:var(--ink-2)"></i>Received</span></div>${trend}</div>
     <div class="card"><div class="card-head"><div><h3>Pipeline right now</h3><p>Open batteries by stage, live</p></div><span class="chip">${openOm.length+openBsa.length} open</span></div>${pipe}
       <div class="section"><h4 style="margin-bottom:8px">First-pass yield trend</h4>${fpyChart}</div></div>
@@ -2595,7 +3155,7 @@ function ChainView(){
   if(F.status==='hold') rows=rows.filter(onHold);
   if(F.status==='bsa') rows=rows.filter(isToBsa);
   if(F.platform!=='all') rows=rows.filter(r=>(r.model||platformForId(r.bmsId))===F.platform);
-  if(F.issue) rows=rows.filter(r=>caseKeysOf(r).some(c=>c.key===F.issue)||(F.issue==='other'&&issuesOf(r).includes('other')));
+  if(F.issue) rows=rows.filter(r=>caseKeysOf(r).some(c=>c.key===F.issue||c.issue===F.issue)||(F.issue==='other'&&issuesOf(r).includes('other')));
   if(F.q){ const q=F.q.toLowerCase(); rows=rows.filter(r=>[r.bmsId,r.model,r.site,r.imei,r.status,r.stage1&&r.stage1.technician,r.stage2&&r.stage2.technician,r.stage3&&r.stage3.technician].join(' ').toLowerCase().includes(q)); }
   rows.sort((a,b)=>String(b.createdAt||b.dateReceived).localeCompare(String(a.createdAt||a.dateReceived)));
   S._omRows=rows;
@@ -2615,7 +3175,7 @@ function ChainView(){
   </div>
   <div class="tbl-wrap"><table><thead><tr><th>Received</th><th>BMS ID</th><th>Platform</th><th class="r">Visit</th><th>Status</th><th>Issues reported</th><th>Technicians</th><th class="r">Days</th><th class="r" aria-label="Actions"></th></tr></thead><tbody>
   ${pageRows.length?pageRows.map(r=>{ const st=omStatus(r); const iss=issuesOf(r); const days=isClosed(r)&&r.closedAt?Math.max(0,daysBetween(r.dateReceived,dkey(r.closedAt))):ageDays(r);
-    return `<tr class="click" data-act="open-om" data-id="${esc(r.id)}"><td class="num">${esc(fmtShort(r.dateReceived))}</td><td><span class="idlink">${esc(r.bmsId)}</span></td><td>${esc(r.model||'—')}</td><td class="r num">#${r.visitNumber||1}</td><td>${chip(...st)}</td><td style="max-width:260px;white-space:normal">${iss.length?esc(issueNames(r).slice(0,2).join(', '))+(iss.length>2?` +${iss.length-2}`:''):'<span class="muted">—</span>'}</td><td style="white-space:nowrap">${esc([1,2,3].map(n=>(r['stage'+n]||{}).technician).filter(Boolean).join(' → ')||'—')}</td><td class="r num">${days}</td><td class="r">${canDeleteVisit(r)?`<button class="btn sm danger del-ic" data-act="del-visit" data-id="${esc(r.id)}" title="Delete this entry (duplicate or typing error)" aria-label="Delete ${esc(r.bmsId)} entry">${ICON.trash}<span>Delete</span></button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="9">${empty('No visits match these filters.')}</td></tr>`}
+    return `<tr class="click" data-act="open-om" data-id="${esc(r.id)}"><td class="num">${esc(fmtShort(r.dateReceived))}</td><td><span class="idlink">${esc(r.bmsId)}</span></td><td>${esc(platName(r))}</td><td class="r num">#${r.visitNumber||1}</td><td>${chip(...st)}</td><td style="max-width:260px;white-space:normal">${iss.length?esc(issueNames(r).slice(0,2).join(', '))+(iss.length>2?` +${iss.length-2}`:''):'<span class="muted">—</span>'}</td><td style="white-space:nowrap">${esc([1,2,3].map(n=>canonPerson((r['stage'+n]||{}).technician)).filter(Boolean).join(' → ')||'—')}</td><td class="r num">${days}</td><td class="r">${canDeleteVisit(r)?`<button class="btn sm danger del-ic" data-act="del-visit" data-id="${esc(r.id)}" title="Delete this entry (duplicate or typing error)" aria-label="Delete ${esc(r.bmsId)} entry">${ICON.trash}<span>Delete</span></button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="9">${empty('No visits match these filters.')}</td></tr>`}
   </tbody></table></div>${pager(rows.length,F,25,'om')}`;
 }
 function taskCard(r,n,mode){
@@ -2635,9 +3195,9 @@ const STAGE_GUIDE = {
 function MyWorkView(){
   const s=S.session, n=s.stage, open=S.data.om.filter(r=>!isClosed(r)&&r.stage===n), tech=r=>(r['stage'+n]||{}).technician;
   const byAge=(a,b)=>String(enteredStageAt(a)).localeCompare(String(enteredStageAt(b)));
-  const claimQ=open.filter(r=>!onHold(r)&&!tech(r)).sort(byAge), mine=open.filter(r=>!onHold(r)&&tech(r)===s.name).sort(byAge);
-  const held=open.filter(onHold), others=open.filter(r=>!onHold(r)&&tech(r)&&tech(r)!==s.name);
-  const today=todayStr(), done=S.data.om.filter(r=>{ const x=r['stage'+n]||{}; return x.completedBy===s.name&&x.completedAt&&dkey(x.completedAt)===today; }).length
+  const claimQ=open.filter(r=>!onHold(r)&&!tech(r)).sort(byAge), mine=open.filter(r=>!onHold(r)&&tech(r)&&samePerson(tech(r),s.name)).sort(byAge);
+  const held=open.filter(onHold), others=open.filter(r=>!onHold(r)&&tech(r)&&!samePerson(tech(r),s.name));
+  const today=todayStr(), done=S.data.om.filter(r=>{ const x=r['stage'+n]||{}; return x.completedBy&&samePerson(x.completedBy,s.name)&&x.completedAt&&dkey(x.completedAt)===today; }).length
     +(n===3?0:0);
   const capaIn=open.filter(r=>r.capaCycles>0).length;
   const list=(arr,mode,emptyText)=>arr.length?`<div class="lane-list">${arr.map(r=>taskCard(r,n,mode)).join('')}</div>`:`<div class="empty" style="padding:18px">${emptyText}</div>`;
@@ -2717,7 +3277,7 @@ function BsaView(){
   const buckets=bucketsEnding(S.anchor,S.gran,BUCKETS[S.gran]);
   const flow=chartSlot({type:'cols',labels:buckets.map(b=>periodLabel(b)),full:buckets.map(b=>periodLabel(b,true)),sel:buckets.length-1,act:'pick-bucket',buckets:buckets.map(b=>b.start),
     series:[{label:'Cases flagged',color:'--s1',values:buckets.map(b=>S.data.bsa.filter(r=>inP(r.dateFlagged,b)).length)},{label:'Cases closed',color:'--s2',values:buckets.map(b=>S.data.bsa.filter(r=>inP(dkey(r.dateClosed),b)).length)}],grouped:true});
-  const reasons={}; S.data.bsa.filter(r=>inP(r.dateFlagged,p)).forEach(r=>{ const k=r.escalationCategory||r.source||'Other'; reasons[k]=(reasons[k]||0)+1; });
+  const reasons={}; S.data.bsa.filter(r=>inP(r.dateFlagged,p)).forEach(r=>{ const k=r.escalationCategory?bsaIssue(r):(r.source||'Other'); reasons[k]=(reasons[k]||0)+1; });
   const rr=Object.entries(reasons).sort((a,b)=>b[1]-a[1]); const rmax=Math.max(1,...rr.map(x=>x[1]));
   const statusCounts=BSA_TECH_STATUSES.concat(['Awaiting BSA receipt']).map(k=>[k,all.filter(r=>ts(r)===k).length]).filter(x=>x[1]);
   const smax=Math.max(1,...statusCounts.map(x=>x[1]));
@@ -2771,8 +3331,8 @@ function QualityView(){
     ${kpi('Handling defects',st.nonSupplier,'intakes with a handling / field issue')}
   </div>
   <div class="card"><div class="card-head"><div><h3>Supplier vs handling defects</h3><p>Intakes per ${S.gran} with at least one defect of each kind</p></div></div><div class="legend"><span><i style="background:var(--s1)"></i>Supplier-related</span><span><i style="background:var(--s2)"></i>Handling / field</span></div>${supChart}</div>
-  <div class="page-head section" style="margin-top:20px"><div><h3>${S.gran==='day'?'Daily':S.gran==='week'?'Weekly':'Monthly'} quality table</h3><p>Newest first. Click a row to make it the selected period.</p></div>${canExport()?`<button class="btn sm" data-act="export">${ICON.dl} Download</button>`:''}</div>
-  <div class="tbl-wrap"><table><thead><tr><th>${S.gran==='day'?'Day':S.gran==='week'?'Week of':'Month'}</th><th class="r">Received</th><th class="r">Closed</th><th class="r">First pass</th><th class="r">FPY</th><th class="r">PPM</th><th class="r">CAPA returns</th><th class="r">To BSA</th><th class="r">Supplier</th><th class="r">Handling</th><th class="r">Avg days</th></tr></thead><tbody>
+  <div class="page-head section" style="margin-top:20px"><div><h3>${GRAN_ADJ[S.gran]} quality table</h3><p>Newest first. Click a row to make it the selected period.</p></div>${canExport()?`<button class="btn sm" data-act="export">${ICON.dl} Download</button>`:''}</div>
+  <div class="tbl-wrap"><table><thead><tr><th>${({day:'Day',week:'Week of',month:'Month'})[bucketGran(S.gran)]}</th><th class="r">Received</th><th class="r">Closed</th><th class="r">First pass</th><th class="r">FPY</th><th class="r">PPM</th><th class="r">CAPA returns</th><th class="r">To BSA</th><th class="r">Supplier</th><th class="r">Handling</th><th class="r">Avg days</th></tr></thead><tbody>
   ${rows.map(({b,s})=>`<tr class="click" data-act="pick-period" data-v="${b.start}" ${b.start===p.start?'style="background:var(--accent-soft)"':''}><td style="white-space:nowrap">${esc(periodLabel(b,true))}</td><td class="r num">${s.intakes}</td><td class="r num">${s.closed}</td><td class="r num">${s.firstPass}</td><td class="r num">${s.fpy==null?'—':`<span class="${s.fpy>=85?'ok':s.fpy<70?'bad':''}">${fmtPct(s.fpy)}</span>`}</td><td class="r num">${s.ppm==null?'—':s.ppm.toLocaleString()}</td><td class="r num">${s.capaReturns}</td><td class="r num">${s.toBsa}</td><td class="r num">${s.supplier}</td><td class="r num">${s.nonSupplier}</td><td class="r num">${s.tat==null?'—':(Math.round(s.tat*10)/10)}</td></tr>`).join('')}
   </tbody></table></div>`;
 }
@@ -2788,10 +3348,10 @@ function FpyBreakdown(){
   const p=periodOf(S.anchor,S.gran), closed=S.data.om.filter(r=>isClosed(r)&&inP(closedKey(r),p));
   return `<div class="banner"><div>${closed.length} batteries closed in <b>${esc(periodLabel(p,true))}</b>. Bars show the share that passed first time; the number on the right is FPY.</div></div>
   <div class="grid g2">
-    <div class="card"><div class="card-head"><h3>By platform</h3></div>${fpyBars(fpyGroup(closed,r=>r.model||platformForId(r.bmsId)||'Unknown'))}</div>
-    <div class="card"><div class="card-head"><h3>By repair technician</h3></div>${fpyBars(fpyGroup(closed,r=>(r.stage2&&r.stage2.technician)||'Not repaired (to BSA)'))}</div>
+    <div class="card"><div class="card-head"><h3>By platform</h3></div>${fpyBars(fpyGroup(closed,r=>platName(r)))}</div>
+    <div class="card"><div class="card-head"><h3>By repair technician</h3></div>${fpyBars(fpyGroup(closed,r=>canonPerson(r.stage2&&r.stage2.technician)||'Not repaired (to BSA)'))}</div>
     <div class="card"><div class="card-head"><h3>By issue reported at intake</h3></div>${fpyBars(fpyGroup(closed,r=>{ const k=issuesOf(r); return k.length?k.map(x=>ISSUE_LABEL[x]):['No issue flagged']; }))}</div>
-    <div class="card"><div class="card-head"><h3>By repair procedure</h3></div>${fpyBars(fpyGroup(closed.filter(r=>r.stage2&&r.stage2.completedAt),r=>(r.stage2.sopRef||'No SOP').split(':')[0]))}</div>
+    <div class="card"><div class="card-head"><h3>By repair method</h3></div>${fpyBars(fpyGroup(closed.filter(r=>r.stage2&&r.stage2.completedAt),r=>methodOf(r)||'Method not recorded'))}</div>
   </div>`;
 }
 function RcaList(){
@@ -2911,6 +3471,7 @@ function Drawer(){
   if(d.type==='fu') return FuSheet();
   if(d.type==='dups') return DupsSheet();
   if(d.type==='tccase') return CaseSheet();
+  if(d.type==='setup') return SetupSheet();
   return '';
 }
 const canWork = r => { const s=S.session; return s.role==='omtech' && !isClosed(r) && r.stage===s.stage; };
@@ -2983,6 +3544,7 @@ function issuesBlock(base){
   const d=getPath(S.f,base), is=d.issues||(d.issues={});
   return `<div><div class="block-title"><h4>Defects observed</h4><span class="muted" style="font-size:12px">Items marked BSA skip the repair chain</span></div>
   <div class="issues">${ISSUE_ITEMS.map(([k,l])=>`<label class="issue ${is[k]?'on':''} ${BSA_TRIGGER_ISSUES.includes(k)?'bsa':''}"><input type="checkbox" id="b-${base}-iss-${k}" data-bind="${base}.issues.${k}" data-rerender ${is[k]?'checked':''}>${esc(l)}<small>${BSA_TRIGGER_ISSUES.includes(k)?'BSA':issueCategory(k)==='Recall'?'recall':issueCategory(k)==='Supplier'?'supplier':'handling'}</small></label>`).join('')}</div>
+  ${subPickers(base+'.sub',ISSUE_ITEMS.map(([k])=>k).filter(k=>is[k]),'Exact fault (if known)',false)}
   ${is.missingComponent?`<div style="margin-top:10px">${field('Which component is missing',inp(base+'.missingComponentNote',{ph:'e.g. BMS board, connector'}),'',true)}</div>`:''}
   ${is.simReplace?simOldBlock(base,d):''}
   ${is.other?`<div class="sim-box"><div class="sim-head"><span class="sim-ic">?</span><div><b>Other issue</b><small>Pick the closest category and explain what you found, so the next person can follow up.</small></div></div><div class="form">${field('Category',sel(base+'.otherCat',[['','Choose…'],...OTHER_ISSUE_CATS]),'',true)}${field('Explanation',area(base+'.otherNote','What is wrong, where, and how it shows'),'full',true)}</div></div>`:''}
@@ -3060,7 +3622,7 @@ function WorkSheet(rec){
   if(!S.f.edit||S.f.edit.id!==rec.id){ S.f.edit=clone(rec); S.f.edit._returnTo='2'; S.formError=null; }
   const e=S.f.edit, n=s.stage, owner=(rec['stage'+n]||{}).technician;
   const flagged=issueNames(rec);
-  const claim=!owner?`<div class="banner"><div>Nobody has claimed this battery at Stage ${n}. <button class="btn sm pri" data-act="claim" data-id="${esc(rec.id)}">Claim it</button></div></div>`:owner!==s.name?`<div class="banner warn"><div>Claimed by <b>${esc(owner)}</b>. Submitting records you as the Stage ${n} technician.</div></div>`:'';
+  const claim=!owner?`<div class="banner"><div>Nobody has claimed this battery at Stage ${n}. <button class="btn sm pri" data-act="claim" data-id="${esc(rec.id)}">Claim it</button></div></div>`:!samePerson(owner,s.name)?`<div class="banner warn"><div>Claimed by <b>${esc(owner)}</b>${/\.$/.test(owner)?'':'.'} Submitting records you as the Stage ${n} technician.</div></div>`:'';
   const capa=rec.capaCycles>0?`<div class="banner warn"><div><b>Corrective action, cycle ${rec.capaCycles}.</b> ${esc(capaText((rec.capaLog||[]).slice(-1)[0]))} This is the same visit returning, not a new failure.</div></div>`:'';
   const info=`<div class="facts"><div class="fact"><span>Platform</span><b>${esc(rec.model||'—')}</b></div><div class="fact"><span>Visit</span><b>#${rec.visitNumber||1}</b></div><div class="fact"><span>Received</span><b>${esc(fmtShort(rec.dateReceived))}</b></div><div class="fact"><span>In chain</span><b>${ageDays(rec)}d</b></div></div>
     ${flagged.length?`<div class="banner"><div><b>Reported at intake:</b> ${esc(flagged.join(', '))}</div></div>`:''}`;
@@ -3070,7 +3632,11 @@ function WorkSheet(rec){
     body=`<div class="form">${field('Platform',sel('edit.model',[['','—'],...PLATFORMS]))}${field('IMEI',inp('edit.imei',{mono:true,max:16}))}${field('Swap station',inp('edit.site'))}${cyclesField('edit.cycles',false)}</div>${checks('edit.stage1.pre',CHECK_ITEMS)}${issuesBlock('edit.stage1')}`;
     foot=`<button class="btn ${t?'esc':'pri'}" data-act="submit-work" ${S.saving?'disabled':''}>${savingLabel(t?'Send straight to BSA':'Resend to Stage 2',S.saving)}</button>`;
   } else if(n===2){
-    body=`<div class="form">${field('Procedure (SOP)',sel('edit.stage2.sopRef',STANDARD_SOPS),'full')}${field('Parts replaced',inp('edit.stage2.partsReplaced',{ph:'e.g. BMS, harness'}),'full')}${cyclesField('edit.cycles',!!String(e.stage2.partsReplaced||'').trim()||!!e._holdOpen)}${field('Repair notes',area('edit.stage2.repairAction','What you did and what you found'),'full')}</div>${needsSim(e)?simNewBlock(e):''}${checks('edit.stage2.post',POST_ITEMS)}${holdBlock(rec,e)}`;
+    if(!e.stage2.methodId&&!e.stage2._picked&&needsSim(e)) e.stage2.methodId='rm-05';
+    if((e.stage2._stepsFor||'')!==(e.stage2.methodId||'')){ e.stage2.steps={}; e.stage2._stepsFor=e.stage2.methodId||''; }
+    if(!e.stage2.confirmed){ e.stage2.confirmed={}; issuesOf(rec).forEach(k=>{ const s1=((rec.stage1||{}).sub||{})[k]; if(s1) e.stage2.confirmed[k]=s1; }); }
+    const fk=issuesOf(rec).map(k=>{ const c=e.stage2.confirmed[k]; return c===SUB_OTHER?k+'__other':subKey(k,c||''); }), pl=platOf(rec), rm=methodById(e.stage2.methodId), nm=methodsFor(fk,pl).length;
+    body=`${subPickers('edit.stage2.confirmed',issuesOf(rec),'Confirm the exact fault',true)}${nm?'':`<div class="banner crit"><div>No repair method is set up for <b>${esc(pl||'this battery type')}</b> yet. Ask the O&amp;M manager to add one in Setup.</div></div>`}<div class="form">${field(`Repair method${pl?' · '+esc(pl):''}`,methodSelect('edit.stage2.methodId',fk,true,'',pl),'full',true)}</div>${methodStepsBlock('edit.stage2.steps',rm)}<div class="form">${field('Parts replaced',inp('edit.stage2.partsReplaced',{ph:'e.g. BMS, harness'}),'full')}${cyclesField('edit.cycles',!!String(e.stage2.partsReplaced||'').trim()||!!e._holdOpen)}${field('Repair notes',area('edit.stage2.repairAction','What you did and what you found'),'full')}</div>${needsSim(e)?simNewBlock(e):''}${checks('edit.stage2.post',POST_ITEMS)}${holdBlock(rec,e)}`;
     foot=`<button class="btn pri" data-act="submit-work" ${S.saving||onHold(rec)?'disabled':''}>${savingLabel(onHold(rec)?'On hold · release first':'Send to Stage 3',S.saving)}</button>`;
   } else {
     const t=e.stage3, sim=needsSim(e), res=testsResult(t,sim), ir=parseFloat(t.tests.irMeasured), thr=parseFloat(t.tests.irThreshold);
@@ -3141,6 +3707,13 @@ async function submitWork(){
     } else { latest.stage=2; latest.status='STAGE2_OPEN'; msg=`${latest.bmsId} resent to Stage 2.`; }
   } else if(n===2){
     if(onHold(latest)) return fail('This battery is waiting for supplier material. Mark the part as arrived first.');
+    const need=issuesOf(latest).filter(k=>issueSubs(k).length&&!(e.stage2.confirmed||{})[k]);
+    if(need.length) return fail(`Confirm the exact fault for: ${need.map(k=>ISSUE_LABEL[k]).join(', ')}.`);
+    const rm=methodById(e.stage2.methodId); if(!rm) return fail('Pick the repair method you used.');
+    if(!methodFits(rm,platOf(latest))) return fail(`${rm.code} is not set up for ${platOf(latest)} batteries. Pick a method for this battery type.`);
+    const steps=rm.steps||[], miss=steps.findIndex((_,i)=>!(e.stage2.steps||{})[i]);
+    if(miss>=0) return fail(`Tick each ${rm.code} step as you finish it. Step ${miss+1} is not ticked: “${steps[miss]}”.`);
+    Object.assign(e.stage2,{methodCode:rm.code,methodName:rm.name,methodVersion:rm.version||1,stepsDone:steps.slice(),sopRef:methodLabel(rm)}); delete e.stage2.steps; delete e.stage2._stepsFor; delete e.stage2._picked;
     if(String(e.stage2.partsReplaced||'').trim()){ const ce=cyclesError(e.cycles); if(ce) return fail('Parts were replaced, so the cycle count is required. '+ce); }
     if(String(e.cycles??'').trim()!==''){ const ce=cyclesError(e.cycles); if(ce) return fail(ce); latest.cycles=+e.cycles; }
     if(needsSim(latest)){ const sm=e.stage2.sim||{}, old=simDigits(((latest.stage1||{}).sim||{}).oldNumber);
@@ -3160,7 +3733,7 @@ async function submitWork(){
     if(disp==='PASS'){ Object.assign(latest,{status:'CLOSED_PASS',finalDisposition:'PASS',closedAt:nowIso()}); msg=`${latest.bmsId} passed final QC and is closed.`; }
     else if(disp==='ESCALATE_BSA'){
       Object.assign(latest,{status:'CLOSED_TRANSFERRED_BSA',finalDisposition:'ESCALATED_BSA',closedAt:nowIso(),bsaEscalatedAt:nowIso(),bsaEscalatedBy:s.name});
-      bsaCase={bmsId:latest.bmsId,model:latest.model||'',flaggedBy:s.name,issueDescription:t.qcNote||bsaIssueSummary(latest.stage1||{}),escalationCategory:'Final QC escalation',stage1IssueFlags:bsaTriggerLabels(latest.stage1||{}),escalatedFromStage:3,sopAttempted:(latest.stage2||{}).sopRef||'Stage 3 final QC could not be completed',omRecordId:latest.id};
+      bsaCase={bmsId:latest.bmsId,model:latest.model||'',flaggedBy:s.name,issueDescription:t.qcNote||bsaIssueSummary(latest.stage1||{}),escalationCategory:'Final QC escalation',stage1IssueFlags:bsaTriggerLabels(latest.stage1||{}),escalatedFromStage:3,sopAttempted:methodOf(latest)||'Stage 3 final QC could not be completed',omRecordId:latest.id};
       msg=`${latest.bmsId} escalated to BSA.`;
     } else {
       const to=parseInt(e._returnTo)||2;
@@ -3195,7 +3768,7 @@ function BatterySheet(id,focus){
   const ev=[];
   b.visits.forEach(r=>{
     ev.push({t:r.createdAt||r.dateReceived,k:'info',h:`Received · visit #${r.visitNumber||1}`,d:`${issueNames(r).join(', ')||'No issue flagged'}${r.site?' · '+r.site:''} · by ${(r.stage1||{}).technician||'—'}`});
-    if((r.stage2||{}).completedAt) ev.push({t:r.stage2.completedAt,k:'',h:'Repaired at Stage 2',d:`${(r.stage2.sopRef||'').split(':')[0]} · ${r.stage2.technician||'—'}${r.stage2.partsReplaced?' · parts: '+r.stage2.partsReplaced:''}${(r.stage2.sim||{}).newNumber?' · SIM replaced':''}`});
+    if((r.stage2||{}).completedAt) ev.push({t:r.stage2.completedAt,k:'',h:'Repaired at Stage 2',d:`${methodOf(r)||'Method not recorded'} · ${canonPerson(r.stage2.technician)||'—'}${r.stage2.partsReplaced?' · parts: '+r.stage2.partsReplaced:''}${(r.stage2.sim||{}).newNumber?' · SIM replaced':''}`});
     (r.capaLog||[]).forEach(c=>ev.push({t:c.returnedAt,k:'warn',h:`Returned for corrective action (cycle ${c.cycle})`,d:`${capaText(c)||'—'} · to Stage ${c.toStage} · ${c.returnedBy||''}`}));
     (r.holdLog||[]).forEach(h=>{ ev.push({t:h.since,k:'serious',h:'Waiting for supplier material',d:`${h.part||'part'} · ${h.by||''}`}); if(h.releasedAt) ev.push({t:h.releasedAt,k:'good',h:'Part arrived · repair resumed',d:`${h.part||'part'} · ${h.releasedBy||''}`}); });
     if(onHold(r)) ev.push({t:r.hold.since,k:'serious',h:'Waiting for supplier material',d:`${r.hold.part||'part'} · ${r.hold.by||''}`});
@@ -3218,7 +3791,7 @@ function BatterySheet(id,focus){
       ${canDeleteVisit(r)?`<div class="visit-act"><span class="muted">Duplicate or typing error?</span><button class="btn sm danger del-ic" data-act="del-visit" data-id="${esc(r.id)}">${ICON.trash}<span>Delete this entry</span></button></div>`:''}
       <div class="kv">${kv('Reason',issueNames(r).join(', '))}${otherIssueText(r.stage1)&&(r.stage1||{}).otherCat?kv('Other issue category',(r.stage1||{}).otherCat):''}${onHold(r)?kv('On hold',`Waiting for supplier: ${r.hold.part||'part'} since ${fmtShort(dkey(r.hold.since))}`):''}${kv('Swap station',r.site)}${kv('IMEI',r.imei)}${kv('Charge cycles',r.cycles==null?'':String(r.cycles))}${needsSim(r)?kv('SIM swap',simSummary(r)):''}
       ${kv('Stage 1',(r.stage1||{}).technician)}${kv('Stage 2',(r.stage2||{}).technician)}${kv('Stage 3',(r.stage3||{}).technician)}
-      ${kv('Procedure',(r.stage2||{}).sopRef)}${kv('Parts replaced',(r.stage2||{}).partsReplaced)}${kv('Repair notes',(r.stage2||{}).repairAction)}
+      ${kv('Repair method',methodOf(r))}${kv('Parts replaced',(r.stage2||{}).partsReplaced)}${kv('Repair notes',(r.stage2||{}).repairAction)}
       ${kv('Pack voltage',t.packVoltage?t.packVoltage+' V':'')}${kv('Cell min / max',t.minCell?`${t.minCell} / ${t.maxCell} V`:'')}${kv('Insulation',t.irMeasured?`${t.irMeasured} MΩ (min ${t.irThreshold})`:'')}
       ${kv('Tests',TEST_BOOLS.filter(([k])=>tb[k]).length+' of '+TEST_BOOLS.length+' confirmed')}${needsSim(r)?kv('SIM functional test',tb[SIM_TEST[0]]?'Passed':(r.stage3||{}).completedAt?'Not confirmed':'Pending'):''}${kv('QC notes',(r.stage3||{}).qcNote)}${kv('CAPA cycles',r.capaCycles||0)}${(r.capaLog||[]).map(c=>kv('CAPA '+c.cycle,capaText(c))).join('')}${(r.holdLog||[]).map(h=>kv('Supplier wait',`${h.part||'part'} · ${fmtShort(dkey(h.since))} → ${fmtShort(dkey(h.releasedAt))}`)).join('')}
       ${preFail.length?kv('Pre-check fails',preFail.join(', ')):''}${postFail.length?kv('Post-check fails',postFail.join(', ')):''}</div>
@@ -3246,11 +3819,11 @@ function BsaSheet(id){
   let foot=`<button class="btn" data-act="open-battery" data-id="${esc(r.bmsId)}">Battery history</button>`;
   if(editable){
     if(!r.bsaReceivedAt) body+=`<div class="banner warn"><div>BSA hasn't confirmed receipt yet. <button class="btn sm esc" data-act="bsa-receive" data-id="${esc(r.id)}">Mark as received</button></div></div>`;
-    body+=`<div class="form">${field('BSA status',sel('bsaEdit.technicianStatus',[['','— Pick a status —'],...BSA_TECH_STATUSES]),'',true)}${field('Assigned engineer',inp('bsaEdit.assignedEngineer'))}
+    body+=`<div class="form">${field('BSA status',sel('bsaEdit.technicianStatus',[['','— Pick a status —'],...BSA_TECH_STATUSES]),'',true)}${field('Assigned engineer',inp('bsaEdit.assignedEngineer'))}${field('Rework method used',methodSelect('bsaEdit.methodId',(r.stage1IssueFlags||[]).map(l=>(ISSUE_ITEMS.find(x=>x[1]===l)||[])[0]).filter(Boolean),false,'Not reworked yet / no method',platOf(r)),'full')}
       ${field('Progress / action',area('bsaEdit.bsaProgress'),'full')}${field('Root-cause summary',area('bsaEdit.rcaSummary'),'full')}${field('Repair notes',area('bsaEdit.repairNotes'),'full')}</div>`;
     foot+=(canDelete()?`<button class="btn danger" data-act="del" data-store="bsa_records" data-id="${esc(r.id)}">Delete</button>`:'')+`<button class="btn pri" data-act="bsa-save" ${S.saving?'disabled':''}>${savingLabel('Save update',S.saving)}</button>`;
   } else {
-    body+=`<div class="card" style="padding:0"><div class="kv">${kv('Engineer',r.assignedEngineer)}${kv('Progress',r.bsaProgress)}${kv('Root cause',r.rcaSummary)}${kv('Repair notes',r.repairNotes)}${kv('Closed',r.dateClosed?fmtDT(r.dateClosed):'')}</div></div>`;
+    body+=`<div class="card" style="padding:0"><div class="kv">${kv('Engineer',r.assignedEngineer)}${kv('Rework method',r.methodId?methodLabel(methodById(r.methodId)):'')}${kv('Progress',r.bsaProgress)}${kv('Root cause',r.rcaSummary)}${kv('Repair notes',r.repairNotes)}${kv('Closed',r.dateClosed?fmtDT(r.dateClosed):'')}</div></div>`;
   }
   return sheet(`<span class="mono" style="font-size:.85em">${esc(r.bmsId)}</span>`,`${esc(r.model||'—')} · ${chip(t,tone[0],tone[1])}`,body,foot,'BSA case');
 }
@@ -3263,10 +3836,11 @@ async function bsaReceive(id){
 async function bsaSave(){
   const e=S.f.bsaEdit; S.formError=null;
   if(!e.technicianStatus){ S.formError='Pick a BSA status first.'; return renderDrawer(true); }
+  if(e.technicianStatus==='Worked On'&&!e.methodId){ S.formError='Pick the rework method used on this battery.'; return renderDrawer(true); }
   S.saving=true; renderDrawer(true);
   const fresh=await loadStore('bsa_records'), i=fresh.findIndex(x=>x.id===e.id);
   if(i<0){ S.saving=false; S.formError='This case no longer exists. Refresh.'; return renderDrawer(true); }
-  const next={...fresh[i],technicianStatus:e.technicianStatus,assignedEngineer:e.assignedEngineer,bsaProgress:e.bsaProgress,rcaSummary:e.rcaSummary,repairNotes:e.repairNotes,status:bsaLegacyStatus(e.technicianStatus)};
+  const next={...fresh[i],technicianStatus:e.technicianStatus,assignedEngineer:e.assignedEngineer,bsaProgress:e.bsaProgress,methodId:e.methodId||'',rcaSummary:e.rcaSummary,repairNotes:e.repairNotes,status:bsaLegacyStatus(e.technicianStatus)};
   if(BSA_DONE.includes(e.technicianStatus)) next.dateClosed=next.dateClosed||nowIso(); else delete next.dateClosed;
   fresh[i]=next;
   const ok=await saveStore('bsa_records',fresh); S.saving=false;
@@ -3407,7 +3981,7 @@ async function download(blob,name){
 
 /* ---------- shared report data ---------- */
 function reportData(){
-  const p=periodOf(S.anchor,S.gran), prev=periodOf(shiftKey(p.start,S.gran,-1),S.gran);
+  const p=periodOf(S.anchor,S.gran), prev=prevPeriod(p);
   const buckets=bucketsEnding(S.anchor,S.gran,BUCKETS[S.gran]);
   const range={start:buckets[0].start,end:buckets[buckets.length-1].end,gran:S.gran};
   const st=periodStats(p), pv=periodStats(prev), bs=buckets.map(b=>({b,s:periodStats(b)}));
@@ -3425,7 +3999,7 @@ function reportData(){
   const bsaStatus=BSA_TECH_STATUSES.concat(['Awaiting BSA receipt']).map(k=>[k,S.data.bsa.filter(r=>bsaTechStatus(r)===k).length]).filter(x=>x[1]);
   const open=S.data.om.filter(r=>!isClosed(r)).sort((a,b)=>ageDays(b)-ageDays(a));
   return {p,prev,st,pv,buckets,bs,range,defects,platforms,techs,fpyPlat,bat,useCounts,visits,bsa,bsaStatus,open,
-    granWord:S.gran==='day'?'Daily':S.gran==='week'?'Weekly':'Monthly', unit:S.gran,
+    granWord:GRAN_ADJ[S.gran], unit:bucketGran(S.gran),
     who:S.session?S.session.name:'', at:new Date()};
 }
 const fileStamp = d => `${d.p.start}${d.p.gran==='day'?'':'_'+d.p.gran}`;
@@ -3640,7 +4214,7 @@ async function exportExcel(){
   /* 4 · O&M visits */
   const wb4=sheet('O&M visits',XC.accent);
   xlTitle(wb4,`O&M visits · ${rangeLong}`,'Every visit received or closed in the trend range, newest first.',20);
-  const vRows=d.visits.map(r=>{ const st=omStatus(r); const t=(r.stage3||{}).tests||{}; return [toDate(r.dateReceived),r.bmsId,r.model,r.visitNumber||1,{v:st[0],tone:st[1]||'neutral'},issueNames(r).join(', '),(r.stage1||{}).technician,(r.stage2||{}).technician,(r.stage3||{}).technician,((r.stage2||{}).sopRef||'').split(':')[0],(r.stage2||{}).partsReplaced,r.capaCycles||0,t.irMeasured?+t.irMeasured:null,t.packVoltage?+t.packVoltage:null,toDate(r.closedAt),isClosed(r)&&r.closedAt?Math.max(0,daysBetween(r.dateReceived,dkey(r.closedAt))):ageDays(r),(r.stage3||{}).qcNote,r.cycles==null||r.cycles===''?null:+r.cycles,otherIssueText(r.stage1),(r.capaLog||[]).map(c=>`#${c.cycle} ${capaText(c)}`).join('\n'),onHold(r)?{v:`Waiting · ${r.hold.part||'part'} since ${fmtShort(dkey(r.hold.since))}`,tone:'serious'}:((r.holdLog||[]).length?`${r.holdLog.length} wait(s), resolved`:'')]; });
+  const vRows=d.visits.map(r=>{ const st=omStatus(r); const t=(r.stage3||{}).tests||{}; return [toDate(r.dateReceived),r.bmsId,r.model,r.visitNumber||1,{v:st[0],tone:st[1]||'neutral'},issueNames(r).join(', '),(r.stage1||{}).technician,(r.stage2||{}).technician,(r.stage3||{}).technician,methodOf(r),(r.stage2||{}).partsReplaced,r.capaCycles||0,t.irMeasured?+t.irMeasured:null,t.packVoltage?+t.packVoltage:null,toDate(r.closedAt),isClosed(r)&&r.closedAt?Math.max(0,daysBetween(r.dateReceived,dkey(r.closedAt))):ageDays(r),(r.stage3||{}).qcNote,r.cycles==null||r.cycles===''?null:+r.cycles,otherIssueText(r.stage1),(r.capaLog||[]).map(c=>`#${c.cycle} ${capaText(c)}`).join('\n'),onHold(r)?{v:`Waiting · ${r.hold.part||'part'} since ${fmtShort(dkey(r.hold.since))}`,tone:'serious'}:((r.holdLog||[]).length?`${r.holdLog.length} wait(s), resolved`:'')]; });
   xlTable(wb4,5,1,[{h:'Received',fmt:'d mmm yyyy',w:13},{h:'BMS ID',w:23},{h:'Platform',w:11},{h:'Visit #',align:'right',w:8},{h:'Status',w:22},{h:'Issues reported',wrap:true,w:36},{h:'Stage 1',w:14},{h:'Stage 2',w:14},{h:'Stage 3',w:14},{h:'SOP',w:12},{h:'Parts',w:14},{h:'CAPA',align:'right',w:7},{h:'IR (MΩ)',align:'right',fmt:'0',w:9},{h:'Pack V',align:'right',fmt:'0.00',w:9},{h:'Closed',fmt:'d mmm yyyy',w:13},{h:'Days',align:'right',w:7},{h:'QC notes',wrap:true,w:30},{h:'Charge cycles',align:'right',w:10},{h:'Other issue (category: explanation)',wrap:true,w:30},{h:'CAPA reason / part',wrap:true,w:38},{h:'Supplier material',wrap:true,w:26}],vRows.length?vRows:[[null,'No visits in this range']],{filter:true});
   wb4.views=[{showGridLines:false,state:'frozen',ySplit:5,xSplit:2}];
 
@@ -3792,7 +4366,7 @@ function openExportDialog(){
   const root=$('#modal-root');
   root.innerHTML=`<div class="scrim" data-act="export-close"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="ex-t" style="width:min(520px,100%)">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><div class="eyebrow">Download</div><h3 id="ex-t">Report for ${esc(periodLabel(p,true))}</h3></div><button class="btn icon-btn ghost" data-act="export-close" aria-label="Close">${ICON.close}</button></div>
-    <div class="sub">${S.gran==='day'?'Daily':S.gran==='week'?'Weekly':'Monthly'} breakdown. Trends cover ${esc(fmtDay(bs[0].start))} to ${esc(fmtDay(bs[bs.length-1].end))}. To change this, close the dialog and pick Daily, Weekly or Monthly and a period on the page.</div>
+    <div class="sub">${GRAN_ADJ[S.gran]} breakdown. Trends cover ${esc(fmtDay(bs[0].start))} to ${esc(fmtDay(bs[bs.length-1].end))}. To change this, close the dialog and pick Daily, Weekly or Monthly and a period on the page.</div>
     <button class="export-opt" data-act="export-xlsx"><span class="ex-ic xl">XLSX</span><span><b>Excel workbook</b><br><span class="muted">Summary with charts, period breakdown, per-battery usability, O&amp;M visits, BSA cases, open pipeline and RCAs. Formatted, filterable, with Excel charts.</span></span></button>
     <button class="export-opt" data-act="export-html"><span class="ex-ic ht">HTML</span><span><b>Chart report</b><br><span class="muted">One page with headline numbers, charts and tables. Opens in any browser and prints cleanly to PDF.</span></span></button>
     <div class="err" id="ex-err" role="alert"></div></div></div>`;
@@ -4363,7 +4937,7 @@ const FAREWELLS = [
 function myDay(s){
   const today=todayStr(), me=s.name, out={moved:0,intakes:0,passes:0,capa:0,holds:0,bsa:0};
   S.data.om.forEach(r=>{
-    [1,2,3].forEach(k=>{ const st=r['stage'+k]||{}; if((st.completedBy===me||(k===1&&st.technician===me))&&st.completedAt&&dkey(st.completedAt)===today){ out.moved++; if(k===1) out.intakes++; if(k===3&&r.finalDisposition==='PASS'&&dkey(r.closedAt)===today) out.passes++; } });
+    [1,2,3].forEach(k=>{ const st=r['stage'+k]||{}; if(((st.completedBy&&samePerson(st.completedBy,me))||(k===1&&st.technician&&samePerson(st.technician,me)))&&st.completedAt&&dkey(st.completedAt)===today){ out.moved++; if(k===1) out.intakes++; if(k===3&&r.finalDisposition==='PASS'&&dkey(r.closedAt)===today) out.passes++; } });
     (r.capaLog||[]).forEach(c=>{ if(c.returnedBy===me&&dkey(c.returnedAt)===today) out.capa++; });
     [...(r.holdLog||[]),...(r.hold?[r.hold]:[])].forEach(h=>{ if((h.by===me&&dkey(h.since)===today)||(h.releasedBy===me&&dkey(h.releasedAt)===today)) out.holds++; });
   });
@@ -4415,7 +4989,7 @@ function LoginView(){
     <div class="login-form"><form class="login-card" data-form="login">
       <div><div class="eyebrow">Sign in</div><h2>Who's working?</h2></div>
       ${field('Role',`<select class="in" id="l-role" data-act-change="login-role">${Object.entries(ROLE_LABEL).map(([k,l])=>`<option value="${k}" ${k===role?'selected':''}>${l}</option>`).join('')}</select>`)}
-      ${role==='omtech'?field('Your name',`<input class="in" id="l-name" autocomplete="name" placeholder="As it should appear on records">`):''}
+      ${role==='omtech'?field('Your name',`<input class="in" id="l-name" autocomplete="name" list="l-names" placeholder="Pick your name or type it">${loginNames()}`):''}
       ${field(role==='omtech'?'Stage PIN':'PIN',`<input class="in" id="l-pin" type="password" inputmode="numeric" placeholder="••••">`)}
       ${role==='omtech'?'<div class="muted" style="font-size:12.5px;margin-top:-6px">Your stage PIN decides which stage you sign in to.</div>':''}
       <label class="check-line"><input type="checkbox" id="l-demo" ${demoDefault?'checked':''}><span><b>Use sample data</b><br><span class="muted">Explore with ${80} days of generated records. Nothing is saved and no PIN is needed.</span></span></label>
@@ -4448,6 +5022,7 @@ async function startSession(s){
   S.view=lsRead('bqc_view_'+s.role,roleTabs(s)[0][0]);
   S.f={intake:lsRead(draftKey(),null)||emptyIntake(s.name),nbsa:emptyBsa(s.name),rca:emptyRca(s.name)};
   render(); await refresh(true); scheduleAuto();
+  if(s.role==='omtech'&&!s.demo){ const c=canonPerson(s.name); if(c&&c!==s.name){ const old=s.name; s.name=c; lsWrite(SESSION_KEY,s); if(S.f.intake&&S.f.intake.receivedBy===old) S.f.intake.receivedBy=c; render(); toast(`Signed in as ${c} (same person as “${old}”).`); } }
 }
 
 /* =====================================================================
@@ -4500,7 +5075,7 @@ const ACT = {
   'set-accent':t=>{ applyAccent(t.dataset.v); lsWrite('bqc_accent',t.dataset.v); t.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===t)); drawCharts(); BG.refresh(); },
   'toggle-motion':t=>{ const on=!bgMotionOn(); lsWrite('bqc_motion',on?1:0); t.classList.toggle('on',on); t.setAttribute('aria-checked',on); BG.refresh(); },
   gran:t=>{ S.gran=t.dataset.v; lsWrite('bqc_gran',S.gran); S.om.page=1; renderMain(); },
-  pshift:t=>{ S.anchor=periodOf(shiftKey(periodOf(S.anchor,S.gran).start,S.gran,+t.dataset.v),S.gran).start; if(S.anchor>todayStr()) S.anchor=todayStr(); S.om.page=1; renderMain(); },
+  pshift:t=>{ if(['mtd','ytd','all'].includes(S.gran)){ const v=+t.dataset.v, d=parseKey(S.anchor); S.anchor=localKey(S.gran==='ytd'?new Date(d.getFullYear()+v+1,0,0):new Date(d.getFullYear(),d.getMonth()+v+1,0)); if(S.anchor>todayStr()) S.anchor=todayStr(); S.om.page=1; renderMain(); return; } S.anchor=periodOf(shiftKey(periodOf(S.anchor,S.gran).start,S.gran,+t.dataset.v),S.gran).start; if(S.anchor>todayStr()) S.anchor=todayStr(); S.om.page=1; renderMain(); },
   ptoday:()=>{ S.anchor=todayStr(); renderMain(); },
   'pick-bucket':t=>{ S.anchor=t.dataset.v; renderMain(); },
   'pick-period':t=>{ S.anchor=t.dataset.v; renderMain(); },
@@ -4512,7 +5087,7 @@ const ACT = {
   qtab:t=>{ S.qtab=t.dataset.v; renderMain(); },
   refresh:()=>refresh(false),
   theme:()=>{ BG.refresh();  const cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); const n=cur==='dark'?'light':'dark'; document.documentElement.setAttribute('data-theme',n); lsWrite('bqc_theme',n); drawCharts(); },
-  signout:async()=>{ if(pendingCount()&&!Cloud.demo&&!await ask('Sign out with unsent changes?',`${pendingCount()} change(s) are saved on this device but not uploaded yet. They stay here and upload next time you're online.`,'Sign out')) return; S.lastWho=S.session.name; S.farewell=makeFarewell(S.session); S.welcome=null; lsDel(SESSION_KEY); S.session=null; S.drawer=null; Cloud.demo=false; S.data={om:[],bsa:[],rca:[],qi:[],daily:[]}; bump(); clearInterval(autoTimer); render(); },
+  signout:async()=>{ if(pendingCount()&&!Cloud.demo&&!await ask('Sign out with unsent changes?',`${pendingCount()} change(s) are saved on this device but not uploaded yet. They stay here and upload next time you're online.`,'Sign out')) return; S.lastWho=S.session.name; S.farewell=makeFarewell(S.session); S.welcome=null; lsDel(SESSION_KEY); S.session=null; S.drawer=null; Cloud.demo=false; S.data={om:[],bsa:[],rca:[],qi:[],daily:[],methods:[],people:[],cfg:[]}; bump(); clearInterval(autoTimer); render(); },
   storage:()=>openDrawer({type:'storage'}),
   close:()=>{ if(S.drawer&&S.drawer.type==='intake') lsWrite(draftKey(),S.f.intake); S.formError=null; closeDrawer(); },
   'open-battery':t=>{ S.formError=null; openDrawer({type:'battery',id:t.dataset.id}); },
@@ -4541,6 +5116,20 @@ const ACT = {
   'tc-csv':()=>tcCsv(),
   'tc-case':t=>openDrawer({type:'tccase',src:t.dataset.src,gran:t.dataset.g||'week',key:t.dataset.v}),
   'tc-case-csv':()=>caseCsv(),
+  'an-mode':t=>{ S.tc.mode=t.dataset.v; lsWrite('bqc_an_mode',S.tc.mode); renderMain(); },
+  'an-case':t=>openDrawer({type:'tccase',src:t.dataset.src,gran:S.gran,dim:t.dataset.dim,val:t.dataset.v}),
+  'an-csv':t=>anCsv(t.dataset.v),
+  'setup-open':t=>{ const m=$('.top.menu-open'); if(m) m.classList.remove('menu-open'); openSetup(t.dataset.v); },
+  'setup-tab':t=>{ S.f.setup.tab=t.dataset.v; S.f.rm=null; S.formError=null; renderDrawer(true); const b=$('#drawer-root .d-body'); if(b) b.scrollTop=0; },
+  'rm-edit':t=>rmEdit(t.dataset.id),
+  'rm-new':()=>rmEdit(''),
+  'rm-copy':t=>rmEdit(t.dataset.id,true),
+  'rm-ptype':t=>{ S.f.setup.ptype=t.dataset.v; renderDrawer(true); },
+  'rm-cancel':()=>{ S.f.rm=null; S.formError=null; renderDrawer(true); },
+  'rm-save':()=>rmSave(),
+  'cat-save':()=>catSave(),
+  'cat-add':()=>catAdd(),
+  'ppl-save':()=>pplSave(),
   'tc-chain':t=>{ S.gran=t.dataset.g; lsWrite('bqc_gran',S.gran); S.view='chain'; S.om.scope='period'; S.om.status='all'; S.om.issue=t.dataset.v; S.om.page=1; render(); window.scrollTo(0,0); },
   'dups-delete':()=>dupsDelete(),
   'dups-all':()=>{ const sel={}; dupGroups().forEach(x=>x.items.forEach(r=>{ if(r.id!==x.keep&&canDeleteVisit(r)) sel[r.id]=true; })); S.f.dups={sel}; renderDrawer(true); },
@@ -4587,12 +5176,17 @@ let filterTimer=0;
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.dataset.phys){ physInput(t); return; }
+  if(t.dataset.subs&&S.f.setup){ S.f.setup.subs[t.dataset.subs]=t.value; return; }
+  if(t.dataset.pname!=null&&S.f.setup){ S.f.setup.pname[t.dataset.pname]=t.value; return; }
   if(t.dataset.bind){ setPath(S.f,t.dataset.bind,t.type==='checkbox'?t.checked:t.value); if(S.drawer&&S.drawer.type==='intake') scheduleDraft(); if(S.drawer&&S.drawer.type==='daily') paintDailyCalc(); return; }
   if(t.dataset.idsfx){ idInput(t.dataset.idsfx); if(S.drawer&&S.drawer.type==='intake') scheduleDraft(); return; }
   if(t.dataset.filter&&t.tagName==='INPUT'){ const [g,k]=t.dataset.filter.split('.'); S[g][k]=t.value; S[g].page=1; clearTimeout(filterTimer); filterTimer=setTimeout(renderMain,160); }
 });
 document.addEventListener('change',e=>{
   const t=e.target;
+  if(t.dataset.cat&&S.f.setup){ S.f.setup[t.dataset.cat][t.dataset.k]=t.value; return; }
+  if(t.dataset.move!=null&&S.f.setup){ S.f.setup.move[t.dataset.move]=t.value; return; }
+  if(t.dataset.bind==='edit.stage2.methodId'&&S.f.edit) S.f.edit.stage2._picked=true;
   if(t.dataset.dup){ const f=S.f.dups=S.f.dups||{sel:{}}; f.sel[t.dataset.dup]=t.checked; renderDrawer(true); return; }
   if(t.dataset.bind){ setPath(S.f,t.dataset.bind,t.type==='checkbox'?t.checked:t.value); if(t.hasAttribute('data-rerender')) renderDrawer(true); else if(S.drawer&&S.drawer.type==='daily') paintDailyCalc(); return; }
   if(t.dataset.idplat){ idInput(t.dataset.idplat); return; }
