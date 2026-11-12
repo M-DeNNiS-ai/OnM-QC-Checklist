@@ -709,6 +709,12 @@ div.jcard{cursor:pointer} div.jcard:focus-visible{outline:2px solid var(--accent
 .btn.del-go:hover{filter:brightness(1.06)}
 @media (max-width:560px){#modal-root .scrim{padding:10px;align-items:end}.dm-btns .btn{flex:1;height:46px;justify-content:center}.reason-list label{padding:8px 10px}.reason-list small{display:none}.del-modal #del-note{min-height:56px}}
 @media (max-width:760px){.bnav{overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity}.bnav::-webkit-scrollbar{display:none}.bnav .tab{flex:1 0 66px;scroll-snap-align:start}}
+.case-list{display:grid;gap:6px}
+.case-row{display:grid;gap:4px;text-align:left;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);cursor:pointer;color:inherit;font:inherit}
+.case-row:hover{border-color:var(--accent)}
+.cr-1{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.cr-1 b{font-size:13px}
+.cr-2{font-size:12.5px;color:var(--ink-2)}.cr-3{font-size:12.5px;color:var(--ink-3)}
+.bar-row[data-act]{cursor:pointer}
 .tc-grid{align-items:start}.tc-pick{display:none}
 @media (max-width:760px){.tc-pick{display:flex;margin-bottom:10px}.tc-pick button{flex:1}.tc-grid .tc-col{display:none}.tc-grid[data-show=day] .tc-day,.tc-grid[data-show=week] .tc-week,.tc-grid[data-show=month] .tc-month{display:block}}
 @media print{.tc-pick{display:none!important}.tc-grid .tc-col{display:block!important}}
@@ -1256,6 +1262,53 @@ function enteredStageAt(r){
 }
 const hoursSince = iso => iso?Math.max(0,(Date.now()-new Date(iso).getTime())/36e5):0;
 const fmtHours = h => h<1?'under 1 h':h<48?`${Math.round(h)} h`:`${Math.round(h/24)} days`;
+/* "Other issue" is never shown as a case: it is named by what the technician wrote. */
+const normCase = t => String(t||'').toLowerCase().replace(/[.,;:!]+$/,'').replace(/\s+/g,' ').trim();
+function otherCaseLabel(st){ st=st||{}; const n=String(st.otherNote||'').replace(/\s+/g,' ').trim().replace(/[.;:,]+$/,''); if(n) return (n[0].toUpperCase()+n.slice(1)).slice(0,70)+(n.length>70?'…':''); return st.otherCat?`${st.otherCat} issue`:'Unspecified issue'; }
+/* Keyword rules that sort free-text "other" notes into cases. First match wins.
+   A rule with an issue key folds the note into that standard issue; the rest are extra cases. */
+const CASE_KEYWORDS = [
+  ['Charging port',/charg(ing|er)?\s*port|charge\s*port|charging\s*socket/],
+  ['Bolts / screws / fasteners',/\bbolts?\b|screws?|fasten|\bnuts?\b|rivet/],
+  ['Label / sticker / QR code',/label|sticker|\bqr\b|barcode|serial\s*(no|number)/],
+  ['LED / indicator light',/\bled\b|indicator|\blights?\b|display/],
+  ['Overheating',/overheat|\bhot\b|heat|temperat|burn|smoke|smell|melt/],
+  ['Water / moisture ingress',/water|\bwet\b|moist|\brain|flood|humid/],
+  ['Handle / strap',/handle|strap|grip/],
+  ['Firmware / software',/firmware|software|\bflash|\bupdate|\bota\b|config/],
+  ['Noise / rattle / loose parts',/noise|rattl|loose|vibrat|shak/],
+  ['',/not\s*charg|no\s*charg|won'?t\s*charg|doesn'?t\s*charg|charg(e|ing)\s*(fail|problem|issue)|charg/,'chargeFail'],
+  ['',/discharg|cut[\s-]*(off|out)|cuts?\s*out|shut(s|ting)?\s*(down|off)|switch(es)?\s*off|under\s*load/,'dischargeFail'],
+  ['',/no\s*power|\bdead\b|offline|not\s*(turning|switching|powering)\s*on|won'?t\s*(turn|switch|power)\s*on|no\s*output/,'noPower'],
+  ['',/range|capacity|drain|low\s*(soc|charge|battery)|runs?\s*out/,'lowCapacity'],
+  ['',/imbalance|unbalanc|cell\s*(volt|delta|diff)/,'cellImbalance'],
+  ['',/\bbms\b/,'bmsFault'],
+  ['',/\bcan\b|communicat|\bcomms?\b/,'canFail'],
+  ['',/\biot\b|imei|tracker|\bgps\b|\bsim\b|signal/,'iotFault'],
+  ['',/insulation|\bir\b|leak(age)?\s*current/,'irFail'],
+  ['',/swell|bulg|puff/,'swelling'],
+  ['',/connector|terminal|\bplug|socket|\bpins?\b|cable/,'connectorDamage'],
+  ['',/missing|\blost\b|stolen/,'missingComponent'],
+  ['',/tamper|vandal|forced|opened/,'tampered'],
+  ['',/crack|broken|damage|dent|casing|cover|housing|scratch/,'physicalDefect']
+];
+const CASE_CAT = {'Mechanical':'Mechanical issue','Electrical':'Electrical issue','Firmware / software':'Firmware / software','IoT / connectivity':'IoT / IMEI mismatch','Cosmetic':'Cosmetic damage','Customer complaint':'Customer complaint','Other':'Unspecified issue'};
+function otherCase(st){
+  st=st||{}; const t=normCase(st.otherNote);
+  for(const [label,re,key] of CASE_KEYWORDS){ if(t&&re.test(t)) return key?{key,label:ISSUE_LABEL[key],issue:key}:{key:'kw:'+label,label,issue:'other'}; }
+  if(st.otherCat==='IoT / connectivity') return {key:'iotFault',label:ISSUE_LABEL.iotFault,issue:'iotFault'};
+  if(t) return {key:'other:'+t,label:otherCaseLabel(st),issue:'other'};
+  const l=CASE_CAT[st.otherCat]||'Unspecified issue'; return {key:'cat:'+l,label:l,issue:'other'};
+}
+/* every case on a visit, one entry per case (an "other" note that maps to a ticked issue isn't counted twice) */
+function caseKeysOf(r){
+  const out=[], seen=new Set();
+  issuesOf(r).forEach(k=>{ const c=k==='other'?otherCase(r.stage1):{key:k,label:ISSUE_LABEL[k],issue:k}; if(!seen.has(c.key)){ seen.add(c.key); out.push(c); } });
+  return out;
+}
+const caseKey = (r,k) => k==='other'?otherCase(r.stage1).key:k;
+const caseName = (r,k) => k==='other'?otherCase(r.stage1).label:ISSUE_LABEL[k];
+const issueNames = r => caseKeysOf(r).map(c=>c.label);
 function otherIssueText(st){ st=st||{}; if(!(st.issues||{}).other) return ''; return `${st.otherCat?st.otherCat+': ':''}${st.otherNote||''}`.trim(); }
 function capaText(c){ if(!c) return ''; const bits=[c.reasonCat?CAPA_REASON_LABEL[c.reasonCat]||c.reasonCat:'']; if(c.part) bits.push(c.part==='Other part'&&c.partNote?c.partNote:c.part); if(c.cycles!=null&&c.cycles!=='') bits.push(`at ${c.cycles} cycles`); if(c.waitSupplier) bits.push('waiting for supplier material'); return bits.filter(Boolean).join(' · ')+(c.reason?` — ${c.reason}`:''); }
 /* ---------- alerts: what needs someone's attention right now ---------- */
@@ -1886,7 +1939,7 @@ function DupsSheet(){
     ${g.map(x=>`<div class="dup-g"><div class="dup-h"><button class="linkbtn idlink" data-act="open-battery" data-id="${esc(x.id)}">${esc(x.id)}</button><span class="muted">${x.items.length} entries</span></div>
       ${x.items.map(r=>{ const can=canDeleteVisit(r), keep=r.id===x.keep, st=omStatus(r), tech=[1,2,3].map(k=>(r['stage'+k]||{}).technician).filter(Boolean).join(' → ');
         return `<label class="dup-r ${sel[r.id]?'on':''} ${can?'':'locked'}"><input type="checkbox" data-dup="${esc(r.id)}" ${sel[r.id]?'checked':''} ${can?'':'disabled'}>
-        <span class="dup-t"><span class="dup-l1"><b>Visit #${r.visitNumber||1}</b><span>received ${esc(fmtShort(r.dateReceived))}${r.timeReceived?' '+esc(r.timeReceived):''}</span>${keep?chip('Keep','good','★'):''}</span><small>${chip(...st)} ${esc(tech||'nobody yet')}${issuesOf(r).length?' · '+esc(issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', ')):''}${can?'':' · you can\'t delete this one'}</small></span></label>`; }).join('')}</div>`).join('')}`
+        <span class="dup-t"><span class="dup-l1"><b>Visit #${r.visitNumber||1}</b><span>received ${esc(fmtShort(r.dateReceived))}${r.timeReceived?' '+esc(r.timeReceived):''}</span>${keep?chip('Keep','good','★'):''}</span><small>${chip(...st)} ${esc(tech||'nobody yet')}${issuesOf(r).length?' · '+esc(issueNames(r).join(', ')):''}${can?'':' · you can\'t delete this one'}</small></span></label>`; }).join('')}</div>`).join('')}`
     :empty('No duplicates found. Every battery has at most one open entry and one entry per day.');
   const foot=g.length?`<button class="btn" data-act="close">Cancel</button><button class="btn del-go" data-act="dups-delete" ${!n||S.saving?'disabled':''}>${S.saving?savingLabel('',true):`${ICON.trash}<span>Delete ${n} selected</span>`}</button>`:'';
   return sheet('Clean up duplicates',`${g.length} batter${g.length===1?'y':'ies'} with duplicate entries`,body,foot,'O&M chain');
@@ -1939,7 +1992,7 @@ async function deleteVisit(id){
   const r0=S.data.om.find(x=>x.id===id);
   if(!canDeleteVisit(r0)){ toast('You can\'t delete this entry. Ask the O&M manager.'); return; }
   const tw=visitTwins(r0);
-  const ans=await askDelete('Delete this entry?',`<b class="mono">${esc(r0.bmsId)}</b> · visit #${r0.visitNumber||1} · received ${esc(fmtDay(r0.dateReceived))}<br><span class="muted">${esc(omStatus(r0)[0])}${issuesOf(r0).length?' · '+esc(issuesOf(r0).map(k=>ISSUE_LABEL[k]).join(', ')):''}</span>`,
+  const ans=await askDelete('Delete this entry?',`<b class="mono">${esc(r0.bmsId)}</b> · visit #${r0.visitNumber||1} · received ${esc(fmtDay(r0.dateReceived))}<br><span class="muted">${esc(omStatus(r0)[0])}${issuesOf(r0).length?' · '+esc(issueNames(r0).join(', ')):''}</span>`,
     tw.length?`<div class="banner warn" style="margin:0"><div>This battery has ${tw.length} other ${tw.length===1?'entry':'entries'}, so this looks like a duplicate.</div></div>`:'');
   if(!ans) return;
   const s=S.session, fresh=await loadStore('om_chain_records'), r=fresh.find(x=>x.id===id);
@@ -2069,7 +2122,7 @@ function FuSheet(){
   const f=fuCur(r), info=stuckInfo(r), n=Number(r.stage), F=S.f.fu||{}, s=S.session;
   const mine=f&&fuIsMine(f,s), eng=canAssignFu();
   const facts=`<div class="facts"><div class="fact"><span>Stage</span><b>${n} · ${esc(STAGE_SHORT[n]||'')}</b></div><div class="fact"><span>Platform</span><b>${esc(r.model||'—')}</b></div><div class="fact"><span>Claimed by</span><b>${esc((r['stage'+n]||{}).technician||'nobody')}</b></div><div class="fact"><span>In chain</span><b>${ageDays(r)}d</b></div></div>
-    ${info?`<div class="banner ${info.sev}"><div><b>${esc(info.text)}.</b>${issuesOf(r).length?' Reported: '+esc(issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', '))+'.':''}</div></div>`:isClosed(r)?`<div class="banner good"><div>This visit is closed (${esc(omStatus(r)[0])}).</div></div>`:`<div class="banner good"><div>This battery is moving: ${esc(omStatus(r)[0])}.</div></div>`}`;
+    ${info?`<div class="banner ${info.sev}"><div><b>${esc(info.text)}.</b>${issuesOf(r).length?' Reported: '+esc(issueNames(r).join(', '))+'.':''}</div></div>`:isClosed(r)?`<div class="banner good"><div>This visit is closed (${esc(omStatus(r)[0])}).</div></div>`:`<div class="banner good"><div>This battery is moving: ${esc(omStatus(r)[0])}.</div></div>`}`;
   const all=(r.followUps||[]);
   const hist=all.length?`<div><h4 style="margin-bottom:8px">Follow-up history</h4><div class="fu-hist">${all.slice().reverse().map(x=>`<div class="fu-h"><div><b>${esc(x.to||'Anyone at Stage '+x.stage)}</b> asked by ${esc(x.by)} · ${esc(fmtDT(x.at))} ${x.status==='CLOSED'?chip('closed','good','✓'):chip('open','info')}</div>${x.note?`<div class="muted">“${esc(x.note)}”</div>`:''}${(x.updates||[]).map(u=>`<div class="fu-u">${fuUpdateChip(u)} <b>${esc(u.by)}</b> · ${esc(fmtDT(u.at))}<div>${esc(u.text)}</div></div>`).join('')}${x.status==='CLOSED'?`<div class="muted" style="font-size:12px">Closed by ${esc(x.closedBy||'—')} · ${esc(fmtDT(x.closedAt))}${x.closeNote?' · '+esc(x.closeNote):''}</div>`:''}</div>`).join('')}</div></div>`:'';
   let form='', foot='';
@@ -2148,12 +2201,12 @@ const TC_COLORS = ['--s1','--s2','--s3','--s4','--info'];
 function tcLabelOther(st){ const c=(st||{}).otherCat; return c?`Other: ${c}`:ISSUE_LABEL.other; }
 /* counts per case for one period; key → {label,n,issue} */
 function tcCount(src,p){
-  const m={}; const add=(key,label,n,issue)=>{ const x=m[key]=m[key]||{key,label,n:0,issue,plat:{}}; x.n+=n; return x; };
+  const m={}; const add=(key,label,n,issue,item)=>{ const x=m[key]=m[key]||{key,label,n:0,issue,plat:{},items:[]}; x.n+=n; if(item) x.items.push(item); return x; };
   if(src==='intake') S.data.om.forEach(r=>{ if(!inP(r.dateReceived,p)) return; const pl=r.model||platformForId(r.bmsId)||'Unknown';
-    issuesOf(r).forEach(k=>{ const x=k==='other'?add('other:'+((r.stage1||{}).otherCat||''),tcLabelOther(r.stage1),1,'other'):add(k,ISSUE_LABEL[k],1,k); x.plat[pl]=(x.plat[pl]||0)+1; }); });
-  if(src==='daily') (S.data.daily||[]).forEach(r=>{ if(r.status!=='VERIFIED'||!inP(r.date,p)) return; Object.entries(r.issues||{}).forEach(([k,v])=>{ const x=add(k,ISSUE_LABEL[k]||k,dNum(v.found),null); x.rep=(x.rep||0)+dNum(v.repaired); }); });
-  if(src==='capa') S.data.om.forEach(r=>(r.capaLog||[]).forEach(c=>{ if(!inP(dkey(c.returnedAt),p)) return; const l=CAPA_REASON_LABEL[c.reasonCat]||c.reasonCat||'Not given'; add(c.reasonCat||'none',l,1,null); }));
-  if(src==='bsa') S.data.bsa.forEach(c=>{ if(!inP(dkey(c.dateFlagged||c.createdAt),p)) return; const l=c.escalationCategory||'Other escalation'; add(l,l,1,null); });
+    caseKeysOf(r).forEach(c=>{ const x=add(c.key,c.label,1,c.issue,{type:'visit',r,date:r.dateReceived}); x.plat[pl]=(x.plat[pl]||0)+1; }); });
+  if(src==='daily') (S.data.daily||[]).forEach(r=>{ if(r.status!=='VERIFIED'||!inP(r.date,p)) return; Object.entries(r.issues||{}).forEach(([k,v])=>{ const x=add(k,ISSUE_LABEL[k]||k,dNum(v.found),null,{type:'day',r,v,date:r.date}); x.rep=(x.rep||0)+dNum(v.repaired); }); });
+  if(src==='capa') S.data.om.forEach(r=>(r.capaLog||[]).forEach(c=>{ if(!inP(dkey(c.returnedAt),p)) return; const l=CAPA_REASON_LABEL[c.reasonCat]||c.reasonCat||'Not given'; add(c.reasonCat||'none',l,1,null,{type:'capa',r,c,date:dkey(c.returnedAt)}); }));
+  if(src==='bsa') S.data.bsa.forEach(c=>{ if(!inP(dkey(c.dateFlagged||c.createdAt),p)) return; const l=c.escalationCategory||'Other escalation'; add(l,l,1,null,{type:'bsa',c,date:dkey(c.dateFlagged||c.createdAt)}); });
   return m;
 }
 const tcUnit = src => src==='intake'?'batteries':src==='daily'?'found':src==='capa'?'returns':'cases';
@@ -2167,7 +2220,7 @@ function tcRank(src,p){
 function tcColumn(src,gran,title){
   const p=periodOf(S.anchor,gran), R=tcRank(src,p), top=R.list.slice(0,10), max=Math.max(1,...top.map(x=>x.n));
   const delta=x=>{ if(!x.prev) return `<span class="tc-new">new</span>`; const d=x.n-x.prev; return d===0?'<span class="tc-d flat">±0</span>':`<span class="tc-d ${d>0?'up':'down'}">${d>0?'▲':'▼'}${Math.abs(d)}</span>`; };
-  const rows=top.length?`<ol class="tc-list">${top.map((x,i)=>{ const click=src==='intake'&&x.issue?`data-act="tc-chain" data-v="${esc(x.issue)}" data-g="${gran}"`:''; return `<li class="${click?'click':''}" ${click} ${x.plat&&Object.keys(x.plat).length?`data-tip="${esc(`<b>${esc(x.label)}</b>`+Object.entries(x.plat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="tr"><span>${esc(k)}</span><b>${v}</b></div>`).join(''))}"`:''}>
+  const rows=top.length?`<ol class="tc-list">${top.map((x,i)=>{ const click=`data-act="tc-case" data-src="${src}" data-v="${esc(x.key)}" data-g="${gran}" title="See the batteries under this case"`; return `<li class="${click?'click':''}" ${click} ${x.plat&&Object.keys(x.plat).length?`data-tip="${esc(`<b>${esc(x.label)}</b>`+Object.entries(x.plat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="tr"><span>${esc(k)}</span><b>${v}</b></div>`).join(''))}"`:''}>
       <span class="tc-rank ${i<3?'top':''}">${i+1}</span>
       <span class="tc-main"><span class="tc-l"><b>${esc(x.label)}</b><span class="tc-v"><b class="num">${x.n}</b>${delta(x)}</span></span>
       <span class="tc-bar"><i style="width:${x.n/max*100}%;background:var(${i===0?'--crit':i<3?'--s2':'--s1'})"></i></span>
@@ -2200,7 +2253,7 @@ function TopCasesView(){
   <div class="filters"><div class="seg tc-src" role="group" aria-label="Source">${TC_SOURCES.map(([k,l])=>`<button class="${src===k?'on':''}" data-act="tc-src" data-v="${k}">${l}</button>`).join('')}</div></div>
   <div class="seg tc-pick" role="group" aria-label="Show">${[['day','Day'],['week','Week'],['month','Month']].map(([k,l])=>`<button class="${(T.show||'week')===k?'on':''}" data-act="tc-show" data-v="${k}">${l}</button>`).join('')}</div>
   <div class="grid g3 tc-grid" data-show="${T.show||'week'}">${tcColumn(src,'day','Day')}${tcColumn(src,'week','Week')}${tcColumn(src,'month','Month')}</div>
-  <div class="card section"><div class="card-head"><div><h3>How the top cases move</h3><p>This month's top 5, last ${tg==='day'?'14 days':tg==='week'?'12 weeks':'12 months'}. Click a bar to jump to that ${tg}.</p></div><div class="seg">${[['day','Daily'],['week','Weekly'],['month','Monthly']].map(([k,l])=>`<button class="${tg===k?'on':''}" data-act="tc-tg" data-v="${k}">${l}</button>`).join('')}</div></div>
+  <div class="card section"><div class="card-head"><div><h3>How the top cases move</h3><p>This month's top 5, last ${tg==='day'?'14 days':tg==='week'?'12 weeks':'12 months'}. Click a bar to jump to that ${tg}. Tap any case above to see its batteries.</p></div><div class="seg">${[['day','Daily'],['week','Weekly'],['month','Monthly']].map(([k,l])=>`<button class="${tg===k?'on':''}" data-act="tc-tg" data-v="${k}">${l}</button>`).join('')}</div></div>
     ${top5.length?`<div class="legend">${series.map(s=>`<span><i style="background:var(${s.color})"></i>${esc(s.label)}</span>`).join('')}</div>`:''}${trend}</div>
   ${platHtml}`;
 }
@@ -2209,6 +2262,40 @@ function tcCsv(){
   const lines=[['Source','Period','From','To','Rank','Case','Count','Share %','Previous period','Change'].join(',')];
   ['day','week','month'].forEach(g=>{ const R=tcRank(T.src,periodOf(S.anchor,g)); R.list.forEach((x,i)=>lines.push([(TC_SOURCES.find(s=>s[0]===T.src)||[])[1],g,R.p.start,R.p.end,i+1,x.label,x.n,x.share==null?'':Math.round(x.share*10)/10,x.prev,x.n-x.prev].map(q).join(','))); });
   download(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv'}),`top-cases_${T.src}_${S.anchor}.csv`);
+}
+
+
+/* ---------- Batteries under one case ---------- */
+function CaseSheet(){
+  const d=S.drawer, p=periodOf(S.anchor,d.gran), x=tcCount(d.src,p)[d.key];
+  const srcL=(TC_SOURCES.find(t=>t[0]===d.src)||[])[1]||'';
+  if(!x) return sheet('No batteries',`${esc(srcL)} · ${esc(periodLabel(p,true))}`,empty('Nothing under this case in this period any more. Refresh or pick another date.'),'','Top cases');
+  const items=x.items.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  let body='';
+  if(d.src==='intake'){
+    const pl={}; items.forEach(i=>{ const k=i.r.model||platformForId(i.r.bmsId)||'Unknown'; pl[k]=(pl[k]||0)+1; });
+    body=`<div class="facts"><div class="fact"><span>Batteries</span><b>${items.length}</b></div><div class="fact"><span>Still open</span><b>${items.filter(i=>!isClosed(i.r)).length}</b></div><div class="fact"><span>Passed</span><b>${items.filter(i=>i.r.finalDisposition==='PASS').length}</b></div><div class="fact"><span>To BSA</span><b>${items.filter(i=>isToBsa(i.r)).length}</b></div></div>
+      <div class="legend">${Object.entries(pl).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<span><b>${esc(k)}</b> ${v}</span>`).join('')}</div>
+      <div class="case-list">${items.map(({r})=>{ const st=omStatus(r), other=issueNames(r).filter(n=>n!==x.label); return `<button class="case-row" data-act="open-battery" data-id="${esc(r.bmsId)}"><span class="cr-1"><b class="mono">${esc(r.bmsId)}</b>${chip(...st)}</span><span class="cr-2">${esc(r.model||'—')} · visit #${r.visitNumber||1} · received ${esc(fmtShort(r.dateReceived))}${r.site?' · '+esc(r.site):''}${(r.stage1||{}).technician?' · by '+esc(r.stage1.technician):''}</span>${(r.stage1||{}).otherNote&&(r.stage1.issues||{}).other?`<span class="cr-3">Note: “${esc(r.stage1.otherNote)}”</span>`:''}${other.length?`<span class="cr-3">Also: ${esc(other.join(', '))}</span>`:''}</button>`; }).join('')}</div>`;
+  } else if(d.src==='capa'){
+    body=`<div class="case-list">${items.map(({r,c})=>`<button class="case-row" data-act="open-battery" data-id="${esc(r.bmsId)}"><span class="cr-1"><b class="mono">${esc(r.bmsId)}</b>${chip(...omStatus(r))}</span><span class="cr-2">${esc(r.model||'—')} · returned ${esc(fmtDT(c.returnedAt))} by ${esc(c.returnedBy||'—')}</span><span class="cr-3">${esc(capaText(c))}</span></button>`).join('')}</div>`;
+  } else if(d.src==='bsa'){
+    body=`<div class="case-list">${items.map(({c})=>{ const t=bsaTechStatus(c), tone=BSA_TONE[t]||['','']; return `<button class="case-row" data-act="open-bsa" data-id="${esc(c.id)}"><span class="cr-1"><b class="mono">${esc(c.bmsId)}</b>${chip(t,tone[0],tone[1])}</span><span class="cr-2">${esc(c.model||'—')} · flagged ${esc(fmtShort(dkey(c.dateFlagged||c.createdAt)))} by ${esc(c.flaggedBy||'—')}</span>${c.issueDescription?`<span class="cr-3">${esc(c.issueDescription)}</span>`:''}</button>`; }).join('')}</div>`;
+  } else {
+    body=`<div class="banner"><div>Receiving counts are totals, not individual batteries, so this shows each day's numbers for this case. Battery IDs are in the <b>Intake defects</b> view.</div></div>
+      <div class="case-list">${items.map(({r,v})=>`<button class="case-row" data-act="daily-open" data-id="${esc(r.id)}"><span class="cr-1"><b>${esc(fmtDay(r.date))}</b>${chip(`${dNum(v.found)} found`,'info')}</span><span class="cr-2">${dNum(v.repaired)} repaired · ${dNum(v.notWorked)} not worked on${v.reason?' ('+esc(v.reason)+')':''} · logged by ${esc(r.loggedBy||'—')}</span></button>`).join('')}</div>`;
+  }
+  return sheet(esc(x.label),`${esc(srcL)} · ${esc(periodLabel(p,true))} · ${x.n} ${tcUnit(d.src)}`,body,`<button class="btn" data-act="tc-case-csv">${ICON.dl} CSV</button>`,'Top cases');
+}
+function caseCsv(){
+  const d=S.drawer, p=periodOf(S.anchor,d.gran), x=tcCount(d.src,p)[d.key]; if(!x) return;
+  const q=v=>{ const t=String(v??''); return /[",\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t; };
+  const L=[['Case','Date','BMS ID','Platform','Visit','Status','Detail'].join(',')];
+  x.items.forEach(i=>{ if(i.type==='visit') L.push([x.label,i.r.dateReceived,i.r.bmsId,i.r.model,i.r.visitNumber||1,omStatus(i.r)[0],issueNames(i.r).join('; ')].map(q).join(','));
+    else if(i.type==='capa') L.push([x.label,dkey(i.c.returnedAt),i.r.bmsId,i.r.model,i.r.visitNumber||1,omStatus(i.r)[0],capaText(i.c)].map(q).join(','));
+    else if(i.type==='bsa') L.push([x.label,i.date,i.c.bmsId,i.c.model,'',bsaTechStatus(i.c),i.c.issueDescription||''].map(q).join(','));
+    else L.push([x.label,i.r.date,'','','','',`${dNum(i.v.found)} found, ${dNum(i.v.repaired)} repaired`].map(q).join(',')); });
+  download(new Blob(['﻿'+L.join('\r\n')],{type:'text/csv'}),`case_${String(x.label).replace(/[^A-Za-z0-9]+/g,'-').slice(0,40)}_${p.start}.csv`);
 }
 
 /* =====================================================================
@@ -2430,10 +2517,10 @@ function OverviewView(){
   const fpyChart=chartSlot({type:'line',labels:buckets.map(b=>periodLabel(b)),full:buckets.map(b=>periodLabel(b,true)),values:bs.map(x=>x.fpy),pctAxis:true,label:'First-pass yield',sel,act:'pick-bucket',buckets:buckets.map(b=>b.start),extra:bs.map(x=>`${x.firstPass} of ${x.closed} closed`)});
 
   // defects in period
-  const counts={}; st.intakeRows.forEach(r=>issuesOf(r).forEach(k=>counts[k]=(counts[k]||0)+1));
-  const defects=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  const dmax=Math.max(1,...defects.map(d=>d[1]));
-  const defectHtml=defects.length?`<div class="legend"><span><i style="background:var(--s1)"></i>Supplier-related</span><span><i style="background:var(--s2)"></i>Handling / field</span></div><div class="bars">${defects.map(([k,v])=>barRow(ISSUE_LABEL[k],[[v,issueCategory(k)==='Supplier'?'--s1':issueCategory(k)==='Recall'?'--s4':'--s2',`${ISSUE_LABEL[k]}: ${v} intake${v===1?'':'s'} · ${issueCategory(k)}`]],dmax,v,`data-act="filter-issue" data-v="${k}"`)).join('')}</div>`:empty('No intakes in this period.');
+  const counts={}; st.intakeRows.forEach(r=>caseKeysOf(r).forEach(x=>{ const c=counts[x.key]=counts[x.key]||{k:x.issue,label:x.label,n:0}; c.n++; }));
+  const defects=Object.entries(counts).sort((a,b)=>b[1].n-a[1].n).slice(0,8);
+  const dmax=Math.max(1,...defects.map(d=>d[1].n));
+  const defectHtml=defects.length?`<div class="legend"><span><i style="background:var(--s1)"></i>Supplier-related</span><span><i style="background:var(--s2)"></i>Handling / field</span></div><div class="bars">${defects.map(([ck,c])=>{ const v=c.n,k=c.k; return barRow(c.label,[[v,issueCategory(k)==='Supplier'?'--s1':issueCategory(k)==='Recall'?'--s4':'--s2',`${esc(c.label)}: ${v} batter${v===1?'y':'ies'} · ${issueCategory(k)} · click to see them`]],dmax,v,`data-act="tc-case" data-src="intake" data-g="${S.gran}" data-v="${esc(ck)}"`); }).join('')}</div>`:empty('No intakes in this period.');
 
   // platform
   const plat={}; st.intakeRows.forEach(r=>{ const k=r.model||platformForId(r.bmsId)||'Unknown'; plat[k]=(plat[k]||0)+1; });
@@ -2508,7 +2595,7 @@ function ChainView(){
   if(F.status==='hold') rows=rows.filter(onHold);
   if(F.status==='bsa') rows=rows.filter(isToBsa);
   if(F.platform!=='all') rows=rows.filter(r=>(r.model||platformForId(r.bmsId))===F.platform);
-  if(F.issue) rows=rows.filter(r=>r.stage1&&r.stage1.issues&&r.stage1.issues[F.issue]);
+  if(F.issue) rows=rows.filter(r=>caseKeysOf(r).some(c=>c.key===F.issue)||(F.issue==='other'&&issuesOf(r).includes('other')));
   if(F.q){ const q=F.q.toLowerCase(); rows=rows.filter(r=>[r.bmsId,r.model,r.site,r.imei,r.status,r.stage1&&r.stage1.technician,r.stage2&&r.stage2.technician,r.stage3&&r.stage3.technician].join(' ').toLowerCase().includes(q)); }
   rows.sort((a,b)=>String(b.createdAt||b.dateReceived).localeCompare(String(a.createdAt||a.dateReceived)));
   S._omRows=rows;
@@ -2518,7 +2605,7 @@ function ChainView(){
     <div class="period">${s.role==='omtech'&&s.stage===1||s.role==='omadmin'&&false?'':''}${dupGroups().length?`<button class="btn danger del-ic" data-act="dups-open">${ICON.trash}<span>Duplicates (${dupGroups().length})</span></button>`:''}${can('om_chain_records')&&(s.role!=='omtech'||s.stage===1)?`<button class="btn pri" data-act="new-intake">${ICON.plus} Receive battery</button>`:''}</div></div>
   ${dupChainBanner()}
   <div class="board">${laneHtml}</div>
-  <div class="page-head section" style="margin-top:22px"><div><h3>Visit log</h3><p>${F.scope==='period'?`Received or closed in ${esc(periodLabel(p,true))}`:'All visits on record'}${F.issue?` · issue: ${esc(ISSUE_LABEL[F.issue])} <button class="btn sm ghost" data-act="f" data-g="om" data-k="issue" data-v="">Clear</button>`:''}</p></div>${F.scope==='period'?PeriodBar():''}</div>
+  <div class="page-head section" style="margin-top:22px"><div><h3>Visit log</h3><p>${F.scope==='period'?`Received or closed in ${esc(periodLabel(p,true))}`:'All visits on record'}${F.issue?` · case: ${esc(ISSUE_LABEL[F.issue]||F.issueLabel||F.issue)} <button class="btn sm ghost" data-act="f" data-g="om" data-k="issue" data-v="">Clear</button>`:''}</p></div>${F.scope==='period'?PeriodBar():''}</div>
   <div class="filters">
     <div class="seg"><button class="${F.scope==='period'?'on':''}" data-act="f" data-g="om" data-k="scope" data-v="period">Selected period</button><button class="${F.scope==='all'?'on':''}" data-act="f" data-g="om" data-k="scope" data-v="all">All time</button></div>
     ${statusChips}
@@ -2528,14 +2615,14 @@ function ChainView(){
   </div>
   <div class="tbl-wrap"><table><thead><tr><th>Received</th><th>BMS ID</th><th>Platform</th><th class="r">Visit</th><th>Status</th><th>Issues reported</th><th>Technicians</th><th class="r">Days</th><th class="r" aria-label="Actions"></th></tr></thead><tbody>
   ${pageRows.length?pageRows.map(r=>{ const st=omStatus(r); const iss=issuesOf(r); const days=isClosed(r)&&r.closedAt?Math.max(0,daysBetween(r.dateReceived,dkey(r.closedAt))):ageDays(r);
-    return `<tr class="click" data-act="open-om" data-id="${esc(r.id)}"><td class="num">${esc(fmtShort(r.dateReceived))}</td><td><span class="idlink">${esc(r.bmsId)}</span></td><td>${esc(r.model||'—')}</td><td class="r num">#${r.visitNumber||1}</td><td>${chip(...st)}</td><td style="max-width:260px;white-space:normal">${iss.length?esc(iss.slice(0,2).map(k=>ISSUE_LABEL[k]).join(', '))+(iss.length>2?` +${iss.length-2}`:''):'<span class="muted">—</span>'}</td><td style="white-space:nowrap">${esc([1,2,3].map(n=>(r['stage'+n]||{}).technician).filter(Boolean).join(' → ')||'—')}</td><td class="r num">${days}</td><td class="r">${canDeleteVisit(r)?`<button class="btn sm danger del-ic" data-act="del-visit" data-id="${esc(r.id)}" title="Delete this entry (duplicate or typing error)" aria-label="Delete ${esc(r.bmsId)} entry">${ICON.trash}<span>Delete</span></button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="9">${empty('No visits match these filters.')}</td></tr>`}
+    return `<tr class="click" data-act="open-om" data-id="${esc(r.id)}"><td class="num">${esc(fmtShort(r.dateReceived))}</td><td><span class="idlink">${esc(r.bmsId)}</span></td><td>${esc(r.model||'—')}</td><td class="r num">#${r.visitNumber||1}</td><td>${chip(...st)}</td><td style="max-width:260px;white-space:normal">${iss.length?esc(issueNames(r).slice(0,2).join(', '))+(iss.length>2?` +${iss.length-2}`:''):'<span class="muted">—</span>'}</td><td style="white-space:nowrap">${esc([1,2,3].map(n=>(r['stage'+n]||{}).technician).filter(Boolean).join(' → ')||'—')}</td><td class="r num">${days}</td><td class="r">${canDeleteVisit(r)?`<button class="btn sm danger del-ic" data-act="del-visit" data-id="${esc(r.id)}" title="Delete this entry (duplicate or typing error)" aria-label="Delete ${esc(r.bmsId)} entry">${ICON.trash}<span>Delete</span></button>`:''}</td></tr>`; }).join(''):`<tr><td colspan="9">${empty('No visits match these filters.')}</td></tr>`}
   </tbody></table></div>${pager(rows.length,F,25,'om')}`;
 }
 function taskCard(r,n,mode){
   const st=r['stage'+n]||{}, h=hoursSince(mode==='mine'?(st.startedAt||enteredStageAt(r)):mode==='hold'?r.hold.since:enteredStageAt(r));
   const lim=mode==='hold'?[ALERT_H.holdWarn,ALERT_H.holdCrit]:mode==='mine'?[ALERT_H.unfinishedWarn,ALERT_H.unfinishedCrit]:[ALERT_H.unclaimedWarn,ALERT_H.unclaimedCrit];
   const tone=h>=lim[1]?'crit':h>=lim[0]?'warn':'';
-  const what=r.capaCycles>0?`↺ CAPA ${r.capaCycles}: ${capaText((r.capaLog||[]).slice(-1)[0])}`:issuesOf(r).map(k=>k==='other'&&otherIssueText(r.stage1)?'Other ('+otherIssueText(r.stage1)+')':ISSUE_LABEL[k]).join(', ');
+  const what=r.capaCycles>0?`↺ CAPA ${r.capaCycles}: ${capaText((r.capaLog||[]).slice(-1)[0])}`:issueNames(r).join(', ');
   return `<div role="button" tabindex="0" class="jcard task ${tone?'age-'+tone:'age-ok'}" data-act="open-om" data-id="${esc(r.id)}"><div class="row1"><span class="mono" style="font-weight:700;font-size:12.5px">${esc(r.bmsId)}</span><span class="r1-end">${cardDel(r)}<span class="chip ${tone}">${mode==='hold'?'waiting ':mode==='mine'?'started ':'waiting '}${fmtHours(h)}</span></span></div>
     <div class="row2"><span>${esc(r.model||'—')}</span><span>·</span><span>visit #${r.visitNumber||1}</span>${needsSim(r)?chip('SIM swap','info'):''}${mode==='hold'?chip(r.hold.part||'part','serious','⏸'):''}<span style="margin-left:auto;font-weight:700;color:var(--accent)">${mode==='claim'?'Open · claim':mode==='hold'?'Open':'Continue'} ›</span></div>
     ${what?`<div class="row3">${esc(what)}</div>`:''}</div>`;
@@ -2823,6 +2910,7 @@ function Drawer(){
   if(d.type==='daily') return DailySheet();
   if(d.type==='fu') return FuSheet();
   if(d.type==='dups') return DupsSheet();
+  if(d.type==='tccase') return CaseSheet();
   return '';
 }
 const canWork = r => { const s=S.session; return s.role==='omtech' && !isClosed(r) && r.stage===s.stage; };
@@ -2971,7 +3059,7 @@ function WorkSheet(rec){
   const s=S.session;
   if(!S.f.edit||S.f.edit.id!==rec.id){ S.f.edit=clone(rec); S.f.edit._returnTo='2'; S.formError=null; }
   const e=S.f.edit, n=s.stage, owner=(rec['stage'+n]||{}).technician;
-  const flagged=issuesOf(rec).map(k=>ISSUE_LABEL[k]);
+  const flagged=issueNames(rec);
   const claim=!owner?`<div class="banner"><div>Nobody has claimed this battery at Stage ${n}. <button class="btn sm pri" data-act="claim" data-id="${esc(rec.id)}">Claim it</button></div></div>`:owner!==s.name?`<div class="banner warn"><div>Claimed by <b>${esc(owner)}</b>. Submitting records you as the Stage ${n} technician.</div></div>`:'';
   const capa=rec.capaCycles>0?`<div class="banner warn"><div><b>Corrective action, cycle ${rec.capaCycles}.</b> ${esc(capaText((rec.capaLog||[]).slice(-1)[0]))} This is the same visit returning, not a new failure.</div></div>`:'';
   const info=`<div class="facts"><div class="fact"><span>Platform</span><b>${esc(rec.model||'—')}</b></div><div class="fact"><span>Visit</span><b>#${rec.visitNumber||1}</b></div><div class="fact"><span>Received</span><b>${esc(fmtShort(rec.dateReceived))}</b></div><div class="fact"><span>In chain</span><b>${ageDays(rec)}d</b></div></div>
@@ -3106,7 +3194,7 @@ function BatterySheet(id,focus){
   const um=USE_META[b.use];
   const ev=[];
   b.visits.forEach(r=>{
-    ev.push({t:r.createdAt||r.dateReceived,k:'info',h:`Received · visit #${r.visitNumber||1}`,d:`${issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', ')||'No issue flagged'}${r.site?' · '+r.site:''} · by ${(r.stage1||{}).technician||'—'}`});
+    ev.push({t:r.createdAt||r.dateReceived,k:'info',h:`Received · visit #${r.visitNumber||1}`,d:`${issueNames(r).join(', ')||'No issue flagged'}${r.site?' · '+r.site:''} · by ${(r.stage1||{}).technician||'—'}`});
     if((r.stage2||{}).completedAt) ev.push({t:r.stage2.completedAt,k:'',h:'Repaired at Stage 2',d:`${(r.stage2.sopRef||'').split(':')[0]} · ${r.stage2.technician||'—'}${r.stage2.partsReplaced?' · parts: '+r.stage2.partsReplaced:''}${(r.stage2.sim||{}).newNumber?' · SIM replaced':''}`});
     (r.capaLog||[]).forEach(c=>ev.push({t:c.returnedAt,k:'warn',h:`Returned for corrective action (cycle ${c.cycle})`,d:`${capaText(c)||'—'} · to Stage ${c.toStage} · ${c.returnedBy||''}`}));
     (r.holdLog||[]).forEach(h=>{ ev.push({t:h.since,k:'serious',h:'Waiting for supplier material',d:`${h.part||'part'} · ${h.by||''}`}); if(h.releasedAt) ev.push({t:h.releasedAt,k:'good',h:'Part arrived · repair resumed',d:`${h.part||'part'} · ${h.releasedBy||''}`}); });
@@ -3128,7 +3216,7 @@ function BatterySheet(id,focus){
     const kv=(k,v)=>`<div><span>${k}</span><b>${esc(v==null||v===''?'—':v)}</b></div>`;
     return `<details class="visit" ${focus===r.id||(!focus&&r===b.visits[b.visits.length-1])?'open':''}><summary><span><b>Visit #${r.visitNumber||1}</b> <span class="muted">· ${esc(fmtDay(r.dateReceived))}</span></span>${chip(...st)}</summary>
       ${canDeleteVisit(r)?`<div class="visit-act"><span class="muted">Duplicate or typing error?</span><button class="btn sm danger del-ic" data-act="del-visit" data-id="${esc(r.id)}">${ICON.trash}<span>Delete this entry</span></button></div>`:''}
-      <div class="kv">${kv('Reason',issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', '))}${otherIssueText(r.stage1)?kv('Other issue',otherIssueText(r.stage1)):''}${onHold(r)?kv('On hold',`Waiting for supplier: ${r.hold.part||'part'} since ${fmtShort(dkey(r.hold.since))}`):''}${kv('Swap station',r.site)}${kv('IMEI',r.imei)}${kv('Charge cycles',r.cycles==null?'':String(r.cycles))}${needsSim(r)?kv('SIM swap',simSummary(r)):''}
+      <div class="kv">${kv('Reason',issueNames(r).join(', '))}${otherIssueText(r.stage1)&&(r.stage1||{}).otherCat?kv('Other issue category',(r.stage1||{}).otherCat):''}${onHold(r)?kv('On hold',`Waiting for supplier: ${r.hold.part||'part'} since ${fmtShort(dkey(r.hold.since))}`):''}${kv('Swap station',r.site)}${kv('IMEI',r.imei)}${kv('Charge cycles',r.cycles==null?'':String(r.cycles))}${needsSim(r)?kv('SIM swap',simSummary(r)):''}
       ${kv('Stage 1',(r.stage1||{}).technician)}${kv('Stage 2',(r.stage2||{}).technician)}${kv('Stage 3',(r.stage3||{}).technician)}
       ${kv('Procedure',(r.stage2||{}).sopRef)}${kv('Parts replaced',(r.stage2||{}).partsReplaced)}${kv('Repair notes',(r.stage2||{}).repairAction)}
       ${kv('Pack voltage',t.packVoltage?t.packVoltage+' V':'')}${kv('Cell min / max',t.minCell?`${t.minCell} / ${t.maxCell} V`:'')}${kv('Insulation',t.irMeasured?`${t.irMeasured} MΩ (min ${t.irThreshold})`:'')}
@@ -3323,8 +3411,8 @@ function reportData(){
   const buckets=bucketsEnding(S.anchor,S.gran,BUCKETS[S.gran]);
   const range={start:buckets[0].start,end:buckets[buckets.length-1].end,gran:S.gran};
   const st=periodStats(p), pv=periodStats(prev), bs=buckets.map(b=>({b,s:periodStats(b)}));
-  const counts={}; st.intakeRows.forEach(r=>issuesOf(r).forEach(k=>counts[k]=(counts[k]||0)+1));
-  const defects=Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({k,label:ISSUE_LABEL[k],cat:issueCategory(k),v}));
+  const counts={}; st.intakeRows.forEach(r=>caseKeysOf(r).forEach(x=>{ const c=counts[x.key]=counts[x.key]||{k:x.issue,label:x.label,v:0}; c.v++; }));
+  const defects=Object.values(counts).sort((a,b)=>b.v-a.v).map(c=>({k:c.k,label:c.label,cat:issueCategory(c.k),v:c.v}));
   const plat={}; st.intakeRows.forEach(r=>{ const k=r.model||platformForId(r.bmsId)||'Unknown'; plat[k]=(plat[k]||0)+1; });
   const platforms=Object.entries(plat).sort((a,b)=>b[1]-a[1]);
   const techs=stageCompletions(p);
@@ -3552,7 +3640,7 @@ async function exportExcel(){
   /* 4 · O&M visits */
   const wb4=sheet('O&M visits',XC.accent);
   xlTitle(wb4,`O&M visits · ${rangeLong}`,'Every visit received or closed in the trend range, newest first.',20);
-  const vRows=d.visits.map(r=>{ const st=omStatus(r); const t=(r.stage3||{}).tests||{}; return [toDate(r.dateReceived),r.bmsId,r.model,r.visitNumber||1,{v:st[0],tone:st[1]||'neutral'},issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', '),(r.stage1||{}).technician,(r.stage2||{}).technician,(r.stage3||{}).technician,((r.stage2||{}).sopRef||'').split(':')[0],(r.stage2||{}).partsReplaced,r.capaCycles||0,t.irMeasured?+t.irMeasured:null,t.packVoltage?+t.packVoltage:null,toDate(r.closedAt),isClosed(r)&&r.closedAt?Math.max(0,daysBetween(r.dateReceived,dkey(r.closedAt))):ageDays(r),(r.stage3||{}).qcNote,r.cycles==null||r.cycles===''?null:+r.cycles,otherIssueText(r.stage1),(r.capaLog||[]).map(c=>`#${c.cycle} ${capaText(c)}`).join('\n'),onHold(r)?{v:`Waiting · ${r.hold.part||'part'} since ${fmtShort(dkey(r.hold.since))}`,tone:'serious'}:((r.holdLog||[]).length?`${r.holdLog.length} wait(s), resolved`:'')]; });
+  const vRows=d.visits.map(r=>{ const st=omStatus(r); const t=(r.stage3||{}).tests||{}; return [toDate(r.dateReceived),r.bmsId,r.model,r.visitNumber||1,{v:st[0],tone:st[1]||'neutral'},issueNames(r).join(', '),(r.stage1||{}).technician,(r.stage2||{}).technician,(r.stage3||{}).technician,((r.stage2||{}).sopRef||'').split(':')[0],(r.stage2||{}).partsReplaced,r.capaCycles||0,t.irMeasured?+t.irMeasured:null,t.packVoltage?+t.packVoltage:null,toDate(r.closedAt),isClosed(r)&&r.closedAt?Math.max(0,daysBetween(r.dateReceived,dkey(r.closedAt))):ageDays(r),(r.stage3||{}).qcNote,r.cycles==null||r.cycles===''?null:+r.cycles,otherIssueText(r.stage1),(r.capaLog||[]).map(c=>`#${c.cycle} ${capaText(c)}`).join('\n'),onHold(r)?{v:`Waiting · ${r.hold.part||'part'} since ${fmtShort(dkey(r.hold.since))}`,tone:'serious'}:((r.holdLog||[]).length?`${r.holdLog.length} wait(s), resolved`:'')]; });
   xlTable(wb4,5,1,[{h:'Received',fmt:'d mmm yyyy',w:13},{h:'BMS ID',w:23},{h:'Platform',w:11},{h:'Visit #',align:'right',w:8},{h:'Status',w:22},{h:'Issues reported',wrap:true,w:36},{h:'Stage 1',w:14},{h:'Stage 2',w:14},{h:'Stage 3',w:14},{h:'SOP',w:12},{h:'Parts',w:14},{h:'CAPA',align:'right',w:7},{h:'IR (MΩ)',align:'right',fmt:'0',w:9},{h:'Pack V',align:'right',fmt:'0.00',w:9},{h:'Closed',fmt:'d mmm yyyy',w:13},{h:'Days',align:'right',w:7},{h:'QC notes',wrap:true,w:30},{h:'Charge cycles',align:'right',w:10},{h:'Other issue (category: explanation)',wrap:true,w:30},{h:'CAPA reason / part',wrap:true,w:38},{h:'Supplier material',wrap:true,w:26}],vRows.length?vRows:[[null,'No visits in this range']],{filter:true});
   wb4.views=[{showGridLines:false,state:'frozen',ySplit:5,xSplit:2}];
 
@@ -3584,7 +3672,7 @@ async function exportExcel(){
   const wb6=sheet('Open pipeline','0AA5B8');
   xlTitle(wb6,'Open pipeline right now',`Batteries still in the O&M chain at ${fmtDT(d.at.toISOString())}, oldest first. Amber = 3+ days, red = 5+ days.`,9);
   xlTable(wb6,5,1,[{h:'BMS ID',w:23},{h:'Platform',w:11},{h:'Stage',w:20},{h:'Claimed by',w:16},{h:'Received',fmt:'d mmm yyyy',w:13},{h:'Days in chain',align:'right',w:12},{h:'CAPA cycles',align:'right',w:11},{h:'Issues',wrap:true,w:40},{h:'Waiting for',wrap:true,w:24}],
-    d.open.length?d.open.map(r=>{ const a=ageDays(r); return [r.bmsId,r.model,`Stage ${r.stage} · ${STAGE_SHORT[r.stage]}`,(r['stage'+r.stage]||{}).technician||'Unclaimed',toDate(r.dateReceived),{v:a,tone:a>=5?'crit':a>=3?'warn':null},r.capaCycles||0,issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', '),onHold(r)?{v:`Supplier · ${r.hold.part||'part'} (${fmtHours(hoursSince(r.hold.since))})`,tone:'serious'}:((r['stage'+r.stage]||{}).technician?'':{v:'Not claimed',tone:'warn'})]; }):[['Nothing open']],{filter:true});
+    d.open.length?d.open.map(r=>{ const a=ageDays(r); return [r.bmsId,r.model,`Stage ${r.stage} · ${STAGE_SHORT[r.stage]}`,(r['stage'+r.stage]||{}).technician||'Unclaimed',toDate(r.dateReceived),{v:a,tone:a>=5?'crit':a>=3?'warn':null},r.capaCycles||0,issueNames(r).join(', '),onHold(r)?{v:`Supplier · ${r.hold.part||'part'} (${fmtHours(hoursSince(r.hold.since))})`,tone:'serious'}:((r['stage'+r.stage]||{}).technician?'':{v:'Not claimed',tone:'warn'})]; }):[['Nothing open']],{filter:true});
   wb6.views=[{showGridLines:false,state:'frozen',ySplit:5}];
 
   /* 7 · RCA */
@@ -3691,7 +3779,7 @@ ${tile('Average turnaround',st.tat==null?'—':`${r1(st.tat)}<small> days</small
 <h2 style="margin-top:16px">BSA cases by status</h2>${bars(d.bsaStatus.map(([k,v])=>[k,v,'#eb6834']),Math.max(1,...d.bsaStatus.map(x=>x[1])))}</section></div>
 <section style="margin-top:14px"><h2>${esc(d.granWord)} table</h2><p class="cap">Newest first. The selected ${d.unit} is highlighted.</p><div style="overflow-x:auto"><table><tr><th>${d.unit==='day'?'Day':d.unit==='week'?'Week of':'Month'}</th><th class="r">Received</th><th class="r">Closed</th><th class="r">First pass</th><th class="r">FPY</th><th class="r">PPM</th><th class="r">CAPA</th><th class="r">To BSA</th><th class="r">Supplier</th><th class="r">Handling</th><th class="r">Avg days</th></tr>
 ${d.bs.slice().reverse().map(({b,s})=>`<tr class="${b.start===d.p.start?'sel':''}"><td>${esc(periodLabel(b,true))}</td><td class="r">${s.intakes}</td><td class="r">${s.closed}</td><td class="r">${s.firstPass}</td><td class="r ${fpyCls(s.fpy)}">${fmtPct(s.fpy)}</td><td class="r">${s.ppm==null?'—':s.ppm.toLocaleString()}</td><td class="r">${s.capaReturns}</td><td class="r">${s.toBsa}</td><td class="r">${s.supplier}</td><td class="r">${s.nonSupplier}</td><td class="r">${s.tat==null?'—':r1(s.tat)}</td></tr>`).join('')}</table></div></section>
-<section><h2>Open pipeline</h2><p class="cap">${d.open.length} batteries in the chain now, oldest first</p>${d.open.length?`<div style="overflow-x:auto"><table><tr><th>BMS ID</th><th>Platform</th><th>Stage</th><th>Claimed by</th><th class="r">Days</th><th>Issues</th></tr>${d.open.slice(0,40).map(r=>{ const a=ageDays(r); return `<tr><td class="mono">${esc(r.bmsId)}</td><td>${esc(r.model||'—')}</td><td>Stage ${r.stage} · ${STAGE_SHORT[r.stage]}</td><td>${esc((r['stage'+r.stage]||{}).technician||'Unclaimed')}</td><td class="r"><span class="pill ${a>=5?'crit':a>=3?'warn':'good'}">${a}d</span></td><td>${esc(issuesOf(r).map(k=>ISSUE_LABEL[k]).join(', '))}</td></tr>`; }).join('')}</table></div>`:'<p class="none">Nothing open.</p>'}</section>
+<section><h2>Open pipeline</h2><p class="cap">${d.open.length} batteries in the chain now, oldest first</p>${d.open.length?`<div style="overflow-x:auto"><table><tr><th>BMS ID</th><th>Platform</th><th>Stage</th><th>Claimed by</th><th class="r">Days</th><th>Issues</th></tr>${d.open.slice(0,40).map(r=>{ const a=ageDays(r); return `<tr><td class="mono">${esc(r.bmsId)}</td><td>${esc(r.model||'—')}</td><td>Stage ${r.stage} · ${STAGE_SHORT[r.stage]}</td><td>${esc((r['stage'+r.stage]||{}).technician||'Unclaimed')}</td><td class="r"><span class="pill ${a>=5?'crit':a>=3?'warn':'good'}">${a}d</span></td><td>${esc(issueNames(r).join(', '))}</td></tr>`; }).join('')}</table></div>`:'<p class="none">Nothing open.</p>'}</section>
 <footer>FPY = batteries closed as passed with no corrective-action cycle ÷ all closed. PPM = closures with CAPA or scrapped per million closures. Weeks run Monday to Sunday. The Excel workbook has every row behind these figures.</footer>
 </div></body></html>`;
     return download(new Blob([html],{type:'text/html'}),`battery-qc-report_${fileStamp(d)}.html`);
@@ -4451,6 +4539,8 @@ const ACT = {
   'tc-tg':t=>{ S.tc.tg=t.dataset.v; renderMain(); },
   'tc-shift':t=>{ const n=addDays(S.anchor,+t.dataset.v); S.anchor=n>todayStr()?todayStr():n; renderMain(); },
   'tc-csv':()=>tcCsv(),
+  'tc-case':t=>openDrawer({type:'tccase',src:t.dataset.src,gran:t.dataset.g||'week',key:t.dataset.v}),
+  'tc-case-csv':()=>caseCsv(),
   'tc-chain':t=>{ S.gran=t.dataset.g; lsWrite('bqc_gran',S.gran); S.view='chain'; S.om.scope='period'; S.om.status='all'; S.om.issue=t.dataset.v; S.om.page=1; render(); window.scrollTo(0,0); },
   'dups-delete':()=>dupsDelete(),
   'dups-all':()=>{ const sel={}; dupGroups().forEach(x=>x.items.forEach(r=>{ if(r.id!==x.keep&&canDeleteVisit(r)) sel[r.id]=true; })); S.f.dups={sel}; renderDrawer(true); },
