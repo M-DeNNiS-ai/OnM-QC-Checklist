@@ -1126,7 +1126,9 @@ async function flushOutbox(){
 function normRows(key,rows){
   if(key==='om_chain_records') rows.forEach(r=>{ if(r&&r.stage!=null&&typeof r.stage!=='number'&&!isNaN(+r.stage)) r.stage=+r.stage; });
   /* battery type: only AMPACE, UNIQUE, GREENWAY, CBAK. Misspellings are read as the right type. */
-  if(key==='om_chain_records'||key==='bsa_records') rows.forEach(r=>{ if(!r) return; const pl=platOf(r); if(pl&&r.model!==pl) r.model=pl; });
+  if(key==='om_chain_records'||key==='bsa_records') rows.forEach(r=>{ if(!r) return;
+    const id=String(r.bmsId||'').trim().toUpperCase().replace(/\s+/g,''); if(id&&!platformForId(id)){ const p0=platFromText(r.model), pre=p0&&prefixesForPlatform(p0)[0]; if(pre&&pre.length+id.length===BATTERY_ID_LENGTH){ r.bmsIdTyped=r.bmsId; r.bmsId=pre+id; } } else if(id&&id!==r.bmsId) r.bmsId=id;
+    const pl=platOf(r); if(pl&&r.model!==pl) r.model=pl; });
   return rows;
 }
 async function loadStore(key){
@@ -2327,7 +2329,7 @@ function tcLabelOther(st){ const c=(st||{}).otherCat; return c?`Other: ${c}`:ISS
 function tcCount(src,p){
   const m={}; const add=(key,label,n,issue,item)=>{ const x=m[key]=m[key]||{key,label,n:0,issue,plat:{},items:[]}; x.n+=n; if(item) x.items.push(item); return x; };
   if(src==='intake') S.data.om.forEach(r=>{ if(!inP(r.dateReceived,p)) return; const pl=platName(r);
-    const main=(S.tc||{}).grain!=='exact', seen=new Set(); caseKeysOf(r).forEach(c=>{ const k=main?caseParent(c):c.key; if(seen.has(k)) return; seen.add(k); const x=add(k,main?caseParentLabel(c):c.label,1,c.issue,{type:'visit',r,date:r.dateReceived}); x.plat[pl]=(x.plat[pl]||0)+1; }); });
+    const main=false, seen=new Set(); caseKeysOf(r).forEach(c=>{ const k=main?caseParent(c):c.key; if(seen.has(k)) return; seen.add(k); const x=add(k,main?caseParentLabel(c):c.label,1,c.issue,{type:'visit',r,date:r.dateReceived}); x.plat[pl]=(x.plat[pl]||0)+1; }); });
   if(src==='daily') (S.data.daily||[]).forEach(r=>{ if(r.status!=='VERIFIED'||!inP(r.date,p)) return; Object.entries(r.issues||{}).forEach(([k,v])=>{ const x=add(k,issueLbl(k),dNum(v.found),null,{type:'day',r,v,date:r.date}); x.rep=(x.rep||0)+dNum(v.repaired); }); });
   if(src==='capa') S.data.om.forEach(r=>(r.capaLog||[]).forEach(c=>{ if(!inP(dkey(c.returnedAt),p)) return; const l=CAPA_REASON_LABEL[c.reasonCat]||c.reasonCat||'Not given'; add(c.reasonCat||'none',l,1,null,{type:'capa',r,c,date:dkey(c.returnedAt)}); }));
   if(src==='bsa') S.data.bsa.forEach(c=>{ if(!inP(dkey(c.dateFlagged||c.createdAt),p)) return; const l=bsaIssue(c); add(l,l,1,null,{type:'bsa',c,date:dkey(c.dateFlagged||c.createdAt)}); });
@@ -2375,11 +2377,12 @@ function TopCasesInner(){
   return `<div class="page-head"><div><div class="eyebrow">Top cases</div><h2>What is failing most</h2><p>${esc(srcMeta[2])}. Ranked for the day, the week and the month around the date you pick.</p></div>
     <div class="ph-actions"><div class="period"><div class="period-nav"><button data-act="tc-shift" data-v="-1" aria-label="Previous day">‹</button><span><input type="date" class="tc-date" id="tc-date" value="${esc(S.anchor)}" max="${today}" aria-label="Date"></span><button data-act="tc-shift" data-v="1" aria-label="Next day" ${isToday?'disabled style="opacity:.3"':''}>›</button></div>${isToday?'':'<button class="btn sm" data-act="ptoday">Today</button>'}</div>
     <div class="ph-btns"><button class="btn" data-act="tc-csv">${ICON.dl} CSV</button><button class="btn" data-act="daily-print">Print</button></div></div></div>
-  <div class="filters"><div class="seg tc-src" role="group" aria-label="Source">${TC_SOURCES.map(([k,l])=>`<button class="${src===k?'on':''}" data-act="tc-src" data-v="${k}">${l}</button>`).join('')}</div>${src==='intake'?`<div class="seg" role="group" aria-label="Group by">${[['main','Similar issues together'],['exact','Exact faults']].map(([k,l])=>`<button class="${((T.grain||'main')===k)?'on':''}" data-act="tc-grain" data-v="${k}">${l}</button>`).join('')}</div>`:''}</div>
+  <div class="filters"><div class="seg tc-src" role="group" aria-label="Source">${TC_SOURCES.map(([k,l])=>`<button class="${src===k?'on':''}" data-act="tc-src" data-v="${k}">${l}</button>`).join('')}</div>${false?`<div class="seg" role="group" aria-label="Group by">${[['main','Similar issues together'],['exact','Exact faults']].map(([k,l])=>`<button class="${((T.grain||'main')===k)?'on':''}" data-act="tc-grain" data-v="${k}">${l}</button>`).join('')}</div>`:''}</div>
   <div class="seg tc-pick" role="group" aria-label="Show">${[['day','Day'],['week','Week'],['month','Month']].map(([k,l])=>`<button class="${(T.show||'week')===k?'on':''}" data-act="tc-show" data-v="${k}">${l}</button>`).join('')}</div>
   <div class="grid g3 tc-grid" data-show="${T.show||'week'}">${tcColumn(src,'day','Day')}${tcColumn(src,'week','Week')}${tcColumn(src,'month','Month')}</div>
   <div class="card section"><div class="card-head"><div><h3>How the top cases move</h3><p>This month's top 5, last ${tg==='day'?'14 days':tg==='week'?'12 weeks':'12 months'}. Click a bar to jump to that ${tg}. Tap any case above to see its batteries.</p></div><div class="seg">${[['day','Daily'],['week','Weekly'],['month','Monthly']].map(([k,l])=>`<button class="${tg===k?'on':''}" data-act="tc-tg" data-v="${k}">${l}</button>`).join('')}</div></div>
     ${top5.length?`<div class="legend">${series.map(s=>`<span><i style="background:var(${s.color})"></i>${esc(s.label)}</span>`).join('')}</div>`:''}${trend}</div>
+  ${src==='intake'?`<div class="card section"><div class="card-head"><div><h3>Grouped by broad issue</h3><p>${esc(periodLabel(periodOf(S.anchor,'month'),true))} · every exact fault under its broad issue (e.g. all Charging failure faults together). Tap to see the batteries.</p></div></div>${parentList(defectItems(periodOf(S.anchor,'month')))}</div>`:''}
   ${platHtml}`;
 }
 function tcCsv(){
@@ -2446,20 +2449,23 @@ const DEFAULT_SUBS = {
   connectorDamage:['Burnt connector','Broken latch / housing','Loose / bent pins'],
   physicalDefect:['Cracked casing','Dented casing','Broken handle / strap','Damaged cover'],
   swelling:['Cell swelling','Casing deformation'],
-  tampered:['Missing IoT module','Foreign object inside','Forced opening / broken seal','Cut or pulled wires','Water ingress','Stolen cells / parts','Damaged casing'],
+  tampered:['Missing IoT module','Missing bolts / screws','Missing cover','Foreign object inside','Forced opening / broken seal','Cut or pulled wires','Water ingress','Stolen cells / parts','Damaged casing'],
   wetThermalPaste:['Wet thermal paste','Dried / degraded paste','Moisture on BMS'],
   cellFailureSingle:['Dead cell (0 V)','Low-voltage cell','Leaking cell','Swollen cell'],
   cellFailureMultiple:['Dead cells (0 V)','Low-voltage cells','Leaking cells','Swollen cells'],
   missingComponent:['Bolt / screw','Cover / lid','Label / QR code','BMS board','Connector','Charging port','IoT module','SIM card','Handle / strap','Fuse','LED strip','Cable / harness','Thermal pad','Seal / gasket']
 };
 const SUB_OTHER = 'Other / not listed';
+const SHORT_ISSUE = {noPower:'No power',lowCapacity:'Low capacity',cellImbalance:'Cell imbalance',bmsFault:'BMS fault',canFail:'CAN failure',chargeFail:'Charging failure',dischargeFail:'Discharging failure',swelling:'Swelling',irFail:'Insulation failure',iotFault:'IoT fault',tampered:'Vandalism',physicalDefect:'Physical damage',wetThermalPaste:'Wet thermal paste',connectorDamage:'Connector damage',cellFailureSingle:'Single cell failure',cellFailureMultiple:'Multiple cell failure',missingComponent:'Missing component',simReplace:'SIM replacement'};
+const faultLbl = (k,sub) => `${SHORT_ISSUE[k]||ISSUE_LABEL[k]||k} / ${sub}`;
+const SHORT_LBL = {'Vandalism / tampering':'Vandalism','Swelling / damage':'Swelling','Physical defect / damage':'Physical damage','Wet thermal paste / moisture':'Wet thermal paste','Cell failure':'Cell failure','Connector damage':'Connector damage'};
 const subSlug = t => String(t||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 const subKey = (k,sub) => sub?k+'__'+subSlug(sub):k;
 const splitKey = key => { const s=String(key||''), i=s.indexOf('__'); return i<0?[s,'']:[s.slice(0,i),s.slice(i+2)]; };
 const parentIssue = key => splitKey(key)[0];
 function issueSubs(k){ const c=issueMapCfg().subs||{}; return Array.isArray(c[k])?c[k]:(DEFAULT_SUBS[k]||[]); }
-function issueLbl(key){ if(ISSUE_LABEL[key]) return ISSUE_LABEL[key]; const [k,sl]=splitKey(key); if(!ISSUE_LABEL[k]) return String(key); const sub=sl==='other'?'other cause':(issueSubs(k).find(s=>subSlug(s)===sl)||sl.replace(/-/g,' ')); return `${ISSUE_LABEL[k]} · ${sub}`; }
-const subCase = (k,sub) => sub===SUB_OTHER?{key:k+'__other',label:`${ISSUE_LABEL[k]} · other cause`,issue:k}:{key:subKey(k,sub),label:`${ISSUE_LABEL[k]} · ${sub}`,issue:k};
+function issueLbl(key){ if(ISSUE_LABEL[key]) return ISSUE_LABEL[key]; const [k,sl]=splitKey(key); if(!ISSUE_LABEL[k]) return String(key); const sub=sl==='other'?'other cause':(issueSubs(k).find(s=>subSlug(s)===sl)||sl.replace(/-/g,' ')); return faultLbl(k,sub); }
+const subCase = (k,sub) => sub===SUB_OTHER?{key:k+'__other',label:faultLbl(k,'other cause'),issue:k,sub:'other cause'}:{key:subKey(k,sub),label:faultLbl(k,sub),issue:k,sub};
 const SUB_RX = {
   'MOSFET failure':/mosfet|\bfets?\b/, 'Faulty charging port':/charg\w*\s*(port|socket|inlet|point)|\bport\b|\bsocket\b|\binlet\b/, 'Blown fuse':/\bfuse/,
   'BMS charge protection':/protect|\bovp\b|over\s*-?\s*volt/, 'Charger / station side':/charger|station|dock/, 'Loose busbar / weld':/busbar|bus\s*bar|\bweld/,
@@ -2475,6 +2481,7 @@ const SUB_RX = {
   'Cracked casing':/crack/, 'Dented casing':/dent/, 'Broken handle / strap':/handle|strap/, 'Damaged cover':/cover|\blid\b/,
   'Cell swelling':/swell|bulg|puff/, 'Casing deformation':/deform|bent\s*casing|casing\s*bent/,
   'Missing IoT module':/(iot|tracker|gps)\s*(module|unit|box)?\s*(missing|removed|stolen|taken)|(missing|removed|stolen|no)\s*(iot|tracker|gps)/,
+  'Missing bolts / screws':/bolt|screw|\bnuts?\b|fasten/, 'Missing cover':/cover|\blid\b/,
   'Foreign object inside':/foreign|object\s*inside|debris|stone|sand|nail|rubbish|inserted/, 'Forced opening / broken seal':/forc|pried|prised|broken\s*seal|seal\s*broken|opened|tamper\w*\s*seal/,
   'Cut or pulled wires':/\bcut\b|pulled|torn\s*wire|wires?\s*(cut|torn)/, 'Water ingress':/water|moist|\bwet\b|flood|submerg/, 'Stolen cells / parts':/stolen|cells?\s*removed|parts?\s*removed|theft/,
   'Damaged casing':/casing|crack|dent|broken\s*(cover|case)|smash/,
@@ -2491,17 +2498,20 @@ function recordText(r){ r=r||{}; const s1=r.stage1||{}, s2=r.stage2||{}, s3=r.st
 function componentName(t){ const x=String(t||'').toLowerCase().trim(); if(!x) return ''; for(const sb of issueSubs('missingComponent')){ const rx=subRx(sb); if(rx&&rx.test(x)) return sb; } const c=String(t).replace(/\s+/g,' ').trim().replace(/^(the|a|an|missing)\s+/i,'').replace(/[.;:,]+$/,''); return c?(c[0].toUpperCase()+c.slice(1)).slice(0,40):''; }
 function inferSub(r,k){ if(k==='missingComponent'){ const n=componentName(((r||{}).stage1||{}).missingComponentNote); if(n) return n; } const subs=issueSubs(k); if(!subs.length) return ''; const t=recordText(r); if(!t) return ''; for(const sb of subs){ const rx=subRx(sb); if(rx&&rx.test(t)) return sb; } return ''; }
 function subOf(r,k){ return (((r||{}).stage2||{}).confirmed||{})[k]||(((r||{}).stage1||{}).sub||{})[k]||inferSub(r,k); }
-function stdCase(r,k){ const sub=subOf(r,k); if(k==='missingComponent'&&sub&&sub!==SUB_OTHER) return {key:subKey(k,sub),label:`Missing component · ${sub}`,issue:k}; if(sub) return subCase(k,sub); return issueSubs(k).length?{key:k,label:`${ISSUE_LABEL[k]} · not specified`,issue:k}:{key:k,label:ISSUE_LABEL[k],issue:k}; }
+function stdCase(r,k){ const sub=subOf(r,k); if(k==='missingComponent'&&sub&&sub!==SUB_OTHER) return {key:subKey(k,sub),label:faultLbl(k,sub),issue:k,sub}; if(sub) return subCase(k,sub); return issueSubs(k).length?{key:k,label:faultLbl(k,'not specified'),issue:k,sub:'not specified'}:{key:k,label:ISSUE_LABEL[k],issue:k}; }
+function stdFromKey(key){ const [k,sl]=splitKey(key); if(!ISSUE_LABEL[k]||k==='other') return null; if(!sl) return issueSubs(k).length?{key:k,label:faultLbl(k,'not specified'),issue:k,sub:'not specified'}:{key:k,label:ISSUE_LABEL[k],issue:k}; if(sl==='other') return subCase(k,SUB_OTHER); const sb=issueSubs(k).find(x=>subSlug(x)===sl)||sl.replace(/-/g,' '); return {key,label:faultLbl(k,sb),issue:k,sub:sb}; }
+function faultOptions(cur){ return ISSUE_ITEMS.filter(([k])=>k!=='other').map(([k,l])=>{ const subs=issueSubs(k), o=(v,t)=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(t)}</option>`; return subs.length?`<optgroup label="${esc(SHORT_ISSUE[k]||l)}">${subs.map(sb=>o(subKey(k,sb),faultLbl(k,sb))).join('')}</optgroup>`:o(k,l); }).join(''); }
 function otherCase(st){
+  if(st&&st.otherStd){ const c=stdFromKey(st.otherStd); if(c) return c; }
   const t=normCase((st||{}).otherNote);
   if(t&&/mosfet|\bfets?\b/.test(t)) return subCase(/discharg/.test(t)?'dischargeFail':'chargeFail','MOSFET failure');
   const c=otherCase0(st);
   if(c.key==='kw:Charging port') return subCase('chargeFail','Faulty charging port');
   if(t&&/foreign\s*object|object\s*inside|debris\s*inside/.test(t)) return subCase('tampered','Foreign object inside');
   if(t&&/(iot|tracker|gps)\s*(module\s*)?(missing|removed|stolen)|(missing|removed|stolen)\s*(iot|tracker|gps)/.test(t)) return subCase('tampered','Missing IoT module');
-  if(t&&/\b(missing|stolen|lost)\b/.test(t)&&c.issue!=='tampered'){ const known=issueSubs('missingComponent').find(x=>{ const rx=subRx(x); return rx&&rx.test(t); }); if(known) return {key:subKey('missingComponent',known),label:`Missing component · ${known}`,issue:'missingComponent'}; }
-  if(c.issue&&c.issue!=='other'&&c.key===c.issue&&t){ const sb=c.issue==='missingComponent'?componentName(t.replace(/\b(missing|stolen|removed|lost)\b/g,' ')):(issueSubs(c.issue).find(x=>{ const rx=subRx(x); return rx&&rx.test(t); })||''); if(sb) return c.issue==='missingComponent'?{key:subKey(c.issue,sb),label:`Missing component · ${sb}`,issue:c.issue}:subCase(c.issue,sb); }
-  if(c.issue&&c.issue!=='other'&&c.key===c.issue&&issueSubs(c.issue).length) return {key:c.key,label:`${ISSUE_LABEL[c.issue]} · not specified`,issue:c.issue};
+  if(t&&/\b(missing|stolen|lost)\b/.test(t)&&c.issue!=='tampered'){ const known=issueSubs('missingComponent').find(x=>{ const rx=subRx(x); return rx&&rx.test(t); }); if(known) return {key:subKey('missingComponent',known),label:faultLbl('missingComponent',known),issue:'missingComponent',sub:known}; }
+  if(c.issue&&c.issue!=='other'&&c.key===c.issue&&t){ const sb=c.issue==='missingComponent'?componentName(t.replace(/\b(missing|stolen|removed|lost)\b/g,' ')):(issueSubs(c.issue).find(x=>{ const rx=subRx(x); return rx&&rx.test(t); })||''); if(sb) return c.issue==='missingComponent'?{key:subKey(c.issue,sb),label:faultLbl(c.issue,sb),issue:c.issue,sub:sb}:subCase(c.issue,sb); }
+  if(c.issue&&c.issue!=='other'&&c.key===c.issue&&issueSubs(c.issue).length) return {key:c.key,label:faultLbl(c.issue,'not specified'),issue:c.issue,sub:'not specified'};
   /* free-text notes: "pending rework", "Pending reworks", "rework pending." are one case */
   if(c.key.startsWith('other:')){ const L=normLabel(st.otherNote); return {key:'other:'+labelKey(L),label:L,issue:'other'}; }
   return c;
@@ -2555,7 +2565,8 @@ const ISSUE_GROUPS = [
   ['Mechanical & physical',['physicalDefect','connectorDamage','missingComponent','tampered']],
   ['Labels, LEDs & cosmetic',[]],
   ['Firmware & software',[]],
-  ['Customer complaint',[]]
+  ['Customer complaint',[]],
+  ['Rework status (not a fault)',[]]
 ];
 const KW_GROUP = {'Charging port':'Power & charging','Bolts / screws / fasteners':'Mechanical & physical','Label / sticker / QR code':'Labels, LEDs & cosmetic','LED / indicator light':'Labels, LEDs & cosmetic','Overheating':'Insulation, moisture & heat','Water / moisture ingress':'Insulation, moisture & heat','Handle / strap':'Mechanical & physical','Firmware / software':'Firmware & software','Noise / rattle / loose parts':'Mechanical & physical'};
 const CATLABEL_GROUP = {'Mechanical issue':'Mechanical & physical','Electrical issue':'Power & charging','Firmware / software':'Firmware & software','IoT / IMEI mismatch':'IoT & connectivity','Cosmetic damage':'Labels, LEDs & cosmetic','Customer complaint':'Customer complaint'};
@@ -2568,6 +2579,7 @@ function defaultGroup(c){
   const k=String(c.key||'');
   if(k.startsWith('kw:')) return KW_GROUP[k.slice(3)]||'Unclassified';
   if(k.startsWith('cat:')) return CATLABEL_GROUP[k.slice(4)]||'Unclassified';
+  if(k==='other:pending rework') return 'Rework status (not a fault)';
   return 'Unclassified';
 }
 const caseGroup = c => (issueMapCfg().group||{})[c.key]||defaultGroup(c);
@@ -2595,6 +2607,7 @@ const labelKey = t => String(t||'').toLowerCase().replace(/[0-9]+/g,' ').replace
 function normLabel(t,fallback){
   const s=String(t||'').replace(/\s+/g,' ').trim(); if(!s) return fallback||'Not given';
   for(const [re,l] of LABEL_SYNONYMS) if(re.test(s)) return l;
+  { const k0=labelKey(s); let best=null,bd=99; [...new Set(LABEL_SYNONYMS.map(x=>x[1]))].forEach(T=>{ const d=lev(k0,labelKey(T)); if(d<bd){ bd=d; best=T; } }); if(best&&k0.length>=5&&bd<=Math.max(2,Math.floor(labelKey(best).length*0.25))) return best; }
   const c=s.replace(/[.;:,!]+$/,'').replace(/\s*[#(]?\d+\)?$/,'').trim()||s;
   const k=labelKey(c);
   if(!LABEL_SEEN.has(k)) LABEL_SEEN.set(k,c.charAt(0).toUpperCase()+c.slice(1));
@@ -2695,11 +2708,11 @@ const AN_SRC = {esc:'Escalated to BSA',rework:'Reworked at Stage 2'};
 const capaCat = c => c.waitSupplier?'Waiting for supplier material':c.reasonCat==='part'?'Part replaced from stock':(CAPA_REASON_LABEL[c.reasonCat]||'Reason not given');
 const bsaOutcome = c => { const t=bsaTechStatus(c); return t==='Worked On'||t==='Returned to O&M for Deployment'?'Reworked':t==='Scrapped'?'Scrapped':t==='Warranty'?'Warranty':t==='Awaiting BSA receipt'?'Not received yet':'In progress'; };
 const BSA_CAT_ISSUE = {'Vandalism / tampering':'tampered','Swelling / damage':'swelling','Cell failure':'cellFailureSingle','Connector damage':'connectorDamage','Physical defect / damage':'physicalDefect','Wet thermal paste / moisture':'wetThermalPaste'};
-function bsaIssue(c){ const l=normLabel(c.escalationCategory||c.issueDescription,'Not given'); const ik=BSA_CAT_ISSUE[l]; if(ik){ const t=String(c.issueDescription||'').toLowerCase(); const sb=issueSubs(ik).find(x=>{ const rx=subRx(x); return rx&&rx.test(t); }); if(sb) return `${l} · ${sb}`; } if(l==='Missing component'){ const m=String(c.issueDescription||'').match(/missing:\s*([^)]+)/i); const n=m&&componentName(m[1]); if(n) return 'Missing component · '+n; } return l; }
+function bsaIssue(c){ const l=normLabel(c.escalationCategory||c.issueDescription,'Not given'); const ik=BSA_CAT_ISSUE[l]; if(ik){ const t=String(c.issueDescription||'').toLowerCase(); const sb=issueSubs(ik).find(x=>{ const rx=subRx(x); return rx&&rx.test(t); }); if(sb) return `${SHORT_LBL[l]||l} / ${sb}`; } if(l==='Missing component'){ const m=String(c.issueDescription||'').match(/missing:\s*([^)]+)/i); const n=m&&componentName(m[1]); if(n) return 'Missing component / '+n; } return l; }
 const bsaDoneKey = c => dkey(c.dateClosed)||(['Reworked','Scrapped','Warranty'].includes(bsaOutcome(c))?dkey(c.updatedAt):'');
 const escFrom = r => (r.stage2||{}).completedAt?'Final QC':'Intake';
 const caseParent = c => c.issue&&c.issue!=='other'?c.issue:c.key;
-const caseParentLabel = c => c.issue&&c.issue!=='other'?ISSUE_LABEL[c.issue]:c.label;
+const caseParentLabel = c => c.issue&&c.issue!=='other'?(SHORT_ISSUE[c.issue]||ISSUE_LABEL[c.issue]):c.label;
 function defectItems(p){ const out=[]; S.data.om.forEach(r=>{ if(!inP(r.dateReceived,p)) return; caseKeysOf(r).forEach(c=>out.push({r,c,grp:caseGroup(c),sup:caseSupplier(c),plat:platName(r)})); }); return out; }
 function dimCase(p,src,dim,val){
   const pack=(label,items)=>items.length?{key:val,label,n:items.length,items}:null;
@@ -2722,7 +2735,7 @@ function rankList(rows,unit,attrFn,max){
 }
 const countBy = (items,fn) => { const m={}; items.forEach(i=>{ const k=fn(i); if(k==null) return; m[k]=(m[k]||0)+1; }); return Object.entries(m).map(([label,n])=>({label,n})).sort((a,b)=>b.n-a.n||a.label.localeCompare(b.label)); };
 function parentList(items){
-  const P={}; items.forEach(i=>{ const k=caseParent(i.c), x=P[k]=P[k]||{key:k,label:caseParentLabel(i.c),n:0,subs:{}}; x.n++; const sk=i.c.key, s=x.subs[sk]=x.subs[sk]||{key:sk,label:i.c.key===k?(i.c.issue==='other'?i.c.label:'not specified'):i.c.label.replace(/^.*? · /,''),n:0}; s.n++; });
+  const P={}; items.forEach(i=>{ const k=caseParent(i.c), x=P[k]=P[k]||{key:k,label:caseParentLabel(i.c),n:0,subs:{}}; x.n++; const sk=i.c.key, s=x.subs[sk]=x.subs[sk]||{key:sk,label:i.c.key===k?(i.c.issue==='other'?i.c.label:'not specified'):(i.c.sub||i.c.label),n:0}; s.n++; });
   const rows=Object.values(P).sort((a,b)=>b.n-a.n||a.label.localeCompare(b.label)); if(!rows.length) return empty('No defects in this period.');
   const mx=Math.max(1,...rows.map(x=>x.n)), tot=items.length;
   return `<ol class="tc-list par-list">${rows.slice(0,14).map((x,i)=>{ const subs=Object.values(x.subs).sort((a,b)=>(a.label==='not specified')-(b.label==='not specified')||b.n-a.n); return `<li><span class="tc-rank ${i<3?'top':''}">${i+1}</span><span class="tc-main"><span class="tc-l click-l" ${anAttr('intake','par',x.key)} role="button" tabindex="0"><b>${esc(x.label)}</b><span class="tc-v"><b class="num">${x.n}</b></span></span><span class="tc-bar"><i style="width:${x.n/mx*100}%;background:var(${i===0?'--crit':i<3?'--s2':'--s1'})"></i></span><small>${fmtPct(pct(x.n,tot))} of ${tot} defects</small>
@@ -2881,10 +2894,10 @@ function SetupPeople(edit){
 }
 function SetupTypes(){
   const all=[...S.data.om.map(r=>({r,k:'O&M'})),...S.data.bsa.map(r=>({r,k:'BSA'}))];
-  const by=countBy(all,x=>platName(x.r)), bad=all.filter(x=>!platOf(x.r));
+  const by=countBy(all,x=>platName(x.r)), bad=all.filter(x=>!platOf(x.r)||!platformForId(x.r.bmsId));
   return `<div class="banner good"><div>Battery types are locked to <b>AMPACE</b>, <b>UNIQUE</b>, <b>GREENWAY</b> and <b>CBAK</b>. New entries must pick one, and the type is read from the battery ID prefix where it is known. Old misspellings (for example “Ampace new”, “Green way”, “CBACK”) are read as the right type.</div></div>
     <div class="kpis four">${by.map(x=>kpi(esc(x.label),x.n,x.label==='Unverified'?'need checking':'records','',x.label==='Unverified'?'warn':'')).join('')}</div>
-    ${bad.length?`<div class="card section"><div class="card-head"><div><h3>Records with an unknown type</h3><p>The ID prefix isn't recognised and the type text can't be matched. Open the battery to check.</p></div></div><div class="case-list">${bad.slice(0,60).map(({r,k})=>`<button class="case-row" data-act="open-battery" data-id="${esc(r.bmsId)}"><span class="cr-1"><b class="mono">${esc(r.bmsId||'—')}</b>${chip(k,'')}</span><span class="cr-2">Typed as “${esc(r.model||'blank')}”</span></button>`).join('')}</div></div>`:''}`;
+    ${bad.length?`<div class="card section"><div class="card-head"><div><h3>Records to fix</h3><p>The ID doesn't start with one of our prefixes, or the type can't be matched. New entries can't be saved like this any more.</p></div></div><div class="case-list">${bad.slice(0,60).map(({r,k})=>`<button class="case-row" data-act="open-battery" data-id="${esc(r.bmsId)}"><span class="cr-1"><b class="mono">${esc(r.bmsId||'—')}</b>${chip(k,'')}</span><span class="cr-2">${platformForId(r.bmsId)?'':'ID has no AMPACE / UNIQUE / GREENWAY / CBAK prefix · '}type typed as “${esc(r.model||'blank')}”</span></button>`).join('')}</div></div>`:''}`;
 }
 async function setupSave(store,list,stateKey,msg){
   S.saving=true; renderDrawer(true);
@@ -3773,7 +3786,7 @@ function issuesBlock(base){
   ${subPickers(base+'.sub',ISSUE_ITEMS.map(([k])=>k).filter(k=>is[k]),'Exact fault (if known)',false)}
   ${is.missingComponent?`<div style="margin-top:10px">${field('Which component is missing',inp(base+'.missingComponentNote',{ph:'e.g. 2 bolts on the top cover'}),'',true)}${getPath(S.f,base+'.missingComponentNote')&&!(d.sub||{}).missingComponent?`<div class="idf-hint">Read as: <b>${esc(componentName(getPath(S.f,base+'.missingComponentNote')))}</b></div>`:''}</div>`:''}
   ${is.simReplace?simOldBlock(base,d):''}
-  ${is.other?`<div class="sim-box"><div class="sim-head"><span class="sim-ic">?</span><div><b>Other issue</b><small>Pick the closest category and explain what you found, so the next person can follow up.</small></div></div><div class="form">${field('Category',sel(base+'.otherCat',[['','Choose…'],...OTHER_ISSUE_CATS]),'',true)}${field('Explanation',area(base+'.otherNote','What is wrong, where, and how it shows'),'full',true)}</div></div>`:''}
+  ${is.other?`<div class="sim-box"><div class="sim-head"><span class="sim-ic">?</span><div><b>Other issue</b><small>Pick the closest fault from our list, so it is counted in the right place. Then describe what you found.</small></div></div><div class="form">${field('Closest fault',`<select class="in" id="b-${base.replace(/\./g,'-')}-otherStd" data-bind="${base}.otherStd"><option value="">Choose from the fault list…</option>${faultOptions(getPath(S.f,base+'.otherStd')||'')}</select>`,'full',true)}${field('Explanation',area(base+'.otherNote','What is wrong, where, and how it shows'),'full',true)}</div></div>`:''}
   ${isBsaTriggerIssue(d)?`<div class="banner warn" style="margin:10px 0 0"><div><b>Goes straight to BSA.</b> ${esc(bsaTriggerLabels(d).join(', '))} ${bsaTriggerLabels(d).length===1?'is':'are'} routed to the BSA team instead of Stage 2.</div></div>`:''}</div>`;
 }
 const errBox = () => S.formError?`<div class="banner crit"><div>${esc(S.formError)}</div></div>`:'';
@@ -3813,7 +3826,7 @@ async function submitIntake(){
   if(isImeiRequired(d)&&!String(d.imei||'').trim()) return fail('IMEI is required for no-power, BMS, IoT or SIM replacement visits.');
   if(isSwapStationRequired(d)&&!String(d.site||'').trim()) return fail('Swap station is required for this defect type.');
   if(d.issues.missingComponent&&!String(d.missingComponentNote||'').trim()) return fail('Say which component is missing.');
-  if(d.issues.other){ if(!d.otherCat) return fail('Pick a category for the other issue.'); if(String(d.otherNote||'').trim().length<5) return fail('Explain the other issue in a few words.'); }
+  if(d.issues.other){ if(!d.otherStd) return fail('Pick the closest fault from the list for the other issue.'); if(String(d.otherNote||'').trim().length<5) return fail('Explain the other issue in a few words.'); }
   if(d.issues.simReplace){ const sm=d.sim||{}; if(!String(sm.oldType||'').trim()) return fail('Old SIM type is required.'); const se=simNumberError(sm.oldNumber,'Old SIM number'); if(se) return fail(se); }
   if(fresh.find(r=>normId(r.bmsId)===id&&!isClosed(r))) return fail('This BMS ID is already open in the chain.');
   const visits=fresh.filter(r=>normId(r.bmsId)===id);
@@ -3922,7 +3935,7 @@ async function submitWork(){
   if(n===1){
     const err=batteryIdError(e.bmsId,e.model); if(err) return fail(err);
     if(String(e.cycles??'').trim()!==''&&cyclesError(e.cycles)) return fail(cyclesError(e.cycles));
-    if(e.stage1.issues&&e.stage1.issues.other){ if(!e.stage1.otherCat) return fail('Pick a category for the other issue.'); if(String(e.stage1.otherNote||'').trim().length<5) return fail('Explain the other issue in a few words.'); }
+    if(e.stage1.issues&&e.stage1.issues.other){ if(!e.stage1.otherStd&&!e.stage1.otherCat) return fail('Pick the closest fault from the list for the other issue.'); if(String(e.stage1.otherNote||'').trim().length<5) return fail('Explain the other issue in a few words.'); }
     if(e.stage1.issues&&e.stage1.issues.simReplace){ const sm=e.stage1.sim||{}; if(!String(sm.oldType||'').trim()) return fail('Old SIM type is required.'); const se=simNumberError(sm.oldNumber,'Old SIM number'); if(se) return fail(se); e.stage1.sim={oldType:String(sm.oldType).trim(),oldNumber:simDigits(sm.oldNumber)}; }
     Object.assign(e.stage1,{technician:s.name,completedBy:s.name,completedAt:nowIso()});
     Object.assign(latest,{model:e.model,imei:e.imei,site:e.site,cycles:String(e.cycles??'').trim()===''?latest.cycles??null:+e.cycles,stage1:clone(e.stage1)});
@@ -5346,7 +5359,7 @@ const ACT = {
   'tc-case-csv':()=>caseCsv(),
   'tc-grain':t=>{ S.tc.grain=t.dataset.v; lsWrite('bqc_tc_grain',S.tc.grain); renderMain(); },
   'an-mode':t=>{ S.tc.mode=t.dataset.v; lsWrite('bqc_an_mode',S.tc.mode); renderMain(); },
-  'an-case':t=>openDrawer({type:'tccase',src:t.dataset.src,gran:S.gran,dim:t.dataset.dim,val:t.dataset.v}),
+  'an-case':t=>openDrawer({type:'tccase',src:t.dataset.src,gran:S.view==='topcases'&&((S.tc||{}).mode||'cases')==='cases'?'month':S.gran,dim:t.dataset.dim,val:t.dataset.v}),
   'an-csv':t=>anCsv(t.dataset.v),
   'setup-open':t=>{ const m=$('.top.menu-open'); if(m) m.classList.remove('menu-open'); openSetup(t.dataset.v); },
   'setup-tab':t=>{ S.f.setup.tab=t.dataset.v; S.f.rm=null; S.f.rmView=null; S.formError=null; renderDrawer(true); const b=$('#drawer-root .d-body'); if(b) b.scrollTop=0; },
