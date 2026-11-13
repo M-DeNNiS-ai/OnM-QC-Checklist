@@ -876,6 +876,12 @@ tr.tot td{font-weight:800;border-top:2px solid var(--line-2)}
 .rmd-head{display:flex;gap:12px;align-items:center}.rmd-head h3{margin:0}.rmd-head small{color:var(--ink-3)}
 .rmd-list{display:grid;gap:6px}.rmd-row{padding:8px 10px;border-radius:10px;background:var(--crit-bg)}.rmd-row b{display:block;font-size:13.5px}.rmd-row small{color:var(--ink-2);font-size:12px}
 .rmd-foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.alert-item{display:flex;align-items:stretch;gap:7px}
+.alert-item>.jcard,.att-item>.att{flex:1;min-width:0}
+.alert-snooze{flex:none;align-self:center;white-space:nowrap}
+.att-item{display:flex;align-items:center;gap:7px}
+@media(max-width:600px){.alert-snooze{font-size:11px;padding:0 7px}.alert-item{gap:5px}}
+
 .qsvg{width:100%;height:auto;display:block;overflow:visible}
 .qsvg .sv-grid{stroke:var(--line);stroke-width:1}.qsvg .sv-80{stroke:var(--crit);stroke-dasharray:5 4;stroke-width:1.2}
 .qsvg .sv-ax{fill:var(--ink-3);font-size:11px}.qsvg .sv-l{fill:var(--ink-2);font-size:11px}.qsvg .sv-n{fill:var(--ink);font-size:11px;font-weight:700}
@@ -3341,11 +3347,15 @@ const TAB_IC = {
 const ACCENTS = [['blue','Blue'],['teal','Teal'],['violet','Violet'],['amber','Amber']];
 function urgentStrip(){ let al=[]; try{ al=computeAlerts(); }catch(e){ return ''; } if(!al.length) return ''; const crit=al.filter(a=>a.sev==='crit'), top=(crit[0]||al[0]);
   return `<div class="urgent-strip ${crit.length?'crit':'warn'}" role="alert"><span class="us-dot" aria-hidden="true"></span><b>${crit.length?`${crit.length} urgent`:`${al.length} to follow up`}</b><span class="us-t">${esc(top.title)}</span><button class="btn sm" data-act="${esc(top.act)}" data-id="${esc(top.id||'')}">Deal with it</button><button class="btn sm ghost" data-act="alerts">All ${al.length}</button></div>`; }
+let reminderDismissTimer=0;
+function closeReminderPopup(){ clearTimeout(reminderDismissTimer); reminderDismissTimer=0; const root=$('#modal-root'); if(root) root.innerHTML=''; }
 function remindTick(){ if(!S.session||Cloud.demoTest) return; if(S.remindAt==null){ S.remindAt=Date.now()+90e3; return; } if(Date.now()<S.remindAt) return; const crit=computeAlerts().filter(a=>a.sev==='crit'); if(!crit.length) return;
   const root=$('#modal-root'); if(!root||root.innerHTML.trim()||S.drawer||dailyBlock()){ return; } S.remindAt=Date.now()+30*60e3;
   root.innerHTML=`<div class="scrim"><div class="modal remind-modal" role="alertdialog" aria-modal="true" aria-labelledby="rm-t"><div class="rmd-head"><span class="hb-ic sm" aria-hidden="true">!</span><div><h3 id="rm-t">${crit.length} urgent item${crit.length===1?'':'s'} still open</h3><small>This reminder comes back every 30 minutes until they are dealt with.</small></div></div>
     <div class="rmd-list">${crit.slice(0,5).map(a=>`<div class="rmd-row"><b>${esc(a.title)}</b><small>${esc(a.detail)}</small></div>`).join('')}${crit.length>5?`<div class="muted" style="font-size:12px">+ ${crit.length-5} more</div>`:''}</div>
     <div class="rmd-foot">${window.Notification&&Notification.permission==='default'?'<button class="btn sm ghost" data-act="notify-on">Turn on pop-up notifications</button>':''}<button class="btn" data-act="remind-later">Remind me in 30 min</button><button class="btn pri" data-act="remind-open">Deal with them now</button></div></div></div>`;
+  clearTimeout(reminderDismissTimer);
+  reminderDismissTimer=setTimeout(()=>{ closeReminderPopup(); },12000);
   try{ if(document.hidden&&window.Notification&&Notification.permission==='granted') new Notification('Battery QC: '+crit.length+' urgent',{body:crit[0].title}); }catch(e){} try{ navigator.vibrate&&navigator.vibrate([200,100,200]); }catch(e){} }
 setInterval(remindTick,20e3);
 function alertBadge(){ const a=computeAlerts(); if(!a.length) return ''; const c=a.some(x=>x.sev==='crit'); return `<span class="badge ${c?'crit':'warn'}">${a.length>99?'99+':a.length}</span>`; }
@@ -3353,7 +3363,7 @@ function AttentionCard(max){
   const al=computeAlerts(); if(!al.length) return '';
   const top=al.slice(0,max||5), crit=al.filter(a=>a.sev==='crit').length;
   return `<div class="card attention" style="margin-bottom:14px"><div class="card-head"><div><h3>Needs attention</h3><p>${al.length} item${al.length===1?'':'s'}${crit?` · ${crit} urgent`:''}, most urgent first</p></div><button class="btn sm" data-act="alerts">See all</button></div>
-    <div class="att-list">${top.map(a=>`<button class="att ${a.sev}" data-act="${a.act}" data-id="${esc(a.id)}"><span class="att-dot"></span><span class="att-t"><b>${esc(a.title)}</b><small>${esc(a.group)} · ${esc(a.detail)}</small></span><span class="att-go">›</span></button>`).join('')}</div></div>`;
+    <div class="att-list">${top.map(a=>`<div class="att-item"><button class="att ${a.sev}" data-act="${a.act}" data-id="${esc(a.id)}"><span class="att-dot"></span><span class="att-t"><b>${esc(a.title)}</b><small>${esc(a.group)} · ${esc(a.detail)}</small></span><span class="att-go">›</span></button><button class="btn sm alert-snooze" data-act="remind-later" title="Remind me later">Remind me later</button></div>`).join('')}</div></div>`;
 }
 function initials(t){ const w=String(t||'').replace(/[^A-Za-z0-9 ]/g,' ').trim().split(/\s+/).filter(Boolean); return ((w[0]||'?')[0]+((w[1]||'')[0]||'')).toUpperCase(); }
 function Header(){
@@ -3618,6 +3628,39 @@ function paginate(rows,F,per){ const pages=Math.max(1,Math.ceil(rows.length/per)
 function pager(n,F,per,g){ const pages=Math.max(1,Math.ceil(n/per)); return `<div class="pager"><span>${n} record${n===1?'':'s'}</span>${pages>1?`<span style="display:flex;gap:6px;align-items:center"><button class="btn sm" data-act="page" data-g="${g}" data-v="-1" ${F.page<=1?'disabled':''}>‹ Prev</button>Page ${F.page} of ${pages}<button class="btn sm" data-act="page" data-g="${g}" data-v="1" ${F.page>=pages?'disabled':''}>Next ›</button></span>`:''}</div>`; }
 
 /* =====================================================================
+   BATTERY SERIAL NUMBER ORGANISER
+   ===================================================================== */
+function organiseSerialNumbers(){
+  const box=$('#serial-organiser-input'), out=$('#serial-organiser-result');
+  if(!box||!out) return;
+  const tokens=box.value.split(/[\s,;]+/).map(x=>x.trim()).filter(Boolean);
+  const sn=[], imei=[], iccid=[], invalid=[];
+  tokens.forEach(raw=>{
+    const v=raw.replace(/^(SN|IMEI|IOTIMEI|ICCID)\s*:\s*/i,'').trim();
+    const label=(raw.match(/^(SN|IMEI|IOTIMEI|ICCID)\s*:/i)||[])[1]||'';
+    if(label && /^SN$/i.test(label)){ if(/^[A-Za-z0-9]{18}$/.test(v)) sn.push(v.toUpperCase()); else invalid.push(raw); }
+    else if(label && /^(IMEI|IOTIMEI)$/i.test(label)){ if(/^\d{15,16}$/.test(v)) imei.push(v); else invalid.push(raw); }
+    else if(label && /^ICCID$/i.test(label)){ if(/^\d{20}$/.test(v)) iccid.push(v); else invalid.push(raw); }
+    else if(/^[A-Za-z0-9]{18}$/.test(v)) sn.push(v.toUpperCase());
+    else if(/^\d{15,16}$/.test(v)) imei.push(v);
+    else if(/^\d{20}$/.test(v)) iccid.push(v);
+    else invalid.push(raw);
+  });
+  const count=Math.max(sn.length,imei.length,iccid.length);
+  const rows=Array.from({length:count},(_,i)=>({sn:sn[i]||'',imei:imei[i]||'',iccid:iccid[i]||''}));
+  window._serialOrganiserRows=rows;
+  const complete=rows.filter(r=>r.sn&&r.imei&&r.iccid).length;
+  const table=rows.length?`<div class="tbl-wrap" style="margin-top:12px"><table><thead><tr><th>#</th><th>SN (18 characters)</th><th>IoT IMEI (15/16 digits)</th><th>ICCID (20 digits)</th><th>Check</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td class="num">${i+1}</td><td class="mono">${esc(r.sn||'—')}</td><td class="mono">${esc(r.imei||'—')}</td><td class="mono">${esc(r.iccid||'—')}</td><td>${r.sn&&r.imei&&r.iccid?'<span class="chip good">Complete</span>':'<span class="chip warn">Incomplete</span>'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty" style="padding:14px">No valid battery identifiers found yet.</div>';
+  out.innerHTML=`<div class="kpis three" style="margin-top:12px">${kpi('Batteries organised',rows.length)}${kpi('Complete records',complete,'SN + IMEI + ICCID')}${kpi('Invalid entries',invalid.length,invalid.length?'Check the pasted values':'All entries recognised', '', invalid.length?'warn':'good')}</div>${table}${invalid.length?`<div class="banner warn" style="margin-top:10px"><div><b>Entries needing correction</b><p style="margin:5px 0 0">${invalid.map(x=>esc(x)).join(' · ')}</p></div></div>`:''}`;
+  const cp=$('#serial-organiser-copy'); if(cp) cp.disabled=!rows.length;
+}
+function copyOrganisedSerialNumbers(){
+  const rows=window._serialOrganiserRows||[]; if(!rows.length) return toast('Organise the numbers first.');
+  const text=['SN (18 characters)\tIoT IMEI (15/16 characters)\tICCID (20 characters)',...rows.map(r=>`${r.sn}\t${r.imei}\t${r.iccid}`)].join('\n');
+  navigator.clipboard.writeText(text).then(()=>toast('Organised battery numbers copied.'),()=>toast('Copy was blocked by the browser.'));
+}
+
+/* =====================================================================
    BATTERIES (per-battery usability)
    ===================================================================== */
 function BatteriesView(){
@@ -3632,7 +3675,8 @@ function BatteriesView(){
   rows=rows.slice().sort(sorts[F.sort]||sorts.recent); S._batRows=rows;
   const pageRows=paginate(rows,F,30);
   const bar=`<div class="stackbar">${USE_ORDER.map(k=>`<div style="flex:${Math.max(cnt[k],0.0001)};background:var(--${USE_META[k][1]==='good'?'good':USE_META[k][1]==='warn'?'warn':USE_META[k][1]==='info'?'info':USE_META[k][1]==='serious'?'serious':'crit'})" data-tip="${esc(`<b>${USE_META[k][0]}</b><br>${cnt[k]} batter${cnt[k]===1?'y':'ies'}<br>${USE_META[k][3]}`)}"></div>`).join('')}</div>`;
-  return `<div class="page-head"><div><div class="eyebrow">Per-battery usability</div><h2>${all.length} batteries on record</h2><p>Every BMS ID seen by O&amp;M or BSA, with its current state, visit count and corrective-action history. Open one for its full timeline.</p></div>${canExport()?`<button class="btn sm" data-act="export">${ICON.dl} Download</button>`:''}</div>
+  return `<div class="card section" style="margin-bottom:16px"><div class="card-head"><div><div class="eyebrow">Battery data utility</div><h3>Organise battery serial numbers</h3><p>Paste SN, IoT IMEI and ICCID values in rows or as a tab/space-separated list. The organiser groups them into one record per battery.</p></div></div><textarea id="serial-organiser-input" rows="5" placeholder="A7245AX1A1TG103925    862755085805790    89185002210927345401&#10;A7245AX1A1TG103916    862755085659304    89185002210927345567&#10;A7245AX1A1TG103852    862755085787360    89185002210927345104" style="width:100%;font-family:var(--mono);font-size:13px;resize:vertical"></textarea><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px"><button class="btn pri" data-act="organise-serials">Organise numbers</button><button class="btn" id="serial-organiser-copy" data-act="copy-serials" disabled>Copy organised figures</button><button class="btn ghost" data-act="clear-serials">Clear</button></div><div id="serial-organiser-result" aria-live="polite"></div></div>
+  <div class="page-head"><div><div class="eyebrow">Per-battery usability</div><h2>${all.length} batteries on record</h2><p>Every BMS ID seen by O&amp;M or BSA, with its current state, visit count and corrective-action history. Open one for its full timeline.</p></div>${canExport()?`<button class="btn sm" data-act="export">${ICON.dl} Download</button>`:''}</div>
   <div class="kpis six">
     ${kpi('Usable rate',rate==null?'—':`${Math.round(rate)}<small>%</small>`,`${usable} of ${all.length} usable now`,'','good')}
     ${USE_ORDER.map(k=>kpi(USE_META[k][0],cnt[k],esc(USE_META[k][3]),`data-act="f" data-g="bat" data-k="use" data-v="${k}"`,USE_META[k][1]==='serious'?'warn':USE_META[k][1])).join('')}
@@ -4218,7 +4262,7 @@ async function setHold(id,release){
 }
 function AlertsSheet(){
   const al=computeAlerts(), groups=[...new Set(al.map(a=>a.group))];
-  const body=al.length?groups.map(g=>`<div><div class="block-title"><h4>${esc(g)}</h4><span class="chip">${al.filter(a=>a.group===g).length}</span></div><div class="lane-list">${al.filter(a=>a.group===g).map(a=>`<button class="jcard alert-${a.sev}" data-act="${a.act}" data-id="${esc(a.id)}"><div class="row1"><b style="font-size:13px">${esc(a.title)}</b>${chip(a.sev==='crit'?'urgent':'follow up',a.sev==='crit'?'crit':'warn')}</div><div class="row2">${esc(a.detail)}</div></button>`).join('')}</div></div>`).join(''):`<div class="empty" style="padding:30px 10px">Nothing needs attention right now. 👍</div>`;
+  const body=al.length?groups.map(g=>`<div><div class="block-title"><h4>${esc(g)}</h4><span class="chip">${al.filter(a=>a.group===g).length}</span></div><div class="lane-list">${al.filter(a=>a.group===g).map(a=>`<div class="alert-item"><button class="jcard alert-${a.sev}" data-act="${a.act}" data-id="${esc(a.id)}"><div class="row1"><b style="font-size:13px">${esc(a.title)}</b>${chip(a.sev==='crit'?'urgent':'follow up',a.sev==='crit'?'crit':'warn')}</div><div class="row2">${esc(a.detail)}</div></button><button class="btn sm alert-snooze" data-act="remind-later" title="Remind me later">Remind me later</button></div>`).join('')}</div></div>`).join(''):`<div class="empty" style="padding:30px 10px">Nothing needs attention right now. 👍</div>`;
   const rules=`<div class="muted" style="font-size:12px">Alerts: unclaimed for ${ALERT_H.unclaimedWarn} h (urgent after ${ALERT_H.unclaimedCrit} h) · claimed but not submitted for ${ALERT_H.unfinishedWarn/24} day (urgent after ${ALERT_H.unfinishedCrit/24} days) · waiting for supplier ${ALERT_H.holdWarn/24} days (urgent after ${ALERT_H.holdCrit/24})${S.session.role!=='omtech'?` · BSA not received after ${ALERT_H.bsaReceiptWarn/24} days`:''}.</div>`;
   return sheet('Needs attention',S.session.role==='omtech'?`Your stage: ${STAGE_LABEL[S.session.stage]}`:'What is late or waiting, most urgent first',body+rules,'','Alerts');
 }
@@ -5608,6 +5652,9 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&S.sessio
    EVENTS
    ===================================================================== */
 const ACT = {
+  'organise-serials':()=>organiseSerialNumbers(),
+  'copy-serials':()=>copyOrganisedSerialNumbers(),
+  'clear-serials':()=>{ const i=$('#serial-organiser-input'),o=$('#serial-organiser-result'); if(i)i.value=''; if(o)o.innerHTML=''; window._serialOrganiserRows=[]; const c=$('#serial-organiser-copy'); if(c)c.disabled=true; },
   nav:t=>{ const same=S.view===t.dataset.v; if(!same) S.welcome=null; S.view=t.dataset.v; lsWrite('bqc_view_'+S.session.role,S.view); render(); window.scrollTo({top:0,behavior:same?'smooth':'auto'}); const m=$('#main'); if(m&&!same){ m.classList.remove('enter'); void m.offsetWidth; m.classList.add('enter'); } },
   alerts:()=>{ S.formError=null; openDrawer({type:'alerts'}); },
   'hold-open':()=>{ S.f.edit._holdOpen=true; renderDrawer(true); },
@@ -5616,8 +5663,8 @@ const ACT = {
   'cond-toggle':t=>condToggle(t.dataset.id,t.dataset.v),
   'set-fsize':t=>{ lsWrite('bqc_fsize',t.dataset.v); applyFont(); render(); },
   'daily-new-date':t=>openDaily(null,t.dataset.v),
-  'remind-later':()=>{ S.remindAt=Date.now()+30*60e3; $('#modal-root').innerHTML=''; toast('Reminder snoozed for 30 minutes.'); },
-  'remind-open':()=>{ S.remindAt=Date.now()+30*60e3; $('#modal-root').innerHTML=''; openDrawer({type:'alerts'}); },
+  'remind-later':()=>{ S.remindAt=Date.now()+30*60e3; closeReminderPopup(); toast('Reminder snoozed for 30 minutes.'); },
+  'remind-open':()=>{ S.remindAt=Date.now()+30*60e3; closeReminderPopup(); openDrawer({type:'alerts'}); },
   'notify-on':()=>{ if(window.Notification) Notification.requestPermission().then(p=>toast(p==='granted'?'Pop-up notifications are on.':'Notifications were not allowed by the browser.')); },
   'fix-subs':()=>{ S.f.fix={v:{},n:{}}; openDrawer({type:'fixsubs'}); },
   'fix-subs-save':()=>fixSubsSave(),
