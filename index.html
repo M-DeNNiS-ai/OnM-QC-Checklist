@@ -1758,12 +1758,14 @@ function dailyFirstDay(){ const d=[...(S.data.daily||[]).map(r=>r.date),...(S.da
 /* working days (Mon–Sat) in the last 7 days that still need their counts */
 function dailyDue(){ const t=todayStr(), first=dailyFirstDay(), out=[]; for(let i=1;i<=7;i++){ const d=addDays(t,-i); if(d<first||parseKey(d).getDay()===0) continue; const r=dailyFor(d); if(!r) out.push({d,why:'Not logged'}); else if(r.status==='RETURNED') out.push({d,why:'Sent back for correction',r}); } return out; }
 const dailyVerifyDue = () => (S.data.daily||[]).filter(r=>r.status==='SUBMITTED'&&hoursSince(r.submittedAt||r.loggedAt)>=36);
-function dailyBlock(){ const s=S.session||{}; if(s.role!=='omtech') return null; if(Number(s.stage)===1){ const due=dailyDue(); if(due.length) return {kind:'log',items:due}; } if(Number(s.stage)===3){ const v=dailyVerifyDue(); if(v.length) return {kind:'verify',items:v.map(r=>({d:r.date,why:'Waiting for your check',r}))}; } return null; }
+function dailyBlockDismissKey(){ const s=S.session||{}; return `bqc_daily_block_dismiss_${s.role||'user'}_${s.stage||0}_${todayStr()}`; }
+function dailyBlock(){ const s=S.session||{}; if(s.role!=='omtech'||lsRead(dailyBlockDismissKey(),false)) return null; if(Number(s.stage)===1){ const due=dailyDue(); if(due.length) return {kind:'log',items:due}; } if(Number(s.stage)===3){ const v=dailyVerifyDue(); if(v.length) return {kind:'verify',items:v.map(r=>({d:r.date,why:'Waiting for your check',r}))}; } return null; }
 function dailyBlockHtml(){ const b=dailyBlock(); if(!b) return '';
   return `<div class="hard-block" role="alertdialog" aria-modal="true" aria-labelledby="hb-t"><div class="hb-card"><div class="hb-ic" aria-hidden="true">!</div><h2 id="hb-t">${b.kind==='log'?'Log the daily counts before you continue':'Check the daily counts before you continue'}</h2>
     <p>${b.kind==='log'?'Daily counts are required at the end of every working day. These days are missing or were sent back:':'These daily counts have waited more than a day and a half for your check:'}</p>
     <div class="hb-list">${b.items.map(x=>`<button class="hb-row" ${x.r?`data-act="daily-open" data-id="${esc(x.r.id)}"`:`data-act="daily-new-date" data-v="${esc(x.d)}"`}><span><b>${esc(fmtDay(x.d))}</b><small>${esc(x.why)}</small></span><span class="btn sm pri">${b.kind==='log'?'Log now':'Check now'}</span></button>`).join('')}</div>
-    <p class="muted" style="font-size:12.5px;margin:0">Your other work is locked until this is done.</p></div></div>`; }
+    <p class="muted" style="font-size:12.5px;margin:0">You can continue for now. The outstanding daily-count reminder will remain in your alerts and this notice can appear again tomorrow.</p>
+    <div style="display:flex;justify-content:flex-end;margin-top:2px"><button class="btn" data-act="daily-block-dismiss">Continue for now</button></div></div></div>`; }
 function dailyDueAlerts(push,s){ if(!(s.role==='omtech'&&Number(s.stage)===1)) return; const t=todayStr(), h=new Date().getHours(); if(h>=16&&parseKey(t).getDay()!==0&&!dailyFor(t)) push(h>=18?'crit':'warn','Daily counts',`Today's counts are due before you leave (${fmtShort(t)})`,'Log the end-of-day totals. Tomorrow your work is locked until they are in.','daily-new','',h); }
 const int = v => { const x=String(v??'').trim(); return /^\d{1,6}$/.test(x)?+x:null; };
 const dNum = v => int(v)??0;
@@ -5652,6 +5654,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&S.sessio
    EVENTS
    ===================================================================== */
 const ACT = {
+  'daily-block-dismiss':()=>{ lsWrite(dailyBlockDismissKey(),true); render(); toast('Daily-count notice dismissed for today. The reminder is still available in Alerts and Daily counts.'); },
   'organise-serials':()=>organiseSerialNumbers(),
   'copy-serials':()=>copyOrganisedSerialNumbers(),
   'clear-serials':()=>{ const i=$('#serial-organiser-input'),o=$('#serial-organiser-result'); if(i)i.value=''; if(o)o.innerHTML=''; window._serialOrganiserRows=[]; const c=$('#serial-organiser-copy'); if(c)c.disabled=true; },
