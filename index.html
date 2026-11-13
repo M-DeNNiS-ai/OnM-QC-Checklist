@@ -833,6 +833,10 @@ tr.tot td{font-weight:800;border-top:2px solid var(--line-2)}
 .cond-opt.on{border-color:var(--accent);background:var(--accent-soft)}
 .cond-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:16px;flex:none;background:var(--warn-bg);color:var(--warn)}
 .c-offline .cond-ic{background:var(--info-bg);color:var(--info)}
+.c-none .cond-ic{background:var(--good-bg);color:var(--good)}
+.nodef{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px dashed var(--line-2);border-radius:12px;cursor:pointer}
+.nodef input{width:18px;height:18px;accent-color:var(--good)}.nodef small{display:block;color:var(--ink-3);font-size:12px}
+.nodef.on{border-style:solid;border-color:var(--good);background:var(--good-bg)}.nodef.bad{border-color:var(--crit);background:var(--crit-bg)}
 .cond-tx{display:grid;line-height:1.25}.cond-tx small{color:var(--ink-3);font-size:12px}
 .cond-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px dashed var(--line-2);border-radius:12px;margin:6px 0}
 .cond-t{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);margin-right:2px}
@@ -845,6 +849,46 @@ tr.tot td{font-weight:800;border-top:2px solid var(--line-2)}
 .cond-stat:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 5%,var(--panel))}
 .cond-n{margin-left:auto;font-size:26px;font-family:var(--f-display,inherit)}
 @media (max-width:600px){ .isec{padding:12px} .cond-opts{grid-template-columns:1fr} }
+.fix-list{display:grid;gap:8px}
+.fix-row{display:grid;grid-template-columns:1fr minmax(200px,260px);gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.fix-l{display:grid;gap:2px;min-width:0}.fix-l small{color:var(--ink-3);font-size:12px}.fix-t{font-style:italic;overflow-wrap:anywhere}
+.fix-in{display:grid;gap:6px}
+.psub.unspec{border-style:dashed;color:var(--warn)}
+@media (max-width:600px){ .fix-row{grid-template-columns:1fr} }
+.urgent-strip{position:sticky;top:calc(env(safe-area-inset-top,0px) + 84px);z-index:25;display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:1312px;width:calc(100% - 16px);margin:8px auto 0;padding:8px 12px;border-radius:14px;font-size:13.5px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+.urgent-strip.crit{background:var(--crit);color:#fff}.urgent-strip.warn{background:var(--warn-bg);color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent)}
+.urgent-strip .us-t{flex:1;min-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.urgent-strip.crit .btn{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)}
+.us-dot{width:10px;height:10px;border-radius:50%;background:currentColor;flex:none;animation:usPulse 1.2s ease-in-out infinite}
+@keyframes usPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(1.5)}}
+.badge.crit{animation:usPulse 1.4s ease-in-out infinite}
+@media (max-width:760px){ .urgent-strip{top:calc(env(safe-area-inset-top,0px) + 70px)} .urgent-strip .us-t{order:3;flex-basis:100%;white-space:normal} }
+@media (prefers-reduced-motion:reduce){ .us-dot,.badge.crit{animation:none} }
+.hard-block{position:fixed;inset:0;z-index:55;display:grid;place-items:center;padding:16px;background:color-mix(in srgb,var(--crit) 38%,rgba(8,14,16,.55));backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.hb-card{background:color-mix(in srgb,var(--solid,var(--panel)) 97%,transparent);color:var(--ink);border-radius:20px;padding:22px;max-width:520px;width:100%;display:grid;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.35);border-top:6px solid var(--crit);max-height:calc(100dvh - 32px);overflow:auto}
+.hb-card h2{margin:0;font-size:20px}.hb-card p{margin:0;color:var(--ink-2)}
+.hb-ic{width:44px;height:44px;border-radius:50%;background:var(--crit);color:#fff;display:grid;place-items:center;font-weight:800;font-size:24px;animation:usPulse 1.4s ease-in-out infinite}
+.hb-ic.sm{width:34px;height:34px;font-size:18px;flex:none}
+.hb-list{display:grid;gap:8px}
+.hb-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel-2);cursor:pointer;text-align:left;color:var(--ink);font:inherit}
+.hb-row small{display:block;color:var(--crit);font-size:12px}
+.remind-modal{max-width:520px;width:100%;padding:18px;display:grid;gap:12px;border-radius:18px;border-top:5px solid var(--crit)}
+.rmd-head{display:flex;gap:12px;align-items:center}.rmd-head h3{margin:0}.rmd-head small{color:var(--ink-3)}
+.rmd-list{display:grid;gap:6px}.rmd-row{padding:8px 10px;border-radius:10px;background:var(--crit-bg)}.rmd-row b{display:block;font-size:13.5px}.rmd-row small{color:var(--ink-2);font-size:12px}
+.rmd-foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.qsvg{width:100%;height:auto;display:block;overflow:visible}
+.qsvg .sv-grid{stroke:var(--line);stroke-width:1}.qsvg .sv-80{stroke:var(--crit);stroke-dasharray:5 4;stroke-width:1.2}
+.qsvg .sv-ax{fill:var(--ink-3);font-size:11px}.qsvg .sv-l{fill:var(--ink-2);font-size:11px}.qsvg .sv-n{fill:var(--ink);font-size:11px;font-weight:700}
+.qsvg .sv-line{fill:none;stroke:var(--accent);stroke-width:2.2}.qsvg .sv-dot{fill:var(--accent)}
+.qsvg .sv-cl{stroke:var(--ink-3);stroke-width:1.2}.qsvg .sv-ucl{fill:none;stroke:var(--crit);stroke-dasharray:6 4;stroke-width:1.2}
+.qsvg .sv-out{fill:var(--crit);stroke:#fff;stroke-width:1.5}.qsvg .sv-run{fill:var(--warn);stroke:#fff;stroke-width:1.5}
+table.chk td,table.chk th{padding:6px 7px;font-size:12px;white-space:nowrap}
+.reco-list{display:grid;gap:8px}
+.reco{display:grid;gap:4px;padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:12px;background:var(--panel)}
+.reco.high{border-left-color:var(--crit)}
+.reco-h{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.reco-area{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);margin-right:auto}
+.reco small{color:var(--ink-2);font-size:12.5px;overflow-wrap:anywhere}.reco-a{display:flex;gap:8px;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--ink)}
+.agenda{margin:0;padding-left:20px;display:grid;gap:10px}.agenda li{display:grid;gap:2px}.agenda small{color:var(--ink-2);font-size:12.5px}
 </style>
 </head><body>
 <canvas id="bg" aria-hidden="true"></canvas><div id="app"></div>
@@ -970,7 +1014,7 @@ const normId = v => String(v||'').trim().toUpperCase();
 /* ---------- Battery conditions: a status, not a defect ---------- */
 const CONDITIONS = [['pendingRework','Pending rework','Waiting for its rework'],['offline','Offline','Not online / not reporting']];
 const COND_LABEL = Object.fromEntries(CONDITIONS.map(([k,l])=>[k,l]));
-const COND_IC = {pendingRework:'↻',offline:'⦸'};
+const COND_IC = {pendingRework:'↻',offline:'⦸',none:'✓'};
 const COND_TONE = {pendingRework:'warn',offline:'info'};
 const isCondCase = c => !!c&&c.issue==='other'&&Object.values(COND_LABEL).includes(c.label);
 function condInferred(r,k){ const st=(r||{}).stage1||{}; if(!(st.issues||{}).other) return false; return normLabel(st.otherNote||'')===COND_LABEL[k]; }
@@ -1337,7 +1381,7 @@ function newOmRecord(d,visitNumber,tech){
   return {
     id:uid(),createdAt:nowIso(),bmsId:d.bmsId.trim(),model:d.model,imei:d.imei,site:d.site,cycles:String(d.cycles??'').trim()===''?null:+d.cycles,dateReceived:d.dateReceived,timeReceived:d.timeReceived,
     visitNumber,stage:2,status:'STAGE2_OPEN',conditions:condInit(d.cond,tech),capaCycles:0,isCorrectiveAction:false,capaLog:[],
-    stage1:{technician:tech,receivedBy:d.receivedBy||tech,pre:d.pre,issues:d.issues,sub:d.sub||{},otherNote:d.otherNote,otherStd:d.otherStd||'',missingComponentNote:d.missingComponentNote,...(d.issues&&d.issues.simReplace?{sim:{oldType:String((d.sim||{}).oldType||OLD_SIM_DEFAULT).trim(),oldNumber:simDigits((d.sim||{}).oldNumber)}}:{}),completedAt:nowIso()},
+    stage1:{technician:tech,receivedBy:d.receivedBy||tech,pre:d.pre,issues:d.issues,sub:d.sub||{},otherNote:d.otherNote,otherStd:d.otherStd||'',noDefect:!!d.noDefect,missingComponentNote:d.missingComponentNote,...(d.issues&&d.issues.simReplace?{sim:{oldType:String((d.sim||{}).oldType||OLD_SIM_DEFAULT).trim(),oldNumber:simDigits((d.sim||{}).oldNumber)}}:{}),completedAt:nowIso()},
     createdBy:tech,
     stage2:{technician:'',methodId:d.issues&&d.issues.simReplace?'rm-05':'',sopRef:'',repairAction:'',partsReplaced:'',post:{},completedAt:null},
     stage3:{technician:'',tests:{packVoltage:'',minCell:'',maxCell:'',irMeasured:'',irThreshold:550},testBools:{},qcPassed:'',qcNote:'',completedAt:null},
@@ -1459,7 +1503,7 @@ function computeAlerts(){
   if(role==='quality'||role==='omadmin'){
     S.data.rca.filter(r=>r.status!=='VERIFIED CLOSED'&&r.dueDate&&r.dueDate<todayStr()).forEach(r=>push('warn','Overdue RCA',`RCA for ${r.bmsId||'—'} is past due (${fmtShort(r.dueDate)})`,`${r.owner||'No owner'} · ${(r.status||'').toLowerCase()}`,'open-rca',r.id,hoursSince(r.dueDate)));
   }
-  dailyAlerts(push,s); fuAlerts(push,s); rmAlerts(push,s); dailyReqAlerts(push,s);
+  dailyAlerts(push,s); dailyDueAlerts(push,s); fuAlerts(push,s); rmAlerts(push,s); dailyReqAlerts(push,s);
   return out.sort((a,b)=>(a.sev==='crit'?0:1)-(b.sev==='crit'?0:1)||b.h-a.h);
 }
 function ageDays(r){ return Math.max(0,daysBetween(r.dateReceived||dkey(r.createdAt),todayStr())); }
@@ -1643,6 +1687,8 @@ function makeDemoData(){
   om.forEach((r,i)=>{ const s1=r.stage1||{}; Object.keys(s1.issues||{}).forEach(k=>{ const subs=DEFAULT_SUBS[k]; if(!subs||!s1.issues[k]) return; const sb=subs[Math.floor(rnd()*Math.min(subs.length,3))]; if(rnd()<.5) (s1.sub=s1.sub||{})[k]=sb; if((r.stage2||{}).completedAt){ (r.stage2.confirmed=r.stage2.confirmed||{})[k]=sb; const m=methodsFor([subKey(k,sb)],platOf(r))[0]; if(m&&k!=='simReplace') r.stage2.methodId=m.m.id; } });
     if(i%9===0&&(r.stage2||{}).technician==='Collins O.'){ r.stage2.technician=r.stage2.completedBy=pick(['Collins O. 2','collins o','Collins']); }
     if(i%11===0&&(r.stage1||{}).technician==='Amos K.'){ r.stage1.technician=r.stage1.completedBy=pick(['Amos K 1','amos k.','Amos']); } });
+  om.forEach((r,i)=>{ const s1=r.stage1||{}; Object.keys(s1.issues||{}).forEach(k=>{ const subs=DEFAULT_SUBS[k]; if(!subs||!s1.issues[k]||k==='missingComponent'||i%29===0) return; if(!(s1.sub||{})[k]&&!((r.stage2||{}).confirmed||{})[k]&&!inferSub(r,k)) (s1.sub=s1.sub||{})[k]=subs[i%Math.min(subs.length,3)]; }); });
+  om.forEach((r,i)=>{ if(i%31===7&&r.stage1&&!r.capaCycles&&r.finalDisposition!=='TRANSFERRED_BSA'){ r.stage1.issues={}; r.stage1.sub={}; r.stage1.noDefect=true; if(r.stage2) r.stage2.confirmed={}; } });
   om.forEach((r,i)=>{ if(i%17===3) r.conditions={pendingRework:{since:r.createdAt,by:(r.stage1||{}).technician||''}}; else if(i%23===5) r.conditions={offline:{since:r.createdAt,by:(r.stage1||{}).technician||''}}; });
   return {om_chain_records:om,bsa_records:bsa,rca_records:rca,quality_issue_records:QUALITY_ISSUE_SEED.map(r=>({...r})),daily_log_records:makeDemoDaily(rnd,pick,T1,T3,om),accountability_audit_records:[]};
 }
@@ -1702,6 +1748,17 @@ function dailyReqAlerts(push,s){
     if(s.role==='quality'||s.role==='omadmin') push(h>=24?'crit':'warn','Daily counts',`Correction requested for ${fmtDay(r.date)}`,`${q.by}: ${q.note}`,'daily-open',r.id,h); });
 }
 const dailyFor = date => (S.data.daily||[]).find(r=>r.date===date);
+function dailyFirstDay(){ const d=[...(S.data.daily||[]).map(r=>r.date),...(S.data.om||[]).map(r=>r.dateReceived)].filter(Boolean).sort(); return d[0]||todayStr(); }
+/* working days (Mon–Sat) in the last 7 days that still need their counts */
+function dailyDue(){ const t=todayStr(), first=dailyFirstDay(), out=[]; for(let i=1;i<=7;i++){ const d=addDays(t,-i); if(d<first||parseKey(d).getDay()===0) continue; const r=dailyFor(d); if(!r) out.push({d,why:'Not logged'}); else if(r.status==='RETURNED') out.push({d,why:'Sent back for correction',r}); } return out; }
+const dailyVerifyDue = () => (S.data.daily||[]).filter(r=>r.status==='SUBMITTED'&&hoursSince(r.submittedAt||r.loggedAt)>=36);
+function dailyBlock(){ const s=S.session||{}; if(s.role!=='omtech') return null; if(Number(s.stage)===1){ const due=dailyDue(); if(due.length) return {kind:'log',items:due}; } if(Number(s.stage)===3){ const v=dailyVerifyDue(); if(v.length) return {kind:'verify',items:v.map(r=>({d:r.date,why:'Waiting for your check',r}))}; } return null; }
+function dailyBlockHtml(){ const b=dailyBlock(); if(!b) return '';
+  return `<div class="hard-block" role="alertdialog" aria-modal="true" aria-labelledby="hb-t"><div class="hb-card"><div class="hb-ic" aria-hidden="true">!</div><h2 id="hb-t">${b.kind==='log'?'Log the daily counts before you continue':'Check the daily counts before you continue'}</h2>
+    <p>${b.kind==='log'?'Daily counts are required at the end of every working day. These days are missing or were sent back:':'These daily counts have waited more than a day and a half for your check:'}</p>
+    <div class="hb-list">${b.items.map(x=>`<button class="hb-row" ${x.r?`data-act="daily-open" data-id="${esc(x.r.id)}"`:`data-act="daily-new-date" data-v="${esc(x.d)}"`}><span><b>${esc(fmtDay(x.d))}</b><small>${esc(x.why)}</small></span><span class="btn sm pri">${b.kind==='log'?'Log now':'Check now'}</span></button>`).join('')}</div>
+    <p class="muted" style="font-size:12.5px;margin:0">Your other work is locked until this is done.</p></div></div>`; }
+function dailyDueAlerts(push,s){ if(!(s.role==='omtech'&&Number(s.stage)===1)) return; const t=todayStr(), h=new Date().getHours(); if(h>=16&&parseKey(t).getDay()!==0&&!dailyFor(t)) push(h>=18?'crit':'warn','Daily counts',`Today's counts are due before you leave (${fmtShort(t)})`,'Log the end-of-day totals. Tomorrow your work is locked until they are in.','daily-new','',h); }
 const int = v => { const x=String(v??'').trim(); return /^\d{1,6}$/.test(x)?+x:null; };
 const dNum = v => int(v)??0;
 
@@ -1763,11 +1820,11 @@ function DailyWorkCard(n){
 }
 
 /* ---------- Drawer: log / verify / view ---------- */
-function openDaily(id){
+function openDaily(id,date){
   const r=id?(S.data.daily||[]).find(x=>x.id===id):null;
   if(id&&!r){ toast('That daily log was not found. Refresh and try again.'); return; }
   if(!r&&!canLogDaily()){ toast('Only receiving (Stage 1) logs the daily counts.'); return; }
-  const today=todayStr(), existing=!r?dailyFor(today):null;
+  const today=date||todayStr(), existing=!r?dailyFor(today):null;
   const base=r||existing;
   S.f.daily=base?{...clone(base),issues:clone(base.issues||{}),_note:''}:{date:today,received:'',toWarehouse:'',inField:'',issues:{},notes:'',_note:'',_add:''};
   ['received','toWarehouse','inField'].forEach(k=>{ if(S.f.daily[k]!=null) S.f.daily[k]=String(S.f.daily[k]); });
@@ -1813,7 +1870,7 @@ function DailySheet(){
     <div><div class="block-title"><h4>Batteries</h4><span id="d-tot-chk"></span></div>
       <div class="d-nums">${DAILY_NUMS.map(([k,l])=>numIn('daily.'+k,l,{req:true,dis:ro})).join('')}</div></div>
     <div><div class="block-title"><h4>Issues found and what was done</h4><span id="d-iss-sum" class="muted" style="font-size:12.5px"></span></div>
-      ${ro?'':`<div class="di-add"><select class="in" id="b-daily-_add" data-bind="daily._add" aria-label="Issue to add"><option value="">Add an issue…</option>${dailyAddOptions(f)}</select><button class="btn" data-act="daily-add-issue">${ICON.plus} Add</button>${intakes.length&&mode==='log'?`<button class="btn ghost" data-act="daily-prefill" title="Counts each issue on the intakes logged in the app for this date">Start from ${intakes.length} logged intake${intakes.length===1?'':'s'}</button>`:''}</div>`}
+      ${ro?'':`<div class="di-add"><select class="in" id="b-daily-_add" data-bind="daily._add" data-rerender aria-label="Issue to add"><option value="">Add an issue…</option>${dailyAddOptions(f).replace(`value="${esc(f._add||'')}"`,`value="${esc(f._add||'')}" selected`)}</select>${String(f._add||'').endsWith(SUB_NEW)?`<input class="in" id="b-daily-_addNew" data-bind="daily._addNew" value="${esc(f._addNew||'')}" placeholder="Name the new sub-issue">`:''}<button class="btn" data-act="daily-add-issue">${ICON.plus} Add</button>${intakes.length&&mode==='log'?`<button class="btn ghost" data-act="daily-prefill" title="Counts each issue on the intakes logged in the app for this date">Start from ${intakes.length} logged intake${intakes.length===1?'':'s'}</button>`:''}</div>`}
       ${dailyIssueRows(f,ro)}</div>
     ${ro?(f.notes?`<div><h4 style="margin-bottom:6px">Notes from receiving</h4><div class="muted">${esc(f.notes)}</div></div>`:''):field('Notes from receiving',area('daily.notes','Anything unusual today'),'full')}
     ${mode==='verify'?field('Verifier note (required to send back)',area('daily._note','What did you check, or what needs correcting?'),'full'):''}
@@ -1843,8 +1900,9 @@ function paintDailyCalc(){
   const s=$('#d-iss-sum'); if(s) s.textContent=F?`${R} of ${F} reworked · ${fmtPct(pct(R,F))}`:'';
 }
 function dailyAddIssue(){
-  const f=S.f.daily, k=f._add; if(!k){ toast('Pick an issue first.'); return; }
-  f.issues[k]={found:'',repaired:'',notWorked:'',method:'',reason:'',reasonNote:''}; f._add='';
+  const f=S.f.daily; let k=f._add, label=''; if(!k){ toast('Pick an issue first.'); return; }
+  if(k.endsWith(SUB_NEW)){ const pk=k.slice(0,-SUB_NEW.length); label=cleanSub(pk,f._addNew); if(!label){ toast('Name the new sub-issue first (at least 3 letters).'); return; } k=subKey(pk,label); f._addNew=''; if(f.issues[k]){ f._add=''; renderDrawer(true); toast('That fault is already in the list.'); return; } }
+  f.issues[k]={found:'',repaired:'',notWorked:'',method:'',reason:'',reasonNote:'',...(label?{label}:{})}; f._add='';
   renderDrawer(true); const el=$(`#b-daily-issues-${k}-found`); if(el) el.focus();
 }
 function dailyPrefill(){
@@ -2027,7 +2085,7 @@ function dailyCsv(){
 
 /* sample data for the demo sign-in */
 function makeDemoDaily(rnd,pick,T1,T3,om){
-  const out=[], today=todayStr(), keys=['noPower','lowCapacity','cellImbalance','bmsFault','chargeFail__mosfet-failure','chargeFail__faulty-charging-port','irFail__moisture-ingress','iotFault','canFail','connectorDamage','dischargeFail__mosfet-failure'];
+  const out=[], today=todayStr(), keys=['noPower__bms-dead','lowCapacity__aged-cells','cellImbalance__weak-cell-group','bmsFault__bms-hardware-failure','chargeFail__mosfet-failure','chargeFail__faulty-charging-port','irFail__moisture-ingress','iotFault__sim-network','canFail__can-wiring-connector','connectorDamage__burnt-connector','dischargeFail__mosfet-failure'];
   for(let i=60;i>=0;i--){
     const d=addDays(today,-i); if(parseKey(d).getDay()===0) continue;
     const received=8+Math.floor(rnd()*14), inField=Math.floor(received*(.35+rnd()*.35)), toWarehouse=received-inField;
@@ -2422,7 +2480,7 @@ function TopCasesInner(){
   <div class="grid g3 tc-grid" data-show="${T.show||'week'}">${tcColumn(src,'day','Day')}${tcColumn(src,'week','Week')}${tcColumn(src,'month','Month')}</div>
   <div class="card section"><div class="card-head"><div><h3>How the top cases move</h3><p>This month's top 5, last ${tg==='day'?'14 days':tg==='week'?'12 weeks':'12 months'}. Click a bar to jump to that ${tg}. Tap any case above to see its batteries.</p></div><div class="seg">${[['day','Daily'],['week','Weekly'],['month','Monthly']].map(([k,l])=>`<button class="${tg===k?'on':''}" data-act="tc-tg" data-v="${k}">${l}</button>`).join('')}</div></div>
     ${top5.length?`<div class="legend">${series.map(s=>`<span><i style="background:var(${s.color})"></i>${esc(s.label)}</span>`).join('')}</div>`:''}${trend}</div>
-  ${src==='intake'?`<div class="card section"><div class="card-head"><div><h3>Grouped by broad issue</h3><p>${esc(periodLabel(periodOf(S.anchor,'month'),true))} · every exact fault under its broad issue (e.g. all Charging failure faults together). Tap to see the batteries.</p></div></div>${parentList(defectItems(periodOf(S.anchor,'month')))}</div>`:''}
+  ${src==='intake'?subGapBanner():''}${src==='intake'?`<div class="card section"><div class="card-head"><div><h3>Grouped by broad issue</h3><p>${esc(periodLabel(periodOf(S.anchor,'month'),true))} · every exact fault under its broad issue (e.g. all Charging failure faults together). Tap to see the batteries.</p></div></div>${parentList(defectItems(periodOf(S.anchor,'month')))}</div>`:''}
   ${src==='intake'?CondCard(periodOf(S.anchor,'month')):''}
   ${platHtml}`;
 }
@@ -2478,20 +2536,20 @@ const GEAR_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" st
 
 /* ---------- Specific faults under each issue (e.g. Charge failure → MOSFET / charging port) ---------- */
 const DEFAULT_SUBS = {
-  chargeFail:['MOSFET failure','Faulty charging port','Blown fuse','BMS charge protection','Charger / station side'],
-  dischargeFail:['MOSFET failure','Blown fuse','Loose busbar / weld','BMS discharge protection'],
-  noPower:['Deep discharge / sleep mode','Blown fuse','BMS dead','Broken internal wiring'],
-  bmsFault:['BMS hardware failure','Firmware / parameter mismatch','Wrong BMS for battery type'],
-  canFail:['CAN wiring / connector','BMS communication fault','Termination resistor'],
-  lowCapacity:['Aged cells','Cell imbalance','Calibration / SOC error'],
-  cellImbalance:['Weak cell group','Balancing circuit fault'],
-  irFail:['Moisture ingress','Damaged insulation','Contamination / dust'],
-  iotFault:['IoT module failure','SIM / network','Antenna / wiring','IMEI mismatch'],
-  connectorDamage:['Burnt connector','Broken latch / housing','Loose / bent pins'],
-  physicalDefect:['Cracked casing','Dented casing','Broken handle / strap','Damaged cover'],
-  swelling:['Cell swelling','Casing deformation'],
+  noPower:['Deep discharge / sleep mode','Blown fuse','BMS dead','Broken internal wiring','Main switch / breaker fault','Pre-charge circuit fault','All cells at 0 V'],
+  lowCapacity:['Aged cells','Cell imbalance','Calibration / SOC error','Capacity below spec (low SoH)','High internal resistance','Wrong capacity setting in BMS'],
+  cellImbalance:['Weak cell group','Balancing circuit fault','Sense lead fault','High self-discharge cell'],
+  bmsFault:['BMS hardware failure','Firmware / parameter mismatch','Wrong BMS for battery type','Burnt BMS components','Sense lead / harness fault','Water damage on BMS','Active error code'],
+  canFail:['CAN wiring / connector','BMS communication fault','Termination resistor','CAN transceiver fault','Wrong baud rate / configuration'],
+  chargeFail:['MOSFET failure','Faulty charging port','Blown fuse','BMS charge protection','Charger / station side','Charge relay / contactor','Damaged charge harness','Temperature sensor (NTC) fault'],
+  dischargeFail:['MOSFET failure','Blown fuse','Loose busbar / weld','BMS discharge protection','Discharge relay / contactor','Output connector fault','Over-current protection trip'],
+  swelling:['Cell swelling','Casing deformation','Multiple cells swollen','Housing bulge'],
+  irFail:['Moisture ingress','Damaged insulation','Contamination / dust','Water inside pack','Pinched / damaged wire','Cracked insulation sheet'],
+  iotFault:['IoT module failure','SIM / network','Antenna / wiring','IMEI mismatch','Firmware / not reporting','GPS fix fault','No power to IoT module'],
   tampered:['Missing IoT module','Missing bolts / screws','Missing cover','Foreign object inside','Forced opening / broken seal','Cut or pulled wires','Water ingress','Stolen cells / parts','Damaged casing'],
-  wetThermalPaste:['Wet thermal paste','Dried / degraded paste','Moisture on BMS'],
+  physicalDefect:['Cracked casing','Dented casing','Broken handle / strap','Damaged cover','Scratched / scuffed','Broken mounting point','Deformed frame'],
+  wetThermalPaste:['Wet thermal paste','Dried / degraded paste','Moisture on BMS','Paste missing / not enough'],
+  connectorDamage:['Burnt connector','Broken latch / housing','Loose / bent pins','Corroded terminals','Melted housing','Missing seal'],
   cellFailureSingle:['Dead cell (0 V)','Low-voltage cell','Leaking cell','Swollen cell'],
   cellFailureMultiple:['Dead cells (0 V)','Low-voltage cells','Leaking cells','Swollen cells'],
   missingComponent:['Bolt / screw','Cover / lid','Label / QR code','BMS board','Connector','Charging port','IoT module','SIM card','Handle / strap','Fuse','LED strip','Cable / harness','Thermal pad','Seal / gasket']
@@ -2505,7 +2563,17 @@ const subKey = (k,sub) => sub?k+'__'+subSlug(sub):k;
 const splitKey = key => { const s=String(key||''), i=s.indexOf('__'); return i<0?[s,'']:[s.slice(0,i),s.slice(i+2)]; };
 const parentIssue = key => splitKey(key)[0];
 function issueSubs(k){ const c=issueMapCfg().subs||{}; return Array.isArray(c[k])?c[k]:(DEFAULT_SUBS[k]||[]); }
-function issueLbl(key){ if(ISSUE_LABEL[key]) return ISSUE_LABEL[key]; const [k,sl]=splitKey(key); if(!ISSUE_LABEL[k]) return String(key); const sub=sl==='other'?'other cause':(issueSubs(k).find(s=>subSlug(s)===sl)||sl.replace(/-/g,' ')); return faultLbl(k,sub); }
+const SUB_NEW = '__new';
+const subNeeded = k => k!=='other'&&issueSubs(k).length>0;
+function subsSeen(k){ const set=new Set(); ((S.data||{}).om||[]).forEach(r=>{ [((r.stage1||{}).sub||{})[k],((r.stage2||{}).confirmed||{})[k]].forEach(v=>{ if(v&&v!==SUB_OTHER&&v!==SUB_NEW) set.add(v); }); });
+  ((S.data||{}).daily||[]).forEach(d=>Object.entries(d.issues||{}).forEach(([key,v])=>{ if(parentIssue(key)===k&&v&&v.label) set.add(v.label); })); return [...set]; }
+function subChoices(k){ const base=issueSubs(k), seen=new Set(base.map(x=>labelKey(x))); const extra=subsSeen(k).filter(x=>{ const kk=labelKey(x); if(seen.has(kk)) return false; seen.add(kk); return true; }).sort(); return [...base,...extra]; }
+function cleanSub(k,t){ const x=String(t||'').replace(/\s+/g,' ').trim().replace(/[.;:,]+$/,''); if(x.length<3) return ''; const hit=subChoices(k).find(sb=>labelKey(sb)===labelKey(x)); if(hit) return hit; const rx=issueSubs(k).find(sb=>{ const r=subRx(sb); return r&&r.test(x.toLowerCase()); }); if(rx) return rx; return (x[0].toUpperCase()+x.slice(1)).slice(0,40); }
+/* picked sub or a newly named one; '' and an error when it is missing */
+function resolveSubs(st,field,keys){ const m={...(st[field]||{})}, nw=st._subNew||{};
+  for(const k of keys){ if(!subNeeded(k)) continue; let v=m[k]; if(v===SUB_NEW){ v=cleanSub(k,nw[k]); if(!v) return `Name the new ${SHORT_ISSUE[k]||ISSUE_LABEL[k]} sub-issue (at least 3 letters).`; m[k]=v; } if(!v||v===SUB_OTHER) return `Pick the exact fault for ${ISSUE_LABEL[k]}. If it is not in the list, choose “Other” and name it.`; }
+  st[field]=m; delete st._subNew; return ''; }
+function issueLbl(key){ if(ISSUE_LABEL[key]) return ISSUE_LABEL[key]; const [k,sl]=splitKey(key); if(!ISSUE_LABEL[k]) return String(key); const sub=sl==='other'?'other cause':(subChoices(k).find(s=>subSlug(s)===sl)||sl.replace(/-/g,' ')); return faultLbl(k,sub); }
 const subCase = (k,sub) => sub===SUB_OTHER?{key:k+'__other',label:faultLbl(k,'other cause'),issue:k,sub:'other cause'}:{key:subKey(k,sub),label:faultLbl(k,sub),issue:k,sub};
 const SUB_RX = {
   'MOSFET failure':/mosfet|\bfets?\b/, 'Faulty charging port':/charg\w*\s*(port|socket|inlet|point)|\bport\b|\bsocket\b|\binlet\b/, 'Blown fuse':/\bfuse/,
@@ -2539,8 +2607,8 @@ function recordText(r){ r=r||{}; const s1=r.stage1||{}, s2=r.stage2||{}, s3=r.st
 function componentName(t){ const x=String(t||'').toLowerCase().trim(); if(!x) return ''; for(const sb of issueSubs('missingComponent')){ const rx=subRx(sb); if(rx&&rx.test(x)) return sb; } const c=String(t).replace(/\s+/g,' ').trim().replace(/^(the|a|an|missing)\s+/i,'').replace(/[.;:,]+$/,''); return c?(c[0].toUpperCase()+c.slice(1)).slice(0,40):''; }
 function inferSub(r,k){ if(k==='missingComponent'){ const n=componentName(((r||{}).stage1||{}).missingComponentNote); if(n) return n; } const subs=issueSubs(k); if(!subs.length) return ''; const t=recordText(r); if(!t) return ''; for(const sb of subs){ const rx=subRx(sb); if(rx&&rx.test(t)) return sb; } return ''; }
 function subOf(r,k){ return (((r||{}).stage2||{}).confirmed||{})[k]||(((r||{}).stage1||{}).sub||{})[k]||inferSub(r,k); }
-function stdCase(r,k){ const sub=subOf(r,k); if(k==='missingComponent'&&sub&&sub!==SUB_OTHER) return {key:subKey(k,sub),label:faultLbl(k,sub),issue:k,sub}; if(sub) return subCase(k,sub); return issueSubs(k).length?{key:k,label:faultLbl(k,'not specified'),issue:k,sub:'not specified'}:{key:k,label:ISSUE_LABEL[k],issue:k}; }
-function stdFromKey(key){ const [k,sl]=splitKey(key); if(!ISSUE_LABEL[k]||k==='other') return null; if(!sl) return issueSubs(k).length?{key:k,label:faultLbl(k,'not specified'),issue:k,sub:'not specified'}:{key:k,label:ISSUE_LABEL[k],issue:k}; if(sl==='other') return subCase(k,SUB_OTHER); const sb=issueSubs(k).find(x=>subSlug(x)===sl)||sl.replace(/-/g,' '); return {key,label:faultLbl(k,sb),issue:k,sub:sb}; }
+function stdCase(r,k){ const sub=subOf(r,k); if(k==='missingComponent'&&sub&&sub!==SUB_OTHER) return {key:subKey(k,sub),label:faultLbl(k,sub),issue:k,sub}; if(sub) return subCase(k,sub); return issueSubs(k).length?{key:k,label:SHORT_ISSUE[k]||ISSUE_LABEL[k],issue:k,sub:''}:{key:k,label:ISSUE_LABEL[k],issue:k}; }
+function stdFromKey(key){ const [k,sl]=splitKey(key); if(!ISSUE_LABEL[k]||k==='other') return null; if(!sl) return issueSubs(k).length?{key:k,label:SHORT_ISSUE[k]||ISSUE_LABEL[k],issue:k,sub:''}:{key:k,label:ISSUE_LABEL[k],issue:k}; if(sl==='other') return subCase(k,SUB_OTHER); const sb=subChoices(k).find(x=>subSlug(x)===sl)||sl.replace(/-/g,' '); return {key,label:faultLbl(k,sb),issue:k,sub:sb}; }
 function faultOptions(cur){ return ISSUE_ITEMS.filter(([k])=>k!=='other').map(([k,l])=>{ const subs=issueSubs(k), o=(v,t)=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(t)}</option>`; return subs.length?`<optgroup label="${esc(SHORT_ISSUE[k]||l)}">${subs.map(sb=>o(subKey(k,sb),faultLbl(k,sb))).join('')}</optgroup>`:o(k,l); }).join(''); }
 function otherCase(st){
   if(st&&st.otherStd){ const c=stdFromKey(st.otherStd); if(c) return c; }
@@ -2552,19 +2620,37 @@ function otherCase(st){
   if(t&&/(iot|tracker|gps)\s*(module\s*)?(missing|removed|stolen)|(missing|removed|stolen)\s*(iot|tracker|gps)/.test(t)) return subCase('tampered','Missing IoT module');
   if(t&&/\b(missing|stolen|lost)\b/.test(t)&&c.issue!=='tampered'){ const known=issueSubs('missingComponent').find(x=>{ const rx=subRx(x); return rx&&rx.test(t); }); if(known) return {key:subKey('missingComponent',known),label:faultLbl('missingComponent',known),issue:'missingComponent',sub:known}; }
   if(c.issue&&c.issue!=='other'&&c.key===c.issue&&t){ const sb=c.issue==='missingComponent'?componentName(t.replace(/\b(missing|stolen|removed|lost)\b/g,' ')):(issueSubs(c.issue).find(x=>{ const rx=subRx(x); return rx&&rx.test(t); })||''); if(sb) return c.issue==='missingComponent'?{key:subKey(c.issue,sb),label:faultLbl(c.issue,sb),issue:c.issue,sub:sb}:subCase(c.issue,sb); }
-  if(c.issue&&c.issue!=='other'&&c.key===c.issue&&issueSubs(c.issue).length) return {key:c.key,label:faultLbl(c.issue,'not specified'),issue:c.issue,sub:'not specified'};
+  if(c.issue&&c.issue!=='other'&&c.key===c.issue&&issueSubs(c.issue).length) return {key:c.key,label:SHORT_ISSUE[c.issue]||ISSUE_LABEL[c.issue],issue:c.issue,sub:''};
   /* free-text notes: "pending rework", "Pending reworks", "rework pending." are one case */
   if(c.key.startsWith('other:')){ const L=normLabel(st.otherNote); return {key:'other:'+labelKey(L),label:L,issue:'other'}; }
   return c;
 }
 const issueOrder = key => { const i=ISSUE_ITEMS.findIndex(x=>x[0]===parentIssue(key)); return i<0?99:i; };
 /* specific-fault pickers: Stage 1 "if known", Stage 2 "confirmed" */
-function subPickers(base,keys,title,req){
-  const ks=keys.filter(k=>issueSubs(k).length); if(!ks.length) return '';
-  return `<div class="sub-pick"><div class="block-title"><h4>${esc(title)}</h4><span class="muted" style="font-size:12px">${req?'Required: say exactly what failed':'Pick it if you can already tell'}</span></div><div class="form">${ks.map(k=>field(esc(ISSUE_LABEL[k]),sel(`${base}.${k}`,[['',req?'Choose the exact fault…':'Not sure yet'],...issueSubs(k),SUB_OTHER],true),'',req)).join('')}</div></div>`;
+function subGaps(){ const out=[]; ((S.data||{}).om||[]).forEach(r=>issuesOf(r).forEach(k=>{ if(subNeeded(k)&&!subOf(r,k)) out.push({r,k}); })); return out.sort((a,b)=>String(b.r.dateReceived).localeCompare(String(a.r.dateReceived))); }
+function subGapBanner(){ const n=subGaps().length; if(!n) return ''; return `<div class="banner warn"><div><b>${n} older defect${n===1?' still needs its':'s still need their'} exact fault</b> (logged before it was required). They show under the broad issue only. ${canSetup()?'<button class="btn sm" data-act="fix-subs">Specify them</button>':'Ask Quality or the O&amp;M manager to specify them.'}</div></div>`; }
+function FixSubsSheet(){
+  const F=S.f.fix=S.f.fix||{v:{},n:{}}, gaps=subGaps(), show=gaps.slice(0,60);
+  const body=gaps.length?`<div class="banner"><div>Pick the exact fault for each one. If it is not in the list, choose <b>Other</b> and name it: the new sub-issue is added to the list for everyone. Only the rows you fill in are saved.</div></div>
+    <div class="fix-list">${show.map(({r,k})=>{ const id=r.id+'|'+k, v=F.v[id]||'', t=recordText(r); return `<div class="fix-row"><div class="fix-l"><b class="mono">${esc(r.bmsId)}</b><small>${esc(fmtShort(r.dateReceived))} · ${esc(platName(r))} · ${esc(ISSUE_LABEL[k])}</small>${t?`<small class="fix-t">“${esc(t.slice(0,140))}”</small>`:''}</div><div class="fix-in">${sel(`fix.v.${id}`,[['','Choose…'],...subChoices(k),[SUB_NEW,'Other: name a new sub-issue…']],true)}${v===SUB_NEW?inp(`fix.n.${id}`,{ph:'Name it'}):''}</div></div>`; }).join('')}</div>${gaps.length>show.length?`<div class="muted" style="font-size:12px">Showing the latest ${show.length} of ${gaps.length}. Save, and the next ones appear.</div>`:''}`:empty('Every defect has its exact fault.');
+  return sheet('Specify the exact fault',`${gaps.length} older defect${gaps.length===1?'':'s'} without one`,body,gaps.length?`<button class="btn pri" data-act="fix-subs-save">Save</button>`:'','Quality');
+}
+async function fixSubsSave(){
+  if(!canSetup()) return; const F=S.f.fix||{v:{},n:{}}, fresh=await loadStore('om_chain_records'); let n=0, bad=0;
+  Object.entries(F.v).forEach(([id,v])=>{ if(!v) return; const i=id.lastIndexOf('|'), rid=id.slice(0,i), k=id.slice(i+1), r=fresh.find(x=>x.id===rid); if(!r) return; const sb=v===SUB_NEW?cleanSub(k,F.n[id]):v; if(!sb){ bad++; return; }
+    r.stage1=r.stage1||{}; r.stage1.sub={...(r.stage1.sub||{}),[k]:sb}; r.subFixLog=[...(r.subFixLog||[]),{issue:k,sub:sb,by:S.session.name,at:nowIso()}]; n++; });
+  if(bad){ toast('Name each new sub-issue first (at least 3 letters).'); return; }
+  if(!n){ toast('Pick the exact fault for at least one row.'); return; }
+  if(await saveStore('om_chain_records',fresh)){ S.data.om=fresh; bump(); S.f.fix={v:{},n:{}}; render(); toast(`${n} defect${n===1?' is':'s are'} now specified.`); }
+}
+function subPickers(base,keys,title){
+  const ks=keys.filter(subNeeded); if(!ks.length) return '';
+  const par=base.replace(/\.[^.]+$/,'');
+  return `<div class="sub-pick"><div class="block-title"><h4>${esc(title)}</h4><span class="muted" style="font-size:12px">Required. Not in the list? Choose “Other” and name it.</span></div><div class="form">${ks.map(k=>{ const v=getPath(S.f,`${base}.${k}`)||'', ch=subChoices(k), opts=[['','Choose the exact fault…'],...ch,...(v&&v!==SUB_NEW&&v!==SUB_OTHER&&!ch.includes(v)?[v]:[]),[SUB_NEW,'Other: name a new sub-issue…']];
+    return field(esc(ISSUE_LABEL[k]),sel(`${base}.${k}`,opts,true),'',true)+(v===SUB_NEW?field(`New “${esc(SHORT_ISSUE[k]||ISSUE_LABEL[k])}” sub-issue`,inp(`${par}._subNew.${k}`,{ph:'Name it in a few words, e.g. Burnt terminal'}),'',true):''); }).join('')}</div></div>`;
 }
 function dailyAddOptions(f){
-  return ISSUE_ITEMS.filter(([k])=>k!=='other').map(([k,l])=>{ const subs=issueSubs(k).map(s=>[subKey(k,s),`${l} · ${s}`]).filter(([x])=>!f.issues[x]); const head=f.issues[k]?[]:[[k,`${l} (not specified)`]]; const all=[...head,...subs]; if(!all.length) return ''; return subs.length?`<optgroup label="${esc(l)}">${all.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join('')}</optgroup>`:all.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join(''); }).join('');
+  return ISSUE_ITEMS.filter(([k])=>k!=='other').map(([k,l])=>{ const subs=issueSubs(k).length?[...subChoices(k).map(s=>[subKey(k,s),`${SHORT_ISSUE[k]||l} / ${s}`]).filter(([x])=>!f.issues[x]),[k+SUB_NEW,`${SHORT_ISSUE[k]||l} / Other: name a new sub-issue…`]]:[]; const head=(f.issues[k]||issueSubs(k).length)?[]:[[k,l]]; const all=[...head,...subs]; if(!all.length) return ''; return subs.length?`<optgroup label="${esc(l)}">${all.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join('')}</optgroup>`:all.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join(''); }).join('');
 }
 
 /* ---------- Repair methods (replace the old SOP-BAT-01…06 list) ---------- */
@@ -2749,7 +2835,9 @@ const AN_TABS = [['cases','Top cases'],['defects','Defects'],['flow','Received &
 const AN_SRC = {esc:'Escalated to BSA',rework:'Reworked at Stage 2',cond:'Battery condition'};
 function CondCard(p){
   const rows=CONDITIONS.map(([k,l,h])=>({k,l,h,n:S.data.om.filter(r=>inP(r.dateReceived,p)&&condEver(r,k)).length,now:S.data.om.filter(r=>condNow(r,k)).length}));
-  return `<div class="card section cond-card"><div class="card-head"><div><h3>Battery conditions</h3><p>${esc(periodLabel(p,true))} · statuses, kept apart from the defect counts. Tap to see the batteries.</p></div></div>
+  const nd=S.data.om.filter(r=>inP(r.dateReceived,p)&&!caseKeysOf(r).length), ndc=nd.filter(r=>CONDITIONS.some(([k])=>condEver(r,k))).length;
+  rows.push({k:'none',l:'No defect found',h:`${ndc} with a condition · ${nd.length-ndc} check-up only`,n:nd.length,now:S.data.om.filter(r=>!isClosed(r)&&!caseKeysOf(r).length).length});
+  return `<div class="card section cond-card"><div class="card-head"><div><h3>Battery conditions</h3><p>${esc(periodLabel(p,true))} · statuses and batteries with no defect, kept apart from the defect counts. Tap to see the batteries.</p></div></div>
   <div class="cond-grid">${rows.map(x=>`<button class="cond-stat c-${x.k}" ${anAttr('cond','key',x.k)}><span class="cond-ic" aria-hidden="true">${COND_IC[x.k]}</span><span class="cond-tx"><b>${esc(x.l)}</b><small>${esc(x.h)} · <b>${x.now}</b> in the chain now</small></span><b class="num cond-n">${x.n}</b></button>`).join('')}</div></div>`;
 }
 const capaCat = c => c.waitSupplier?'Waiting for supplier material':c.reasonCat==='part'?'Part replaced from stock':(CAPA_REASON_LABEL[c.reasonCat]||'Reason not given');
@@ -2766,6 +2854,7 @@ function dimCase(p,src,dim,val){
   if(src==='intake'){ const seen=new Set(), items=[]; let label=val;
     defectItems(p).forEach(i=>{ const v=dim==='key'?i.c.key:dim==='par'?caseParent(i.c):i[dim]; if(dim==='par'&&v===val) label=caseParentLabel(i.c); if(v!==val||seen.has(i.r.id)) return; if(dim==='key') label=i.c.label; seen.add(i.r.id); items.push({type:'visit',r:i.r,date:i.r.dateReceived}); });
     return pack(label,items); }
+  if(src==='cond'&&val==='none'){ const items=S.data.om.filter(r=>inP(r.dateReceived,p)&&!caseKeysOf(r).length).map(r=>({type:'visit',r,date:r.dateReceived})); return pack('No defect found',items); }
   if(src==='cond'){ const items=S.data.om.filter(r=>inP(r.dateReceived,p)&&condEver(r,val)).map(r=>({type:'visit',r,date:r.dateReceived})); return pack(COND_LABEL[val]||val,items); }
   if(src==='esc'){ let label=val==='*'?'All escalated batteries':val; const items=[];
     S.data.om.forEach(r=>{ if(!isToBsa(r)||!inP(closedKey(r),p)) return; if(val!=='*'){ const c=caseKeysOf(r).find(c=>c.key===val); if(!c) return; label=c.label; } items.push({type:'visit',r,date:closedKey(r)}); });
@@ -2783,11 +2872,11 @@ function rankList(rows,unit,attrFn,max){
 }
 const countBy = (items,fn) => { const m={}; items.forEach(i=>{ const k=fn(i); if(k==null) return; m[k]=(m[k]||0)+1; }); return Object.entries(m).map(([label,n])=>({label,n})).sort((a,b)=>b.n-a.n||a.label.localeCompare(b.label)); };
 function parentList(items){
-  const P={}; items.forEach(i=>{ const k=caseParent(i.c), x=P[k]=P[k]||{key:k,label:caseParentLabel(i.c),n:0,subs:{}}; x.n++; const sk=i.c.key, s=x.subs[sk]=x.subs[sk]||{key:sk,label:i.c.key===k?(i.c.issue==='other'?i.c.label:'not specified'):(i.c.sub||i.c.label),n:0}; s.n++; });
+  const P={}; items.forEach(i=>{ const k=caseParent(i.c), x=P[k]=P[k]||{key:k,label:caseParentLabel(i.c),n:0,subs:{}}; x.n++; const sk=i.c.key, s=x.subs[sk]=x.subs[sk]||{key:sk,label:i.c.key===k?(i.c.issue==='other'?i.c.label:'needs exact fault'):(i.c.sub||i.c.label),n:0}; s.n++; });
   const rows=Object.values(P).sort((a,b)=>b.n-a.n||a.label.localeCompare(b.label)); if(!rows.length) return empty('No defects in this period.');
   const mx=Math.max(1,...rows.map(x=>x.n)), tot=items.length;
-  return `<ol class="tc-list par-list">${rows.slice(0,14).map((x,i)=>{ const subs=Object.values(x.subs).sort((a,b)=>(a.label==='not specified')-(b.label==='not specified')||b.n-a.n); return `<li><span class="tc-rank ${i<3?'top':''}">${i+1}</span><span class="tc-main"><span class="tc-l click-l" ${anAttr('intake','par',x.key)} role="button" tabindex="0"><b>${esc(x.label)}</b><span class="tc-v"><b class="num">${x.n}</b></span></span><span class="tc-bar"><i style="width:${x.n/mx*100}%;background:var(${i===0?'--crit':i<3?'--s2':'--s1'})"></i></span><small>${fmtPct(pct(x.n,tot))} of ${tot} defects</small>
-    ${subs.length>1||(subs[0]&&subs[0].key!==x.key)?`<span class="par-subs">${subs.map(sb=>`<button class="psub ${sb.label==='not specified'?'unspec':''}" ${anAttr('intake','key',sb.key)}>${esc(sb.label)} <b>${sb.n}</b></button>`).join('')}</span>`:''}</span></li>`; }).join('')}</ol>${rows.length>14?`<div class="muted" style="font-size:12px;margin-top:6px">+ ${rows.length-14} more</div>`:''}`;
+  return `<ol class="tc-list par-list">${rows.slice(0,14).map((x,i)=>{ const subs=Object.values(x.subs).sort((a,b)=>(a.label==='needs exact fault')-(b.label==='needs exact fault')||b.n-a.n); return `<li><span class="tc-rank ${i<3?'top':''}">${i+1}</span><span class="tc-main"><span class="tc-l click-l" ${anAttr('intake','par',x.key)} role="button" tabindex="0"><b>${esc(x.label)}</b><span class="tc-v"><b class="num">${x.n}</b></span></span><span class="tc-bar"><i style="width:${x.n/mx*100}%;background:var(${i===0?'--crit':i<3?'--s2':'--s1'})"></i></span><small>${fmtPct(pct(x.n,tot))} of ${tot} defects</small>
+    ${subs.length>1||(subs[0]&&subs[0].key!==x.key)?`<span class="par-subs">${subs.map(sb=>`<button class="psub ${sb.label==='needs exact fault'?'unspec':''}" ${sb.label==='needs exact fault'&&canSetup()?'data-act="fix-subs" title="Specify them"':anAttr('intake','key',sb.key)}>${esc(sb.label)} <b>${sb.n}</b></button>`).join('')}</span>`:''}</span></li>`; }).join('')}</ol>${rows.length>14?`<div class="muted" style="font-size:12px;margin-top:6px">+ ${rows.length-14} more</div>`:''}`;
 }
 const SUP_TONE = {'Supplier':'--crit','Non-supplier':'--s1','Recall':'--info'};
 
@@ -2812,7 +2901,7 @@ function AnDefects(p){
   const unc=cases.filter(c=>c.grp==='Unclassified');
   return `<div class="kpis four">${kpi('Batteries received',visits.length,`${new Set(visits.map(r=>normId(r.bmsId))).size} unique batteries`)}${kpi('With a defect',withD,visits.length?`${fmtPct(pct(withD,visits.length))} of received`:'—')}${kpi('Defects logged',items.length,`${cases.length} case type${cases.length===1?'':'s'} · ${grp.length} categor${grp.length===1?'y':'ies'}`)}${kpi('Supplier-related',supN,items.length?`${fmtPct(pct(supN,items.length))} of defects`:'—','',supN?'crit':'')}</div>
   ${unc.length&&canSetup()?`<div class="banner warn"><div><b>${unc.length} case type${unc.length===1?' has':'s have'} no category yet:</b> ${esc(unc.slice(0,4).map(c=>c.label).join(', '))}${unc.length>4?'…':''} <button class="btn sm" data-act="setup-open" data-v="cats">Set categories</button></div></div>`:''}
-  ${CondCard(p)}
+  ${subGapBanner()}${CondCard(p)}
   <div class="grid g2 section"><div class="card"><div class="card-head"><div><h3>Defects by issue</h3><p>Similar faults together under their main issue. Tap an issue or an exact fault to see the batteries.</p></div></div>${parentList(items)}</div>
     <div class="card"><div class="card-head"><div><h3>Defects by category</h3><p>Issues grouped into categories (set in Setup)</p></div></div>${grpHtml}</div></div>
   <div class="grid g2 section"><div class="card"><div class="card-head"><div><h3>Supplier vs non-supplier</h3><p>Whose problem the defect is</p></div></div>${supHtml}</div>
@@ -3198,7 +3287,8 @@ function render(){
   const app=$('#app'), f=captureFocus(), y=window.scrollY;
   CHARTS=[];
   if(!S.session){ app.innerHTML=LoginView(); $('#drawer-root').innerHTML=''; restoreFocus(f); return; }
-  app.innerHTML=Header()+`<main id="main" class="wrap">${safeView()}</main>`+Tabs('bnav');
+  app.innerHTML=Header()+urgentStrip()+`<main id="main" class="wrap">${safeView()}</main>`+Tabs('bnav')+dailyBlockHtml();
+  try{ const al=computeAlerts(); document.title=(al.length?`(${al.length}${al.some(a=>a.sev==='crit')?' ⚠':''}) `:'')+'Battery QC'; }catch(e){}
   renderDrawer(true);
   restoreFocus(f); window.scrollTo(0,y); drawCharts(); paintSync(); if(S.welcome) S.welcome.shown=true;
 }
@@ -3220,7 +3310,7 @@ function renderDrawer(keepScroll){
   const nb=root.querySelector('.d-body'); if(nb&&keepScroll) nb.scrollTop=sc;
   restoreFocus(f); if(S.drawer.type==='daily') paintDailyCalc();
 }
-function openDrawer(d){ S.drawer=d; renderDrawer(false); const b=$('#drawer-root .d-body'); if(b) b.scrollTop=0; }
+function openDrawer(d){ if(d&&d.type!=='daily'&&dailyBlock()){ toast('Log the daily counts first. Your other work is locked until then.'); return; } S.drawer=d; renderDrawer(false); const b=$('#drawer-root .d-body'); if(b) b.scrollTop=0; }
 function closeDrawer(){ S.drawer=null; renderDrawer(); }
 
 /* ---------- header ---------- */
@@ -3249,6 +3339,15 @@ const TAB_IC = {
   quality:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6z"/><path d="m8.8 12.2 2.2 2.2 4.4-4.6"/></svg>'
 };
 const ACCENTS = [['blue','Blue'],['teal','Teal'],['violet','Violet'],['amber','Amber']];
+function urgentStrip(){ let al=[]; try{ al=computeAlerts(); }catch(e){ return ''; } if(!al.length) return ''; const crit=al.filter(a=>a.sev==='crit'), top=(crit[0]||al[0]);
+  return `<div class="urgent-strip ${crit.length?'crit':'warn'}" role="alert"><span class="us-dot" aria-hidden="true"></span><b>${crit.length?`${crit.length} urgent`:`${al.length} to follow up`}</b><span class="us-t">${esc(top.title)}</span><button class="btn sm" data-act="${esc(top.act)}" data-id="${esc(top.id||'')}">Deal with it</button><button class="btn sm ghost" data-act="alerts">All ${al.length}</button></div>`; }
+function remindTick(){ if(!S.session||Cloud.demoTest) return; if(S.remindAt==null){ S.remindAt=Date.now()+90e3; return; } if(Date.now()<S.remindAt) return; const crit=computeAlerts().filter(a=>a.sev==='crit'); if(!crit.length) return;
+  const root=$('#modal-root'); if(!root||root.innerHTML.trim()||S.drawer||dailyBlock()){ return; } S.remindAt=Date.now()+30*60e3;
+  root.innerHTML=`<div class="scrim"><div class="modal remind-modal" role="alertdialog" aria-modal="true" aria-labelledby="rm-t"><div class="rmd-head"><span class="hb-ic sm" aria-hidden="true">!</span><div><h3 id="rm-t">${crit.length} urgent item${crit.length===1?'':'s'} still open</h3><small>This reminder comes back every 30 minutes until they are dealt with.</small></div></div>
+    <div class="rmd-list">${crit.slice(0,5).map(a=>`<div class="rmd-row"><b>${esc(a.title)}</b><small>${esc(a.detail)}</small></div>`).join('')}${crit.length>5?`<div class="muted" style="font-size:12px">+ ${crit.length-5} more</div>`:''}</div>
+    <div class="rmd-foot">${window.Notification&&Notification.permission==='default'?'<button class="btn sm ghost" data-act="notify-on">Turn on pop-up notifications</button>':''}<button class="btn" data-act="remind-later">Remind me in 30 min</button><button class="btn pri" data-act="remind-open">Deal with them now</button></div></div></div>`;
+  try{ if(document.hidden&&window.Notification&&Notification.permission==='granted') new Notification('Battery QC: '+crit.length+' urgent',{body:crit[0].title}); }catch(e){} try{ navigator.vibrate&&navigator.vibrate([200,100,200]); }catch(e){} }
+setInterval(remindTick,20e3);
 function alertBadge(){ const a=computeAlerts(); if(!a.length) return ''; const c=a.some(x=>x.sev==='crit'); return `<span class="badge ${c?'crit':'warn'}">${a.length>99?'99+':a.length}</span>`; }
 function AttentionCard(max){
   const al=computeAlerts(); if(!al.length) return '';
@@ -3279,6 +3378,8 @@ function Header(){
             <label class="m-row"><span>Auto refresh</span><select class="inline" id="auto-refresh" aria-label="Auto refresh">${[[0,'Off'],[30,'Every 30 s'],[60,'Every 1 min'],[300,'Every 5 min']].map(([v,l])=>`<option value="${v}" ${+S.auto===v?'selected':''}>${l}</option>`).join('')}</select></label>
             <div class="m-row"><span>Appearance</span><div class="seg mini" role="group" aria-label="Appearance">${[['light','Light'],['system','Auto'],['dark','Dark']].map(([k,l])=>`<button class="${th===k?'on':''}" data-act="set-theme" data-v="${k}">${l}</button>`).join('')}</div></div>
             <div class="m-row"><span>Accent</span><div class="swatches">${ACCENTS.map(([k,l])=>`<button class="sw sw-${k} ${acc===k?'on':''}" data-act="set-accent" data-v="${k}" aria-label="${l} accent" title="${l}"></button>`).join('')}</div></div>
+            <label class="m-row"><span>Font</span><select class="inline" id="font-pick" aria-label="Font">${FONTS.map(([k,l])=>`<option value="${esc(k)}" ${lsRead('bqc_font','Manrope')===k?'selected':''}>${esc(l)}</option>`).join('')}</select></label>
+            <div class="m-row"><span>Text size</span><div class="seg mini" role="group" aria-label="Text size">${FSIZES.map(([k,l,sh])=>`<button class="${lsRead('bqc_fsize','m')===k?'on':''}" data-act="set-fsize" data-v="${k}" aria-label="${l}" title="${l}">${sh}</button>`).join('')}</div></div>
             <label class="m-row"><span>Animated background</span><button class="switch ${motion?'on':''}" data-act="toggle-motion" role="switch" aria-checked="${motion}" aria-label="Animated background"><i></i></button></label>
             <div class="m-sep"></div>
             <button class="m-item" data-act="setup-open">${GEAR_SVG}<span>Rework methods &amp; setup</span><span class="m-sub">${canSetup()?'edit':'view'}</span></button>
@@ -3390,7 +3491,7 @@ function OverviewView(){
   const idx=batteryIndex().filter(b=>b.visits.some(r=>inP(r.dateReceived,p)) && (b.visits.length>=2)).sort((a,b)=>b.visits.length-a.visits.length||b.capa-a.capa).slice(0,6);
   const repeatHtml=idx.length?`<div class="tbl-wrap"><table><thead><tr><th>BMS ID</th><th>Platform</th><th class="r">Visits</th><th class="r">CAPA</th><th>Status</th></tr></thead><tbody>${idx.map(b=>`<tr class="click" data-act="open-battery" data-id="${esc(b.id)}"><td><span class="idlink">${esc(b.id)}</span></td><td>${esc(b.platform||'—')}</td><td class="r num">${b.visits.length}</td><td class="r num">${b.capa}</td><td>${chip(...USE_META[b.use].slice(0,3))}</td></tr>`).join('')}</tbody></table></div>`:empty('No battery came back more than once in this period.');
 
-  return `${mine}
+  return `${mine}${RecoCard()}
   <div class="page-head"><div><div class="eyebrow">${GRAN_ADJ[S.gran]} breakdown</div><h2>${esc(periodLabel(p,true))}</h2><p>Click any bar in the trend to jump to that ${unit}. Every figure below follows the selected period.</p></div>${PeriodBar()}</div>
   <div class="kpis">
     ${kpi('Received',st.intakes,deltaHtml(st.intakes,pv.intakes,null),`data-act="nav-chain-period"`)}
@@ -3598,11 +3699,122 @@ function BsaView(){
 /* =====================================================================
    QUALITY
    ===================================================================== */
+
+/* =====================================================================
+   QUALITY TOOLS: Pareto, control charts, check sheet, histogram, FMEA,
+   and what needs attention / what to discuss in the next meeting
+   ===================================================================== */
+const SEVERITY = {swelling:10,cellFailureMultiple:9,cellFailureSingle:8,irFail:9,wetThermalPaste:7,tampered:6,chargeFail:7,dischargeFail:7,noPower:6,bmsFault:6,connectorDamage:7,physicalDefect:5,canFail:5,iotFault:4,lowCapacity:5,cellImbalance:5,missingComponent:4,simReplace:3,other:4};
+const lastDays = n => { const t=todayStr(); return {start:addDays(t,-(n-1)),end:t,gran:'day'}; };
+const svgEsc = t => String(t??'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const trunc = (t,n) => { t=String(t||''); return t.length>n?t.slice(0,n-1)+'…':t; };
+function paretoRows(p,by){ const m={}; defectItems(p).forEach(i=>{ const k=by==='par'?caseParent(i.c):i.c.key, l=by==='par'?caseParentLabel(i.c):i.c.label; (m[k]=m[k]||{key:k,label:l,n:0}).n++; });
+  const rows=Object.values(m).sort((a,b)=>b.n-a.n||a.label.localeCompare(b.label)), tot=sum(rows.map(x=>x.n)); let c=0; rows.forEach(x=>{ c+=x.n; x.cum=tot?c/tot*100:0; x.vital=x.cum-x.n/tot*100<80; }); return {rows,tot}; }
+function paretoSvg(rows){
+  const R=rows.slice(0,12), W=940, H=330, L=110, Rr=48, T=18, B=110, w=(W-L-Rr)/Math.max(1,R.length), mx=Math.max(1,...R.map(x=>x.n));
+  const y=v=>T+(H-T-B)*(1-v/mx), yp=v=>T+(H-T-B)*(1-v/100);
+  const bars=R.map((x,i)=>`<rect x="${L+i*w+w*.14}" y="${y(x.n)}" width="${w*.72}" height="${H-B-y(x.n)}" rx="3" style="fill:var(${x.vital?'--crit':'--s1'})"><title>${svgEsc(x.label)}: ${x.n}</title></rect><text x="${L+i*w+w/2}" y="${y(x.n)-4}" text-anchor="middle" class="sv-n">${x.n}</text><text transform="translate(${L+i*w+w/2},${H-B+10}) rotate(-38)" text-anchor="end" class="sv-l">${svgEsc(trunc(x.label,24))}</text>`).join('');
+  const line=R.map((x,i)=>`${i?'L':'M'}${L+i*w+w/2},${yp(x.cum)}`).join(' ');
+  const dots=R.map((x,i)=>`<circle cx="${L+i*w+w/2}" cy="${yp(x.cum)}" r="3.2" class="sv-dot"><title>${Math.round(x.cum)}% cumulative</title></circle>`).join('');
+  return `<svg class="qsvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Pareto chart">${[0,25,50,75,100].map(v=>`<line x1="${L}" x2="${W-Rr}" y1="${yp(v)}" y2="${yp(v)}" class="sv-grid"/><text x="${W-Rr+4}" y="${yp(v)+4}" class="sv-ax">${v}%</text>`).join('')}<line x1="${L}" x2="${W-Rr}" y1="${yp(80)}" y2="${yp(80)}" class="sv-80"/><text x="${W-Rr+4}" y="${yp(80)+4}" class="sv-ax" style="fill:var(--crit)">80%</text>${bars}<path d="${line}" class="sv-line"/>${dots}</svg>`;
+}
+function ctrlSeries(days){ const out=[]; for(let i=days-1;i>=0;i--){ const d=addDays(todayStr(),-i); if(parseKey(d).getDay()===0) continue; const rec=S.data.om.filter(r=>r.dateReceived===d), cl=S.data.om.filter(r=>isClosed(r)&&closedKey(r)===d);
+  out.push({d,c:sum(rec.map(r=>caseKeysOf(r).length)),n:cl.length,bad:cl.filter(r=>!isFirstPass(r)).length}); } return out; }
+function ctrlSvg(pts,kind){
+  const W=940,H=250,L=44,R=80,T=14,B=30, xs=i=>L+(W-L-R)*(pts.length<2?.5:i/(pts.length-1));
+  let vals, cl, ucl, lcl;
+  if(kind==='p'){ const N=sum(pts.map(x=>x.n)), D=sum(pts.map(x=>x.bad)); cl=N?D/N:0; vals=pts.map(x=>x.n?x.bad/x.n:null); ucl=pts.map(x=>x.n?Math.min(1,cl+3*Math.sqrt(cl*(1-cl)/x.n)):null); lcl=pts.map(x=>x.n?Math.max(0,cl-3*Math.sqrt(cl*(1-cl)/x.n)):null); }
+  else { cl=pts.length?sum(pts.map(x=>x.c))/pts.length:0; vals=pts.map(x=>x.c); ucl=pts.map(()=>cl+3*Math.sqrt(cl)); lcl=pts.map(()=>Math.max(0,cl-3*Math.sqrt(cl))); }
+  const mx=Math.max(kind==='p'?.2:1,...vals.filter(v=>v!=null),...ucl.filter(v=>v!=null))*1.08, y=v=>T+(H-T-B)*(1-v/mx);
+  const fmt=v=>kind==='p'?Math.round(v*100)+'%':(Math.round(v*10)/10);
+  const out=vals.map((v,i)=>v!=null&&ucl[i]!=null&&(v>ucl[i]+1e-9||v<lcl[i]-1e-9)), path=a=>a.map((v,i)=>v==null?'':`${'M'}${xs(i)},${y(v)}`).filter(Boolean).join(' ').replace(/ M/g,' L');
+  let run=0; const runFlag=vals.map(v=>{ if(v==null) return false; run=v>cl?run+1:0; return run>=7; });
+  const pl=vals.map((v,i)=>v==null?'':`${'L'}${xs(i)},${y(v)}`).filter(Boolean).join(' ').replace(/^L/,'M');
+  const stepU=ucl.map((v,i)=>v==null?'':`L${xs(i)},${y(v)}`).filter(Boolean).join(' ').replace(/^L/,'M'), stepL=lcl.map((v,i)=>v==null?'':`L${xs(i)},${y(v)}`).filter(Boolean).join(' ').replace(/^L/,'M');
+  const lab=pts.map((x,i)=>i%Math.ceil(pts.length/8)===0?`<text x="${xs(i)}" y="${H-10}" text-anchor="middle" class="sv-ax">${svgEsc(fmtShort(x.d))}</text>`:'').join('');
+  const svg=`<svg class="qsvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Control chart"><path d="${stepU}" class="sv-ucl"/><path d="${stepL}" class="sv-ucl"/><line x1="${L}" x2="${W-R}" y1="${y(cl)}" y2="${y(cl)}" class="sv-cl"/>
+    <text x="${W-R+4}" y="${y(cl)+4}" class="sv-ax">CL ${fmt(cl)}</text>${ucl[ucl.length-1]!=null?`<text x="${W-R+4}" y="${y(ucl[ucl.length-1])+4}" class="sv-ax">UCL ${fmt(ucl[ucl.length-1])}</text>`:''}
+    <path d="${pl}" class="sv-line"/>${vals.map((v,i)=>v==null?'':`<circle cx="${xs(i)}" cy="${y(v)}" r="${out[i]||runFlag[i]?5:3.2}" class="${out[i]?'sv-out':runFlag[i]?'sv-run':'sv-dot'}"><title>${svgEsc(fmtDay(pts[i].d))}: ${fmt(v)}${kind==='p'?` (${pts[i].bad} of ${pts[i].n})`:''}</title></circle>`).join('')}${lab}</svg>`;
+  return {svg,cl,outN:out.filter(Boolean).length,runN:runFlag.filter(Boolean).length,outDays:pts.filter((_,i)=>out[i]).map(x=>x.d)};
+}
+function histSvg(vals,bins,unit){
+  const counts=bins.map(([a,b])=>vals.filter(v=>v>=a&&v<=b).length), W=940,H=220,L=36,R=12,T=14,B=34, w=(W-L-R)/bins.length, mx=Math.max(1,...counts), y=v=>T+(H-T-B)*(1-v/mx);
+  return `<svg class="qsvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Histogram">${counts.map((c,i)=>`<rect x="${L+i*w+2}" y="${y(c)}" width="${w-4}" height="${H-B-y(c)}" rx="3" style="fill:var(--s1)"><title>${bins[i][2]} ${unit}: ${c}</title></rect>${c?`<text x="${L+i*w+w/2}" y="${y(c)-4}" text-anchor="middle" class="sv-n">${c}</text>`:''}<text x="${L+i*w+w/2}" y="${H-12}" text-anchor="middle" class="sv-ax">${svgEsc(bins[i][2])}</text>`).join('')}</svg>`;
+}
+const quant = (a,q) => { if(!a.length) return null; const b=a.slice().sort((x,y)=>x-y), i=(b.length-1)*q, lo=Math.floor(i); return b[lo]+(b[Math.ceil(i)]-b[lo])*(i-lo); };
+function fmeaRows(){ const p=lastDays(90), visits=S.data.om.filter(r=>inP(r.dateReceived,p)), m={};
+  visits.forEach(r=>caseKeysOf(r).forEach(c=>{ const x=m[c.key]=m[c.key]||{key:c.key,label:c.label,issue:c.issue,n:0,esc:0}; x.n++; if(r.capaCycles>0) x.esc++; }));
+  const tot=Math.max(1,visits.length);
+  return Object.values(m).map(x=>{ const share=x.n/tot*100; const O=share>=20?10:share>=10?8:share>=5?6:share>=2?4:2; const S0=SEVERITY[x.issue]||5; const er=x.n?x.esc/x.n:0; const D=Math.min(10,2+Math.round(er*16)); return {...x,S:S0,O,D,rpn:S0*O*D,share,er}; }).sort((a,b)=>b.rpn-a.rpn||b.n-a.n); }
+function QualityTools(tab){
+  const p=periodOf(S.anchor,S.gran);
+  if(tab==='pareto'){ const by=S.qPar||'sub', P=paretoRows(p,by), vital=P.rows.filter(x=>x.vital);
+    return `<div class="card"><div class="card-head"><div><h3>Pareto · ${esc(periodLabel(p,true))}</h3><p>${P.tot} defects. The red bars are the “vital few”: ${vital.length} of ${P.rows.length} fault types make about 80% of all defects. Fix these first.</p></div><div class="seg">${[['sub','Exact faults'],['par','Broad issues']].map(([k,l])=>`<button class="${by===k?'on':''}" data-act="q-par" data-v="${k}">${l}</button>`).join('')}</div></div>
+      ${P.rows.length?paretoSvg(P.rows):empty('No defects in this period. Pick a longer period at the top.')}
+      ${P.rows.length?`<div class="tbl-wrap" style="margin-top:10px"><table><thead><tr><th>#</th><th>Fault</th><th class="r">Count</th><th class="r">Share</th><th class="r">Cumulative</th><th></th></tr></thead><tbody>${P.rows.map((x,i)=>`<tr class="click" ${by==='par'?anAttr('intake','par',x.key):anAttr('intake','key',x.key)}><td class="num">${i+1}</td><td>${esc(x.label)}</td><td class="r num">${x.n}</td><td class="r num">${fmtPct(pct(x.n,P.tot))}</td><td class="r num">${Math.round(x.cum)}%</td><td>${x.vital?chip('vital few','crit'):''}</td></tr>`).join('')}</tbody></table></div>`:''}</div>`; }
+  if(tab==='spc'){ const pts=ctrlSeries(30), A=ctrlSvg(pts,'p'), C=ctrlSvg(pts,'c');
+    return `<div class="banner"><div>Control charts show whether the process is stable. A <b style="color:var(--crit)">red point</b> is outside the control limits (a special cause: find out what happened that day). An <b style="color:var(--warn)">amber point</b> is the 7th day in a row above the centre line (a shift). Last 30 working days.</div></div>
+    <div class="card section"><div class="card-head"><div><h3>p-chart · share of closed batteries that failed first time</h3><p>Batteries closed each day that needed CAPA or went to BSA, out of all closed that day. Limits change with the day's volume.</p></div>${A.outN?chip(A.outN+' out of control','crit'):chip('in control','good')}</div>${pts.some(x=>x.n)?A.svg:empty('No batteries closed in the last 30 days.')}</div>
+    <div class="card section"><div class="card-head"><div><h3>c-chart · defects logged per day</h3><p>Defects found at intake each day.</p></div>${C.outN?chip(C.outN+' out of control','crit'):chip('in control','good')}</div>${C.svg}</div>`; }
+  if(tab==='check'){ const days=[]; for(let i=13;i>=0;i--){ const d=addDays(todayStr(),-i); days.push(d); }
+    const m={}; S.data.om.filter(r=>days.includes(r.dateReceived)).forEach(r=>caseKeysOf(r).forEach(c=>{ const x=m[c.key]=m[c.key]||{label:c.label,d:{},n:0}; x.d[r.dateReceived]=(x.d[r.dateReceived]||0)+1; x.n++; }));
+    const rows=Object.values(m).sort((a,b)=>b.n-a.n).slice(0,18), mx=Math.max(1,...rows.flatMap(x=>Object.values(x.d)));
+    return `<div class="card"><div class="card-head"><div><h3>Check sheet · last 14 days</h3><p>How often each fault was found, day by day. Darker cells mean more. Use it to spot clusters (a bad batch, a site, a shift).</p></div></div>${rows.length?`<div class="tbl-wrap"><table class="chk"><thead><tr><th>Fault</th>${days.map(d=>`<th class="r" title="${esc(fmtDay(d))}">${esc(fmtShort(d).replace(/ \d{4}$/,''))}</th>`).join('')}<th class="r">Total</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.label)}</td>${days.map(d=>{ const v=x.d[d]||0; return `<td class="r num" style="${v?`background:color-mix(in srgb,var(--crit) ${Math.round(12+v/mx*55)}%,transparent)`:''}">${v?'|'.repeat(Math.min(v,5))+(v>5?'+':''):'<span class="muted">·</span>'}</td>`; }).join('')}<td class="r num"><b>${x.n}</b></td></tr>`).join('')}</tbody></table></div>`:empty('No defects in the last 14 days.')}</div>`; }
+  if(tab==='hist'){ const closed=S.data.om.filter(r=>isClosed(r)&&inP(closedKey(r),p)), tt=closed.map(r=>Math.max(0,daysBetween(r.dateReceived,closedKey(r)))), cy=S.data.om.filter(r=>inP(r.dateReceived,p)&&r.cycles!=null&&r.cycles!=='').map(r=>+r.cycles).filter(v=>!isNaN(v));
+    const st=a=>a.length?`mean ${Math.round(sum(a)/a.length*10)/10} · median ${Math.round(quant(a,.5)*10)/10} · 90% within ${Math.round(quant(a,.9)*10)/10}`:'no data';
+    return `<div class="card"><div class="card-head"><div><h3>Histogram · days from receipt to closing</h3><p>${closed.length} batteries closed in ${esc(periodLabel(p,true))} · ${st(tt)} days. A long tail means batteries are stuck somewhere.</p></div></div>${tt.length?histSvg(tt,[[0,0,'same day'],[1,1,'1'],[2,2,'2'],[3,3,'3'],[4,4,'4'],[5,6,'5–6'],[7,9,'7–9'],[10,14,'10–14'],[15,1e9,'15+']],'days'):empty('No batteries closed in this period.')}</div>
+      <div class="card section"><div class="card-head"><div><h3>Histogram · charge cycles at intake</h3><p>${cy.length} batteries with a cycle count · ${st(cy)} cycles. Failures at low cycles point to supplier quality; at high cycles to wear.</p></div></div>${cy.length?histSvg(cy,[[0,99,'0–99'],[100,199,'100–199'],[200,299,'200–299'],[300,399,'300–399'],[400,499,'400–499'],[500,699,'500–699'],[700,999,'700–999'],[1000,1e9,'1000+']],'cycles'):empty('No cycle counts recorded in this period.')}</div>`; }
+  if(tab==='fmea'){ const rows=fmeaRows();
+    return `<div class="banner"><div><b>FMEA risk ranking</b>, last 90 days. Risk priority number (RPN) = Severity × Occurrence × Detection, each 1 to 10. Severity comes from the defect type, occurrence from how often it happens, and detection from how often it slipped through to a final-QC failure. <b>RPN 200 or more needs an action plan.</b></div></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Fault</th><th class="r">Seen</th><th class="r" title="Severity">S</th><th class="r" title="Occurrence">O</th><th class="r" title="Detection">D</th><th class="r">RPN</th><th>Action</th></tr></thead><tbody>${rows.map(x=>`<tr class="click" ${anAttr('intake','key',x.key)}><td>${esc(x.label)}</td><td class="r num">${x.n}</td><td class="r num">${x.S}</td><td class="r num">${x.O}</td><td class="r num">${x.D}</td><td class="r num"><b class="${x.rpn>=200?'tc-hot':''}">${x.rpn}</b></td><td>${x.rpn>=200?chip('action plan needed','crit'):x.rpn>=120?chip('monitor','warn'):chip('ok','good')}</td></tr>`).join('')||`<tr><td colspan="7">${empty('No defects in the last 90 days.')}</td></tr>`}</tbody></table></div>`; }
+  return '';
+}
+/* what needs attention, and what to bring to the next meeting */
+function recommendations(){
+  const out=[], add=(sev,area,title,why,action,meet,act)=>out.push({sev,area,title,why,action,meet,act:act||''});
+  const t=todayStr(), w1={start:addDays(t,-6),end:t,gran:'day'}, w4={start:addDays(t,-34),end:addDays(t,-7),gran:'day'};
+  const now={}, before={}; defectItems(w1).forEach(i=>{ (now[i.c.key]=now[i.c.key]||{label:i.c.label,n:0}).n++; }); defectItems(w4).forEach(i=>{ before[i.c.key]=(before[i.c.key]||0)+1; });
+  Object.entries(now).forEach(([k,x])=>{ const avg=(before[k]||0)/4; if(x.n>=3&&x.n>=1.5*avg+1) add('high','Defect trend',`${x.label} is rising`,`${x.n} this week against about ${Math.round(avg*10)/10} a week before.`,'Check the batch, supplier and swap stations behind it. Open an RCA if it continues.',true,anAttr('intake','key',k)); });
+  const P=paretoRows(periodOf(t,'month'),'sub'), vital=P.rows.filter(x=>x.vital).slice(0,5);
+  if(vital.length&&P.tot>=10) add('med','Pareto',`${vital.length} fault type${vital.length===1?' makes':'s make'} ~80% of this month's defects`,vital.map(x=>`${x.label} (${x.n})`).join(', '),'Agree an owner and a fix for each of the vital few.',true,'data-act="qtab" data-v="pareto"');
+  const by={}; S.data.om.filter(r=>r.dateReceived>=addDays(t,-60)).forEach(r=>{ (by[normId(r.bmsId)]=by[normId(r.bmsId)]||[]).push(r.dateReceived); });
+  const rep=Object.entries(by).filter(([,d])=>{ d.sort(); return d.some((x,i)=>i&&daysBetween(d[i-1],x)<=30); });
+  if(rep.length) add(rep.length>=5?'high':'med','Repeat failures',`${rep.length} batter${rep.length===1?'y':'ies'} came back within 30 days`,rep.slice(0,6).map(([id])=>id).join(', ')+(rep.length>6?'…':''),'Review the repair method used on these. A repeat means the first fix did not hold.',true);
+  const loops=S.data.om.filter(r=>!isClosed(r)&&r.capaCycles>=2);
+  if(loops.length) add('high','CAPA',`${loops.length} batter${loops.length===1?'y is':'ies are'} on a 2nd or later corrective-action cycle`,loops.slice(0,5).map(r=>r.bmsId).join(', '),'Escalate to the engineer. Consider sending to BSA instead of another repair loop.',true);
+  const fm=fmeaRows().filter(x=>x.rpn>=200);
+  if(fm.length) add('high','FMEA',`${fm.length} fault${fm.length===1?' has':'s have'} a risk number of 200 or more`,fm.slice(0,4).map(x=>`${x.label} (RPN ${x.rpn})`).join(', '),'Write an action plan: containment, root cause and a check that it worked.',true,'data-act="qtab" data-v="fmea"');
+  const C=ctrlSvg(ctrlSeries(14),'p'); if(C.outN) add('high','Control chart',`First-time failure rate went out of control on ${C.outN} day${C.outN===1?'':'s'}`,C.outDays.map(fmtShort).join(', '),'Find out what was different on those days (people, parts, method, test equipment).',true,'data-act="qtab" data-v="spc"');
+  const waits=S.data.om.filter(r=>onHold(r)&&hoursSince(r.hold.since)>=7*24);
+  if(waits.length) add('high','Supplier',`${waits.length} batter${waits.length===1?'y has':'ies have'} waited over 7 days for supplier material`,[...new Set(waits.map(r=>r.hold.part))].join(', '),'Chase the supplier or approve another part. Bring to the supplier meeting.',true);
+  const st=periodStats(periodOf(t,'month')); if(st.supplier+st.nonSupplier>=10&&st.supplier/(st.supplier+st.nonSupplier)>.5) add('med','Supplier',`Supplier-related defects are ${Math.round(st.supplier/(st.supplier+st.nonSupplier)*100)}% this month`,`${st.supplier} supplier vs ${st.nonSupplier} handling defects.`,'Share the Pareto with the supplier and ask for their 8D / corrective action.',true);
+  const seen={}; S.data.om.filter(r=>r.dateReceived>=addDays(t,-30)).forEach(r=>{ const pl=platOf(r); caseKeysOf(r).forEach(c=>{ if(c.issue==='other'||!c.key.includes('__')) return; const k=c.key+'|'+pl; (seen[k]=seen[k]||{label:c.label,pl,key:c.key,n:0}).n++; }); });
+  const gaps=Object.values(seen).filter(x=>!methodsActive().some(m=>rmStatus(m)==='STANDARD'&&(m.issues||[]).includes(x.key)&&methodFits(m,x.pl))).sort((a,b)=>b.n-a.n);
+  if(gaps.length) add('med','Rework methods',`${gaps.length} fault × battery type${gaps.length===1?' has':'s have'} no standard rework method`,gaps.slice(0,4).map(x=>`${x.label} · ${x.pl||'unknown type'} (${x.n})`).join(', '),'Ask Stage 2 to propose a method, Stage 3 to accept it, then set it as standard.',false,'data-act="setup-open" data-v="methods"');
+  const cl30=S.data.om.filter(r=>isClosed(r)&&r.stage2&&r.stage2.technician&&closedKey(r)>=addDays(t,-30)), tg={}; cl30.forEach(r=>{ const k=canonPerson(r.stage2.technician); (tg[k]=tg[k]||{t:0,f:0}).t++; if(isFirstPass(r)) tg[k].f++; });
+  Object.entries(tg).filter(([,v])=>v.t>=5&&v.f/v.t<.7).forEach(([k,v])=>add('med','People',`${k}: first-pass yield ${Math.round(v.f/v.t*100)}% (30 days)`,`${v.f} of ${v.t} repairs passed first time.`,'Coach on the rework methods with the most returns. Check tools and training.',false));
+  const od=S.data.rca.filter(r=>r.status!=='VERIFIED CLOSED'&&r.dueDate&&r.dueDate<t); if(od.length) add('high','RCA',`${od.length} RCA${od.length===1?' is':'s are'} overdue`,od.slice(0,4).map(r=>`${r.bmsId||'—'} (${r.owner||'no owner'})`).join(', '),'Review in the meeting: new date or escalate.',true,'data-act="qtab" data-v="rca"');
+  const site={}; S.data.om.filter(r=>r.dateReceived>=addDays(t,-30)&&r.site).forEach(r=>{ if(caseKeysOf(r).some(c=>['tampered','physicalDefect','connectorDamage'].includes(c.issue))){ const k=r.site; site[k]=(site[k]||0)+1; } });
+  Object.entries(site).filter(([,n])=>n>=3).forEach(([k,n])=>add('med','Field / handling',`${k}: ${n} vandalism or damage cases in 30 days`,'Handling or security problem at one station.','Raise with operations and the station lead.',true));
+  const dd=dailyDue(); if(dd.length) add('high','Daily counts',`${dd.length} day${dd.length===1?'':'s'} of daily counts missing or sent back`,dd.map(x=>fmtShort(x.d)).join(', '),'Stage 1 must log them; their work is locked until they do.',false,'data-act="nav" data-v="daily"');
+  const sg=subGaps().length; if(sg) add('med','Data quality',`${sg} older defect${sg===1?'':'s'} without the exact fault`,'They only count under the broad issue.','Specify them so the analysis is complete.',false,'data-act="fix-subs"');
+  return out.sort((a,b)=>(a.sev==='high'?0:1)-(b.sev==='high'?0:1));
+}
+function recoList(list,max){ if(!list.length) return empty('Nothing stands out right now. Keep logging.'); return `<div class="reco-list">${list.slice(0,max||99).map(x=>`<div class="reco ${x.sev}"><div class="reco-h"><span class="reco-area">${esc(x.area)}</span>${chip(x.sev==='high'?'high priority':'medium',x.sev==='high'?'crit':'warn')}${x.meet?chip('for the meeting','info'):''}</div><b>${esc(x.title)}</b><small>${esc(x.why)}</small><div class="reco-a"><span>→ ${esc(x.action)}</span>${x.act?`<button class="btn sm" ${x.act}>Open</button>`:''}</div></div>`).join('')}</div>`; }
+function agendaText(list){ const m=list.filter(x=>x.meet); return ['Quality meeting · '+fmtDay(todayStr()),'',...m.map((x,i)=>`${i+1}. ${x.title}\n   Why: ${x.why}\n   Proposed action: ${x.action}\n   Owner / due: ________`)].join('\n'); }
+function AttentionTab(){ const list=recommendations(), meet=list.filter(x=>x.meet);
+  return `<div class="grid g2"><div class="card"><div class="card-head"><div><h3>Needs attention</h3><p>${list.length} item${list.length===1?'':'s'} found in the records, most serious first.</p></div></div>${recoList(list)}</div>
+  <div class="card"><div class="card-head"><div><h3>Suggested meeting agenda</h3><p>${meet.length} topic${meet.length===1?'':'s'} worth analysing together. Copy it into the invite.</p></div><button class="btn sm" data-act="copy-agenda">Copy agenda</button></div>${meet.length?`<ol class="agenda">${meet.map(x=>`<li><b>${esc(x.title)}</b><small>${esc(x.why)}</small><small><i>Proposed:</i> ${esc(x.action)}</small></li>`).join('')}</ol>`:empty('Nothing needs a meeting right now.')}</div></div>`; }
+function RecoCard(){ const s=S.session||{}; if(!['omadmin','quality','bsa'].includes(s.role)) return ''; const list=recommendations(); if(!list.length) return '';
+  return `<div class="card section reco-card"><div class="card-head"><div><h3>Recommended for attention</h3><p>${list.filter(x=>x.sev==='high').length} high priority · ${list.filter(x=>x.meet).length} for the next meeting</p></div><button class="btn sm" data-act="q-attn">See all &amp; agenda</button></div>${recoList(list,4)}</div>`; }
+
 function QualityView(){
-  const tabs=[['performance','Performance'],['breakdown','FPY breakdown'],['rca','RCA register'],['issues','Issue tracker']];
+  const tabs=[['attention','Attention & meetings'],['performance','Performance'],['breakdown','FPY breakdown'],['pareto','Pareto'],['spc','Control charts'],['check','Check sheet'],['hist','Histograms'],['fmea','FMEA'],['rca','RCA (5 whys, fishbone)'],['issues','Issue tracker']];
   const head=`<div class="page-head"><div><div class="eyebrow">Quality</div><h2>Yield, defects &amp; root cause</h2><p>First-pass yield = batteries closed as passed with no corrective-action cycle, divided by all batteries closed.</p></div>${S.qtab==='performance'||S.qtab==='breakdown'?PeriodBar():''}</div>
     <div class="seg" style="margin-bottom:14px">${tabs.map(([k,l])=>`<button class="${S.qtab===k?'on':''}" data-act="qtab" data-v="${k}">${l}</button>`).join('')}</div>`;
   if(S.qtab==='rca') return head+RcaList();
+  if(S.qtab==='attention') return head+AttentionTab();
+  if(['pareto','spc','check','hist','fmea'].includes(S.qtab)) return head+(['pareto','hist'].includes(S.qtab)?`<div class="filters">${PeriodBar()}</div>`:'')+QualityTools(S.qtab);
   if(S.qtab==='issues') return head+IssueTracker();
   if(S.qtab==='breakdown') return head+FpyBreakdown();
   const buckets=bucketsEnding(S.anchor,S.gran,BUCKETS[S.gran]).reverse();
@@ -3759,6 +3971,7 @@ function Drawer(){
   if(d.type==='fu') return FuSheet();
   if(d.type==='dups') return DupsSheet();
   if(d.type==='tccase') return CaseSheet();
+  if(d.type==='fixsubs') return FixSubsSheet();
   if(d.type==='setup') return SetupSheet();
   return '';
 }
@@ -3833,6 +4046,19 @@ document.addEventListener('pointerdown',()=>{ PTR_DOWN=true; },true);
 const ptrUp=()=>setTimeout(()=>{ PTR_DOWN=false; if(PTR_PEND){ PTR_PEND=false; if(S.drawer) renderDrawer(true); } },0);
 document.addEventListener('pointerup',ptrUp,true); document.addEventListener('pointercancel',ptrUp,true);
 function drawerRerenderSafe(){ if(PTR_DOWN) PTR_PEND=true; else renderDrawer(true); }
+const FONTS=[['Manrope','Manrope (default)'],['Inter','Inter'],['Roboto','Roboto'],['Open Sans','Open Sans'],['Lato','Lato'],['Nunito','Nunito'],['Poppins','Poppins'],['Source Sans 3','Source Sans 3'],['Lexend','Lexend (easy reading)'],['Atkinson Hyperlegible','Atkinson Hyperlegible (low vision)'],['system','This device\'s font']];
+const FSIZES=[['s','Small','S',.92],['m','Normal','M',1],['l','Large','L',1.08],['xl','Extra large','XL',1.18]];
+function applyFont(){ const f=lsRead('bqc_font','Manrope'), z=lsRead('bqc_fsize','m'); const fam=f==='system'?'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif':`"${f}",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif`;
+  const st=document.documentElement.style; st.setProperty('--f-body',fam); st.setProperty('--f-display',fam);
+  const id='font-'+String(f).replace(/\W/g,''); if(f!=='system'&&f!=='Manrope'&&!document.getElementById(id)){ const l=document.createElement('link'); l.rel='stylesheet'; l.id=id; l.href='https://fonts.googleapis.com/css2?family='+String(f).replace(/ /g,'+')+':wght@400;700&display=swap'; document.head.appendChild(l); }
+  const zz=(FSIZES.find(x=>x[0]===z)||FSIZES[1])[3]; if(document.body) document.body.style.zoom=zz===1?'':String(zz); }
+const PICK_NEW='__new';
+const pickKey = x => String(x||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+function sitesKnown(){ const m=new Map(); [...((cfgDoc('cfg-lists')||{}).sites||[]),...((S.data||{}).om||[]).map(r=>r.site)].forEach(x=>{ const t=String(x||'').replace(/\s+/g,' ').trim(); if(t&&!m.has(pickKey(t))) m.set(pickKey(t),t); }); return [...m.values()].sort((a,b)=>a.localeCompare(b)); }
+function peopleKnown(){ const set=new Set(); ((S.data||{}).om||[]).forEach(r=>[1,2,3].forEach(n=>{ const t=canonPerson((r['stage'+n]||{}).technician); if(t) set.add(t); })); const me=S.session&&S.session.name; if(me) set.add(canonPerson(me)||me); return [...set].sort((a,b)=>a.localeCompare(b)); }
+function pickField(path,choices,newPh){ const v=getPath(S.f,path)??''; const ch=v&&v!==PICK_NEW&&!choices.includes(v)?[...choices,v]:choices;
+  return `${sel(path,[['','Choose…'],...ch,[PICK_NEW,'Other: add a new one…']],true)}${v===PICK_NEW?`<input class="in" style="margin-top:6px" id="b-${path.replace(/\./g,'-')}__new" data-bind="${path}__new" value="${esc(getPath(S.f,path+'__new')||'')}" placeholder="${esc(newPh)}">`:''}`; }
+function resolvePick(o,k,choices){ if(!o||o[k]!==PICK_NEW) return; const x=String(o[k+'__new']||'').replace(/\s+/g,' ').trim(); const hit=choices.find(c=>pickKey(c)===pickKey(x)); o[k]=hit||(x?x[0].toUpperCase()+x.slice(1):''); delete o[k+'__new']; }
 function condPick(base){
   const d=getPath(S.f,base), c=d.cond||(d.cond={});
   return `<div class="cond-opts">${CONDITIONS.map(([k,l,h])=>`<label class="cond-opt c-${k} ${c[k]?'on':''}"><input type="checkbox" id="b-${base}-cond-${k}" data-bind="${base}.cond.${k}" data-rerender ${c[k]?'checked':''}><span class="cond-ic" aria-hidden="true">${COND_IC[k]}</span><span class="cond-tx"><b>${esc(l)}</b><small>${esc(h)}</small></span></label>`).join('')}</div>
@@ -3855,10 +4081,12 @@ async function condToggle(id,k){
 }
 function issuesBlock(base){
   const d=getPath(S.f,base), is=d.issues||(d.issues={});
-  return `<div><div class="block-title"><h4>Defects observed</h4><span class="muted" style="font-size:12px">Items marked BSA skip the repair chain</span></div>
-  <div class="issues">${ISSUE_ITEMS.map(([k,l])=>`<label class="issue ${is[k]?'on':''} ${BSA_TRIGGER_ISSUES.includes(k)?'bsa':''}"><input type="checkbox" id="b-${base}-iss-${k}" data-bind="${base}.issues.${k}" data-rerender ${is[k]?'checked':''}>${esc(l)}<small>${BSA_TRIGGER_ISSUES.includes(k)?'BSA':issueCategory(k)==='Recall'?'recall':issueCategory(k)==='Supplier'?'supplier':'handling'}</small></label>`).join('')}</div>
-  ${subPickers(base+'.sub',ISSUE_ITEMS.map(([k])=>k).filter(k=>is[k]),'Exact fault (if known)',false)}
-  ${is.missingComponent?`<div style="margin-top:10px">${field('Which component is missing',inp(base+'.missingComponentNote',{ph:'e.g. 2 bolts on the top cover'}),'',true)}${getPath(S.f,base+'.missingComponentNote')&&!(d.sub||{}).missingComponent?`<div class="idf-hint">Read as: <b>${esc(componentName(getPath(S.f,base+'.missingComponentNote')))}</b></div>`:''}</div>`:''}
+  const anyIss=ISSUE_ITEMS.some(([k])=>is[k]);
+  return `<div><label class="nodef ${d.noDefect?'on':''} ${anyIss&&d.noDefect?'bad':''}"><input type="checkbox" id="b-${base}-noDefect" data-bind="${base}.noDefect" data-rerender ${d.noDefect?'checked':''}><span><b>No defect found</b><small>The battery works. It came in only for a condition (pending rework, offline) or a check-up.</small></span></label>
+  ${d.noDefect?'':`<div class="block-title" style="margin-top:12px"><h4>Defects observed</h4><span class="muted" style="font-size:12px">Items marked BSA skip the repair chain</span></div>`}
+  <div class="issues" ${d.noDefect?'hidden':''}>${ISSUE_ITEMS.map(([k,l])=>`<label class="issue ${is[k]?'on':''} ${BSA_TRIGGER_ISSUES.includes(k)?'bsa':''}"><input type="checkbox" id="b-${base}-iss-${k}" data-bind="${base}.issues.${k}" data-rerender ${is[k]?'checked':''}>${esc(l)}<small>${BSA_TRIGGER_ISSUES.includes(k)?'BSA':issueCategory(k)==='Recall'?'recall':issueCategory(k)==='Supplier'?'supplier':'handling'}</small></label>`).join('')}</div>
+  ${subPickers(base+'.sub',ISSUE_ITEMS.map(([k])=>k).filter(k=>is[k]),'Exact fault')}
+  ${is.missingComponent?`<div style="margin-top:10px">${field('Missing component: details (optional)',inp(base+'.missingComponentNote',{ph:'e.g. 2 bolts on the top cover'}))}</div>`:''}
   ${is.simReplace?simOldBlock(base,d):''}
   ${is.other?`<div class="sim-box"><div class="sim-head"><span class="sim-ic">?</span><div><b>Other issue</b><small>Pick the closest fault from our list, so it is counted in the right place. Then describe what you found.</small></div></div><div class="form">${field('Closest fault',`<select class="in" id="b-${base.replace(/\./g,'-')}-otherStd" data-bind="${base}.otherStd"><option value="">Choose from the fault list…</option>${faultOptions(getPath(S.f,base+'.otherStd')||'')}</select>`,'full',true)}${field('Explanation',area(base+'.otherNote','What is wrong, where, and how it shows'),'full',true)}</div></div>`:''}
   ${isBsaTriggerIssue(d)?`<div class="banner warn" style="margin:10px 0 0"><div><b>Goes straight to BSA.</b> ${esc(bsaTriggerLabels(d).join(', '))} ${bsaTriggerLabels(d).length===1?'is':'are'} routed to the BSA team instead of Stage 2.</div></div>`:''}</div>`;
@@ -3881,8 +4109,8 @@ function IntakeSheet(){
     ${field('Time received',inp('intake.timeReceived',{type:'time'}))}
     ${field(isImeiRequired(d)?'IMEI (required for this issue)':'IMEI',inp('intake.imei',{mono:true,max:16,must:isImeiRequired(d),ph:'Up to 16 digits'}),'',isImeiRequired(d))}
     ${cyclesField('intake.cycles',false)}
-    ${field(isSwapStationRequired(d)?'Swap station (required)':'Swap station',inp('intake.site',{must:isSwapStationRequired(d),ph:'Where it came from'}),'',isSwapStationRequired(d))}
-    ${field('Received by',inp('intake.receivedBy'))}
+    ${field(isSwapStationRequired(d)?'Swap station (required)':'Swap station',pickField('intake.site',sitesKnown(),'Name of the swap station'),'',isSwapStationRequired(d))}
+    ${field('Received by',pickField('intake.receivedBy',peopleKnown(),'Full name'))}
   </div></section>
   ${sec(2,'Inspection','Before opening',checks('intake.pre',CHECK_ITEMS))}
   ${sec(3,'Condition','A status, not a defect',condPick('intake'))}
@@ -3896,13 +4124,15 @@ async function submitIntake(){
   const fresh=await loadStore('om_chain_records'); S.data.om=fresh;
   const id=normalizeBatteryId(d.bmsId,d.model), det=platformForId(id); if(det) d.model=det; d.bmsId=id;
   const fail=m=>{ S.formError=m; renderDrawer(true); const b=$('#drawer-root .d-body'); if(b) b.scrollTop=0; };
+  resolvePick(d,'site',sitesKnown()); resolvePick(d,'receivedBy',peopleKnown());
   if(!id||!d.dateReceived) return fail('Battery ID and date received are required.');
   const e=batteryIdError(id,d.model); if(e) return fail(e);
+  { const any=ISSUE_ITEMS.some(([k])=>(d.issues||{})[k]); if(d.noDefect&&any) return fail('You ticked “No defect found” and also ticked defects. Untick one of them.'); if(!d.noDefect&&!any) return fail('Tick the defects you found, or tick “No defect found”.'); if(d.noDefect&&!CONDITIONS.some(([k])=>(d.cond||{})[k])&&!d._noCondOk){ d._noCondOk=true; return fail('No defect and no condition: is this a check-up only? Press Send again to confirm, or pick a condition in step 3.'); } }
   if(String(d.imei||'').trim().length>16) return fail('IMEI must be 16 characters or fewer.');
   if(String(d.cycles??'').trim()!==''&&cyclesError(d.cycles)) return fail(cyclesError(d.cycles));
   if(isImeiRequired(d)&&!String(d.imei||'').trim()) return fail('IMEI is required for no-power, BMS, IoT or SIM replacement visits.');
   if(isSwapStationRequired(d)&&!String(d.site||'').trim()) return fail('Swap station is required for this defect type.');
-  if(d.issues.missingComponent&&!String(d.missingComponentNote||'').trim()) return fail('Say which component is missing.');
+  { const er=resolveSubs(d,'sub',Object.keys(d.issues||{}).filter(k=>d.issues[k])); if(er) return fail(er); }
   if(d.issues.other){ if(!d.otherStd) return fail('Pick the closest fault from the list for the other issue.'); if(String(d.otherNote||'').trim().length<5) return fail('Explain the other issue in a few words.'); }
   if(d.issues.simReplace){ const sm=d.sim||{}; if(!String(sm.oldType||'').trim()) return fail('Old SIM type is required.'); const se=simNumberError(sm.oldNumber,'Old SIM number'); if(se) return fail(se); }
   if(fresh.find(r=>normId(r.bmsId)===id&&!isClosed(r))) return fail('This BMS ID is already open in the chain.');
@@ -3945,14 +4175,14 @@ function WorkSheet(rec){
   let body='', foot='';
   if(n===1){
     const t=isBsaTriggerIssue(e.stage1);
-    body=`<div class="form">${field('Platform',sel('edit.model',[['','—'],...PLATFORMS]))}${field('IMEI',inp('edit.imei',{mono:true,max:16}))}${field('Swap station',inp('edit.site'))}${cyclesField('edit.cycles',false)}</div>${checks('edit.stage1.pre',CHECK_ITEMS)}${issuesBlock('edit.stage1')}`;
+    body=`<div class="form">${field('Platform',sel('edit.model',[['','—'],...PLATFORMS]))}${field('IMEI',inp('edit.imei',{mono:true,max:16}))}${field('Swap station',pickField('edit.site',sitesKnown(),'Name of the swap station'))}${cyclesField('edit.cycles',false)}</div>${checks('edit.stage1.pre',CHECK_ITEMS)}${issuesBlock('edit.stage1')}`;
     foot=`<button class="btn ${t?'esc':'pri'}" data-act="submit-work" ${S.saving?'disabled':''}>${savingLabel(t?'Send straight to BSA':'Resend to Stage 2',S.saving)}</button>`;
   } else if(n===2){
     if(!e.stage2.methodId&&!e.stage2._picked&&needsSim(e)) e.stage2.methodId='rm-05';
     if((e.stage2._stepsFor||'')!==(e.stage2.methodId||'')){ e.stage2.steps={}; e.stage2.stepRes={}; e.stage2._stepsFor=e.stage2.methodId||''; }
     if(!e.stage2.confirmed){ e.stage2.confirmed={}; issuesOf(rec).forEach(k=>{ const s1=subOf(rec,k); if(s1) e.stage2.confirmed[k]=s1; }); }
-    const fk=issuesOf(rec).map(k=>{ const c=e.stage2.confirmed[k]; return c===SUB_OTHER?k+'__other':subKey(k,c||''); }), pl=platOf(rec), rm=methodById(e.stage2.methodId), nm=methodsFor(fk,pl).length;
-    body=`${subPickers('edit.stage2.confirmed',issuesOf(rec),'Confirm the exact fault',true)}${nm?'':`<div class="banner crit"><div>No repair method is set up for <b>${esc(pl||'this battery type')}</b> yet. Ask the O&amp;M manager to add one in Setup.</div></div>`}<div class="form">${field(`Repair method${pl?' · '+esc(pl):''}`,methodSelect('edit.stage2.methodId',fk,true,'',pl),'full',true)}</div>${methodStepsBlock('edit.stage2.steps',rm)}${canProposeMethod()?`<div class="muted" style="font-size:12.5px">No method fits this fault? <button class="btn sm ghost" data-act="rm-new-for" data-k="${esc(fk[0]||'')}" data-pl="${esc(pl||'')}">Write a rework method</button></div>`:''}<div class="form">${field('Parts replaced',inp('edit.stage2.partsReplaced',{ph:'e.g. BMS, harness'}),'full')}${cyclesField('edit.cycles',!!String(e.stage2.partsReplaced||'').trim()||!!e._holdOpen)}${field('Repair notes',area('edit.stage2.repairAction','What you did and what you found'),'full')}</div>${needsSim(e)?simNewBlock(e):''}${checks('edit.stage2.post',POST_ITEMS)}${holdBlock(rec,e)}`;
+    const fk=issuesOf(rec).map(k=>{ const c=e.stage2.confirmed[k]; return c===SUB_OTHER?k+'__other':c===SUB_NEW?k:subKey(k,c||''); }), pl=platOf(rec), rm=methodById(e.stage2.methodId), nm=methodsFor(fk,pl).length;
+    body=`${subPickers('edit.stage2.confirmed',issuesOf(rec),'Confirm the exact fault')}${nm?'':`<div class="banner crit"><div>No repair method is set up for <b>${esc(pl||'this battery type')}</b> yet. Ask the O&amp;M manager to add one in Setup.</div></div>`}<div class="form">${field(`Repair method${pl?' · '+esc(pl):''}`,methodSelect('edit.stage2.methodId',fk,true,'',pl),'full',true)}</div>${methodStepsBlock('edit.stage2.steps',rm)}${canProposeMethod()?`<div class="muted" style="font-size:12.5px">No method fits this fault? <button class="btn sm ghost" data-act="rm-new-for" data-k="${esc(fk[0]||'')}" data-pl="${esc(pl||'')}">Write a rework method</button></div>`:''}<div class="form">${field('Parts replaced',inp('edit.stage2.partsReplaced',{ph:'e.g. BMS, harness'}),'full')}${cyclesField('edit.cycles',!!String(e.stage2.partsReplaced||'').trim()||!!e._holdOpen)}${field('Repair notes',area('edit.stage2.repairAction','What you did and what you found'),'full')}</div>${needsSim(e)?simNewBlock(e):''}${checks('edit.stage2.post',POST_ITEMS)}${holdBlock(rec,e)}`;
     foot=`<button class="btn pri" data-act="submit-work" ${S.saving||onHold(rec)?'disabled':''}>${savingLabel(onHold(rec)?'On hold · release first':'Send to Stage 3',S.saving)}</button>`;
   } else {
     const t=e.stage3, sim=needsSim(e), res=testsResult(t,sim), ir=parseFloat(t.tests.irMeasured), thr=parseFloat(t.tests.irThreshold);
@@ -4012,6 +4242,8 @@ async function submitWork(){
   if(n===1){
     const err=batteryIdError(e.bmsId,e.model); if(err) return fail(err);
     if(String(e.cycles??'').trim()!==''&&cyclesError(e.cycles)) return fail(cyclesError(e.cycles));
+    resolvePick(e,'site',sitesKnown());
+    { const er=resolveSubs(e.stage1,'sub',Object.keys(e.stage1.issues||{}).filter(k=>e.stage1.issues[k])); if(er) return fail(er); }
     if(e.stage1.issues&&e.stage1.issues.other){ if(!e.stage1.otherStd&&!e.stage1.otherCat) return fail('Pick the closest fault from the list for the other issue.'); if(String(e.stage1.otherNote||'').trim().length<5) return fail('Explain the other issue in a few words.'); }
     if(e.stage1.issues&&e.stage1.issues.simReplace){ const sm=e.stage1.sim||{}; if(!String(sm.oldType||'').trim()) return fail('Old SIM type is required.'); const se=simNumberError(sm.oldNumber,'Old SIM number'); if(se) return fail(se); e.stage1.sim={oldType:String(sm.oldType).trim(),oldNumber:simDigits(sm.oldNumber)}; }
     Object.assign(e.stage1,{technician:s.name,completedBy:s.name,completedAt:nowIso()});
@@ -4023,8 +4255,7 @@ async function submitWork(){
     } else { latest.stage=2; latest.status='STAGE2_OPEN'; msg=`${latest.bmsId} resent to Stage 2.`; }
   } else if(n===2){
     if(onHold(latest)) return fail('This battery is waiting for supplier material. Mark the part as arrived first.');
-    const need=issuesOf(latest).filter(k=>issueSubs(k).length&&!(e.stage2.confirmed||{})[k]);
-    if(need.length) return fail(`Confirm the exact fault for: ${need.map(k=>ISSUE_LABEL[k]).join(', ')}.`);
+    { const er=resolveSubs(e.stage2,'confirmed',issuesOf(latest)); if(er) return fail(er); }
     const rm=methodById(e.stage2.methodId); if(!rm) return fail('Pick the repair method you used.');
     if(!methodFits(rm,platOf(latest))) return fail(`${rm.code} is not set up for ${platOf(latest)} batteries. Pick a method for this battery type.`);
     const steps=rm.steps||[], miss=steps.findIndex((_,i)=>!(e.stage2.steps||{})[i]);
@@ -5383,6 +5614,13 @@ const ACT = {
   'hold-cancel':()=>{ S.f.edit._holdOpen=false; S.f.edit._hold=null; S.formError=null; renderDrawer(true); },
   'set-hold':t=>setHold(t.dataset.id,false),
   'cond-toggle':t=>condToggle(t.dataset.id,t.dataset.v),
+  'set-fsize':t=>{ lsWrite('bqc_fsize',t.dataset.v); applyFont(); render(); },
+  'daily-new-date':t=>openDaily(null,t.dataset.v),
+  'remind-later':()=>{ S.remindAt=Date.now()+30*60e3; $('#modal-root').innerHTML=''; toast('Reminder snoozed for 30 minutes.'); },
+  'remind-open':()=>{ S.remindAt=Date.now()+30*60e3; $('#modal-root').innerHTML=''; openDrawer({type:'alerts'}); },
+  'notify-on':()=>{ if(window.Notification) Notification.requestPermission().then(p=>toast(p==='granted'?'Pop-up notifications are on.':'Notifications were not allowed by the browser.')); },
+  'fix-subs':()=>{ S.f.fix={v:{},n:{}}; openDrawer({type:'fixsubs'}); },
+  'fix-subs-save':()=>fixSubsSave(),
   'release-hold':t=>setHold(t.dataset.id,true),
   'w-next':()=>{ S.welcome=pickWelcome(S.session,S.welcome&&S.welcome.card.id); S.welcome.shown=true; renderMain(); },
   'w-close':()=>{ S.welcome=null; renderMain(); },
@@ -5405,7 +5643,10 @@ const ACT = {
   'filter-issue':t=>{ S.view='chain'; S.om.scope='period'; S.om.issue=t.dataset.v; S.om.page=1; render(); },
   f:t=>{ const g=t.dataset.g; S[g][t.dataset.k]=t.dataset.v; S[g].page=1; const v={bat:'batteries',bsaF:'bsa',om:'chain'}[g]; if(S.view!==v){ S.view=v; render(); window.scrollTo(0,0); } else renderMain(); },
   page:t=>{ S[t.dataset.g].page+=+t.dataset.v; renderMain(); window.scrollTo({top:$('.tbl-wrap')?$('.tbl-wrap').getBoundingClientRect().top+scrollY-140:0}); },
-  qtab:t=>{ S.qtab=t.dataset.v; renderMain(); },
+  qtab:t=>{ if(S.view!=='quality'){ S.view='quality'; S.qtab=t.dataset.v; render(); return; } S.qtab=t.dataset.v; renderMain(); },
+  'q-par':t=>{ S.qPar=t.dataset.v; renderMain(); },
+  'q-attn':()=>{ S.view='quality'; S.qtab='attention'; render(); },
+  'copy-agenda':()=>{ const txt=agendaText(recommendations()); (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast('Agenda copied.'),()=>{ download(new Blob([txt],{type:'text/plain'}),'quality-meeting-agenda.txt'); toast('Agenda downloaded.'); }); },
   refresh:()=>refresh(false),
   theme:()=>{ BG.refresh();  const cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); const n=cur==='dark'?'light':'dark'; document.documentElement.setAttribute('data-theme',n); lsWrite('bqc_theme',n); drawCharts(); },
   signout:async()=>{ if(pendingCount()&&!Cloud.demo&&!await ask('Sign out with unsent changes?',`${pendingCount()} change(s) are saved on this device but not uploaded yet. They stay here and upload next time you're online.`,'Sign out')) return; S.lastWho=S.session.name; S.farewell=makeFarewell(S.session); S.welcome=null; lsDel(SESSION_KEY); S.session=null; S.drawer=null; Cloud.demo=false; S.data={om:[],bsa:[],rca:[],qi:[],daily:[],methods:[],people:[],cfg:[]}; bump(); clearInterval(autoTimer); render(); },
@@ -5522,6 +5763,7 @@ document.addEventListener('change',e=>{
   if(t.dataset.idplat){ idInput(t.dataset.idplat); return; }
   if(t.dataset.idsfx&&t.dataset.idsfx==='intake'){ drawerRerenderSafe(); return; }
   if(t.dataset.filter&&t.tagName==='SELECT'){ const [g,k]=t.dataset.filter.split('.'); S[g][k]=t.value; S[g].page=1; renderMain(); return; }
+  if(t.id==='font-pick'){ lsWrite('bqc_font',t.value); applyFont(); render(); toast('Font changed.'); return; }
   if(t.id==='auto-refresh'){ S.auto=+t.value; lsWrite('bqc_auto',S.auto); scheduleAuto(); toast(S.auto?`Auto refresh every ${S.auto>=60?S.auto/60+' min':S.auto+' s'}.`:'Auto refresh off.'); return; }
   if(t.id==='tc-date'&&t.value){ S.anchor=t.value>todayStr()?todayStr():t.value; renderMain(); return; }
   if(t.id==='l-role'){ S.loginRole=t.value; render(); return; }
@@ -5555,6 +5797,7 @@ if(!(window.matchMedia&&matchMedia('(pointer:coarse)').matches)){
 (function boot(){
   const th=lsRead('bqc_theme',null); if(th) document.documentElement.setAttribute('data-theme',th);
   applyAccent(lsRead('bqc_accent','blue'));
+  applyFont();
   BG.start();
   const s=currentSession();
   if(s){ startSession(s); } else render();
