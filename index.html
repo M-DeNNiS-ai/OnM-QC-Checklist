@@ -971,11 +971,12 @@ const ISSUE_ITEMS = [
   ['canFail','CAN fail'],['chargeFail','Charge failure'],['dischargeFail','Discharge failure'],['swelling','Swelling / damage'],
   ['irFail','Insulation failure'],['iotFault','IoT / IMEI mismatch'],['tampered','Vandalism / tampering'],
   ['physicalDefect','Physical defect / external damage'],['wetThermalPaste','Wet thermal paste / moisture'],['connectorDamage','Connector damage'],
+  ['lowPottingCompound','Insufficient potting compound'],['missingIot','Missing IoT module'],['ledFailure','LED failure'],['componentMismatch','Component / battery mismatch'],
   ['cellFailureSingle','Single cell failure'],['cellFailureMultiple','Multiple cell failure'],['missingComponent','Missing component'],['simReplace','SIM card replacement (recall)'],['other','Other issue']
 ];
 const ISSUE_LABEL = Object.fromEntries(ISSUE_ITEMS);
 /* Issues that bypass the O&M repair chain and go straight to BSA */
-const BSA_TRIGGER_ISSUES = ['tampered','physicalDefect','wetThermalPaste','swelling','connectorDamage','cellFailureSingle','cellFailureMultiple','missingComponent'];
+const BSA_TRIGGER_ISSUES = ['tampered','physicalDefect','wetThermalPaste','swelling','connectorDamage','lowPottingCompound','missingIot','ledFailure','componentMismatch','cellFailureSingle','cellFailureMultiple','missingComponent'];
 const SUPPLIER_RELATED_ISSUES = ['bmsFault','cellImbalance','cellFailureSingle','cellFailureMultiple','irFail','canFail','iotFault','lowCapacity'];
 const TEST_BOOLS = [['canEstablished','CAN established'],['bmsFaultCleared','BMS fault cleared'],['chargeVerified','Charge verified'],['dischargeVerified','Discharge verified'],['noAbnormal','No abnormal behaviour']];
 const RCA_FISHBONE = ['People','Machine','Method','Material','Measurement','Environment'];
@@ -1008,7 +1009,7 @@ function bsaIssueSummary(d){
 function bsaEscalationCategory(d){
   const k = BSA_TRIGGER_ISSUES.find(x=>d && d.issues && d.issues[x]);
   if(!k) return 'Other BSA escalation';
-  return {wetThermalPaste:'Wet thermal paste / moisture',tampered:'Vandalism / tampering',physicalDefect:'Physical defect / damage',cellFailureSingle:'Cell failure',cellFailureMultiple:'Cell failure',missingComponent:'Missing component',swelling:'Swelling / damage',connectorDamage:'Connector damage'}[k];
+  return {wetThermalPaste:'Wet thermal paste / moisture',tampered:'Vandalism / tampering',physicalDefect:'Physical defect / damage',cellFailureSingle:'Cell failure',cellFailureMultiple:'Cell failure',missingComponent:'Missing component',swelling:'Swelling / damage',connectorDamage:'Connector damage',lowPottingCompound:'Insufficient potting compound',missingIot:'Missing IoT module',ledFailure:'LED failure',componentMismatch:'Component / battery mismatch'}[k];
 }
 
 /* ---------- Battery ID helpers ---------- */
